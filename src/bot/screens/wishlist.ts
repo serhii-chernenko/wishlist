@@ -12,13 +12,15 @@ import {
     inlineKeyboard,
     navigationButton,
     removeReplyKeyboard,
-    singleColumnKeyboard
+    singleColumnKeyboard,
+    urlButton
 } from '../content/keyboards';
 import { normalizeOffset, getPageWindow } from '../content/pagination';
-import { getSupportLinks } from '../content/support-links';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
 import type {
+    BotActionName,
     BotRequest,
+    CallbackAction,
     CallbackTable,
     ScreenModule,
     WishFilter
@@ -31,7 +33,12 @@ import {
 } from '../services/wish-screen-context';
 import { getErrorType } from '../errors';
 import { deriveRequest } from '../runtime/context';
-import { buildAuthorName } from '../services/share-service';
+import type { ShareRecord } from '../../db/repositories';
+import { buildShareUrl } from '../../web/share/public-id';
+import {
+    buildAuthorName,
+    resolvePublicOrigin
+} from '../services/share-service';
 
 export interface WishlistParams {
     offset?: number;
@@ -183,54 +190,216 @@ const renderFilterMenu = async (req: BotRequest) => {
     );
 };
 
-const shareWishlist = async (req: BotRequest) => {
-    const { LL } = req;
-    const user = requireUser(req);
-    const { share } = createWishScreenServices(req);
-    const formatters = createWishFormatters(req);
+const SHARE_PAGE_FALLBACK_NAME = '—';
+const TELEGRAM_SHARE_URL = 'https://t.me/share/url';
 
+type ShareActionName = Extract<
+    BotActionName,
+    'wishlist_shared' | 'wishlist_share_stopped' | 'wishlist_share_rotated'
+>;
+
+type ShareAttempt<Value> = { ok: true; value: Value } | { ok: false };
+
+const attemptShare = async <Value>(
+    req: BotRequest,
+    action: ShareActionName,
+    task: () => Promise<Value>
+): Promise<ShareAttempt<Value>> => {
     try {
-        const outcome = await share.publishWishlist({
-            user,
-            author: {
-                username: req.actor.username ?? user.username,
-                displayName: buildAuthorName(req.actor)
-            },
-            LL,
-            formatMoney: formatters.formatMoney,
-            formatDate: formatters.formatDate,
-            botUrl: req.env.WISHLIST_TG_URL,
-            donateLinks: getSupportLinks(req.env, LL)
-        });
-
-        if (outcome.status === 'empty') {
-            req.telemetry.botActionCompleted({
-                action: 'wishlist_shared',
-                result: 'empty'
-            });
-            await req.send.text(LL.wishlist.share.empty());
-        } else {
-            req.telemetry.botActionCompleted({
-                action: 'wishlist_shared',
-                result: 'success'
-            });
-            await req.send.text(
-                LL.wishlist.share.success({ url: escapeHtml(outcome.url) })
-            );
-        }
+        return { ok: true, value: await task() };
     } catch (error) {
-        req.telemetry.botActionCompleted({
-            action: 'wishlist_shared',
-            result: 'failed'
-        });
+        req.telemetry.botActionCompleted({ action, result: 'failed' });
         req.telemetry.internalFailure({
-            event: 'telegraph_failed',
+            event: 'share_failed',
             errorType: getErrorType(error)
         });
-        await req.send.text(LL.errors.unknown());
+        await req.send.text(req.LL.errors.unknown());
+        await render(req, undefined);
+
+        return { ok: false };
+    }
+};
+
+const buildTelegramShareUrl = (req: BotRequest, pageUrl: string) => {
+    const text = req.LL.wishlist.share.sendText();
+
+    return `${TELEGRAM_SHARE_URL}?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(text)}`;
+};
+
+const buildShareLinkKeyboard = (req: BotRequest, pageUrl: string) => {
+    const { LL } = req;
+    const { actions } = LL.wishlist.share;
+
+    return singleColumnKeyboard([
+        urlButton(actions.open(), pageUrl),
+        urlButton(actions.send(), buildTelegramShareUrl(req, pageUrl)),
+        callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
+        callbackButton(actions.stop(), { type: 'wishlistShareStop' }),
+        navigationButton(LL.actions.back(), 'wishlist')
+    ]);
+};
+
+const renderShareLink = async (
+    req: BotRequest,
+    share: Pick<ShareRecord, 'publicId'>,
+    buildText: (url: string) => string
+) => {
+    const pageUrl = buildShareUrl(
+        resolvePublicOrigin(req.publicOrigin),
+        share.publicId
+    );
+
+    await req.send.text(
+        buildText(escapeHtml(pageUrl)),
+        buildShareLinkKeyboard(req, pageUrl)
+    );
+};
+
+const renderShareEmpty = async (req: BotRequest) => {
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_shared',
+        result: 'empty'
+    });
+    await req.send.text(req.LL.wishlist.share.empty());
+    await render(req, undefined);
+};
+
+const renderShareConsent = async (req: BotRequest) => {
+    const { LL } = req;
+    const name = buildAuthorName(req.actor) || SHARE_PAGE_FALLBACK_NAME;
+    const { host } = new URL(resolvePublicOrigin(req.publicOrigin));
+
+    await req.send.text(
+        LL.wishlist.share.consent({
+            name: escapeHtml(name),
+            host: escapeHtml(host)
+        }),
+        singleColumnKeyboard([
+            callbackButton(LL.wishlist.share.actions.publish(), {
+                type: 'wishlistSharePublish'
+            }),
+            navigationButton(LL.actions.back(), 'wishlist')
+        ])
+    );
+};
+
+const publishShare = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const attempt = await attemptShare(req, 'wishlist_shared', () => {
+        return share.publish(user, buildAuthorName(req.actor));
+    });
+
+    if (!attempt.ok) {
+        return;
     }
 
+    const outcome = attempt.value;
+
+    if (outcome.status === 'empty') {
+        await renderShareEmpty(req);
+
+        return;
+    }
+
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_shared',
+        result: outcome.status === 'created' ? 'published' : 'existing'
+    });
+    await renderShareLink(req, outcome.share, url => {
+        return req.LL.wishlist.share.ready({ url });
+    });
+};
+
+const openShare = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const attempt = await attemptShare(req, 'wishlist_shared', () => {
+        return share.getEntryState(user.id);
+    });
+
+    if (!attempt.ok) {
+        return;
+    }
+
+    switch (attempt.value) {
+        case 'empty':
+            await renderShareEmpty(req);
+            return;
+        case 'unshared':
+            await renderShareConsent(req);
+            return;
+        case 'shared':
+            await publishShare(req);
+            return;
+    }
+};
+
+const renderShareConfirmation = async (
+    req: BotRequest,
+    text: string,
+    confirmAction: Extract<
+        CallbackAction,
+        { type: 'wishlistShareStopConfirm' | 'wishlistShareRotateConfirm' }
+    >
+) => {
+    const { LL } = req;
+
+    await req.send.text(
+        text,
+        singleColumnKeyboard([
+            callbackButton(LL.actions.yes(), confirmAction),
+            callbackButton(LL.actions.no(), { type: 'wishlistShare' })
+        ])
+    );
+};
+
+const stopShare = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const attempt = await attemptShare(req, 'wishlist_share_stopped', () => {
+        return share.stop(user.id);
+    });
+
+    if (!attempt.ok) {
+        return;
+    }
+
+    if (attempt.value) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_share_stopped',
+            result: 'success'
+        });
+    }
+
+    await req.send.text(req.LL.wishlist.share.stopped());
     await render(req, undefined);
+};
+
+const rotateShare = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const attempt = await attemptShare(req, 'wishlist_share_rotated', () => {
+        return share.rotate(user.id);
+    });
+
+    if (!attempt.ok) {
+        return;
+    }
+
+    if (attempt.value === null) {
+        await openShare(req);
+
+        return;
+    }
+
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_share_rotated',
+        result: 'success'
+    });
+    await renderShareLink(req, attempt.value, url => {
+        return req.LL.wishlist.share.rotated({ url });
+    });
 };
 
 export const callbacks: CallbackTable = {
@@ -257,7 +426,30 @@ export const callbacks: CallbackTable = {
         await render(req, undefined);
     },
     wishlistShare: async req => {
-        await shareWishlist(req);
+        await openShare(req);
+    },
+    wishlistSharePublish: async req => {
+        await publishShare(req);
+    },
+    wishlistShareStop: async req => {
+        requireUser(req);
+        await renderShareConfirmation(
+            req,
+            req.LL.wishlist.share.stopConfirm(),
+            { type: 'wishlistShareStopConfirm' }
+        );
+    },
+    wishlistShareStopConfirm: async req => {
+        await stopShare(req);
+    },
+    wishlistShareRotate: async req => {
+        requireUser(req);
+        await renderShareConfirmation(req, req.LL.wishlist.share.newConfirm(), {
+            type: 'wishlistShareRotateConfirm'
+        });
+    },
+    wishlistShareRotateConfirm: async req => {
+        await rotateShare(req);
     },
     wishlistFilterMenu: async req => {
         requireUser(req);

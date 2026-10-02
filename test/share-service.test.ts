@@ -3,228 +3,258 @@ import test from 'node:test';
 
 import { Effect } from 'effect';
 
-import type { Repositories, WishRecord } from '../src/db/repositories';
+import type { Repositories, ShareRecord } from '../src/db/repositories';
 import {
+    buildAuthorName,
     createShareService,
-    type ShareRequest
+    DEFAULT_PUBLIC_ORIGIN,
+    resolvePublicOrigin
 } from '../src/bot/services/share-service';
-import {
-    TelegraphError,
-    type TelegraphClient
-} from '../src/bot/telegraph/client';
-import { i18nObject } from '../src/i18n/i18n-util';
-import { loadLocale } from '../src/i18n/i18n-util.sync';
 
-loadLocale('uk');
-const LL = i18nObject('uk');
 const now = new Date('2026-01-02T10:00:00Z');
+const OWNER = { id: 7 };
 
-const createWish = (overrides: Partial<WishRecord> = {}): WishRecord => {
+const createShare = (overrides: Partial<ShareRecord> = {}): ShareRecord => {
     return {
-        id: 1,
-        mongoId: null,
-        userId: 7,
-        title: 'Кавоварка',
-        description: null,
-        link: null,
-        images: '[]',
-        priority: false,
-        hidden: false,
-        removed: false,
-        done: false,
-        price: 0,
+        userId: OWNER.id,
+        publicId: '01j9z0000000000000000000ab',
+        displayName: 'Serhii',
+        revokedAt: null,
         createdAt: now,
         updatedAt: now,
         ...overrides
     };
 };
 
-const createFakes = (wishes: WishRecord[]) => {
-    const savedTokens: string[] = [];
-    const repositories = {
-        wishes: {
-            listShareable: () => Effect.succeed(wishes)
-        },
-        users: {
-            setTelegraphToken: (_id: number, token: string) => {
-                savedTokens.push(token);
-
-                return Effect.succeed(true);
-            }
-        }
-    } as unknown as Pick<Repositories, 'wishes' | 'users'>;
-
-    return { repositories, savedTokens };
-};
-
-const createRequest = (
-    overrides: Partial<ShareRequest['user']> = {},
-    username: string | null = 'serhii'
-): ShareRequest => {
-    return {
-        user: {
-            id: 7,
-            payments: null,
-            telegraphAccessToken: 'stored-token',
-            ...overrides
-        },
-        author: { username, displayName: 'Serhii' },
-        LL,
-        formatMoney: value => String(value),
-        formatDate: date => date.toISOString().slice(0, 10),
-        botUrl: 'https://t.me/wishlist_ua_bot',
-        donateLinks: []
-    };
-};
-
-interface ClientCalls {
-    accounts: Array<Parameters<TelegraphClient['createAccount']>[0]>;
-    pages: Array<Parameters<TelegraphClient['createPage']>[0]>;
+interface FakeOptions {
+    shareableCount?: number;
+    stored?: ShareRecord | null;
+    failOn?: 'listShareable' | 'findActiveByUserId' | 'publish';
 }
 
-const createClient = (
-    behavior: {
-        pageErrors?: Array<TelegraphError | null>;
-    } = {}
-) => {
-    const calls: ClientCalls = { accounts: [], pages: [] };
-    const pageErrors = [...(behavior.pageErrors ?? [])];
-    const client: TelegraphClient = {
-        async createAccount(input) {
-            calls.accounts.push(input);
+const createFakes = (options: FakeOptions = {}) => {
+    const calls: string[] = [];
+    let stored = options.stored ?? null;
+    const fail = (method: string) => {
+        calls.push(method);
 
-            return `new-token-${calls.accounts.length}`;
-        },
-        async createPage(input) {
-            calls.pages.push(input);
-
-            const error = pageErrors.shift();
-
-            if (error) {
-                throw error;
-            }
-
-            return { url: 'https://telegra.ph/result' };
-        }
+        return options.failOn === method
+            ? Effect.fail(new Error('database unavailable'))
+            : null;
     };
+    const repositories = {
+        wishes: {
+            listShareable: () => {
+                return (
+                    fail('listShareable') ??
+                    Effect.succeed(
+                        Array.from({ length: options.shareableCount ?? 1 })
+                    )
+                );
+            }
+        },
+        shares: {
+            findActiveByUserId: () => {
+                return (
+                    fail('findActiveByUserId') ??
+                    Effect.succeed(stored?.revokedAt === null ? stored : null)
+                );
+            },
+            publish: (
+                _userId: number,
+                displayName: string | null,
+                at: Date
+            ) => {
+                const failure = fail('publish');
 
-    return { client, calls };
+                if (failure) {
+                    return failure;
+                }
+
+                stored = createShare({
+                    ...stored,
+                    displayName,
+                    revokedAt: null,
+                    updatedAt: at
+                });
+
+                return Effect.succeed(stored);
+            },
+            revoke: (_userId: number, at: Date) => {
+                calls.push('revoke');
+
+                if (stored === null || stored.revokedAt !== null) {
+                    return Effect.succeed(false);
+                }
+
+                stored = { ...stored, revokedAt: at, displayName: null };
+
+                return Effect.succeed(true);
+            },
+            rotate: (_userId: number, at: Date) => {
+                calls.push('rotate');
+
+                if (stored === null || stored.revokedAt !== null) {
+                    return Effect.succeed(null);
+                }
+
+                stored = { ...stored, publicId: 'rotated', updatedAt: at };
+
+                return Effect.succeed(stored);
+            }
+        }
+    } as unknown as Pick<Repositories, 'wishes' | 'shares'>;
+
+    return { repositories, calls };
 };
 
-test('an empty wishlist is reported without calling telegra.ph', async () => {
-    const { repositories } = createFakes([]);
-    const { client, calls } = createClient();
-    const service = createShareService(repositories, client, () => now);
-
-    assert.deepEqual(await service.publishWishlist(createRequest()), {
-        status: 'empty'
-    });
-    assert.equal(calls.pages.length, 0);
-});
-
-test('a stored token publishes without creating an account', async () => {
-    const { repositories, savedTokens } = createFakes([createWish()]);
-    const { client, calls } = createClient();
-    const service = createShareService(repositories, client, () => now);
-
-    const outcome = await service.publishWishlist(createRequest());
-
-    assert.deepEqual(outcome, {
-        status: 'published',
-        url: 'https://telegra.ph/result'
-    });
-    assert.equal(calls.accounts.length, 0);
-    assert.equal(savedTokens.length, 0);
-    assert.equal(calls.pages[0]?.accessToken, 'stored-token');
-    assert.equal(calls.pages[0]?.title, 'Лист Бажань від Serhii');
-    assert.equal(calls.pages[0]?.authorUrl, 'https://t.me/serhii');
-});
-
-test('a missing token creates and stores an account with the username', async () => {
-    const { repositories, savedTokens } = createFakes([createWish()]);
-    const { client, calls } = createClient();
-    const service = createShareService(repositories, client, () => now);
-
-    await service.publishWishlist(
-        createRequest({ telegraphAccessToken: null })
+test('publishing the first time creates the share with the given name', async () => {
+    const { repositories } = createFakes();
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
     );
 
-    assert.deepEqual(calls.accounts[0], {
-        shortName: 'serhii',
-        authorName: 'Serhii',
-        authorUrl: 'https://t.me/serhii'
-    });
-    assert.deepEqual(savedTokens, ['new-token-1']);
-    assert.equal(calls.pages[0]?.accessToken, 'new-token-1');
+    assert.equal(outcome.status, 'created');
+    assert.ok('share' in outcome);
+    assert.equal(outcome.share.displayName, 'Serhii');
 });
 
-test('users without a username get the fallback short name and no author url', async () => {
-    const { repositories } = createFakes([createWish()]);
-    const { client, calls } = createClient();
-    const service = createShareService(repositories, client, () => now);
-
-    await service.publishWishlist(
-        createRequest({ telegraphAccessToken: null }, null)
+test('publishing again with the same name reports the existing share', async () => {
+    const { repositories } = createFakes({ stored: createShare() });
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
     );
 
-    assert.deepEqual(calls.accounts[0], {
-        shortName: 'wishlist',
-        authorName: 'Serhii'
-    });
-    assert.equal('authorUrl' in (calls.pages[0] ?? {}), false);
+    assert.equal(outcome.status, 'existing');
 });
 
-test('an invalid token is replaced once and the page is retried', async () => {
-    const { repositories, savedTokens } = createFakes([createWish()]);
-    const { client, calls } = createClient({
-        pageErrors: [
-            new TelegraphError('invalid', { code: 'ACCESS_TOKEN_INVALID' })
-        ]
-    });
-    const service = createShareService(repositories, client, () => now);
-
-    const outcome = await service.publishWishlist(createRequest());
-
-    assert.equal(outcome.status, 'published');
-    assert.equal(calls.accounts.length, 1);
-    assert.deepEqual(savedTokens, ['new-token-1']);
-    assert.deepEqual(
-        calls.pages.map(page => {
-            return page.accessToken;
-        }),
-        ['stored-token', 'new-token-1']
+test('publishing again with a changed name reports an update', async () => {
+    const { repositories } = createFakes({ stored: createShare() });
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii C.'
     );
+
+    assert.equal(outcome.status, 'updated');
+    assert.ok('share' in outcome);
+    assert.equal(outcome.share.displayName, 'Serhii C.');
 });
 
-test('a second invalid token failure is not retried again', async () => {
-    const { repositories } = createFakes([createWish()]);
-    const invalid = new TelegraphError('invalid', {
-        code: 'ACCESS_TOKEN_INVALID'
+test('publishing after a stop restores the share as created', async () => {
+    const { repositories } = createFakes({
+        stored: createShare({ revokedAt: now, displayName: null })
     });
-    const { client, calls } = createClient({
-        pageErrors: [invalid, invalid]
-    });
-    const service = createShareService(repositories, client, () => now);
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
+    );
+
+    assert.equal(outcome.status, 'created');
+    assert.ok('share' in outcome);
+    assert.equal(outcome.share.revokedAt, null);
+    assert.equal(outcome.share.publicId, '01j9z0000000000000000000ab');
+});
+
+test('publishing without visible wishes is empty and writes nothing', async () => {
+    const { repositories, calls } = createFakes({ shareableCount: 0 });
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
+    );
+
+    assert.deepEqual(outcome, { status: 'empty' });
+    assert.equal(calls.includes('publish'), false);
+});
+
+test('repository failures propagate from publish', async () => {
+    const { repositories } = createFakes({ failOn: 'publish' });
 
     await assert.rejects(
-        service.publishWishlist(createRequest()),
-        TelegraphError
+        createShareService(repositories, () => now).publish(OWNER, 'Serhii'),
+        /database unavailable/
     );
-    assert.equal(calls.pages.length, 2);
-    assert.equal(calls.accounts.length, 1);
 });
 
-test('other telegraph failures are not retried', async () => {
-    const { repositories } = createFakes([createWish()]);
-    const { client, calls } = createClient({
-        pageErrors: [new TelegraphError('flood', { code: 'FLOOD_WAIT_5' })]
+test('the entry state tells shared, unshared and empty owners apart', async () => {
+    const shared = createFakes({ stored: createShare() });
+    const unshared = createFakes();
+    const empty = createFakes({ shareableCount: 0 });
+    const stopped = createFakes({
+        stored: createShare({ revokedAt: now })
     });
-    const service = createShareService(repositories, client, () => now);
 
-    await assert.rejects(
-        service.publishWishlist(createRequest()),
-        TelegraphError
+    assert.equal(
+        await createShareService(shared.repositories).getEntryState(OWNER.id),
+        'shared'
     );
-    assert.equal(calls.pages.length, 1);
-    assert.equal(calls.accounts.length, 0);
+    assert.equal(
+        await createShareService(unshared.repositories).getEntryState(OWNER.id),
+        'unshared'
+    );
+    assert.equal(
+        await createShareService(empty.repositories).getEntryState(OWNER.id),
+        'empty'
+    );
+    assert.equal(
+        await createShareService(stopped.repositories).getEntryState(OWNER.id),
+        'unshared'
+    );
+});
+
+test('getShare returns only an active share', async () => {
+    const active = createFakes({ stored: createShare() });
+    const revoked = createFakes({ stored: createShare({ revokedAt: now }) });
+
+    assert.equal(
+        (await createShareService(active.repositories).getShare(OWNER.id))
+            ?.publicId,
+        '01j9z0000000000000000000ab'
+    );
+    assert.equal(
+        await createShareService(revoked.repositories).getShare(OWNER.id),
+        null
+    );
+});
+
+test('stop revokes an active share once', async () => {
+    const { repositories } = createFakes({ stored: createShare() });
+    const service = createShareService(repositories, () => now);
+
+    assert.equal(await service.stop(OWNER.id), true);
+    assert.equal(await service.stop(OWNER.id), false);
+});
+
+test('rotate replaces the public id of an active share only', async () => {
+    const active = createFakes({ stored: createShare() });
+    const none = createFakes();
+
+    assert.equal(
+        (await createShareService(active.repositories).rotate(OWNER.id))
+            ?.publicId,
+        'rotated'
+    );
+    assert.equal(
+        await createShareService(none.repositories).rotate(OWNER.id),
+        null
+    );
+});
+
+test('buildAuthorName prefers the full name and falls back to the username', () => {
+    assert.equal(
+        buildAuthorName({ first_name: 'Ann', last_name: 'Lee', username: 'a' }),
+        'Ann Lee'
+    );
+    assert.equal(buildAuthorName({ first_name: 'Ann' }), 'Ann');
+    assert.equal(buildAuthorName({ username: 'ann' }), '@ann');
+    assert.equal(buildAuthorName({}), '');
+});
+
+test('the public origin falls back to the production host only when missing', () => {
+    assert.equal(resolvePublicOrigin(undefined), DEFAULT_PUBLIC_ORIGIN);
+    assert.equal(
+        resolvePublicOrigin('https://branch-wishlist.chernenko.workers.dev'),
+        'https://branch-wishlist.chernenko.workers.dev'
+    );
 });

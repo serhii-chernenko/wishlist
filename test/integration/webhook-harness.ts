@@ -17,6 +17,7 @@ import { createD1Harness, createWorkerEnv, type D1Harness } from './d1-harness';
 
 export const BOT_TOKEN = '123456:integration-test-token';
 export const WEBHOOK_SECRET = 'integration-webhook-secret';
+export const WEBHOOK_ORIGIN = 'https://example.test';
 export const WEBHOOK_PATH = '/telegram/integration-path';
 export const DEFAULT_ADMIN_ID = '4242';
 export const SECRET_HEADER = 'X-Telegram-Bot-Api-Secret-Token';
@@ -38,11 +39,6 @@ export interface ApiCall {
     payload: Record<string, unknown>;
 }
 
-export interface TelegraphCall {
-    method: string;
-    body: Record<string, unknown>;
-}
-
 export interface SentMessage {
     chat_id: number | string;
     text: string;
@@ -57,11 +53,6 @@ export interface SentMessage {
 }
 
 export type ApiResponder = (call: ApiCall) => unknown;
-
-export type TelegraphResponder = (call: TelegraphCall) => {
-    status?: number;
-    body: Record<string, unknown>;
-} | null;
 
 export interface DeliverOptions {
     secret?: string;
@@ -127,21 +118,6 @@ const createDefaultApiResult = (call: ApiCall, messageCounter: number) => {
     }
 };
 
-const defaultTelegraphResponse = (call: TelegraphCall, counter: number) => {
-    if (call.method === 'createAccount') {
-        return { ok: true, result: { access_token: `token-${counter}` } };
-    }
-
-    if (call.method === 'createPage') {
-        return {
-            ok: true,
-            result: { url: `https://telegra.ph/wishlist-${counter}` }
-        };
-    }
-
-    throw new Error(`Unexpected telegra.ph method: ${call.method}`);
-};
-
 const getButtons = (message: SentMessage | undefined) => {
     return (message?.reply_markup?.inline_keyboard ?? []).flat();
 };
@@ -172,18 +148,15 @@ export const createWebhookHarness = async (
     await d1.applyMigrations();
 
     const apiCalls: ApiCall[] = [];
-    const telegraphCalls: TelegraphCall[] = [];
     const pendingTasks: Promise<unknown>[] = [];
     const sleepGates: Array<() => void> = [];
     const sleepRequests: number[] = [];
     const builders: UpdateBuilders = createUpdateBuilders(1);
     let apiResponder: ApiResponder | null = null;
-    let telegraphResponder: TelegraphResponder | null = null;
     let adminId: string | null =
         options.adminId === undefined ? DEFAULT_ADMIN_ID : options.adminId;
     let holdSleeps = true;
     let messageCounter = 1;
-    let telegraphCounter = 1;
 
     const loggedErrors: string[] = [];
     const originalConsole = {
@@ -226,35 +199,10 @@ export const createWebhookHarness = async (
     subtle.timingSafeEqual = (left: ArrayBuffer, right: ArrayBuffer) => {
         return timingSafeEqual(new Uint8Array(left), new Uint8Array(right));
     };
-    globalThis.fetch = (async (
-        input: Parameters<typeof fetch>[0],
-        init?: Parameters<typeof fetch>[1]
-    ) => {
-        const url = new URL(String(input));
-
-        if (url.origin !== 'https://api.telegra.ph') {
-            throw new Error(`Unexpected network call in tests: ${url.href}`);
-        }
-
-        const call: TelegraphCall = {
-            method: url.pathname.slice(1),
-            body: JSON.parse(String(init?.body ?? '{}')) as Record<
-                string,
-                unknown
-            >
-        };
-
-        telegraphCalls.push(call);
-        telegraphCounter += 1;
-
-        const override = telegraphResponder?.(call);
-        const body =
-            override?.body ?? defaultTelegraphResponse(call, telegraphCounter);
-
-        return new Response(JSON.stringify(body), {
-            status: override?.status ?? 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+        throw new Error(
+            `Unexpected network call in tests: ${new URL(String(input)).href}`
+        );
     }) as typeof fetch;
     Object.defineProperty(globalThis, 'scheduler', {
         configurable: true,
@@ -296,7 +244,7 @@ export const createWebhookHarness = async (
 
         return worker.fetch(
             new Request(
-                `https://example.test${deliverOptions.path ?? WEBHOOK_PATH}`,
+                `${WEBHOOK_ORIGIN}${deliverOptions.path ?? WEBHOOK_PATH}`,
                 {
                     method: 'POST',
                     headers: {
@@ -476,11 +424,9 @@ export const createWebhookHarness = async (
         await settle();
         await d1.clearApplicationTables();
         apiCalls.length = 0;
-        telegraphCalls.length = 0;
         loggedErrors.length = 0;
         sleepRequests.length = 0;
         apiResponder = null;
-        telegraphResponder = null;
         adminId =
             options.adminId === undefined ? DEFAULT_ADMIN_ID : options.adminId;
         clearCachedBotInfo();
@@ -505,7 +451,6 @@ export const createWebhookHarness = async (
     return {
         d1: d1 as D1Harness,
         apiCalls,
-        telegraphCalls,
         loggedErrors,
         sleepRequests,
         builders,
@@ -528,9 +473,6 @@ export const createWebhookHarness = async (
         createUser: createTestUser,
         respondToApi(responder: ApiResponder | null) {
             apiResponder = responder;
-        },
-        respondToTelegraph(responder: TelegraphResponder | null) {
-            telegraphResponder = responder;
         },
         setAdminId(next: string | null) {
             adminId = next;

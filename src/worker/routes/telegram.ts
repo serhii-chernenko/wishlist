@@ -37,7 +37,8 @@ export interface TelegramRouteDependencies {
         env: WorkerBindings,
         update: RuntimeTelegramUpdate,
         botKey: string,
-        context?: TelemetryContext
+        context?: TelemetryContext,
+        publicOrigin?: string
     ) => Promise<void>;
     secretsMatch?: SecretMatcher;
     createUpdateLedger?: (env: WorkerBindings) => TelegramUpdateLedger;
@@ -361,7 +362,8 @@ export const handleUpdateWithWishlistBot = async (
         env: WorkerBindings,
         dependencies: CreateWishlistBotDependencies
     ) => WishlistBot = createWishlistBot,
-    context?: TelemetryContext
+    context?: TelemetryContext,
+    publicOrigin?: string
 ) => {
     const telemetry: WishlistBotTelemetry = {
         botActionCompleted(input) {
@@ -379,6 +381,7 @@ export const handleUpdateWithWishlistBot = async (
     };
     const bot = createBot(env, {
         telemetry,
+        ...(publicOrigin === undefined ? {} : { publicOrigin }),
         ...(context && {
             waitUntil: (promise: Promise<unknown>) => {
                 context.waitUntil(promise);
@@ -415,13 +418,14 @@ export const registerTelegramRoutes = (
 ) => {
     const handleUpdate =
         dependencies.handleUpdate ??
-        ((env, update, botKey, context) => {
+        ((env, update, botKey, context, publicOrigin) => {
             return handleUpdateWithWishlistBot(
                 env,
                 update,
                 botKey,
                 createWishlistBot,
-                context
+                context,
+                publicOrigin
             );
         });
     const secretsMatch = dependencies.secretsMatch ?? compareSecrets;
@@ -682,7 +686,13 @@ export const registerTelegramRoutes = (
         let dispatchError: unknown;
 
         try {
-            await handleUpdate(c.env, payload, botKey, getTelemetryContext());
+            await handleUpdate(
+                c.env,
+                payload,
+                botKey,
+                getTelemetryContext(),
+                new URL(c.req.url).origin
+            );
         } catch (error) {
             dispatchFailed = true;
             dispatchError = error;

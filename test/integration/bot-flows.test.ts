@@ -8,6 +8,10 @@ import {
     getLatestReleaseVersion,
     renderReleaseNotes
 } from '../../src/bot/content/releases';
+import {
+    buildShareUrl,
+    isValidSharePublicId
+} from '../../src/web/share/public-id';
 import { createTestUser, type TestUser } from '../fixtures/telegram';
 import { seedGeneratedWishes } from './d1-harness';
 import {
@@ -16,6 +20,7 @@ import {
     createWebhookHarness,
     DEFAULT_ADMIN_ID,
     urlsOf,
+    WEBHOOK_ORIGIN,
     type SentMessage,
     type WebhookHarness
 } from './webhook-harness';
@@ -30,8 +35,14 @@ interface UserRow {
     telegram_language_code: string | null;
     release_version: string;
     wishlist_filter: number | null;
-    telegraph_access_token: string | null;
     payments: string | null;
+}
+
+interface ShareRow {
+    user_id: number;
+    public_id: string;
+    display_name: string | null;
+    revoked_at: number | null;
 }
 
 interface WishRow {
@@ -715,106 +726,303 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(lastInlineData().includes('wl:p:10'), false);
         });
 
-        it('shares through telegra.ph, stores the token and reuses it', async () => {
+        const readShare = (ownerId: number) => {
+            return webhook.queryOne<ShareRow>(
+                'SELECT * FROM wishlist_shares WHERE user_id = ?',
+                ownerId
+            );
+        };
+        const shareUrlOf = (publicId: string) => {
+            return buildShareUrl(WEBHOOK_ORIGIN, publicId);
+        };
+        const seedSharedOwner = async () => {
             const owner = await webhook.registerUser(alice, {
                 payments: 'Card 1234 5678'
             });
 
             await webhook.createWish(owner, 'Bicycle', { price: 1000 });
             await webhook.createWish(owner, 'Secret', { hidden: true });
+
+            return owner;
+        };
+
+        it('asks for consent with the name and host before sharing', async () => {
+            const owner = await seedSharedOwner();
+
             await tap(alice, 'wl:share');
 
-            assert.deepEqual(
-                webhook.telegraphCalls.map(call => {
-                    return call.method;
-                }),
-                ['createAccount', 'createPage']
+            const message = webhook.lastMessage();
+
+            assert.equal(
+                message.text,
+                LL.wishlist.share.consent({
+                    name: 'Alice',
+                    host: new URL(WEBHOOK_ORIGIN).host
+                })
             );
+            assert.deepEqual(buttonTextsOf(message), [
+                LL.wishlist.share.actions.publish(),
+                LL.actions.back()
+            ]);
+            assert.deepEqual(callbackDataOf(message), ['wl:share:y', 'n:wl']);
+            assert.equal(await readShare(owner.id), null);
+        });
 
-            const [account, page] = webhook.telegraphCalls;
+        it('publishes after consent with a URL built from the webhook origin', async () => {
+            const owner = await seedSharedOwner();
 
-            assert.equal(account?.body.short_name, 'alice');
-            assert.equal(account?.body.author_url, 'https://t.me/alice');
-            assert.equal(typeof page?.body.content, 'string');
-            assert.ok(String(page?.body.content).includes('Bicycle'));
-            assert.equal(String(page?.body.content).includes('Secret'), false);
-            assert.ok(String(page?.body.content).includes('Card 1234 5678'));
-            assert.equal(page?.body.title, LL.share.title({ name: 'Alice' }));
-            assert.ok(
-                webhook.messageTexts().includes(
-                    LL.wishlist.share.success({
-                        url: 'https://telegra.ph/wishlist-3'
-                    })
+            await tap(alice, 'wl:share');
+            await tap(alice, 'wl:share:y');
+
+            const share = await readShare(owner.id);
+
+            assert.ok(share);
+            assert.ok(isValidSharePublicId(share.public_id));
+            assert.equal(share.display_name, 'Alice');
+            assert.equal(share.revoked_at, null);
+
+            const url = shareUrlOf(share.public_id);
+            const message = webhook.lastMessage();
+
+            assert.equal(message.text, LL.wishlist.share.ready({ url }));
+            assert.deepEqual(buttonTextsOf(message), [
+                LL.wishlist.share.actions.open(),
+                LL.wishlist.share.actions.send(),
+                LL.wishlist.share.actions.newLink(),
+                LL.wishlist.share.actions.stop(),
+                LL.actions.back()
+            ]);
+            assert.deepEqual(urlsOf(message), [
+                url,
+                `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(LL.wishlist.share.sendText())}`
+            ]);
+            assert.deepEqual(callbackDataOf(message), [
+                'wl:share:new',
+                'wl:share:stop',
+                'n:wl'
+            ]);
+            assert.equal(
+                await countWhere('wishlist_shares', `user_id = ${owner.id}`),
+                1
+            );
+        });
+
+        it('returns the same URL when share is pressed again', async () => {
+            const owner = await seedSharedOwner();
+
+            await tap(alice, 'wl:share');
+            await tap(alice, 'wl:share:y');
+
+            const first = await readShare(owner.id);
+
+            assert.ok(first);
+            webhook.clearApiCalls();
+            await tap(alice, 'wl:share');
+
+            const second = await readShare(owner.id);
+
+            assert.equal(second?.public_id, first.public_id);
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.wishlist.share.ready({
+                    url: shareUrlOf(first.public_id)
+                })
+            );
+            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'wl:share:new',
+                'wl:share:stop',
+                'n:wl'
+            ]);
+        });
+
+        it('refreshes the stored display name silently on the next press', async () => {
+            const owner = await seedSharedOwner();
+
+            await tap(alice, 'wl:share');
+            await tap(alice, 'wl:share:y');
+            await webhook.send(
+                webhook.builders.callback(
+                    createTestUser(alice.id, {
+                        first_name: 'Alicia',
+                        username: 'alice'
+                    }),
+                    'wl:share'
                 )
             );
+
+            const share = await readShare(owner.id);
+
+            assert.equal(share?.display_name, 'Alicia');
             assert.equal(
-                (await readUser(alice.id))?.telegraph_access_token,
-                'token-2'
-            );
-
-            webhook.telegraphCalls.length = 0;
-            await tap(alice, 'wl:share');
-
-            assert.deepEqual(
-                webhook.telegraphCalls.map(call => {
-                    return call.method;
-                }),
-                ['createPage']
+                webhook.lastMessage().text,
+                LL.wishlist.share.ready({
+                    url: shareUrlOf(share?.public_id ?? '')
+                })
             );
         });
 
-        it('recreates the telegra.ph account once when the token is invalid', async () => {
-            const owner = await webhook.registerUser(alice, {
-                telegraphAccessToken: 'stale-token'
-            });
-            let rejected = false;
+        it('stops sharing after confirmation and re-sharing restores the same id', async () => {
+            const owner = await seedSharedOwner();
 
-            await webhook.createWish(owner, 'Bicycle');
-            webhook.respondToTelegraph(call => {
-                if (call.method === 'createPage' && !rejected) {
-                    rejected = true;
-
-                    return {
-                        body: { ok: false, error: 'ACCESS_TOKEN_INVALID' }
-                    };
-                }
-
-                return null;
-            });
             await tap(alice, 'wl:share');
+            await tap(alice, 'wl:share:y');
 
-            assert.deepEqual(
-                webhook.telegraphCalls.map(call => {
-                    return call.method;
-                }),
-                ['createPage', 'createAccount', 'createPage']
+            const shared = await readShare(owner.id);
+
+            assert.ok(shared);
+            webhook.clearApiCalls();
+            await tap(alice, 'wl:share:stop');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.wishlist.share.stopConfirm()
             );
-            assert.notEqual(
-                (await readUser(alice.id))?.telegraph_access_token,
-                'stale-token'
+            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'wl:share:stop:y',
+                'wl:share'
+            ]);
+            assert.equal((await readShare(owner.id))?.revoked_at, null);
+
+            await tap(alice, 'wl:share:stop:y');
+
+            const stopped = await readShare(owner.id);
+
+            assert.notEqual(stopped?.revoked_at, null);
+            assert.equal(stopped?.display_name, null);
+            assert.ok(
+                webhook.messageTexts().includes(LL.wishlist.share.stopped())
+            );
+            assert.ok(
+                webhook.messageTexts().includes(LL.wishlist.filled.after())
+            );
+
+            webhook.clearApiCalls();
+            await tap(alice, 'wl:share');
+            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'wl:share:y',
+                'n:wl'
+            ]);
+            await tap(alice, 'wl:share:y');
+
+            const restored = await readShare(owner.id);
+
+            assert.equal(restored?.public_id, shared.public_id);
+            assert.equal(restored?.revoked_at, null);
+            assert.equal(restored?.display_name, 'Alice');
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.wishlist.share.ready({
+                    url: shareUrlOf(shared.public_id)
+                })
             );
         });
 
-        it('reports an empty wishlist on share without calling telegra.ph', async () => {
-            await webhook.registerUser(alice);
+        it('replaces the public id after confirming a new link', async () => {
+            const owner = await seedSharedOwner();
+
+            await tap(alice, 'wl:share');
+            await tap(alice, 'wl:share:y');
+
+            const before = await readShare(owner.id);
+
+            assert.ok(before);
+            webhook.clearApiCalls();
+            await tap(alice, 'wl:share:new');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.wishlist.share.newConfirm()
+            );
+            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'wl:share:new:y',
+                'wl:share'
+            ]);
+            assert.equal(
+                (await readShare(owner.id))?.public_id,
+                before.public_id
+            );
+
+            await tap(alice, 'wl:share:new:y');
+
+            const after = await readShare(owner.id);
+
+            assert.ok(after);
+            assert.notEqual(after.public_id, before.public_id);
+            assert.ok(isValidSharePublicId(after.public_id));
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.wishlist.share.rotated({
+                    url: shareUrlOf(after.public_id)
+                })
+            );
+        });
+
+        it('reports an empty wishlist on share without creating a row', async () => {
+            const owner = await webhook.registerUser(alice);
+
             await tap(alice, 'wl:share');
 
             assert.ok(
                 webhook.messageTexts().includes(LL.wishlist.share.empty())
             );
-            assert.equal(webhook.telegraphCalls.length, 0);
+            assert.equal(await readShare(owner.id), null);
+
+            await tap(alice, 'wl:share:y');
+
+            assert.equal(await readShare(owner.id), null);
         });
 
-        it('tells the user when telegra.ph fails and keeps the bot alive', async () => {
+        it('reports an empty wishlist when every wish is hidden', async () => {
             const owner = await webhook.registerUser(alice);
 
-            await webhook.createWish(owner, 'Bicycle');
-            webhook.respondToTelegraph(() => {
-                return { status: 500, body: { ok: false, error: 'BOOM' } };
-            });
+            await webhook.createWish(owner, 'Secret', { hidden: true });
             await tap(alice, 'wl:share');
 
+            assert.ok(
+                webhook.messageTexts().includes(LL.wishlist.share.empty())
+            );
+            assert.equal(await readShare(owner.id), null);
+        });
+
+        it('ignores share callbacks from a guest', async () => {
+            const guest = createTestUser(110, { first_name: 'Guest' });
+
+            for (const data of [
+                'wl:share',
+                'wl:share:y',
+                'wl:share:stop',
+                'wl:share:stop:y',
+                'wl:share:new',
+                'wl:share:new:y'
+            ]) {
+                await tap(guest, data);
+            }
+
+            assert.equal(await countWhere('wishlist_shares'), 0);
+            assert.equal(
+                webhook.messageTexts().some(text => {
+                    return text.includes('wishlist.chernenko.dev');
+                }),
+                false
+            );
+        });
+
+        it('tells the user when saving the share fails and keeps the bot alive', async () => {
+            await seedSharedOwner();
+            await webhook.d1.env.DB.exec(
+                "CREATE TRIGGER reject_share_insert BEFORE INSERT ON wishlist_shares BEGIN SELECT RAISE(ABORT, 'rejected'); END"
+            );
+
+            try {
+                await tap(alice, 'wl:share:y');
+            } finally {
+                await webhook.d1.env.DB.exec(
+                    'DROP TRIGGER reject_share_insert'
+                );
+            }
+
             assert.ok(webhook.messageTexts().includes(LL.errors.unknown()));
+            assert.equal(await countWhere('wishlist_shares'), 0);
         });
     });
 

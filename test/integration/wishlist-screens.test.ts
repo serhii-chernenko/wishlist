@@ -104,7 +104,13 @@ describe('wishlist screens on D1', () => {
 
     const createRequest = (
         user: UserRecord,
-        options: { isAdmin?: boolean; session?: SessionState } = {}
+        options: {
+            isAdmin?: boolean;
+            session?: SessionState;
+            publicOrigin?: string;
+            actorName?: string;
+            repos?: BotRequest['repos'];
+        } = {}
     ) => {
         const events: SentEvent[] = [];
         const deferred: Array<{ task: () => Promise<void>; delayMs: number }> =
@@ -125,9 +131,12 @@ describe('wishlist screens on D1', () => {
             actor: {
                 id: user.telegramId,
                 is_bot: false,
-                first_name: 'Test',
+                first_name: options.actorName ?? 'Test',
                 username: user.username ?? undefined
             },
+            ...(options.publicOrigin === undefined
+                ? {}
+                : { publicOrigin: options.publicOrigin }),
             user,
             session: options.session ?? {
                 v: 1,
@@ -135,7 +144,7 @@ describe('wishlist screens on D1', () => {
                 find: null
             },
             isAdmin: options.isAdmin ?? false,
-            repos: harness.repositories,
+            repos: options.repos ?? harness.repositories,
             services: {} as BotServices,
             telemetry: {
                 botActionCompleted: (input: Record<string, unknown>) => {
@@ -424,6 +433,313 @@ describe('wishlist screens on D1', () => {
                 )?.c,
                 0
             );
+        });
+    });
+
+    describe('share', () => {
+        const ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
+
+        const createSharingOwner = async () => {
+            const owner = await createUser({ username: 'sharer' });
+
+            await run(
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'Bicycle',
+                    new Date()
+                )
+            );
+
+            return owner;
+        };
+
+        const readShareRow = (ownerId: number) => {
+            return harness.env.DB.prepare(
+                'SELECT * FROM wishlist_shares WHERE user_id = ?'
+            )
+                .bind(ownerId)
+                .first<{
+                    public_id: string;
+                    display_name: string | null;
+                    revoked_at: number | null;
+                }>();
+        };
+
+        it('shows the consent screen with the name and the request host', async () => {
+            const owner = await createSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN,
+                actorName: 'Ann <b>'
+            });
+
+            await dispatch(request, 'wl:share');
+
+            const consent = lastText(events);
+
+            assert.equal(
+                consent.html,
+                getMessages('uk').wishlist.share.consent({
+                    name: 'Ann &lt;b&gt;',
+                    host: 'preview-wishlist.chernenko.workers.dev'
+                })
+            );
+            assert.deepEqual(callbackDataOf(consent.keyboard), [
+                'wl:share:y',
+                'n:wl'
+            ]);
+            assert.equal(await readShareRow(owner.id), null);
+            assert.deepEqual(telemetry, []);
+        });
+
+        it('falls back to the production origin when the request has none', async () => {
+            const owner = await createSharingOwner();
+            const { request, events } = createRequest(owner);
+
+            await dispatch(request, 'wl:share');
+
+            assert.ok(lastText(events).html.includes('wishlist.chernenko.dev'));
+
+            await dispatch(request, 'wl:share:y');
+
+            const row = await readShareRow(owner.id);
+
+            assert.ok(
+                lastText(events).html.includes(
+                    `https://wishlist.chernenko.dev/w/${row?.public_id}`
+                )
+            );
+        });
+
+        it('publishes, then reports existing for later presses', async () => {
+            const owner = await createSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+
+            const row = await readShareRow(owner.id);
+            const url = `${ORIGIN}/w/${row?.public_id}`;
+
+            assert.ok(row);
+            assert.equal(row.display_name, 'Test');
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.share.ready({ url })
+            );
+
+            const buttons = buttonsOf(lastText(events).keyboard);
+
+            assert.deepEqual(
+                buttons.flatMap(button => {
+                    return 'url' in button ? [button.url] : [];
+                }),
+                [
+                    url,
+                    `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(getMessages('uk').wishlist.share.sendText())}`
+                ]
+            );
+
+            await dispatch(request, 'wl:share');
+
+            assert.equal(
+                (await readShareRow(owner.id))?.public_id,
+                row.public_id
+            );
+            assert.deepEqual(telemetry, [
+                { action: 'wishlist_shared', result: 'published' },
+                { action: 'wishlist_shared', result: 'existing' }
+            ]);
+        });
+
+        it('refreshes a changed display name when share is pressed again', async () => {
+            const owner = await createSharingOwner();
+
+            await dispatch(
+                createRequest(owner, { publicOrigin: ORIGIN }).request,
+                'wl:share:y'
+            );
+            await dispatch(
+                createRequest(owner, {
+                    publicOrigin: ORIGIN,
+                    actorName: 'Renamed'
+                }).request,
+                'wl:share'
+            );
+
+            assert.equal(
+                (await readShareRow(owner.id))?.display_name,
+                'Renamed'
+            );
+        });
+
+        it('stops after confirmation and re-renders the wishlist', async () => {
+            const owner = await createSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+            await dispatch(request, 'wl:share:stop');
+
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.share.stopConfirm()
+            );
+            assert.equal((await readShareRow(owner.id))?.revoked_at, null);
+
+            await dispatch(request, 'wl:share:stop:y');
+
+            const row = await readShareRow(owner.id);
+
+            assert.notEqual(row?.revoked_at, null);
+            assert.equal(row?.display_name, null);
+            assert.ok(
+                events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html ===
+                            getMessages('uk').wishlist.share.stopped()
+                    );
+                })
+            );
+            assert.ok(
+                events.some(event => {
+                    return event.kind === 'wish';
+                })
+            );
+            assert.deepEqual(telemetry.at(-1), {
+                action: 'wishlist_share_stopped',
+                result: 'success'
+            });
+        });
+
+        it('rotates the public id after confirmation', async () => {
+            const owner = await createSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+
+            const before = await readShareRow(owner.id);
+
+            await dispatch(request, 'wl:share:new');
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.share.newConfirm()
+            );
+            assert.equal(
+                (await readShareRow(owner.id))?.public_id,
+                before?.public_id
+            );
+
+            await dispatch(request, 'wl:share:new:y');
+
+            const after = await readShareRow(owner.id);
+
+            assert.notEqual(after?.public_id, before?.public_id);
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.share.rotated({
+                    url: `${ORIGIN}/w/${after?.public_id}`
+                })
+            );
+            assert.deepEqual(telemetry.at(-1), {
+                action: 'wishlist_share_rotated',
+                result: 'success'
+            });
+        });
+
+        it('shows the consent screen when rotating without an active share', async () => {
+            const owner = await createSharingOwner();
+            const { request, events } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:new:y');
+
+            assert.deepEqual(callbackDataOf(lastText(events).keyboard), [
+                'wl:share:y',
+                'n:wl'
+            ]);
+        });
+
+        it('reports an empty list without writing a share', async () => {
+            const owner = await createUser();
+            const { request, events, telemetry } = createRequest(owner);
+
+            await dispatch(request, 'wl:share');
+            await dispatch(request, 'wl:share:y');
+
+            assert.ok(
+                events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html === getMessages('uk').wishlist.share.empty()
+                    );
+                })
+            );
+            assert.equal(await readShareRow(owner.id), null);
+            assert.deepEqual(telemetry, [
+                { action: 'wishlist_shared', result: 'empty' },
+                { action: 'wishlist_shared', result: 'empty' }
+            ]);
+        });
+
+        it('rejects every share callback from a guest', async () => {
+            const owner = await createUser();
+            const guest = createRequest(owner);
+
+            guest.request.user = null;
+
+            for (const data of [
+                'wl:share',
+                'wl:share:y',
+                'wl:share:stop',
+                'wl:share:stop:y',
+                'wl:share:new',
+                'wl:share:new:y'
+            ]) {
+                await assert.rejects(dispatch(guest.request, data), {
+                    name: 'BotUserError'
+                });
+            }
+
+            assert.equal(guest.events.length, 0);
+        });
+
+        it('records share_failed and keeps the bot alive when saving fails', async () => {
+            const owner = await createSharingOwner();
+            const failing = {
+                ...harness.repositories,
+                shares: {
+                    ...harness.repositories.shares,
+                    publish: () => {
+                        return Effect.fail(new Error('database unavailable'));
+                    }
+                }
+            } as unknown as BotRequest['repos'];
+            const { request, events, telemetry } = createRequest(owner, {
+                repos: failing
+            });
+
+            await dispatch(request, 'wl:share:y');
+
+            assert.deepEqual(telemetry[0], {
+                action: 'wishlist_shared',
+                result: 'failed'
+            });
+            assert.equal(telemetry[1]?.event, 'share_failed');
+            assert.ok(
+                events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html === getMessages('uk').errors.unknown()
+                    );
+                })
+            );
+            assert.equal(await readShareRow(owner.id), null);
         });
     });
 

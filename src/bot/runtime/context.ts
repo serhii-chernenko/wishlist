@@ -30,6 +30,7 @@ export interface RequestSeed {
     actor: User;
     user: UserRecord | null;
     sessionLanguage: AppLocale | null;
+    publicOrigin?: string | undefined;
     repos: Repositories;
     services: BotServices;
     telemetry: WishlistBotTelemetry;
@@ -55,6 +56,9 @@ export const createBotRequest = (
         actor: seed.actor,
         user: seed.user,
         sessionLanguage: seed.sessionLanguage,
+        ...(seed.publicOrigin === undefined
+            ? {}
+            : { publicOrigin: seed.publicOrigin }),
         get session() {
             return holder.current;
         },

@@ -1,5 +1,9 @@
 import { Hono } from 'hono';
 
+import {
+    registerShareRoutes,
+    type ShareRouteDependencies
+} from '../web/routes';
 import type { WorkerBindings } from './env';
 import {
     registerAdminRoutes,
@@ -15,7 +19,8 @@ export type WorkerApp = Hono<{ Bindings: WorkerBindings }>;
 
 export const createApp = (
     telegramDependencies: TelegramRouteDependencies = {},
-    adminDependencies: AdminRouteDependencies = {}
+    adminDependencies: AdminRouteDependencies = {},
+    shareDependencies: ShareRouteDependencies = {}
 ) => {
     const app = new Hono<{ Bindings: WorkerBindings }>();
 
@@ -34,6 +39,7 @@ export const createApp = (
         }),
         ...adminDependencies
     });
+    registerShareRoutes(app, shareDependencies);
     registerTelegramRoutes(app, telegramDependencies);
 
     return app;

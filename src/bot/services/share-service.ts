@@ -1,39 +1,25 @@
-import type { Repositories, UserRecord } from '../../db/repositories';
-import type { TranslationFunctions } from '../../i18n/i18n-types';
-import {
-    createTelegraphClient,
-    TELEGRAPH_INVALID_TOKEN_ERROR,
-    TelegraphError,
-    type TelegraphClient
-} from '../telegraph/client';
-import {
-    buildShareContent,
-    type ShareDonateLink
-} from '../telegraph/share-content';
+import type {
+    Repositories,
+    ShareRecord,
+    UserRecord
+} from '../../db/repositories';
 import { runRepository } from './run-repository';
 
-type ShareRepositories = Pick<Repositories, 'wishes' | 'users'>;
+type ShareRepositories = Pick<Repositories, 'wishes' | 'shares'>;
 
-export const FALLBACK_TELEGRAPH_SHORT_NAME = 'wishlist';
+export const DEFAULT_PUBLIC_ORIGIN = 'https://wishlist.chernenko.dev';
 
-export interface ShareAuthor {
-    username: string | null;
-    displayName: string;
-}
+export type SharePublishStatus = 'created' | 'existing' | 'updated';
 
-export interface ShareRequest {
-    user: Pick<UserRecord, 'id' | 'payments' | 'telegraphAccessToken'>;
-    author: ShareAuthor;
-    LL: TranslationFunctions;
-    formatMoney: (value: number) => string;
-    formatDate: (value: Date) => string;
-    botUrl: string;
-    donateLinks: readonly ShareDonateLink[];
-}
+export type ShareEntryState = 'empty' | 'unshared' | 'shared';
 
-export type ShareOutcome =
-    | { status: 'published'; url: string }
-    | { status: 'empty' };
+export type SharePublishOutcome =
+    | { status: 'empty' }
+    | { status: SharePublishStatus; share: ShareRecord };
+
+export const resolvePublicOrigin = (origin: string | undefined) => {
+    return origin ?? DEFAULT_PUBLIC_ORIGIN;
+};
 
 export const buildAuthorName = (person: {
     username?: string | undefined;
@@ -53,88 +39,62 @@ export const buildAuthorName = (person: {
 
 export const createShareService = (
     repositories: ShareRepositories,
-    client: TelegraphClient = createTelegraphClient(),
     clock: () => Date = () => new Date()
 ) => {
-    const createAccount = async (userId: number, author: ShareAuthor) => {
-        const accessToken = await client.createAccount({
-            shortName: author.username ?? FALLBACK_TELEGRAPH_SHORT_NAME,
-            authorName: author.displayName,
-            ...(author.username
-                ? { authorUrl: `https://t.me/${author.username}` }
-                : {})
-        });
-
-        await runRepository(
-            repositories.users.setTelegraphToken(userId, accessToken, clock())
+    const hasShareableWishes = async (userId: number) => {
+        const wishes = await runRepository(
+            repositories.wishes.listShareable(userId)
         );
 
-        return accessToken;
+        return wishes.length > 0;
+    };
+
+    const getShare = (userId: number) => {
+        return runRepository(repositories.shares.findActiveByUserId(userId));
     };
 
     return {
-        async publishWishlist(request: ShareRequest): Promise<ShareOutcome> {
-            const wishes = await runRepository(
-                repositories.wishes.listShareable(request.user.id)
-            );
+        hasShareableWishes,
+        getShare,
+        async getEntryState(userId: number): Promise<ShareEntryState> {
+            if ((await getShare(userId)) !== null) {
+                return 'shared';
+            }
 
-            if (wishes.length === 0) {
+            return (await hasShareableWishes(userId)) ? 'unshared' : 'empty';
+        },
+        async publish(
+            user: Pick<UserRecord, 'id'>,
+            displayName: string
+        ): Promise<SharePublishOutcome> {
+            if (!(await hasShareableWishes(user.id))) {
                 return { status: 'empty' };
             }
 
-            const { nodes } = buildShareContent({
-                LL: request.LL,
-                wishes,
-                payments: request.user.payments,
-                formatMoney: request.formatMoney,
-                formatDate: request.formatDate,
-                botUrl: request.botUrl,
-                donateLinks: request.donateLinks
-            });
-            const publishWith = (accessToken: string) => {
-                return client.createPage({
-                    accessToken,
-                    title: request.LL.share.title({
-                        name: request.author.displayName
-                    }),
-                    authorName: request.author.displayName,
-                    ...(request.author.username
-                        ? {
-                              authorUrl: `https://t.me/${request.author.username}`
-                          }
-                        : {}),
-                    content: nodes
-                });
-            };
-            const existingToken = request.user.telegraphAccessToken;
-            const initialToken =
-                existingToken ||
-                (await createAccount(request.user.id, request.author));
-
-            try {
-                return {
-                    status: 'published',
-                    url: (await publishWith(initialToken)).url
-                };
-            } catch (error) {
-                const isInvalidToken =
-                    error instanceof TelegraphError &&
-                    error.code === TELEGRAPH_INVALID_TOKEN_ERROR;
-
-                if (!isInvalidToken) {
-                    throw error;
-                }
-            }
-
-            const recreatedToken = await createAccount(
-                request.user.id,
-                request.author
+            const previous = await runRepository(
+                repositories.shares.findActiveByUserId(user.id)
+            );
+            const share = await runRepository(
+                repositories.shares.publish(user.id, displayName, clock())
             );
 
+            if (previous === null) {
+                return { status: 'created', share };
+            }
+
             return {
-                status: 'published',
-                url: (await publishWith(recreatedToken)).url
+                status:
+                    previous.displayName === share.displayName
+                        ? 'existing'
+                        : 'updated',
+                share
             };
+        },
+        stop(userId: number) {
+            return runRepository(repositories.shares.revoke(userId, clock()));
+        },
+        rotate(userId: number) {
+            return runRepository(repositories.shares.rotate(userId, clock()));
         }
     };
 };

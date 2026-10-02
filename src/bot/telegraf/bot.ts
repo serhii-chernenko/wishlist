@@ -80,6 +80,7 @@ export interface WishlistBotDependencies {
     waitUntil?: WaitUntil | undefined;
     sleep?: Sleep | undefined;
     repositories?: Repositories | undefined;
+    publicOrigin?: string | undefined;
 }
 
 const SCREEN_MODULES: readonly ScreenExports[] = [
@@ -267,6 +268,7 @@ const dispatchUpdate = async (scope: UpdateScope, runtime: UpdateRuntime) => {
             actor,
             user,
             sessionLanguage: session.language,
+            publicOrigin: runtime.deps.publicOrigin,
             repos,
             services,
             telemetry: runtime.telemetry,

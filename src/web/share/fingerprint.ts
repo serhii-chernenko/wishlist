@@ -1,0 +1,65 @@
+import type { PublicShareFingerprint } from '../../db/repositories';
+import type { SharePageLanguage } from './public-id';
+
+export const FALLBACK_DEPLOY_ID = 'dev';
+
+const FINGERPRINT_BYTES = 16;
+
+const bytesToHex = (bytes: Uint8Array) => {
+    return Array.from(bytes, byte => {
+        return byte.toString(16).padStart(2, '0');
+    }).join('');
+};
+
+export const getDeployId = (env: {
+    CF_VERSION_METADATA?: Partial<WorkerVersionMetadata> | undefined;
+}) => {
+    const deployId = env.CF_VERSION_METADATA?.id?.trim();
+
+    return deployId ? deployId : FALLBACK_DEPLOY_ID;
+};
+
+export const computeShareFingerprint = async (
+    deployId: string,
+    language: SharePageLanguage,
+    share: PublicShareFingerprint
+) => {
+    const fields = [
+        deployId,
+        language,
+        share.publicId,
+        share.shareUpdatedAt.getTime(),
+        share.usernameSearchable ? share.username : null,
+        share.payments,
+        share.currency,
+        share.visibleCount,
+        share.lastUpdatedAt?.getTime() ?? null
+    ];
+    const digest = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(JSON.stringify(fields))
+    );
+
+    return bytesToHex(new Uint8Array(digest).slice(0, FINGERPRINT_BYTES));
+};
+
+export const etagMatches = (
+    ifNoneMatch: string | null | undefined,
+    fingerprint: string
+) => {
+    if (!ifNoneMatch) {
+        return false;
+    }
+
+    return ifNoneMatch.split(',').some(candidate => {
+        const trimmed = candidate.trim();
+
+        if (trimmed === '*') {
+            return true;
+        }
+
+        return (
+            trimmed.replace(/^W\//, '').replace(/^"|"$/g, '') === fingerprint
+        );
+    });
+};
