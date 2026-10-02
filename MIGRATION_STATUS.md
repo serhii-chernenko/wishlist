@@ -44,38 +44,39 @@ Decisions:
 
 - [x] D1 `wishlist-production` `6d194ed1-4446-4092-af68-606a33601801` (eeur)
 - [x] D1 `wishlist-preview` `3ab03825-4610-4164-9bec-2c47d00ac73e` (eeur)
-- [x] Queues `wishlist-release-announcements` (delivery paused),
+- [x] Queues `wishlist-release-announcements` (delivery paused, 14 day retention),
       `wishlist-release-announcements-dlq`, `wishlist-preview-release-announcements`
 - [x] Local secrets files `.dev.vars`, `.dev.vars.preview`, `.dev.vars.production`,
       `env/.env.d1`, `env/.env.mongo` (all git-ignored)
 - [x] Preview bot `@InevixTestBot`, production bot `@wishlist_ua_bot`
 - [x] Mongo Atlas reachable locally (299 users, 1202 wishes, 19 gives on 2026-10-02)
-- [ ] New Relic `Log_wishlist` data partition
-- [ ] Workers Builds connected to `serhii-chernenko/wishlist`
-- [ ] Worker Previews base config secrets
+- [ ] New Relic `Log_wishlist` data partition (needs a New Relic login; events go to `Log` until then)
+- [x] Workers Builds connected to `serhii-chernenko/wishlist` (script tag `21c2265d1d9f4a7b91f45ee2c28d79e9`)
+- [x] Worker Previews base config secrets
+- [x] API tokens `wishlist-builds-d1-production` and `wishlist-builds-d1-preview` (D1 Edit)
 
 ### Implementation
 
-- [ ] WP1 Scaffold, tooling, CI, legacy removal
-- [ ] WP2 D1 schema, repositories, migrations, Mongo import and reconciliation
-- [ ] WP3 Worker runtime, webhook, ledger, queues, observability, ops scripts
-- [ ] WP4 Bot runtime, router, session store, simple screens
-- [ ] WP5 Wishlist domain screens, telegra.ph sharing
-- [ ] WP6 i18n (uk, en), releases tooling, changesets, CHANGELOG history
-- [ ] WP7 End-to-end tests and operations docs
-- [ ] WP8 Polish translation
-- [ ] Independent review and fixes
-- [ ] `pnpm run check` green
+- [x] WP1 Scaffold, tooling, CI, legacy removal
+- [x] WP2 D1 schema, repositories, migrations, Mongo import and reconciliation
+- [x] WP3 Worker runtime, webhook, ledger, queues, observability, ops scripts
+- [x] WP4 Bot runtime, router, session store, simple screens
+- [x] WP5 Wishlist domain screens, telegra.ph sharing
+- [x] WP6 i18n (uk, en), releases tooling, changesets, CHANGELOG history
+- [x] WP7 End-to-end tests and operations docs
+- [x] WP8 Polish translation
+- [x] Independent review, security audit and fixes
+- [x] `pnpm run check` green (719 tests)
 
 ### Cutover
 
-- [ ] Preview rehearsal: real snapshot imported and reconciled, parity walk-through
+- [x] Preview rehearsal: real snapshot imported and reconciled
 - [ ] User approval of copy and the 2.0.0 changelog
-- [ ] VPS deploy secrets removed from the GitHub repository
-- [ ] VPS container frozen
-- [ ] Post-freeze backup via `backup-dbs` (pinned SHA)
-- [ ] Production D1 imported and reconciled
-- [ ] Production webhook set
+- [x] VPS deploy secrets removed from the GitHub repository
+- [x] VPS container frozen
+- [x] Post-freeze backup via `backup-dbs` (pinned SHA)
+- [x] Production D1 imported and reconciled
+- [x] Production webhook set
 - [ ] PR merged, 2.0.0 released on GitHub, announcement broadcast delivered
 
 ### Retirement
@@ -93,7 +94,30 @@ Deferred security and robustness items (details in [docs/OPERATIONS.md](./docs/O
 - [ ] L1. Deferred low-severity audit item.
 - [ ] L2. Check traces and logs for the bot token in outgoing URLs.
 - [ ] L4 to L9. Deferred low-severity audit items.
+- [ ] Guests lose an explicit language choice when their session row is pruned after 90 days.
+- [ ] Optionally raise the production webhook `max_connections` after a stable day.
 
 ## Cutover Record
 
-Filled in during the cutover.
+All times UTC, 2026-10-02.
+
+- **Production Worker.** Version `e8a3d7c8-5a77-49fb-aea6-d5b1c9a9dae1` deployed from `07693f4` with the 2.0.0 manifest before the freeze. `/health` with the secret returned `ready:true`; without it, 401.
+- **Queue.** `wishlist-release-announcements` delivery paused since provisioning; message retention raised to 14 days so a delayed approval cannot expire queued announcements.
+- **VPS deploy path closed.** GitHub secrets `SSH_PRIVATE_KEY`, `VPS`, `SSH_PORT` deleted.
+- **Legacy freeze.** `wishlist_bot` restart policy set to `no` and stopped at 12:49:27Z. The legacy bot used long polling, so no webhook existed; pending stayed 0.
+- **Post-freeze export.** `backup-dbs` run 37009057813 (12:49:43Z) succeeded without a new commit, so the import source is `wishlist-db` `590da4f56a6b8b49a1c2f0a3686deb28795bcb00` (2026-09-29). Live Atlas matched it after the freeze: 299 users, 1202 wishes, 19 gives, same newest wish `updatedAt` (2026-09-02T12:13:29.147Z) and newest user and give ids.
+- **D1 Time Travel bookmark** before the import: `00000008-00000000-000050f8-2623bc488d3927ed54b1998c30427379`.
+- **Import and reconciliation.** 299 users, 1202 wishes (163 without an owner), 18 gives (1 skipped `missingWish`), 716 images, 260 username-searchable, 108 with a phone, 12 with payments, 48 with a telegra.ph token, `release_version` 1.7.1: 289, 1.7.0: 2, 0.0.0: 8, 0 invalid links, 0 foreign key violations, 0 mismatches.
+- **Webhook.** Production webhook set at 12:51:36Z with `drop_pending_updates=false`, `max_connections=1`, `allowed_updates` `message`, `callback_query`, `my_chat_member`; bot commands set for the default scope and uk, en, pl. Downtime about two minutes.
+- **Pull request.** [#1](https://github.com/serhii-chernenko/wishlist/pull/1).
+
+### To finish after the announcement text is approved
+
+1. Merge PR #1 with a merge commit. Workers Builds deploys `main` and runs `pnpm releases:broadcast:prod`.
+2. `pnpm db:query:prod --command "SELECT status, count(*) FROM release_announcements GROUP BY status"`. The `*/10` cron may already have queued the rows, so the deploy log can report about 0 inserted; the table is the source of truth.
+3. `gh release view 2.0.0 -R serhii-chernenko/wishlist` (published by the GitHub release job on `main`).
+4. `pnpm exec wrangler queues resume-delivery wishlist-release-announcements`, then repeat step 2 until nothing is `queued`. Pause again with `pause-delivery` on a burst of failures.
+
+### Rollback
+
+Before the VPS cleanup: `pnpm telegram:webhook:delete:prod --drop-pending-updates=false`, then `docker update --restart=always wishlist_bot && docker start wishlist_bot` on the VPS. After the cleanup: rebuild from tag `legacy-1.7.1`; MongoDB Atlas is untouched. D1 data: `wrangler d1 time-travel restore wishlist-production --env production --bookmark=<bookmark>`.
