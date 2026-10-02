@@ -117,6 +117,7 @@ All times UTC, 2026-10-02.
 - **Production smoke.** No user wrote during the first hour. A synthetic admin `/start` (`update_id` 1, below any real Telegram id) at 13:52Z was processed end to end on production D1.
 - **Preview data.** `pnpm db:copy:production-to-preview --confirm-overwrite-preview` copied 299 users, 1202 wishes and 18 gives; `@InevixTestBot` points at the branch preview and serves only the admin.
 - **Legacy retirement.** At about 13:55Z the VPS container `wishlist_bot`, image `wishlist_bot_image` (1.12 GB), `/home/inevix/apps/wishlist` and the 2023 clone `/home/inevix/apps/backup/wishlist-db` were removed; all other containers stayed up. `node:18` stays because `nuxt-demo` builds from it. `backup-dbs` commit `8624b36` stops the wishlist backup (run green), its `WISHLIST_URI` secret was deleted, and `wishlist-db` is archived with its last snapshot `590da4f`. The wishlist repository has no GitHub secrets or variables left. MongoDB Atlas is untouched.
+- **Share pages.** Migration `20261002144401_dazzling_centennial` (`wishlist_shares` and the fingerprint index) applied to `wishlist-production` by hand before deploying version `88e2a487` from `0bdab31`, because production runs this branch before the merge. The 48 stored telegra.ph tokens were set to NULL in production and preview; the column is dropped in 2.1.
 - **Pull request.** [#1](https://github.com/serhii-chernenko/wishlist/pull/1).
 
 ### To finish after the announcement text is approved
