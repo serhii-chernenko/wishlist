@@ -6,8 +6,11 @@ export const SITE_NAME = 'Wishlist';
 
 export const STYLESHEET_PATH = '/styles/share.css';
 
-const LIGHT_THEME_COLOR = '#f1e2fc';
-const DARK_THEME_COLOR = '#1b1324';
+export const FONT_PRELOAD_PATH =
+    '/fonts/unbounded-cyrillic-wght-normal.woff2?v=5.3.0';
+
+const LIGHT_THEME_COLOR = '#f1e3fb';
+const DARK_THEME_COLOR = '#1a1220';
 
 export const OPEN_GRAPH_LOCALES = {
     uk: 'uk_UA',
@@ -65,6 +68,7 @@ const PageHead = ({
                 content={indexable ? 'index, follow' : 'noindex'}
             />
             <link rel='icon' href='/favicon.ico' sizes='16x16 32x32 48x48' />
+            <link rel='icon' href='/favicon.svg' type='image/svg+xml' />
             <link
                 rel='icon'
                 href='/favicon-32.png'
@@ -80,6 +84,13 @@ const PageHead = ({
                     alternates={alternates}
                 />
             ) : null}
+            <link
+                rel='preload'
+                href={FONT_PRELOAD_PATH}
+                as='font'
+                type='font/woff2'
+                crossorigin='anonymous'
+            />
             <link
                 rel='stylesheet'
                 href={`${STYLESHEET_PATH}?v=${encodeURIComponent(assetVersion)}`}
@@ -152,10 +163,8 @@ export const PageLayout = (props: PageLayoutProps) => {
                 assetVersion={props.assetVersion}
                 {...(props.alternates && { alternates: props.alternates })}
             />
-            <body class='min-h-dvh bg-base-200 text-base-content wrap-anywhere'>
-                <div class='mx-auto max-w-3xl px-4 pt-5 pb-10 sm:pt-8'>
-                    {props.children}
-                </div>
+            <body>
+                <div class='shell'>{props.children}</div>
             </body>
         </html>
     );

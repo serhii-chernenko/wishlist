@@ -323,7 +323,7 @@ const uk: BaseTranslation = {
         telegram: '🔗 Телеграм канал'
     },
     share: {
-        title: 'Лист Бажань від {name:string}'
+        title: 'Лист бажань від {name:string}'
     },
     markup: {
         title: '❤️ <b>{0:string}</b>',
@@ -394,25 +394,26 @@ const uk: BaseTranslation = {
     web: {
         header: {
             count: '{count:number} {{count:|бажання||бажання|бажань|бажання}}',
-            updated: 'Оновлено {date:string}',
-            username: 'Телеграм: @{username:string}'
+            summary:
+                '{count:number} {{count:|бажання||бажання|бажань|бажання}}, оновлено {date:string}',
+            username: 'Телеграм: @{username:string}',
+            lead: 'Лист бажань від',
+            fallback: 'Лист бажань'
         },
         payments: {
-            title: 'Реквізити',
-            description:
-                'Якщо в тебе немає змоги подарувати щось конкретне, можна надіслати кошти за цими реквізитами, і я придбаю подарунок самостійно.'
+            title: 'Можна подарувати гроші'
         },
         wish: {
-            priority: 'Дуже хочу',
-            price: 'Орієнтовна вартість: {price:string}',
-            link: 'Переглянути на {host:string}',
-            created: 'Створено {date:string}',
-            updated: 'Оновлено {date:string}'
+            priority: 'Дуже хоче',
+            price: 'Орієнтовна вартість:',
+            link: 'Відкрити на {host:string}',
+            created: 'Додано {date:string}',
+            updated: 'Додано {created:string}, оновлено {updated:string}'
         },
         empty: 'Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.',
         truncated: 'Показано перші {limit:number} бажань зі списку.',
         footer: {
-            cta: 'Створи власний лист бажань у Телеграм-боті',
+            cta: 'Створити свій лист бажань',
             support: 'Підтримати автора',
             openSource: 'Відкритий код на GitHub'
         },
@@ -421,14 +422,13 @@ const uk: BaseTranslation = {
         },
         notFound: {
             title: 'Сторінку не знайдено',
-            description:
-                'Можливо, у посиланні помилка, або такого листа бажань більше немає.',
+            description: 'Цього листа бажань не існує або посилання застаріло.',
             cta: 'Відкрити бота'
         },
         gone: {
             title: 'Цим листом бажань більше не діляться',
             description:
-                'Власник припинив ділитися цією сторінкою. Якщо він поділиться знову, це посилання запрацює.'
+                'Власник більше не ділиться цим листом. Якщо він поділиться знову, посилання запрацює.'
         },
         meta: {
             description:

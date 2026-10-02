@@ -55,6 +55,7 @@
         "preview:reset": "tsx scripts/telegram/preview.ts reset",
         "cf-typegen": "wrangler types",
         "i18n:generate": "typesafe-i18n --no-watch",
+        "fonts:copy": "tsx scripts/web/copy-fonts.ts",
         "css:build": "tailwindcss -i src/web/styles/share.css -o public/styles/share.css --minify",
         "css:check": "pnpm run css:build && git diff --exit-code -- public/styles/share.css",
         "releases:sync": "tsx scripts/releases/sync-release-manifest.ts",
@@ -85,6 +86,8 @@
     },
     "devDependencies": {
         "@changesets/cli": "^2.31.0",
+        "@fontsource-variable/commissioner": "^5.3.0",
+        "@fontsource-variable/unbounded": "^5.3.0",
         "@tailwindcss/cli": "^4.3.3",
         "@types/node": "^22.20.4",
         "@typescript/native-preview": "^7.0.0-dev.20260510.1",

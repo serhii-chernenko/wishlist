@@ -1,8 +1,25 @@
 import type { SupportLink } from '../../../bot/content/support-links';
 import { getTranslator, type AppLocale } from '../../../bot/i18n';
 import { TEXT_LINK_CLASS } from './link-classes';
+import { LogoMark } from './logo';
 
 const EXTERNAL_LINK_REL = 'noopener noreferrer';
+const LEADING_EMOJI = /^[\p{Extended_Pictographic}️‍\s]+/u;
+
+export const BotCallToAction = ({
+    botUrl,
+    label
+}: {
+    botUrl: string;
+    label: string;
+}) => {
+    return (
+        <a class='cta' href={botUrl} rel={EXTERNAL_LINK_REL}>
+            <LogoMark idPrefix='wl-cta' class='cta-logo' />
+            <span>{label}</span>
+        </a>
+    );
+};
 
 export const PageFooter = ({
     language,
@@ -18,30 +35,22 @@ export const PageFooter = ({
     const LL = getTranslator(language);
 
     return (
-        <footer class='footer footer-vertical mt-10 rounded-box border border-base-300 bg-base-100 p-5 text-base-content sm:p-6'>
-            <a
-                class='btn btn-primary h-auto min-h-10 max-w-full py-2 text-start'
-                href={botUrl}
-                rel={EXTERNAL_LINK_REL}
-            >
-                {LL.web.footer.cta()}
-            </a>
+        <footer class='page-footer'>
+            <BotCallToAction botUrl={botUrl} label={LL.web.footer.cta()} />
             {supportLinks.length > 0 ? (
-                <section class='grid gap-3'>
-                    <h2 class='text-base font-bold'>
-                        {LL.web.footer.support()}
-                    </h2>
-                    <ul class='flex flex-wrap gap-2'>
+                <section class='support'>
+                    <h2 class='support-title'>{LL.web.footer.support()}</h2>
+                    <ul>
                         {supportLinks.map(link => {
                             return (
                                 <li>
                                     <a
-                                        class='btn btn-sm border-base-300'
+                                        class='chip'
                                         href={link.url}
                                         rel={EXTERNAL_LINK_REL}
                                         target='_blank'
                                     >
-                                        {link.title}
+                                        {link.title.replace(LEADING_EMOJI, '')}
                                     </a>
                                 </li>
                             );

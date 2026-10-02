@@ -386,25 +386,25 @@ const en: Translation = {
     web: {
         header: {
             count: '{count} {{count:wish|wishes}}',
-            updated: 'Updated {date}',
-            username: 'Telegram: @{username}'
+            summary: '{count} {{count:wish|wishes}}, updated {date}',
+            username: 'Telegram: @{username}',
+            lead: 'Wish list of',
+            fallback: 'Wish list'
         },
         payments: {
-            title: 'Payment details',
-            description:
-                "If you can't give me a specific gift, you can send money using these details, and I will buy the gift myself."
+            title: 'You can also give money'
         },
         wish: {
-            priority: 'Really want this',
-            price: 'Approximate price: {price}',
-            link: 'View on {host}',
-            created: 'Created {date}',
-            updated: 'Updated {date}'
+            priority: 'Really wants this',
+            price: 'Approximate price:',
+            link: 'Open on {host}',
+            created: 'Added {date}',
+            updated: 'Added {created}, updated {updated}'
         },
         empty: 'Nothing here yet. Wishes will appear as soon as they are added to the list.',
         truncated: 'Showing the first {limit} wishes of the list.',
         footer: {
-            cta: 'Create your own wish list in the Telegram bot',
+            cta: 'Create your own wish list',
             support: 'Support the author',
             openSource: 'Open source on GitHub'
         },
@@ -414,13 +414,13 @@ const en: Translation = {
         notFound: {
             title: 'Page not found',
             description:
-                'The link may contain a typo, or this wish list no longer exists.',
+                "This wish list doesn't exist or the link is out of date.",
             cta: 'Open the bot'
         },
         gone: {
             title: 'This wish list is no longer shared',
             description:
-                'The owner has stopped sharing this page. If they share it again, this link will work again.'
+                'The owner no longer shares this list. If they share it again, the link will work.'
         },
         meta: {
             description:

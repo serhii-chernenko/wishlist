@@ -1,12 +1,20 @@
 import { getTranslator, type AppLocale } from '../../../bot/i18n';
-import { formatCurrency, formatDate } from '../../../bot/content/intl';
+import {
+    DEFAULT_CURRENCY,
+    formatDate,
+    getLocaleTag
+} from '../../../bot/content/intl';
 import { cutDescription, cutTitle } from '../../../bot/input/limits';
 import { isRenderableLink } from '../../../bot/input/link';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishView } from '../view-model';
+import { HERO_LOGO_ID_PREFIX } from './hero';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
+import { heartSymbolId } from './logo';
 
 const WWW_PREFIX = /^www\./;
+const HEART_HREF = `#${heartSymbolId(HERO_LOGO_ID_PREFIX)}`;
+const STICKER_VIEW_BOX = '-125 -124 250 206';
 
 export const getLinkHostname = (link: string) => {
     try {
@@ -14,6 +22,24 @@ export const getLinkHostname = (link: string) => {
     } catch {
         return null;
     }
+};
+
+const formatPrice = (price: number, language: AppLocale, currency: string) => {
+    return new Intl.NumberFormat(getLocaleTag(language), {
+        style: 'currency',
+        currency: currency || DEFAULT_CURRENCY,
+        currencyDisplay: 'narrowSymbol',
+        ...(Number.isInteger(price) && { maximumFractionDigits: 0 })
+    }).format(price);
+};
+
+const HeartSticker = () => {
+    return (
+        <svg class='wish-heart' viewBox={STICKER_VIEW_BOX} aria-hidden='true'>
+            <use href={HEART_HREF} class='heart-halo' />
+            <use href={HEART_HREF} class='heart-fill' />
+        </svg>
+    );
 };
 
 export const WishCard = ({
@@ -31,44 +57,24 @@ export const WishCard = ({
     const hostname = isRenderableLink(wish.link)
         ? getLinkHostname(wish.link)
         : null;
-    const hasChips = wish.priority || wish.price > 0;
 
     return (
-        <li>
-            <article
-                class={
-                    wish.priority
-                        ? 'card border-2 border-primary bg-base-100'
-                        : 'card card-border bg-base-100'
-                }
-            >
-                <div class='card-body gap-3 p-4 sm:p-6'>
-                    <h2 class='card-title text-xl leading-snug'>
-                        {cutTitle(wish.title)}
-                    </h2>
-                    {hasChips ? (
-                        <p class='flex flex-wrap gap-2'>
-                            {wish.priority ? (
-                                <span class='badge badge-primary h-auto py-1'>
-                                    <span aria-hidden='true'>♥</span>
-                                    {LL.web.wish.priority()}
-                                </span>
-                            ) : null}
-                            {wish.price > 0 ? (
-                                <span class='badge badge-outline h-auto py-1'>
-                                    {LL.web.wish.price({
-                                        price: formatCurrency(
-                                            wish.price,
-                                            language,
-                                            currency
-                                        )
-                                    })}
-                                </span>
-                            ) : null}
+        <li class={wish.priority ? 'wish wish-priority' : 'wish'}>
+            {wish.priority ? <HeartSticker /> : null}
+            <article class='wish-tag'>
+                <div class='wish-body'>
+                    <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
+                    {wish.priority ? (
+                        <p class='sr-only'>{LL.web.wish.priority()}</p>
+                    ) : null}
+                    {wish.price > 0 ? (
+                        <p class='price'>
+                            <span class='sr-only'>{LL.web.wish.price()} </span>
+                            {formatPrice(wish.price, language, currency)}
                         </p>
                     ) : null}
                     {wish.description ? (
-                        <p>
+                        <p class='wish-text'>
                             <InlineContent
                                 nodes={inlineMarkup(
                                     cutDescription(wish.description),
@@ -80,22 +86,19 @@ export const WishCard = ({
                         </p>
                     ) : null}
                     {hostname !== null && wish.link !== null ? (
-                        <div class='card-actions'>
-                            <a
-                                class='btn btn-secondary h-auto min-h-10 max-w-full py-2 text-start'
-                                href={wish.link}
-                                rel={OWNER_LINK_REL}
-                                target='_blank'
-                            >
-                                {LL.web.wish.link({ host: hostname })}
-                            </a>
-                        </div>
+                        <a
+                            class='wish-link'
+                            href={wish.link}
+                            rel={OWNER_LINK_REL}
+                            target='_blank'
+                        >
+                            {LL.web.wish.link({ host: hostname })}
+                        </a>
                     ) : null}
-                    <p class='text-sm'>
-                        {LL.web.wish.created({ date: created })}
-                        {created !== updated
-                            ? ` · ${LL.web.wish.updated({ date: updated })}`
-                            : ''}
+                    <p class='wish-dates'>
+                        {created === updated
+                            ? LL.web.wish.created({ date: created })
+                            : LL.web.wish.updated({ created, updated })}
                     </p>
                 </div>
             </article>

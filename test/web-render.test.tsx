@@ -126,8 +126,8 @@ test('every owner supplied link opens safely in a new tab', () => {
         assert.match(anchor, /target="_blank"/);
     }
 
-    assert.match(html, />View on shop\.test</);
-    assert.doesNotMatch(html, />View on www\./);
+    assert.match(html, />Open on shop\.test</);
+    assert.doesNotMatch(html, />Open on www\./);
 });
 
 test('wishes without a renderable link get no link button', () => {
@@ -141,13 +141,13 @@ test('wishes without a renderable link get no link button', () => {
         })
     );
 
-    assert.doesNotMatch(html, /btn-secondary/);
-    assert.doesNotMatch(html, /target="_blank"[^>]*>View on/);
+    assert.doesNotMatch(html, /wish-link/);
+    assert.doesNotMatch(html, /target="_blank"[^>]*>Open on/);
     assert.doesNotMatch(html, /ftp:\/\//);
     assert.doesNotMatch(html, /javascript:/);
 });
 
-test('priority badge, price chip and dates follow the page language', () => {
+test('priority sticker, price chip and dates follow the page language', () => {
     const html = renderSharePage(
         buildModel({
             language: 'uk',
@@ -164,30 +164,47 @@ test('priority badge, price chip and dates follow the page language', () => {
 
     assert.match(
         html,
-        /class="badge badge-primary h-auto py-1"><span aria-hidden="true">♥<\/span>Дуже хочу</
+        /<li class="wish wish-priority"><svg class="wish-heart"[^>]*aria-hidden="true">/
     );
-    assert.match(html, /<article class="card border-2 border-primary/);
-    assert.match(html, /Орієнтовна вартість: 2\s?500,00\s?₴/u);
-    assert.match(html, /Створено 2 січня 2026/);
-    assert.match(html, /Оновлено 3 лютого 2026/);
+    assert.match(html, /<p class="sr-only">Дуже хоче<\/p>/);
+    assert.match(
+        html,
+        /<p class="price"><span class="sr-only">Орієнтовна вартість: <\/span>2\s?500\s?₴<\/p>/u
+    );
+    assert.match(html, /Додано 2 січня 2026 р\., оновлено 3 лютого 2026 р\./);
+});
+
+test('regular wishes carry no priority sticker and free wishes no price chip', () => {
+    const html = renderSharePage(buildModel());
+
+    assert.match(html, /<li class="wish">/);
+    assert.doesNotMatch(html, /wish-heart|wish-priority|class="price"/);
+    assert.match(
+        renderSharePage(buildModel({ wishes: [buildWish({ price: 99.5 })] })),
+        /99\.50/
+    );
 });
 
 test('the updated date is hidden when it equals the created date', () => {
     const html = renderSharePage(buildModel());
 
-    assert.match(html, /Created 2 January 2026/);
-    assert.doesNotMatch(html, /Created 2 January 2026 · Updated/);
+    assert.match(html, /<p class="wish-dates">Added 2 January 2026<\/p>/);
+    assert.doesNotMatch(html, /updated 2 January 2026/);
 });
 
 test('payments are shown once and cut to the payments cap', () => {
     const html = renderSharePage(buildModel({ payments: 'p'.repeat(1500) }));
 
-    assert.match(html, /class="alert alert-info/);
+    assert.match(html, /<section class="envelope">/);
+    assert.match(
+        html,
+        /<h2 class="envelope-title">You can also give money<\/h2>/
+    );
     assert.equal(html.includes('p'.repeat(1000)), false);
     assert.equal(html.includes(`${'p'.repeat(999)}…`), true);
     assert.doesNotMatch(
         renderSharePage(buildModel({ payments: null })),
-        /alert-info/
+        /class="envelope"/
     );
 });
 
@@ -260,24 +277,21 @@ test('the language switcher links to the other languages and marks the current o
 
     assert.match(
         html,
-        /<span class="btn btn-sm btn-primary join-item cursor-default" aria-current="page" lang="en">English<\/span>/
+        /<span aria-current="page" aria-label="English \(EN\)" lang="en">EN<\/span>/
     );
     assert.match(
         html,
         new RegExp(
-            `<a class="btn btn-sm join-item border-base-300" href="/uk/w/${PUBLIC_ID}" hreflang="uk" lang="uk">Українська</a>`
+            `<a href="/uk/w/${PUBLIC_ID}" hreflang="uk" lang="uk" aria-label="Українська \\(UA\\)">UA</a>`
         )
     );
     assert.match(
         html,
         new RegExp(
-            `<a class="btn btn-sm join-item border-base-300" href="/pl/w/${PUBLIC_ID}" hreflang="pl" lang="pl">Polski</a>`
+            `<a href="/pl/w/${PUBLIC_ID}" hreflang="pl" lang="pl" aria-label="Polski \\(PL\\)">PL</a>`
         )
     );
-    assert.doesNotMatch(
-        html,
-        new RegExp(`href="/en/w/${PUBLIC_ID}"[^>]*lang="en">English`)
-    );
+    assert.doesNotMatch(html, new RegExp(`href="/en/w/${PUBLIC_ID}"`));
 });
 
 test('the phone number, gives and hidden data never reach the page model', () => {
@@ -316,12 +330,9 @@ test('an empty list shows the empty state and a truncated list shows the notice'
     );
     const truncated = renderSharePage(buildModel({ visibleCount: 250 }));
 
-    assert.match(empty, /card-dash[^>]*>Nothing here yet/);
+    assert.match(empty, /<p class="empty">Nothing here yet/);
     assert.doesNotMatch(empty, /Showing the first/);
-    assert.match(
-        truncated,
-        /<p class="alert[^>]*>Showing the first 100 wishes/
-    );
+    assert.match(truncated, /<p class="notice">Showing the first 100 wishes/);
     assert.doesNotMatch(truncated, /Nothing here yet/);
 });
 
@@ -336,6 +347,16 @@ test('the page has a doctype, no scripts and no external resources', () => {
         '<link rel="stylesheet" href="/styles/share.css?v=deploy-1"/>'
     ]);
     assert.doesNotMatch(html, /<(?:iframe|object|embed|form|img)\b/i);
+    assert.deepEqual(html.match(/<link[^>]+rel="preload"[^>]*>/g), [
+        '<link rel="preload" href="/fonts/unbounded-cyrillic-wght-normal.woff2?v=5.3.0" as="font" type="font/woff2" crossorigin="anonymous"/>'
+    ]);
+    assert.doesNotMatch(html, /\bstyle="/);
+    const ids = Array.from(html.matchAll(/\sid="([^"]+)"/g), match => {
+        return match[1];
+    });
+
+    assert.equal(new Set(ids).size, ids.length);
+    assert.ok(ids.includes('wl-hero-heart'));
 });
 
 test('twenty maximum size wishes stay below 60 KB', () => {
@@ -385,11 +406,11 @@ test('error pages are noindex, localized and carry no list data', () => {
 
     assert.match(
         renderErrorPage('en', 'gone', 'https://t.me/x', 'v'),
-        />This wish list is no longer shared<\/h1>/
+        />This wish list is no longer shared<\/span><\/h1>/
     );
     assert.match(
         renderErrorPage('en', 'notFound', 'https://t.me/x', 'v'),
-        />Page not found<\/h1>/
+        />Page not found<\/span><\/h1>/
     );
 });
 

@@ -1043,7 +1043,7 @@ type RootTranslation = {
 	}
 	share: {
 		/**
-		 * Л​и​с​т​ ​Б​а​ж​а​н​ь​ ​в​і​д​ ​{​n​a​m​e​}
+		 * Л​и​с​т​ ​б​а​ж​а​н​ь​ ​в​і​д​ ​{​n​a​m​e​}
 		 * @param {string} name
 		 */
 		title: RequiredParams<'name'>
@@ -1265,51 +1265,56 @@ type RootTranslation = {
 			 */
 			count: RequiredParams<'count'>
 			/**
-			 * О​н​о​в​л​е​н​о​ ​{​d​a​t​e​}
+			 * {​c​o​u​n​t​}​ ​{​{​б​а​ж​а​н​н​я​|​б​а​ж​а​н​н​я​|​б​а​ж​а​н​ь​|​б​а​ж​а​н​н​я​}​}​,​ ​о​н​о​в​л​е​н​о​ ​{​d​a​t​e​}
+			 * @param {number} count
 			 * @param {string} date
 			 */
-			updated: RequiredParams<'date'>
+			summary: RequiredParams<'count' | 'date'>
 			/**
 			 * Т​е​л​е​г​р​а​м​:​ ​@​{​u​s​e​r​n​a​m​e​}
 			 * @param {string} username
 			 */
 			username: RequiredParams<'username'>
+			/**
+			 * Л​и​с​т​ ​б​а​ж​а​н​ь​ ​в​і​д
+			 */
+			lead: string
+			/**
+			 * Л​и​с​т​ ​б​а​ж​а​н​ь
+			 */
+			fallback: string
 		}
 		payments: {
 			/**
-			 * Р​е​к​в​і​з​и​т​и
+			 * М​о​ж​н​а​ ​п​о​д​а​р​у​в​а​т​и​ ​г​р​о​ш​і
 			 */
 			title: string
-			/**
-			 * Я​к​щ​о​ ​в​ ​т​е​б​е​ ​н​е​м​а​є​ ​з​м​о​г​и​ ​п​о​д​а​р​у​в​а​т​и​ ​щ​о​с​ь​ ​к​о​н​к​р​е​т​н​е​,​ ​м​о​ж​н​а​ ​н​а​д​і​с​л​а​т​и​ ​к​о​ш​т​и​ ​з​а​ ​ц​и​м​и​ ​р​е​к​в​і​з​и​т​а​м​и​,​ ​і​ ​я​ ​п​р​и​д​б​а​ю​ ​п​о​д​а​р​у​н​о​к​ ​с​а​м​о​с​т​і​й​н​о​.
-			 */
-			description: string
 		}
 		wish: {
 			/**
-			 * Д​у​ж​е​ ​х​о​ч​у
+			 * Д​у​ж​е​ ​х​о​ч​е
 			 */
 			priority: string
 			/**
-			 * О​р​і​є​н​т​о​в​н​а​ ​в​а​р​т​і​с​т​ь​:​ ​{​p​r​i​c​e​}
-			 * @param {string} price
+			 * О​р​і​є​н​т​о​в​н​а​ ​в​а​р​т​і​с​т​ь​:
 			 */
-			price: RequiredParams<'price'>
+			price: string
 			/**
-			 * П​е​р​е​г​л​я​н​у​т​и​ ​н​а​ ​{​h​o​s​t​}
+			 * В​і​д​к​р​и​т​и​ ​н​а​ ​{​h​o​s​t​}
 			 * @param {string} host
 			 */
 			link: RequiredParams<'host'>
 			/**
-			 * С​т​в​о​р​е​н​о​ ​{​d​a​t​e​}
+			 * Д​о​д​а​н​о​ ​{​d​a​t​e​}
 			 * @param {string} date
 			 */
 			created: RequiredParams<'date'>
 			/**
-			 * О​н​о​в​л​е​н​о​ ​{​d​a​t​e​}
-			 * @param {string} date
+			 * Д​о​д​а​н​о​ ​{​c​r​e​a​t​e​d​}​,​ ​о​н​о​в​л​е​н​о​ ​{​u​p​d​a​t​e​d​}
+			 * @param {string} created
+			 * @param {string} updated
 			 */
-			updated: RequiredParams<'date'>
+			updated: RequiredParams<'created' | 'updated'>
 		}
 		/**
 		 * Т​у​т​ ​п​о​к​и​ ​щ​о​ ​п​о​р​о​ж​н​ь​о​.​ ​Б​а​ж​а​н​н​я​ ​з​ʼ​я​в​л​я​т​ь​с​я​,​ ​щ​о​й​н​о​ ​ї​х​ ​д​о​д​а​д​у​т​ь​ ​д​о​ ​с​п​и​с​к​у​.
@@ -1322,7 +1327,7 @@ type RootTranslation = {
 		truncated: RequiredParams<'limit'>
 		footer: {
 			/**
-			 * С​т​в​о​р​и​ ​в​л​а​с​н​и​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​у​ ​Т​е​л​е​г​р​а​м​-​б​о​т​і
+			 * С​т​в​о​р​и​т​и​ ​с​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь
 			 */
 			cta: string
 			/**
@@ -1346,7 +1351,7 @@ type RootTranslation = {
 			 */
 			title: string
 			/**
-			 * М​о​ж​л​и​в​о​,​ ​у​ ​п​о​с​и​л​а​н​н​і​ ​п​о​м​и​л​к​а​,​ ​а​б​о​ ​т​а​к​о​г​о​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь​ ​б​і​л​ь​ш​е​ ​н​е​м​а​є​.
+			 * Ц​ь​о​г​о​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь​ ​н​е​ ​і​с​н​у​є​ ​а​б​о​ ​п​о​с​и​л​а​н​н​я​ ​з​а​с​т​а​р​і​л​о​.
 			 */
 			description: string
 			/**
@@ -1360,7 +1365,7 @@ type RootTranslation = {
 			 */
 			title: string
 			/**
-			 * В​л​а​с​н​и​к​ ​п​р​и​п​и​н​и​в​ ​д​і​л​и​т​и​с​я​ ​ц​і​є​ю​ ​с​т​о​р​і​н​к​о​ю​.​ ​Я​к​щ​о​ ​в​і​н​ ​п​о​д​і​л​и​т​ь​с​я​ ​з​н​о​в​у​,​ ​ц​е​ ​п​о​с​и​л​а​н​н​я​ ​з​а​п​р​а​ц​ю​є​.
+			 * В​л​а​с​н​и​к​ ​б​і​л​ь​ш​е​ ​н​е​ ​д​і​л​и​т​ь​с​я​ ​ц​и​м​ ​л​и​с​т​о​м​.​ ​Я​к​щ​о​ ​в​і​н​ ​п​о​д​і​л​и​т​ь​с​я​ ​з​н​о​в​у​,​ ​п​о​с​и​л​а​н​н​я​ ​з​а​п​р​а​ц​ю​є​.
 			 */
 			description: string
 		}
@@ -2385,7 +2390,7 @@ export type TranslationFunctions = {
 	}
 	share: {
 		/**
-		 * Лист Бажань від {name}
+		 * Лист бажань від {name}
 		 */
 		title: (arg: { name: string }) => LocalizedString
 	}
@@ -2588,45 +2593,49 @@ export type TranslationFunctions = {
 			 */
 			count: (arg: { count: number }) => LocalizedString
 			/**
-			 * Оновлено {date}
+			 * {count} {{бажання|бажання|бажань|бажання}}, оновлено {date}
 			 */
-			updated: (arg: { date: string }) => LocalizedString
+			summary: (arg: { count: number, date: string }) => LocalizedString
 			/**
 			 * Телеграм: @{username}
 			 */
 			username: (arg: { username: string }) => LocalizedString
+			/**
+			 * Лист бажань від
+			 */
+			lead: () => LocalizedString
+			/**
+			 * Лист бажань
+			 */
+			fallback: () => LocalizedString
 		}
 		payments: {
 			/**
-			 * Реквізити
+			 * Можна подарувати гроші
 			 */
 			title: () => LocalizedString
-			/**
-			 * Якщо в тебе немає змоги подарувати щось конкретне, можна надіслати кошти за цими реквізитами, і я придбаю подарунок самостійно.
-			 */
-			description: () => LocalizedString
 		}
 		wish: {
 			/**
-			 * Дуже хочу
+			 * Дуже хоче
 			 */
 			priority: () => LocalizedString
 			/**
-			 * Орієнтовна вартість: {price}
+			 * Орієнтовна вартість:
 			 */
-			price: (arg: { price: string }) => LocalizedString
+			price: () => LocalizedString
 			/**
-			 * Переглянути на {host}
+			 * Відкрити на {host}
 			 */
 			link: (arg: { host: string }) => LocalizedString
 			/**
-			 * Створено {date}
+			 * Додано {date}
 			 */
 			created: (arg: { date: string }) => LocalizedString
 			/**
-			 * Оновлено {date}
+			 * Додано {created}, оновлено {updated}
 			 */
-			updated: (arg: { date: string }) => LocalizedString
+			updated: (arg: { created: string, updated: string }) => LocalizedString
 		}
 		/**
 		 * Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.
@@ -2638,7 +2647,7 @@ export type TranslationFunctions = {
 		truncated: (arg: { limit: number }) => LocalizedString
 		footer: {
 			/**
-			 * Створи власний лист бажань у Телеграм-боті
+			 * Створити свій лист бажань
 			 */
 			cta: () => LocalizedString
 			/**
@@ -2662,7 +2671,7 @@ export type TranslationFunctions = {
 			 */
 			title: () => LocalizedString
 			/**
-			 * Можливо, у посиланні помилка, або такого листа бажань більше немає.
+			 * Цього листа бажань не існує або посилання застаріло.
 			 */
 			description: () => LocalizedString
 			/**
@@ -2676,7 +2685,7 @@ export type TranslationFunctions = {
 			 */
 			title: () => LocalizedString
 			/**
-			 * Власник припинив ділитися цією сторінкою. Якщо він поділиться знову, це посилання запрацює.
+			 * Власник більше не ділиться цим листом. Якщо він поділиться знову, посилання запрацює.
 			 */
 			description: () => LocalizedString
 		}

@@ -14,7 +14,7 @@ const ownerTelegramId = 9_001;
 const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
 const WORKERS_DEV_ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 const EXPECTED_CSP =
-    "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+    "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 interface StoredEntry {
     body: string;
@@ -1026,7 +1026,10 @@ describe('share page routes', () => {
         const response = await request(`/en/w/${publicId}`);
         const body = await response.text();
 
-        assert.match(body, /<h1 [^>]*>Wish list of Alice<\/h1>/);
+        assert.match(
+            body,
+            /<h1 [^>]*><span class="hero-lead">Wish list of<\/span> <span class="hero-name">Alice<\/span><\/h1>/
+        );
         assert.match(
             body,
             /<link rel="stylesheet" href="\/styles\/share\.css\?v=[^"]+"\/>/

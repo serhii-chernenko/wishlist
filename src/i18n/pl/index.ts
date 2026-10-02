@@ -394,25 +394,26 @@ const pl: Translation = {
     web: {
         header: {
             count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
-            updated: 'Zaktualizowano {date}',
-            username: 'Telegram: @{username}'
+            summary:
+                '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}, zaktualizowano {date}',
+            username: 'Telegram: @{username}',
+            lead: 'Lista życzeń od',
+            fallback: 'Lista życzeń'
         },
         payments: {
-            title: 'Dane płatnicze',
-            description:
-                'Jeśli nie możesz podarować mi konkretnego prezentu, możesz przesłać pieniądze na te dane, a prezent kupię sam(-a).'
+            title: 'Można podarować pieniądze'
         },
         wish: {
-            priority: 'Bardzo chcę',
-            price: 'Orientacyjna cena: {price}',
-            link: 'Zobacz na {host}',
-            created: 'Utworzono {date}',
-            updated: 'Zaktualizowano {date}'
+            priority: 'Bardzo chce',
+            price: 'Orientacyjna cena:',
+            link: 'Otwórz na {host}',
+            created: 'Dodano {date}',
+            updated: 'Dodano {created}, zaktualizowano {updated}'
         },
         empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
         truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
         footer: {
-            cta: 'Utwórz własną listę życzeń w bocie na Telegramie',
+            cta: 'Utwórz własną listę życzeń',
             support: 'Wesprzyj autora',
             openSource: 'Otwarty kod na GitHubie'
         },
@@ -422,13 +423,13 @@ const pl: Translation = {
         notFound: {
             title: 'Nie znaleziono strony',
             description:
-                'Link może zawierać literówkę albo ta lista życzeń już nie istnieje.',
+                'Ta lista życzeń nie istnieje albo link jest nieaktualny.',
             cta: 'Otwórz bota'
         },
         gone: {
             title: 'Ta lista życzeń nie jest już udostępniana',
             description:
-                'Właściciel przestał udostępniać tę stronę. Jeśli udostępni ją ponownie, ten link znów zadziała.'
+                'Właściciel już nie udostępnia tej listy. Jeśli udostępni ją ponownie, link zadziała.'
         },
         meta: {
             description:
