@@ -91,18 +91,13 @@ describe('Intl formatting under workerd', () => {
     });
 
     it('renders Ukrainian hryvnia amounts with the Ukrainian grouping', () => {
-        assert.match(sample.currencyUk, /^1\s000,00\s(₴|грн)$/);
+        assert.match(sample.currencyUk, /^1\s000,00\s₴$/);
     });
 
-    it(
-        'renders the hryvnia sign for Ukrainian currency',
-        {
-            todo: 'workerd ICU prints "грн" for uk-UA/UAH where Node prints "₴" (PLAN WP7 expects ₴); prices show "грн" in production'
-        },
-        () => {
-            assert.ok(sample.currencyUk.includes('₴'), sample.currencyUk);
-        }
-    );
+    it('renders the hryvnia sign for Ukrainian currency', () => {
+        assert.ok(sample.currencyUk.includes('₴'), sample.currencyUk);
+        assert.equal(sample.currencyUk.includes('грн'), false);
+    });
 
     it('matches the Node output for the other currencies and numbers', () => {
         assert.equal(sample.currencyEn, formatCurrency(1000, 'en'));
@@ -111,10 +106,10 @@ describe('Intl formatting under workerd', () => {
         assert.equal(sample.numberUk, formatNumber(1_234_567, 'uk'));
     });
 
-    it('keeps the English and Polish currency codes', () => {
-        assert.ok(sample.currencyEn.includes('UAH'), sample.currencyEn);
-        assert.ok(sample.currencyPl.includes('UAH'), sample.currencyPl);
-        assert.ok(sample.currencyUsd.includes('USD'), sample.currencyUsd);
+    it('uses the narrow currency symbol in every language', () => {
+        assert.ok(sample.currencyEn.includes('₴'), sample.currencyEn);
+        assert.ok(sample.currencyPl.includes('₴'), sample.currencyPl);
+        assert.ok(sample.currencyUsd.includes('$'), sample.currencyUsd);
     });
 
     it('renders Ukrainian month names', () => {

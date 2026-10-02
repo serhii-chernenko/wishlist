@@ -1,4 +1,13 @@
-import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
+import {
+    and,
+    asc,
+    count,
+    eq,
+    inArray,
+    isNotNull,
+    isNull,
+    or
+} from 'drizzle-orm';
 
 import type { AppDb } from '../client';
 import { gives, users, wishes } from '../schema';
@@ -68,7 +77,18 @@ export const createGiveRepository = (db: AppDb) => {
             return tryDb(async (): Promise<GiveListPage> => {
                 const condition = and(
                     eq(gives.userId, userId),
-                    eq(wishes.removed, false)
+                    eq(wishes.removed, false),
+                    eq(wishes.hidden, false),
+                    or(
+                        isNull(users.id),
+                        and(
+                            isNull(users.blockedAt),
+                            or(
+                                eq(users.usernameSearchable, true),
+                                isNotNull(users.phone)
+                            )
+                        )
+                    )
                 );
                 const [rows, totals] = await Promise.all([
                     db
@@ -79,13 +99,7 @@ export const createGiveRepository = (db: AppDb) => {
                         })
                         .from(gives)
                         .innerJoin(wishes, eq(wishes.id, gives.wishId))
-                        .leftJoin(
-                            users,
-                            and(
-                                eq(users.id, wishes.userId),
-                                isNull(users.blockedAt)
-                            )
-                        )
+                        .leftJoin(users, eq(users.id, wishes.userId))
                         .where(condition)
                         .orderBy(asc(gives.id))
                         .limit(options.limit)
@@ -94,6 +108,7 @@ export const createGiveRepository = (db: AppDb) => {
                         .select({ total: count() })
                         .from(gives)
                         .innerJoin(wishes, eq(wishes.id, gives.wishId))
+                        .leftJoin(users, eq(users.id, wishes.userId))
                         .where(condition)
                 ]);
 

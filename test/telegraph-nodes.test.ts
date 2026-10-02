@@ -165,6 +165,30 @@ test('share nodes survive a json round trip unchanged', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(nodes)), nodes);
 });
 
+test('share content links only valid urls and cuts long payments', () => {
+    const wish = (title: string, link: string | null): ShareWish => {
+        return { ...(fixtureWishes[1] as ShareWish), title, link };
+    };
+    const { nodes } = buildShareContent({
+        ...baseInput,
+        payments: 'p'.repeat(1500),
+        wishes: [
+            wish('Good', 'https://shop.test/good'),
+            wish('Spaced', 'https://shop.test/a b'),
+            wish('Newline', 'https://shop.test/a\nhttps://shop.test/b'),
+            wish('Scheme', 'ftp://shop.test/file')
+        ]
+    });
+    const serialized = JSON.stringify(nodes);
+
+    assert.equal(serialized.includes('"href":"https://shop.test/good"'), true);
+    assert.equal(serialized.includes('shop.test/a b'), false);
+    assert.equal(serialized.includes('shop.test/b'), false);
+    assert.equal(serialized.includes('ftp://'), false);
+    assert.equal(serialized.includes('p'.repeat(1000)), false);
+    assert.equal(serialized.includes(`${'p'.repeat(999)}…`), true);
+});
+
 test('share content without payments or donate links has only the bot footer', () => {
     const { nodes } = buildShareContent({
         ...baseInput,

@@ -32,6 +32,23 @@ export const emptyTargetSql = [
     '  (SELECT COUNT(*) FROM "release_announcements") AS "releaseAnnouncements";'
 ].join('\n');
 
+export const previewResetSql = [
+    'DELETE FROM "sessions";',
+    'DELETE FROM "telegram_updates";',
+    'DELETE FROM "release_announcements";',
+    'DELETE FROM "gives";',
+    'DELETE FROM "wishes";',
+    'DELETE FROM "users";'
+].join('\n');
+
+export const assertPreviewResetTarget = (target: ImportTarget) => {
+    if (target !== 'preview') {
+        throw new Error(
+            `--reset-preview is only valid for the preview import target, not ${target}`
+        );
+    }
+};
+
 const readCount = (value: unknown, name: string) => {
     if (!Number.isSafeInteger(value) || (value as number) < 0) {
         throw new Error(`Wrangler returned an invalid ${name} row count`);
@@ -215,6 +232,12 @@ export const preflightImportTarget = (target: ImportTarget) => {
     assertApplicationTablesEmpty(counts);
 
     return counts;
+};
+
+export const resetPreviewTarget = (target: ImportTarget) => {
+    assertPreviewResetTarget(target);
+
+    return executeD1Query(target, previewResetSql, 'Preview reset');
 };
 
 export const executeImportSql = (target: ImportTarget, sqlPath: string) => {

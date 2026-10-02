@@ -19,6 +19,7 @@ import { runScheduledTasks } from '../src/worker/scheduled/tasks';
 import {
     clearCachedBotInfo,
     handleUpdateWithWishlistBot,
+    isAccessDeniedInRestrictedEnvironment,
     isIgnorableTelegramUpdate,
     isRuntimeTelegramUpdate
 } from '../src/worker/routes/telegram';
@@ -102,6 +103,7 @@ const createBindings = (
         BUYMEACOFFEE_URL: 'https://www.buymeacoffee.com/serhiichernenko',
         MONOBANK_URL: 'https://send.monobank.ua/jar/4ZGhPQqyMh',
         PAYPAL_EMAIL: 'contact@chernenko.digital',
+        ADMIN_ID: '777000111',
         BOT_TOKEN: '123456:test-token',
         NEW_RELIC_LICENSE_KEY: '',
         TELEGRAM_WEBHOOK_SECRET: 'test-webhook-secret',
@@ -176,6 +178,7 @@ const createTelegramUpdateBody = (updateId: number) => {
                 id: -100_000_000_001,
                 type: 'supergroup'
             },
+            from: { id: 777000111, is_bot: false, first_name: 'Test' },
             text: 'test'
         }
     });
@@ -915,6 +918,126 @@ test('preview environment serves health and webhook', async () => {
     assert.deepEqual(handledUpdateIds, [7]);
     assert.equal(bindings.ENABLE_RELEASE_BROADCAST, 'false');
     assert.ok(queries.length > 0);
+});
+
+const createStrangerUpdateBody = (updateId: number) => {
+    return JSON.stringify({
+        update_id: updateId,
+        message: {
+            message_id: 8,
+            date: 1_784_098_000,
+            chat: { id: 555000222, type: 'private' },
+            from: { id: 555000222, is_bot: false, first_name: 'Stranger' },
+            text: '/start'
+        }
+    });
+};
+
+for (const restrictedEnvironment of ['preview', 'local'] as const) {
+    test(`${restrictedEnvironment} bot ignores every sender except ADMIN_ID without claiming the update`, async () => {
+        const { database } = createReadinessDatabase(1);
+        const bindings = createBindings(database, restrictedEnvironment);
+        const handledUpdateIds: number[] = [];
+        const claimedUpdateIds: number[] = [];
+        const app = createApp({
+            ...ledgerRouteDependencies,
+            createUpdateLedger: () => {
+                const ledger = createClaimingLedger();
+
+                return {
+                    ...ledger,
+                    claimUpdate(botKey, updateId, leaseId, startedAt) {
+                        claimedUpdateIds.push(updateId);
+
+                        return ledger.claimUpdate(
+                            botKey,
+                            updateId,
+                            leaseId,
+                            startedAt
+                        );
+                    }
+                };
+            },
+            async handleUpdate(_env, update) {
+                handledUpdateIds.push(update.update_id);
+            }
+        });
+        const stranger = await app.fetch(
+            createTelegramRequest(
+                '/telegram/test',
+                createStrangerUpdateBody(21)
+            ),
+            bindings
+        );
+        const admin = await app.fetch(
+            createTelegramRequest(
+                '/telegram/test',
+                createTelegramUpdateBody(22)
+            ),
+            bindings
+        );
+
+        assert.equal(stranger.status, 200);
+        assert.deepEqual(await stranger.json(), {
+            ignored: true,
+            updateId: 21
+        });
+        assert.equal(admin.status, 200);
+        assert.deepEqual(handledUpdateIds, [22]);
+        assert.deepEqual(claimedUpdateIds, [22]);
+    });
+}
+
+test('restricted environments serve nobody when ADMIN_ID is empty and production serves everyone', async () => {
+    const { database } = createReadinessDatabase(1);
+    const handledUpdateIds: number[] = [];
+    const app = createApp({
+        ...ledgerRouteDependencies,
+        async handleUpdate(_env, update) {
+            handledUpdateIds.push(update.update_id);
+        }
+    });
+    const withoutAdmin = {
+        ...createBindings(database, 'preview'),
+        ADMIN_ID: ''
+    };
+    const denied = await app.fetch(
+        createTelegramRequest('/telegram/test', createTelegramUpdateBody(31)),
+        withoutAdmin
+    );
+    const production = await app.fetch(
+        createTelegramRequest('/telegram/test', createStrangerUpdateBody(32)),
+        createBindings(database, 'production')
+    );
+
+    assert.deepEqual(await denied.json(), { ignored: true, updateId: 31 });
+    assert.equal(production.status, 200);
+    assert.deepEqual(handledUpdateIds, [32]);
+});
+
+test('preview access check reads the sender of message, callback_query and my_chat_member updates', () => {
+    const env = {
+        BOT_ENVIRONMENT: 'preview',
+        ADMIN_ID: ' 777000111 '
+    } as const;
+    const bodies = [
+        createTelegramUpdateBody(1),
+        createCallbackUpdateBody(2),
+        createMyChatMemberUpdateBody(3, 'member')
+    ];
+
+    for (const body of bodies) {
+        const update = JSON.parse(body);
+
+        assert.equal(isAccessDeniedInRestrictedEnvironment(env, update), false);
+        assert.equal(
+            isAccessDeniedInRestrictedEnvironment(
+                { ...env, ADMIN_ID: '1' },
+                update
+            ),
+            true
+        );
+    }
 });
 
 const createCallbackUpdateBody = (updateId: number, data = 'n:wl') => {

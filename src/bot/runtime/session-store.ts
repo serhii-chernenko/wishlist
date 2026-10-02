@@ -2,6 +2,7 @@ import { Effect } from 'effect';
 
 import type { AppLocale } from '../i18n';
 import type {
+    AlbumState,
     FindState,
     PendingInput,
     Repositories,
@@ -116,6 +117,26 @@ const decodeFindState = (value: unknown): Decoded<FindState | null> => {
     });
 };
 
+const decodeAlbumState = (value: unknown): Decoded<AlbumState | null> => {
+    if (value === null || value === undefined) {
+        return decoded(null);
+    }
+
+    if (
+        !isObject(value) ||
+        typeof value.mediaGroupId !== 'string' ||
+        value.mediaGroupId === '' ||
+        !isPositiveInteger(value.wishId)
+    ) {
+        return INVALID;
+    }
+
+    return decoded({
+        mediaGroupId: value.mediaGroupId,
+        wishId: value.wishId
+    });
+};
+
 const parseJson = (raw: string): unknown => {
     try {
         return JSON.parse(raw);
@@ -143,15 +164,17 @@ export const decodeSessionState = (
 
     const pendingInput = decodePendingInput(value.pendingInput);
     const find = decodeFindState(value.find);
+    const album = decodeAlbumState(value.album);
 
-    if (!pendingInput.ok || !find.ok) {
+    if (!pendingInput.ok || !find.ok || !album.ok) {
         return createDefaultSessionState();
     }
 
     return {
         v: SESSION_VERSION,
         pendingInput: pendingInput.value,
-        find: find.value
+        find: find.value,
+        ...(album.value === null ? {} : { album: album.value })
     };
 };
 
@@ -159,7 +182,8 @@ export const encodeSessionState = (state: SessionState) => {
     return JSON.stringify({
         v: state.v,
         pendingInput: state.pendingInput,
-        find: state.find
+        find: state.find,
+        ...(state.album === undefined ? {} : { album: state.album })
     });
 };
 

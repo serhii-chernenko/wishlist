@@ -6,8 +6,10 @@ import {
     exists,
     gte,
     inArray,
+    isNotNull,
     isNull,
     lte,
+    or,
     sql,
     type SQL
 } from 'drizzle-orm';
@@ -45,7 +47,16 @@ export const priceFilterRanges: readonly PriceRange[] = [
     { from: 10000, to: null }
 ];
 
+export const SHAREABLE_WISHES_LIMIT = 100;
+
 const tryDb = createTryDb('Wish repository');
+
+const findableOwner = () => {
+    return and(
+        isNull(users.blockedAt),
+        or(eq(users.usernameSearchable, true), isNotNull(users.phone))
+    );
+};
 
 const buildPriceCondition = (filter: number | null) => {
     const range = filter === null ? undefined : priceFilterRanges[filter];
@@ -120,7 +131,7 @@ export const createWishRepository = (db: AppDb) => {
                             eq(wishes.id, wishId),
                             eq(wishes.hidden, false),
                             eq(wishes.removed, false),
-                            isNull(users.blockedAt)
+                            findableOwner()
                         )
                     )
                     .limit(1);
@@ -194,7 +205,8 @@ export const createWishRepository = (db: AppDb) => {
                             eq(wishes.removed, false)
                         )
                     )
-                    .orderBy(...listOrder);
+                    .orderBy(...listOrder)
+                    .limit(SHAREABLE_WISHES_LIMIT);
             });
         },
         updateFields(

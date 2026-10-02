@@ -48,6 +48,36 @@ test('every pending input variant round-trips', () => {
     }
 });
 
+test('the completed album marker survives a round trip and invalid ones reset', () => {
+    const state: SessionState = {
+        v: 1,
+        pendingInput: null,
+        find: null,
+        album: { mediaGroupId: '1234', wishId: 9 }
+    };
+
+    assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
+    assert.equal(
+        encodeSessionState(DEFAULT_STATE),
+        '{"v":1,"pendingInput":null,"find":null}'
+    );
+
+    for (const album of [
+        '{"mediaGroupId":"","wishId":9}',
+        '{"mediaGroupId":"1","wishId":0}',
+        '{"mediaGroupId":1,"wishId":9}',
+        '"x"'
+    ]) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":null,"find":null,"album":${album}}`
+            ),
+            DEFAULT_STATE,
+            album
+        );
+    }
+});
+
 test('invalid values reset to the default state', () => {
     const invalid = [
         'not json',

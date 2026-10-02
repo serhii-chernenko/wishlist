@@ -81,7 +81,11 @@ const en: Translation = {
             points: '\n\n- how much you like the bot 😅\n- something is broken and needs fixing\n- ideas for improvement\n- you want to help translate the bot into other languages\n\nIf you need a reply, leave your contact details, for example your Telegram username, phone number or email, so I can write to you and help solve the problem.'
         },
         message: '#feedback from {0}\n\n{1}',
-        success: 'Thanks for reaching out ☺️\nI will read it as soon as I can!'
+        success: 'Thanks for reaching out ☺️\nI will read it as soon as I can!',
+        errors: {
+            tooLong:
+                '❌ That feedback is too long! The maximum is {0} characters.\nPlease shorten it and send it again.'
+        }
     },
     auth: {
         title: {
@@ -250,7 +254,9 @@ const en: Translation = {
             give: '❌ This wish is already in your <b>I want to give</b> list!',
             take: '❌ This wish is not in your <b>I want to give</b> list!',
             notFound: '❌ Person not found, please try again!',
-            foundYourself: `❌ Nice try, sneaky, but you can't search for yourself! 😘`
+            foundYourself: `❌ Nice try, sneaky, but you can't search for yourself! 😘`,
+            tooLong:
+                '❌ That search is too long! The maximum is {0} characters, please try again.'
         },
         success: {
             give: '✅ The wish was added to your <b>I want to give</b> list!',
@@ -310,7 +316,9 @@ const en: Translation = {
         },
         edit: {
             error: `❌ That doesn't look like valid information!\nTry again.`,
-            success: '✅ The payment details were updated!'
+            success: '✅ The payment details were updated!',
+            tooLong:
+                '❌ The payment details are too long! The maximum is {0} characters.\nTry again.'
         },
         remove: {
             success:

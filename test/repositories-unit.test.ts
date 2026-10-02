@@ -103,14 +103,16 @@ test('createRepositories exposes exactly the contracted repositories and methods
 test('repository failures are wrapped with the repository name', async () => {
     const tryDb = createTryDb('Example repository');
 
-    await assert.rejects(
-        Effect.runPromise(
+    const failure = await Effect.runPromise(
+        Effect.flip(
             tryDb(async () => {
                 throw new Error('boom');
             })
-        ),
-        /Example repository failure: Error: boom/
+        )
     );
+
+    assert.equal(failure.message, 'Example repository failure');
+    assert.equal((failure.cause as Error).message, 'boom');
     assert.equal(await Effect.runPromise(tryDb(async () => 7)), 7);
 });
 

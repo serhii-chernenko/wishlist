@@ -72,6 +72,7 @@ export interface DeliverOptions {
 
 export interface WebhookHarnessOptions {
     adminId?: string | null;
+    botEnvironment?: 'local' | 'production' | 'preview';
 }
 
 export const createTelegramApiError = (
@@ -289,6 +290,7 @@ export const createWebhookHarness = async (
             BOT_TOKEN,
             TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET,
             TELEGRAM_WEBHOOK_PATH: WEBHOOK_PATH,
+            BOT_ENVIRONMENT: options.botEnvironment ?? 'production',
             ...(adminId === null ? { ADMIN_ID: '' } : { ADMIN_ID: adminId })
         });
 

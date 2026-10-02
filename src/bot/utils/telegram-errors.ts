@@ -47,6 +47,16 @@ export const isTelegramBadRequest = (error: unknown) => {
     return getTelegramErrorCode(error) === TELEGRAM_BAD_REQUEST;
 };
 
+const BUTTON_URL_ERROR_PATTERN =
+    /button_url_invalid|inline keyboard button url|wrong http url/i;
+
+export const isTelegramButtonUrlError = (error: unknown) => {
+    return (
+        isTelegramBadRequest(error) &&
+        BUTTON_URL_ERROR_PATTERN.test(getTelegramErrorDescription(error))
+    );
+};
+
 export const isTelegramForbidden = (error: unknown) => {
     return getTelegramErrorCode(error) === TELEGRAM_FORBIDDEN;
 };

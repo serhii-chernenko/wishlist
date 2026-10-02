@@ -1,5 +1,11 @@
 import type { TranslationFunctions } from '../../i18n/i18n-types';
-import { cutDescription, cutTitle } from '../input/limits';
+import {
+    cutDescription,
+    cutTitle,
+    PAYMENTS_MAX_LENGTH,
+    truncateWithMark
+} from '../input/limits';
+import { isRenderableLink } from '../input/link';
 import {
     element,
     expandLineBreaks,
@@ -69,7 +75,7 @@ const buildPaymentsBlock = (input: ShareContentInput, payments: string) => {
     const filled = replaceInText(
         trimEdgeWhitespace(templated),
         PAYMENTS_TOKEN,
-        inlineMarkup(payments)
+        inlineMarkup(truncateWithMark(payments, PAYMENTS_MAX_LENGTH))
     );
 
     return element('blockquote', expandLineBreaks(filled));
@@ -103,7 +109,7 @@ const buildWishNodes = (
         nodes.push(blockFromHtml(LL.markup.priority.owner()));
     }
 
-    if (wish.link) {
+    if (isRenderableLink(wish.link)) {
         nodes.push(
             element('p', [element('a', [wish.link], { href: wish.link })])
         );

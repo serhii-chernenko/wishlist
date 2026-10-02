@@ -82,7 +82,11 @@ const pl: Translation = {
             points: '\n\n- jak bardzo podoba ci się bot 😅\n- coś się zepsuło i trzeba to naprawić\n- propozycje usprawnień\n- chcesz pomóc w tłumaczeniu na inne języki\n\nJeśli potrzebujesz odpowiedzi, zostaw dane kontaktowe, na przykład nazwę użytkownika w Telegramie, numer telefonu albo adres e-mail, żebym mógł do ciebie napisać i pomóc rozwiązać problem.'
         },
         message: '#opinia od {0}\n\n{1}',
-        success: 'Dzięki za wiadomość ☺️\nPrzeczytam jak najszybciej!'
+        success: 'Dzięki za wiadomość ☺️\nPrzeczytam jak najszybciej!',
+        errors: {
+            tooLong:
+                '❌ Ta opinia jest za długa! Maksymalnie {0} znaków.\nSkróć ją i wyślij jeszcze raz.'
+        }
     },
     auth: {
         title: {
@@ -258,7 +262,9 @@ const pl: Translation = {
             take: '❌ Tego życzenia nie ma na liście <b>Chcę podarować</b>!',
             notFound: '❌ Nie znaleziono osoby, spróbuj jeszcze raz!',
             foundYourself:
-                '❌ Ach ty chytra szelmo, siebie szukać nie wolno! 😘'
+                '❌ Ach ty chytra szelmo, siebie szukać nie wolno! 😘',
+            tooLong:
+                '❌ To zapytanie jest za długie! Maksymalnie {0} znaków, spróbuj jeszcze raz.'
         },
         success: {
             give: '✅ Życzenie zostało dodane do listy <b>Chcę podarować</b>!',
@@ -319,7 +325,9 @@ const pl: Translation = {
         },
         edit: {
             error: '❌ To nie wygląda na prawidłowe dane!\nSpróbuj jeszcze raz.',
-            success: '✅ Dane płatnicze zostały zaktualizowane!'
+            success: '✅ Dane płatnicze zostały zaktualizowane!',
+            tooLong:
+                '❌ Dane płatnicze są za długie! Maksymalnie {0} znaków.\nSpróbuj jeszcze raz.'
         },
         remove: {
             success:

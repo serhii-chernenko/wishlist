@@ -17,6 +17,7 @@ import {
     singleColumnKeyboard
 } from '../content/keyboards';
 import { getPageWindow, normalizeOffset } from '../content/pagination';
+import { PAYMENTS_MAX_LENGTH, truncateWithMark } from '../input/limits';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
 import type {
     BotRequest,
@@ -28,7 +29,6 @@ import { summarizeGivers, type GiverSummary } from '../services/give-service';
 import {
     createWishFormatters,
     createWishScreenServices,
-    getOwnerReference,
     isFindableOwner,
     openLinkButton,
     requireUser,
@@ -36,6 +36,7 @@ import {
 } from '../services/wish-screen-context';
 import { escapeHtml } from '../utils/strings';
 import { screen as findListScreen } from './find-list';
+import { screen as homeScreen } from './home';
 
 export interface ThirdWishlistParams {
     ownerId: number;
@@ -125,7 +126,16 @@ const resolveQueryLabel = (
     const storedQuery =
         find !== null && find.targetUserId === owner.id ? find.query : '';
 
-    return explicitQuery || storedQuery || getOwnerReference(owner) || '';
+    return explicitQuery || storedQuery;
+};
+
+const isSearchedOwner = (req: BotRequest, ownerId: number) => {
+    return req.session.find?.targetUserId === ownerId;
+};
+
+const rejectOutdatedButton = async (req: BotRequest) => {
+    await req.send.toast(req.LL.errors.outdatedButton());
+    await homeScreen.render(req, undefined);
 };
 
 const render = async (req: BotRequest, params: ThirdWishlistParams) => {
@@ -230,7 +240,11 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
 
     if (owner.payments && !window.hasMore) {
         await req.send.text(
-            LL.findList.filled.payments(escapeHtml(owner.payments)),
+            LL.findList.filled.payments(
+                escapeHtml(
+                    truncateWithMark(owner.payments, PAYMENTS_MAX_LENGTH)
+                )
+            ),
             removeReplyKeyboard()
         );
     }
@@ -271,15 +285,35 @@ const findGiftableWish = async (req: BotRequest, wishId: number) => {
     const { wishes } = createWishScreenServices(req);
     const wish = await wishes.findVisible(wishId);
 
-    if (wish === null || wish.userId === viewer.id) {
+    if (
+        wish === null ||
+        wish.userId === null ||
+        wish.userId === viewer.id ||
+        !isSearchedOwner(req, wish.userId)
+    ) {
         return null;
     }
 
     return wish;
 };
 
+const hasGiven = async (req: BotRequest, viewerId: number, wishId: number) => {
+    const { gives } = createWishScreenServices(req);
+    const giversByWish = await gives.giversOf([wishId]);
+
+    return (giversByWish.get(wishId) ?? []).includes(viewerId);
+};
+
 export const callbacks: CallbackTable = {
     thirdPage: async (req, action) => {
+        requireUser(req);
+
+        if (!isSearchedOwner(req, action.ownerId)) {
+            await rejectOutdatedButton(req);
+
+            return;
+        }
+
         await render(req, {
             ownerId: action.ownerId,
             offset: action.offset
@@ -289,6 +323,13 @@ export const callbacks: CallbackTable = {
         const formatters = createWishFormatters(req);
 
         requireUser(req);
+
+        if (!isSearchedOwner(req, action.ownerId)) {
+            await rejectOutdatedButton(req);
+
+            return;
+        }
+
         await req.send.text(
             req.LL.filters.description(),
             buildFilterKeyboard(req.LL, formatters.formatMoney, filter => {
@@ -306,15 +347,17 @@ export const callbacks: CallbackTable = {
         requireUser(req);
 
         const current = req.session.find;
-        const query =
-            current !== null && current.targetUserId === action.ownerId
-                ? current.query
-                : '';
+
+        if (current === null || current.targetUserId !== action.ownerId) {
+            await rejectOutdatedButton(req);
+
+            return;
+        }
 
         updateSession(req, {
             find: {
                 targetUserId: action.ownerId,
-                query,
+                query: current.query,
                 filter: action.filter
             }
         });
@@ -357,16 +400,16 @@ export const callbacks: CallbackTable = {
     thirdTake: async (req, action) => {
         const { LL } = req;
         const viewer = requireUser(req);
-        const wish = await findGiftableWish(req, action.wishId);
 
-        if (wish === null) {
+        if (!(await hasGiven(req, viewer.id, action.wishId))) {
             await req.send.toast(LL.errors.outdatedButton());
 
             return;
         }
 
-        const { gives } = createWishScreenServices(req);
-        const removed = await gives.take(viewer.id, wish.id);
+        const { gives, wishes } = createWishScreenServices(req);
+        const wish = await wishes.findVisible(action.wishId);
+        const removed = await gives.take(viewer.id, action.wishId);
 
         if (removed) {
             req.telemetry.botActionCompleted({ action: 'give_removed' });
@@ -375,6 +418,10 @@ export const callbacks: CallbackTable = {
         await req.send.toast(
             removed ? LL.findList.success.take() : LL.findList.errors.take()
         );
-        await req.send.replaceKeyboard(buildGiftKeyboard(req, wish, false));
+        await req.send.replaceKeyboard(
+            wish === null
+                ? { inline_keyboard: [] }
+                : buildGiftKeyboard(req, wish, false)
+        );
     }
 };

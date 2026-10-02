@@ -7,6 +7,7 @@ import {
     removeReplyKeyboard,
     singleColumnKeyboard
 } from '../content/keyboards';
+import { PAYMENTS_MAX_LENGTH, truncateWithMark } from '../input/limits';
 import { deriveRequest } from '../runtime/context';
 import type {
     BotRequest,
@@ -35,7 +36,7 @@ const render = async (req: BotRequest) => {
     }
 
     const current = user.payments
-        ? `\n\n${LL.payments.description.update(escapeHtml(user.payments))}`
+        ? `\n\n${LL.payments.description.update(escapeHtml(truncateWithMark(user.payments, PAYMENTS_MAX_LENGTH)))}`
         : '';
 
     req.setSession({ ...req.session, pendingInput: { kind: 'payments' } });
@@ -63,6 +64,15 @@ const onInput = async (
     if (!user) {
         req.setSession({ ...req.session, pendingInput: null });
         await homeScreen.render(req, undefined);
+        return;
+    }
+
+    if (Array.from(payments).length > PAYMENTS_MAX_LENGTH) {
+        await req.send.text(
+            LL.payments.edit.tooLong(String(PAYMENTS_MAX_LENGTH)),
+            removeReplyKeyboard()
+        );
+        await render(req);
         return;
     }
 

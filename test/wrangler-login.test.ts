@@ -121,21 +121,25 @@ test('D1 result parser accepts one successful envelope only', () => {
 
 test('import options accept only the documented flags with values', () => {
     assert.deepEqual(parseImportOptions([]), {
-        allowLocalProductionSource: false
+        allowLocalProductionSource: false,
+        resetPreview: false
     });
     assert.deepEqual(parseImportOptions(['--']), {
-        allowLocalProductionSource: false
+        allowLocalProductionSource: false,
+        resetPreview: false
     });
     assert.deepEqual(
         parseImportOptions(['--input-dir', '/backups/wishlist-db']),
         {
             inputDirectory: '/backups/wishlist-db',
-            allowLocalProductionSource: false
+            allowLocalProductionSource: false,
+            resetPreview: false
         }
     );
     assert.deepEqual(parseImportOptions(['--github-ref', 'main']), {
         githubRef: 'main',
-        allowLocalProductionSource: false
+        allowLocalProductionSource: false,
+        resetPreview: false
     });
     assert.throws(() => {
         parseImportOptions(['--input-dir']);

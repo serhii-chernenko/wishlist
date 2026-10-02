@@ -380,7 +380,10 @@ describe('D1 repositories', () => {
         let owner: UserRecord;
 
         beforeEach(async () => {
-            owner = await createUser({ username: 'owner' });
+            owner = await createUser({
+                username: 'owner',
+                usernameSearchable: true
+            });
         });
 
         it('lists owned wishes by priority, recency and id with pagination and price filters', async () => {
@@ -548,6 +551,35 @@ describe('D1 repositories', () => {
                 ).total,
                 0
             );
+        });
+
+        it('does not expose wishes of owners that cannot be found', async () => {
+            const unfindable = await createUser();
+            const phoneOnly = await createUser({
+                phone: '+380501112244',
+                phoneDigits: '380501112244'
+            });
+            const lost = await createWish(unfindable.id, 'lost');
+            const viaPhone = await createWish(phoneOnly.id, 'via phone');
+
+            assert.equal(
+                await run(repositories.wishes.findVisible(lost.id)),
+                null
+            );
+            assert.equal(
+                (await run(repositories.wishes.findVisible(viaPhone.id)))?.id,
+                viaPhone.id
+            );
+        });
+
+        it('limits the shareable list to 100 wishes', async () => {
+            await seedGeneratedWishes(harness, owner.id, 130);
+
+            const shareable = await run(
+                repositories.wishes.listShareable(owner.id)
+            );
+
+            assert.equal(shareable.length, 100);
         });
 
         it('enforces ownership on every mutation', async () => {
@@ -847,7 +879,10 @@ describe('D1 repositories', () => {
 
     describe('gives', () => {
         it('adds once, removes only the caller give and lists with owners', async () => {
-            const owner = await createUser({ username: 'owner' });
+            const owner = await createUser({
+                username: 'owner',
+                usernameSearchable: true
+            });
             const giver = await createUser();
             const otherGiver = await createUser();
             const wish = await createWish(owner.id, 'gift');
@@ -888,8 +923,11 @@ describe('D1 repositories', () => {
             assert.equal(await countRows(harness, 'gives'), 0);
         });
 
-        it('omits blocked or missing owners and excludes removed wishes from the list', async () => {
-            const owner = await createUser();
+        it('excludes wishes of blocked owners, hidden wishes and removed wishes, and keeps ownerless wishes', async () => {
+            const owner = await createUser({
+                username: 'owner',
+                usernameSearchable: true
+            });
             const giver = await createUser();
             const visible = await createWish(owner.id, 'visible');
             const removed = await createWish(owner.id, 'removed');
@@ -915,9 +953,8 @@ describe('D1 repositories', () => {
                 })
             );
 
-            assert.equal(list.total, 1);
-            assert.equal(list.items.length, 1);
-            assert.equal(list.items[0]?.owner, null);
+            assert.equal(list.total, 0);
+            assert.equal(list.items.length, 0);
 
             await harness.env.DB.prepare('DELETE FROM users WHERE id = ?')
                 .bind(owner.id)
@@ -930,7 +967,46 @@ describe('D1 repositories', () => {
                 })
             );
 
+            assert.equal(afterOwnerDelete.total, 1);
             assert.equal(afterOwnerDelete.items[0]?.owner, null);
+        });
+
+        it('excludes hidden wishes and wishes of owners that cannot be found', async () => {
+            const findable = await createUser({
+                username: 'findable',
+                usernameSearchable: true
+            });
+            const phoneOnly = await createUser({
+                phone: '+380501112233',
+                phoneDigits: '380501112233'
+            });
+            const unfindable = await createUser();
+            const giver = await createUser();
+            const shown = await createWish(findable.id, 'shown');
+            const hidden = await createWish(findable.id, 'hidden');
+            const viaPhone = await createWish(phoneOnly.id, 'via phone');
+            const lost = await createWish(unfindable.id, 'lost');
+
+            await run(
+                repositories.wishes.toggleHidden(hidden.id, findable.id, now)
+            );
+
+            for (const wish of [shown, hidden, viaPhone, lost]) {
+                await run(repositories.gives.add(giver.id, wish.id, now));
+            }
+
+            const list = await run(
+                repositories.gives.listForGiver(giver.id, {
+                    offset: 0,
+                    limit: 10
+                })
+            );
+
+            assert.deepEqual(list.items.map(item => item.wish.title).sort(), [
+                'shown',
+                'via phone'
+            ]);
+            assert.equal(list.total, 2);
         });
 
         it('looks up givers for more than 100 wish ids in chunks', async () => {

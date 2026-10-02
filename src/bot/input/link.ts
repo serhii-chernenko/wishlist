@@ -25,6 +25,12 @@ export const extractLink = (text: string | undefined) => {
     }
 };
 
+export const isRenderableLink = (
+    link: string | null | undefined
+): link is string => {
+    return typeof link === 'string' && extractLink(link) === link;
+};
+
 export const parseLink = (
     text: string | undefined,
     removeLabels: readonly string[]

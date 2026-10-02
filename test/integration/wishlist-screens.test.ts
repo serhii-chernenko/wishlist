@@ -176,6 +176,14 @@ describe('wishlist screens on D1', () => {
         return { request, events, deferred, savedSessions, telemetry };
     };
 
+    const searchedSession = (ownerId: number): SessionState => {
+        return {
+            v: 1,
+            pendingInput: null,
+            find: { targetUserId: ownerId, query: 'alice', filter: null }
+        };
+    };
+
     const dispatch = async (request: BotRequest, data: string) => {
         const action = decodeCallbackData(data);
         const handler = allCallbacks
@@ -631,7 +639,8 @@ describe('wishlist screens on D1', () => {
             assert.deepEqual(JSON.parse(savedSession?.state ?? '{}'), {
                 v: 1,
                 pendingInput: null,
-                find: null
+                find: null,
+                album: { mediaGroupId: 'album-1', wishId: wish.id }
             });
             assert.equal(savedSession?.mediaGroupMarker, null);
         });
@@ -929,7 +938,9 @@ describe('wishlist screens on D1', () => {
 
             assert.equal(wishes.length, 1);
 
-            const filtered = createRequest(viewer);
+            const filtered = createRequest(viewer, {
+                session: searchedSession(owner.id)
+            });
 
             await dispatch(filtered.request, `t:f:${owner.id}:4`);
             assert.ok(
@@ -967,7 +978,9 @@ describe('wishlist screens on D1', () => {
                 `t:g:${wish.id}`
             ]);
 
-            const give = createRequest(viewer);
+            const give = createRequest(viewer, {
+                session: searchedSession(owner.id)
+            });
 
             await dispatch(give.request, `t:g:${wish.id}`);
             assert.deepEqual(
@@ -987,7 +1000,9 @@ describe('wishlist screens on D1', () => {
                 [`t:t:${wish.id}`]
             );
 
-            const again = createRequest(viewer);
+            const again = createRequest(viewer, {
+                session: searchedSession(owner.id)
+            });
 
             await dispatch(again.request, `t:g:${wish.id}`);
             assert.ok(
@@ -996,7 +1011,9 @@ describe('wishlist screens on D1', () => {
                 )
             );
 
-            const take = createRequest(viewer);
+            const take = createRequest(viewer, {
+                session: searchedSession(owner.id)
+            });
 
             await dispatch(take.request, `t:t:${wish.id}`);
             assert.ok(
@@ -1136,7 +1153,7 @@ describe('wishlist screens on D1', () => {
             );
         });
 
-        it('omits the owner line for blocked owners and cleans after confirmation', async () => {
+        it('hides wishes of blocked owners and cleans after confirmation', async () => {
             const owner = await createUser({
                 username: 'Alice',
                 usernameSearchable: true
@@ -1165,11 +1182,12 @@ describe('wishlist screens on D1', () => {
 
             await giveListScreen.render(request, undefined);
 
-            const item = events.find(event => {
-                return event.kind === 'wish';
-            }) as Extract<SentEvent, { kind: 'wish' }>;
-
-            assert.equal(item.item.html.includes('Для юзеру'), false);
+            assert.equal(
+                events.some(event => {
+                    return event.kind === 'wish';
+                }),
+                false
+            );
 
             const ask = createRequest(viewer);
 

@@ -50,11 +50,11 @@ test('currency defaults to UAH and uses the locale format', () => {
     );
     assert.equal(
         normalizeSpaces(formatCurrency(1500, 'en', 'UAH')),
-        'UAH 1,500.00'
+        '₴1,500.00'
     );
     assert.equal(
         normalizeSpaces(formatCurrency(2000, 'pl', 'UAH')),
-        '2000,00 UAH'
+        '2000,00 ₴'
     );
 });
 

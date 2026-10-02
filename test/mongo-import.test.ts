@@ -7,8 +7,11 @@ import test from 'node:test';
 
 import {
     assertApplicationTablesEmpty,
+    assertPreviewResetTarget,
     getD1ExecuteArguments,
-    parseApplicationTableCounts
+    parseApplicationTableCounts,
+    previewResetSql,
+    resetPreviewTarget
 } from '../scripts/db/d1-import-target';
 import {
     createGithubCliTokenEnvironment,
@@ -17,7 +20,8 @@ import {
 } from '../scripts/db/mongo-import';
 import {
     parseImportOptions,
-    resolveMongoImportSource
+    resolveMongoImportSource,
+    runMongoImport
 } from '../scripts/db/run-mongo-import';
 import {
     createSyntheticMongoExport,
@@ -626,11 +630,17 @@ test('import runner parses options and selects the source per target', context =
         {
             githubRef: 'abc',
             inputDirectory: '/x',
-            allowLocalProductionSource: false
+            allowLocalProductionSource: false,
+            resetPreview: false
         }
     );
     assert.deepEqual(parseImportOptions(['--allow-local-production-source']), {
-        allowLocalProductionSource: true
+        allowLocalProductionSource: true,
+        resetPreview: false
+    });
+    assert.deepEqual(parseImportOptions(['--reset-preview']), {
+        allowLocalProductionSource: false,
+        resetPreview: true
     });
     assert.throws(() => parseImportOptions(['--input-dir']), /Usage/);
     assert.throws(() => parseImportOptions(['--unknown']), /Usage/);
@@ -729,6 +739,90 @@ test('import runner parses options and selects the source per target', context =
     assert.throws(() => {
         resolveMongoImportSource('local', base);
     }, /does not exist/);
+});
+
+test('Mongo import trims and validates wish links and reports the invalid ones', async context => {
+    const links: Array<string | undefined> = [
+        '  https://example.com/good  ',
+        'https://example.com/one https://example.com/two',
+        'https://www.instagram.com/p/x/?igshid=1 / https://www.instagram.com/p/x',
+        'not a url',
+        'ftp://example.com/file',
+        '',
+        undefined,
+        'http://example.com/ok'
+    ];
+    const directory = createFixtureDirectory(context, records => {
+        records.users.splice(1, records.users.length - 1);
+        records.wishes.splice(0, records.wishes.length);
+        records.gives.splice(0, records.gives.length, {
+            _id: { $oid: giveObjectId(0) },
+            userId: { $oid: userObjectId(0) },
+            wishId: { $oid: wishObjectId(0) }
+        });
+        links.forEach((link, index) => {
+            records.wishes.push({
+                _id: { $oid: wishObjectId(index) },
+                userId: { $oid: userObjectId(0) },
+                title: `Wish ${index}`,
+                images: [],
+                ...(link === undefined ? {} : { link })
+            });
+        });
+    });
+    const report = await runImport(directory);
+    const sql = readSql(directory);
+
+    assert.equal(report.invalidLinks, 2);
+    assert.equal(
+        JSON.parse(fs.readFileSync(report.outputReportPath, 'utf8'))
+            .invalidLinks,
+        2
+    );
+    assert.ok(sql.includes("'https://example.com/good'"));
+    assert.ok(sql.includes("'https://example.com/one'"));
+    assert.equal(sql.includes('https://example.com/two'), false);
+    assert.ok(sql.includes("'https://www.instagram.com/p/x/?igshid=1'"));
+    assert.equal(sql.includes('not a url'), false);
+    assert.equal(sql.includes('ftp://'), false);
+    assert.ok(sql.includes("'http://example.com/ok'"));
+});
+
+test('the preview reset flag is refused for every target but preview', async () => {
+    assert.doesNotThrow(() => {
+        assertPreviewResetTarget('preview');
+    });
+
+    for (const target of ['production', 'local'] as const) {
+        assert.throws(() => {
+            assertPreviewResetTarget(target);
+        }, /only valid for the preview import target/);
+        assert.throws(() => {
+            resetPreviewTarget(target);
+        }, /only valid for the preview import target/);
+        await assert.rejects(
+            runMongoImport(target, {
+                allowLocalProductionSource: false,
+                resetPreview: true
+            }),
+            /only valid for the preview import target/
+        );
+    }
+});
+
+test('the preview reset deletes dependent tables before their parents', () => {
+    const tables = previewResetSql.split('\n').map(statement => {
+        return /DELETE FROM "(\w+)";/.exec(statement)?.[1];
+    });
+
+    assert.deepEqual(tables, [
+        'sessions',
+        'telegram_updates',
+        'release_announcements',
+        'gives',
+        'wishes',
+        'users'
+    ]);
 });
 
 test('empty-target preflight counts only application tables and fails closed', () => {

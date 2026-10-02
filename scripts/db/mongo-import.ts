@@ -15,6 +15,7 @@ import {
     readRecord,
     rejectUnknownKeys
 } from './mongo-extended-json';
+import { extractLink } from '../../src/bot/input/link';
 
 const githubApiOrigin = 'https://api.github.com';
 const githubRequestTimeoutMilliseconds = 15_000;
@@ -256,6 +257,7 @@ export interface ImportReport {
         mongoIds: string[];
     };
     droppedKeys: Record<string, number>;
+    invalidLinks: number;
     aggregates: ImportAggregates;
     validation: {
         validated: true;
@@ -282,7 +284,25 @@ interface ParsedCollections {
 
 interface ValidationContext {
     droppedKeyCounts: Map<string, number>;
+    invalidLinks: number;
 }
+
+const normalizeImportedLink = (
+    link: string | null,
+    context: ValidationContext
+) => {
+    if (link === null) {
+        return null;
+    }
+
+    const normalized = extractLink(link.trim());
+
+    if (normalized === null) {
+        context.invalidLinks += 1;
+    }
+
+    return normalized;
+};
 
 const readNonEmptyTitle = (value: unknown, location: string): string => {
     if (typeof value !== 'string' || value.trim().length === 0) {
@@ -437,7 +457,10 @@ const validateWishRecord = (
             `${location}.description`,
             16384
         ),
-        link: readOptionalText(record.link, `${location}.link`, 16384),
+        link: normalizeImportedLink(
+            readOptionalText(record.link, `${location}.link`, 16384),
+            context
+        ),
         images: readImages(record.images, `${location}.images`),
         priority: readMongoBoolean(
             record.priority,
@@ -1477,7 +1500,10 @@ export const prepareMongoImport = async (
         };
     }
 
-    const context: ValidationContext = { droppedKeyCounts: new Map() };
+    const context: ValidationContext = {
+        droppedKeyCounts: new Map(),
+        invalidLinks: 0
+    };
     const collections = parseCollections(files, context);
     const transformed = transformCollections({
         users: collections.users.records,
@@ -1516,6 +1542,7 @@ export const prepareMongoImport = async (
                 return left.localeCompare(right);
             })
         ),
+        invalidLinks: context.invalidLinks,
         aggregates: summarizeAggregates(
             transformed.userRows,
             transformed.wishRows,

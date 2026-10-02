@@ -84,6 +84,16 @@ Decisions:
 - [ ] `backup-dbs` no longer backs up wishlist; `wishlist-db` archived
 - [ ] Obsolete GitHub secrets and variables removed
 
+## Follow-ups
+
+Deferred security and robustness items (details in [docs/OPERATIONS.md](./docs/OPERATIONS.md#15-follow-ups)). None blocks the cutover.
+
+- [ ] M1. Separate admin secret for `/admin/release-broadcast` (princess parity).
+- [ ] M3. Per-user rate limiting.
+- [ ] L1. Deferred low-severity audit item.
+- [ ] L2. Check traces and logs for the bot token in outgoing URLs.
+- [ ] L4 to L9. Deferred low-severity audit items.
+
 ## Cutover Record
 
 Filled in during the cutover.

@@ -4,6 +4,7 @@ import type { UserRecord } from '../../db/repositories';
 import { getAllLocaleTexts } from '../content/messages';
 import { formatCurrency, formatDate } from '../content/intl';
 import { urlButton } from '../content/keyboards';
+import { isRenderableLink } from '../input/link';
 import type { WishMarkupFormatters } from '../content/wish-markup';
 import { BotUserError } from '../errors';
 import type { BotRequest, SessionState } from '../runtime/types';
@@ -63,7 +64,9 @@ export const openLinkButton = (
     req: BotRequest,
     link: string | null
 ): InlineKeyboardButton[] => {
-    return link ? [urlButton(req.LL.actions.open(), link)] : [];
+    return isRenderableLink(link)
+        ? [urlButton(req.LL.actions.open(), link)]
+        : [];
 };
 
 export const getOwnerReference = (

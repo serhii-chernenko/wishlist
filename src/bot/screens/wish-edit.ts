@@ -26,6 +26,7 @@ import type {
     ScreenModule,
     WishField
 } from '../runtime/types';
+import { getMediaGroupId } from '../runtime/album';
 import { runRepository } from '../services/run-repository';
 import {
     createWishFormatters,
@@ -371,10 +372,6 @@ const handlePrice = async (
     );
 };
 
-const getMediaGroupId = (message: Message) => {
-    return 'media_group_id' in message ? message.media_group_id : undefined;
-};
-
 const buildImagesSavedText = (req: BotRequest, capReached: boolean) => {
     const { success } = req.LL.wishlist.edit;
 
@@ -386,6 +383,7 @@ const buildImagesSavedText = (req: BotRequest, capReached: boolean) => {
 const scheduleAlbumCompletion = (
     req: BotRequest,
     wishId: number,
+    mediaGroupId: string,
     marker: number,
     capReached: boolean
 ) => {
@@ -409,7 +407,11 @@ const scheduleAlbumCompletion = (
             await runRepository(
                 req.repos.sessions.saveState(
                     telegramUserId,
-                    { ...req.session, pendingInput: null },
+                    {
+                        ...req.session,
+                        pendingInput: null,
+                        album: { mediaGroupId, wishId }
+                    },
                     new Date()
                 )
             );
@@ -520,7 +522,7 @@ const handleImages = async (
             new Date()
         )
     );
-    scheduleAlbumCompletion(req, wish.id, marker, capReached);
+    scheduleAlbumCompletion(req, wish.id, mediaGroupId, marker, capReached);
 };
 
 const handleWishFieldInput = async (

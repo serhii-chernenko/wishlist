@@ -5,7 +5,7 @@ export const createTryDb = (repositoryName: string) => {
         return Effect.tryPromise({
             try: () => execute(),
             catch: cause => {
-                return new Error(`${repositoryName} failure: ${String(cause)}`);
+                return new Error(`${repositoryName} failure`, { cause });
             }
         });
     };

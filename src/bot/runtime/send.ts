@@ -10,6 +10,7 @@ import {
 import {
     getTelegramRetryAfterSeconds,
     isTelegramBadRequest,
+    isTelegramButtonUrlError,
     isTelegramForbidden
 } from '../utils/telegram-errors';
 import { defaultSleep, type Sleep } from './defer';
@@ -70,6 +71,43 @@ const swallowBadRequest = async (operation: () => Promise<unknown>) => {
     }
 };
 
+const stripUrlButtons = (keyboard: ReplyMarkup | undefined) => {
+    if (keyboard === undefined || !('inline_keyboard' in keyboard)) {
+        return keyboard;
+    }
+
+    const rows = keyboard.inline_keyboard
+        .map(row => {
+            return row.filter(button => {
+                return !('url' in button);
+            });
+        })
+        .filter(row => {
+            return row.length > 0;
+        });
+    const removedAny =
+        rows.flat().length < keyboard.inline_keyboard.flat().length;
+
+    return removedAny ? { inline_keyboard: rows } : keyboard;
+};
+
+const sendWithUrlButtonFallback = async <T>(
+    keyboard: ReplyMarkup | undefined,
+    send: (keyboard: ReplyMarkup | undefined) => Promise<T>
+): Promise<T> => {
+    try {
+        return await send(keyboard);
+    } catch (error) {
+        const fallbackKeyboard = stripUrlButtons(keyboard);
+
+        if (!isTelegramButtonUrlError(error) || fallbackKeyboard === keyboard) {
+            throw error;
+        }
+
+        return send(fallbackKeyboard);
+    }
+};
+
 const withReplyMarkup = (keyboard: ReplyMarkup | undefined) => {
     return keyboard ? { reply_markup: keyboard } : {};
 };
@@ -110,9 +148,11 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
 
     const sendText = async (html: string, keyboard?: ReplyMarkup) => {
         await deliver(() => {
-            return ctx.telegram.sendMessage(chatId, html, {
-                parse_mode: 'HTML',
-                ...withReplyMarkup(keyboard)
+            return sendWithUrlButtonFallback(keyboard, markup => {
+                return ctx.telegram.sendMessage(chatId, html, {
+                    parse_mode: 'HTML',
+                    ...withReplyMarkup(markup)
+                });
             });
         });
     };
@@ -143,10 +183,12 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
 
             if (getVisibleHtmlLength(item.html) <= TELEGRAM_CAPTION_LIMIT) {
                 await deliver(() => {
-                    return ctx.telegram.sendPhoto(chatId, firstImage, {
-                        caption: item.html,
-                        parse_mode: 'HTML',
-                        ...withReplyMarkup(keyboard)
+                    return sendWithUrlButtonFallback(keyboard, markup => {
+                        return ctx.telegram.sendPhoto(chatId, firstImage, {
+                            caption: item.html,
+                            parse_mode: 'HTML',
+                            ...withReplyMarkup(markup)
+                        });
                     });
                 });
 
@@ -159,7 +201,10 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
 
             return 'needsText';
         } catch (error) {
-            if (!isTelegramBadRequest(error)) {
+            if (
+                !isTelegramBadRequest(error) ||
+                isTelegramButtonUrlError(error)
+            ) {
                 throw error;
             }
 

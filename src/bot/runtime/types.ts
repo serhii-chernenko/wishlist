@@ -81,10 +81,16 @@ export interface FindState {
     filter: WishFilter | null;
 }
 
+export interface AlbumState {
+    mediaGroupId: string;
+    wishId: number;
+}
+
 export interface SessionState {
     v: 1;
     pendingInput: PendingInput | null;
     find: FindState | null;
+    album?: AlbumState;
 }
 
 export type CallbackAction =
@@ -168,7 +174,8 @@ export type InternalFailureEvent =
     | 'telegraf_middleware_failed'
     | 'wish_media_failed'
     | 'deferred_render_failed'
-    | 'telegraph_failed';
+    | 'telegraph_failed'
+    | 'feedback_delivery_failed';
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {

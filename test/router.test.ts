@@ -706,6 +706,112 @@ test('one image uses a caption unless it exceeds 1024 characters', async () => {
     assert.equal(long.calls[0]?.args.length, 2);
 });
 
+const buttonUrlError = () => {
+    return telegramError(400, {
+        description: 'Bad Request: inline keyboard button URL is invalid'
+    });
+};
+
+const LINK_KEYBOARD = {
+    inline_keyboard: [
+        [{ text: 'Open', url: 'https://example.com/a b' }],
+        [{ text: 'Give', callback_data: 't:g:1' }]
+    ]
+};
+
+test('a rejected url button is retried once without it and is not a media failure', async () => {
+    const { sender, calls, failures } = await createSenderHarness(
+        (method, args) => {
+            const options = args.at(-1) as { reply_markup?: unknown };
+
+            if (JSON.stringify(options.reply_markup).includes('"url"')) {
+                throw buttonUrlError();
+            }
+
+            return method === 'sendMessage' || method === 'sendPhoto';
+        }
+    );
+
+    await sender.wish({ html: 'Wish', images: [] }, LINK_KEYBOARD);
+    await sender.wish({ html: 'Wish', images: ['photo'] }, LINK_KEYBOARD);
+
+    assert.deepEqual(
+        calls.map(call => {
+            return call.method;
+        }),
+        ['sendMessage', 'sendMessage', 'sendPhoto', 'sendPhoto']
+    );
+    assert.deepEqual(failures, []);
+
+    const retried = calls[1]?.args[2] as { reply_markup: unknown } | undefined;
+
+    assert.deepEqual(retried?.reply_markup, {
+        inline_keyboard: [[{ text: 'Give', callback_data: 't:g:1' }]]
+    });
+});
+
+test('a url button error that persists after the retry fails the send without a media fallback', async () => {
+    const { sender, calls, failures } = await createSenderHarness(() => {
+        throw buttonUrlError();
+    });
+
+    await assert.rejects(
+        sender.wish({ html: 'Wish', images: ['photo'] }, LINK_KEYBOARD),
+        /Telegram 400/
+    );
+    assert.deepEqual(
+        calls.map(call => {
+            return call.method;
+        }),
+        ['sendPhoto', 'sendPhoto']
+    );
+    assert.deepEqual(failures, []);
+});
+
+test('only url button errors are classified as button errors, never a media file error', async () => {
+    const { isTelegramButtonUrlError } =
+        await import('../src/bot/utils/telegram-errors');
+    const withDescription = (description: string) => {
+        return telegramError(400, { description });
+    };
+
+    assert.equal(
+        isTelegramButtonUrlError(
+            withDescription('Bad Request: BUTTON_URL_INVALID')
+        ),
+        true
+    );
+    assert.equal(
+        isTelegramButtonUrlError(
+            withDescription('Bad Request: wrong HTTP URL')
+        ),
+        true
+    );
+    assert.equal(
+        isTelegramButtonUrlError(
+            withDescription(
+                'Bad Request: wrong file identifier/HTTP URL specified'
+            )
+        ),
+        false
+    );
+    assert.equal(
+        isTelegramButtonUrlError(
+            withDescription('Bad Request: failed to get HTTP URL content')
+        ),
+        false
+    );
+});
+
+test('a url button error without a url button to strip is rethrown at once', async () => {
+    const { sender, calls } = await createSenderHarness(() => {
+        throw buttonUrlError();
+    });
+
+    await assert.rejects(sender.text('Hello', KEYBOARD), /Telegram 400/);
+    assert.equal(calls.length, 1);
+});
+
 test('a media 400 falls back to text and reports wish_media_failed', async () => {
     const { sender, calls, failures } = await createSenderHarness(method => {
         if (method === 'sendPhoto') {

@@ -300,6 +300,14 @@ type RootTranslation = {
 	​П​р​о​ч​и​т​а​ю​ ​ч​и​м​д​у​ж​!
 		 */
 		success: string
+		errors: {
+			/**
+			 * ❌​ ​В​і​д​г​у​к​ ​з​а​н​а​д​т​о​ ​д​о​в​г​и​й​!​ ​М​а​к​с​и​м​у​м​ ​{​0​}​ ​с​и​м​в​о​л​і​в​.​
+		​С​п​р​о​б​у​й​ ​с​к​о​р​о​т​и​т​и​ ​й​о​г​о​ ​т​а​ ​н​а​д​і​с​л​а​т​и​ ​щ​е​ ​р​а​з​.
+			 * @param {string} 0
+			 */
+			tooLong: RequiredParams<'0'>
+		}
 	}
 	auth: {
 		title: {
@@ -852,6 +860,11 @@ type RootTranslation = {
 			 * ❌​ ​А​х​ ​т​и​ ​ж​ ​х​и​т​р​а​ ​ж​о​п​к​а​,​ ​н​е​ ​м​о​ж​н​а​ ​ш​у​к​а​т​и​ ​с​е​б​е​ ​ж​!​ ​�​�
 			 */
 			foundYourself: string
+			/**
+			 * ❌​ ​З​а​п​и​т​ ​з​а​н​а​д​т​о​ ​д​о​в​г​и​й​!​ ​М​а​к​с​и​м​у​м​ ​{​0​}​ ​с​и​м​в​о​л​і​в​,​ ​с​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+			 * @param {string} 0
+			 */
+			tooLong: RequiredParams<'0'>
 		}
 		success: {
 			/**
@@ -1042,6 +1055,12 @@ type RootTranslation = {
 			 * ✅​ ​Р​е​к​в​і​з​и​т​и​ ​у​с​п​і​ш​н​о​ ​о​н​о​в​л​е​н​і​!
 			 */
 			success: string
+			/**
+			 * ❌​ ​Р​е​к​в​і​з​и​т​и​ ​з​а​н​а​д​т​о​ ​д​о​в​г​і​!​ ​М​а​к​с​и​м​у​м​ ​{​0​}​ ​с​и​м​в​о​л​і​в​.​
+		​С​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+			 * @param {string} 0
+			 */
+			tooLong: RequiredParams<'0'>
 		}
 		remove: {
 			/**
@@ -1443,6 +1462,13 @@ export type TranslationFunctions = {
 	Прочитаю чимдуж!
 		 */
 		success: () => LocalizedString
+		errors: {
+			/**
+			 * ❌ Відгук занадто довгий! Максимум {0} символів.
+		Спробуй скоротити його та надіслати ще раз.
+			 */
+			tooLong: (arg0: string) => LocalizedString
+		}
 	}
 	auth: {
 		title: {
@@ -1977,6 +2003,10 @@ export type TranslationFunctions = {
 			 * ❌ Ах ти ж хитра жопка, не можна шукати себе ж! 😘
 			 */
 			foundYourself: () => LocalizedString
+			/**
+			 * ❌ Запит занадто довгий! Максимум {0} символів, спробуй ще раз.
+			 */
+			tooLong: (arg0: string) => LocalizedString
 		}
 		success: {
 			/**
@@ -2154,6 +2184,11 @@ export type TranslationFunctions = {
 			 * ✅ Реквізити успішно оновлені!
 			 */
 			success: () => LocalizedString
+			/**
+			 * ❌ Реквізити занадто довгі! Максимум {0} символів.
+		Спробуй ще раз.
+			 */
+			tooLong: (arg0: string) => LocalizedString
 		}
 		remove: {
 			/**

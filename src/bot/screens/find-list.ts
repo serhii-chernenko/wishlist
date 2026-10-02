@@ -1,4 +1,5 @@
 import { homeButton, singleColumnKeyboard } from '../content/keyboards';
+import { FIND_QUERY_MAX_LENGTH } from '../input/limits';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
     createWishScreenServices,
@@ -23,6 +24,16 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
     const user = requireUser(req);
     const { search } = createWishScreenServices(req);
     const query = rawText?.trim() ?? '';
+
+    if (Array.from(query).length > FIND_QUERY_MAX_LENGTH) {
+        await req.send.text(
+            LL.findList.errors.tooLong(String(FIND_QUERY_MAX_LENGTH))
+        );
+        await render(req);
+
+        return;
+    }
+
     const outcome = await search.findByQuery({
         query,
         searcherId: user.id,

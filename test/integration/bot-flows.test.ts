@@ -676,27 +676,21 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal((await readUser(alice.id))?.wishlist_filter, null);
         });
 
-        it(
-            'applies a newly chosen price filter to the list rendered right after the choice',
-            {
-                todo: 'BUG src/bot/screens/wishlist.ts wishlistFilter: render() reads the stale req.user.wishlistFilter, so the list shown right after choosing a filter ignores it'
-            },
-            async () => {
-                const owner = await webhook.registerUser(alice);
+        it('applies a newly chosen price filter to the list rendered right after the choice', async () => {
+            const owner = await webhook.registerUser(alice);
 
-                await webhook.createWish(owner, 'Cheap', { price: 500 });
-                await webhook.createWish(owner, 'Middle', { price: 2500 });
-                await tap(alice, 'wl:f:2');
+            await webhook.createWish(owner, 'Cheap', { price: 500 });
+            await webhook.createWish(owner, 'Middle', { price: 2500 });
+            await tap(alice, 'wl:f:2');
 
-                const listed = webhook.messageTexts();
+            const listed = webhook.messageTexts();
 
-                assert.ok(listed.some(text => text.includes('Middle')));
-                assert.equal(
-                    listed.some(text => text.includes('Cheap')),
-                    false
-                );
-            }
-        );
+            assert.ok(listed.some(text => text.includes('Middle')));
+            assert.equal(
+                listed.some(text => text.includes('Cheap')),
+                false
+            );
+        });
 
         it('pages the list ten wishes at a time', async () => {
             const owner = await webhook.registerUser(alice);
@@ -932,6 +926,9 @@ describe('Bot flows through the Worker on D1', () => {
             const { wish } = await seedOwner();
             const giver = await webhook.registerUser(bob);
 
+            await tap(bob, 'n:find');
+            await say(bob, '@alice');
+            webhook.clearApiCalls();
             await tap(bob, `t:g:${wish.id}`);
 
             assert.equal(await countWhere('gives', `user_id = ${giver.id}`), 1);
@@ -974,6 +971,8 @@ describe('Bot flows through the Worker on D1', () => {
 
             await webhook.registerUser(bob);
             await webhook.registerUser(carol);
+            await tap(bob, 'n:find');
+            await say(bob, '@alice');
             await tap(bob, `t:g:${wish.id}`);
             await tap(carol, 'n:find');
             await say(carol, '@alice');

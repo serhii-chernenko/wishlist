@@ -202,7 +202,7 @@ describe('Blocked users through the Worker on D1', () => {
             );
 
             assert.ok(
-                webhook.messageTexts().includes(LL.findList.errors.notFound())
+                webhook.messageTexts().includes(LL.errors.outdatedButton())
             );
 
             webhook.clearApiCalls();

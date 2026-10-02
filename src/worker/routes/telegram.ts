@@ -159,6 +159,41 @@ export const isIgnorableTelegramUpdate = (
     );
 };
 
+const RESTRICTED_ACCESS_ENVIRONMENTS: ReadonlySet<string> = new Set([
+    'preview',
+    'local'
+]);
+
+const getUpdateActorId = (update: RuntimeTelegramUpdate): number | null => {
+    if ('message' in update) {
+        return update.message.from?.id ?? null;
+    }
+
+    if ('callback_query' in update) {
+        return update.callback_query.from.id;
+    }
+
+    if ('my_chat_member' in update) {
+        return update.my_chat_member.from.id;
+    }
+
+    return null;
+};
+
+export const isAccessDeniedInRestrictedEnvironment = (
+    env: Pick<WorkerBindings, 'BOT_ENVIRONMENT' | 'ADMIN_ID'>,
+    update: RuntimeTelegramUpdate
+) => {
+    if (!RESTRICTED_ACCESS_ENVIRONMENTS.has(env.BOT_ENVIRONMENT)) {
+        return false;
+    }
+
+    const adminId = env.ADMIN_ID?.trim();
+    const actorId = getUpdateActorId(update);
+
+    return !adminId || actorId === null || String(actorId) !== adminId;
+};
+
 type LimitedJsonBodyResult =
     | {
           state: 'parsed';
@@ -547,6 +582,18 @@ export const registerTelegramRoutes = (
                 'rejected',
                 'notClaimed',
                 'invalidUpdate'
+            );
+        }
+
+        if (isAccessDeniedInRestrictedEnvironment(c.env, payload)) {
+            return respond(
+                c.json({
+                    ignored: true,
+                    updateId: payload.update_id
+                }),
+                'ignored',
+                'notClaimed',
+                'previewAccessDenied'
             );
         }
 

@@ -3,8 +3,12 @@ import test from 'node:test';
 
 import { parseDescription } from '../src/bot/input/description';
 import { parseFindQuery } from '../src/bot/input/find-query';
-import { cutText } from '../src/bot/input/limits';
-import { extractLink, parseLink } from '../src/bot/input/link';
+import { cutText, truncateWithMark } from '../src/bot/input/limits';
+import {
+    extractLink,
+    isRenderableLink,
+    parseLink
+} from '../src/bot/input/link';
 import { pickLargestPhoto } from '../src/bot/input/photo';
 import { parsePrice } from '../src/bot/input/price';
 import { isRemoveCommand } from '../src/bot/input/remove-command';
@@ -37,6 +41,55 @@ test('parsePrice treats the comma as a decimal separator and rounds', () => {
         ok: true,
         value: 1500
     });
+});
+
+test('parsePrice treats a separator followed by exactly three digits as thousands', () => {
+    const cases: Array<[string, number]> = [
+        ['1,500', 1500],
+        ['1.500', 1500],
+        ['1 500', 1500],
+        ['12,345', 12345],
+        ['12.345', 12345],
+        ['1,234,567', 1234567],
+        ['1.234.567', 1234567],
+        ['1,500.00', 1500],
+        ['1.500,00', 1500],
+        ['1.500,50', 1501],
+        ['1,500.49', 1500],
+        ['1,500 UAH', 1500],
+        ['999', 999]
+    ];
+
+    for (const [input, value] of cases) {
+        assert.deepEqual(
+            parsePrice(input, removeLabels),
+            { ok: true, value },
+            input
+        );
+    }
+});
+
+test('parsePrice keeps other separators as decimals and rounds', () => {
+    const cases: Array<[string, number]> = [
+        ['1500,50', 1501],
+        ['1500.50', 1501],
+        ['1500.49', 1500],
+        ['15,5', 16],
+        ['1.5', 2],
+        ['1,50', 2],
+        ['1,5000', 2],
+        ['0,500', 1],
+        ['0.500', 1],
+        ['1500', 1500]
+    ];
+
+    for (const [input, value] of cases) {
+        assert.deepEqual(
+            parsePrice(input, removeLabels),
+            { ok: true, value },
+            input
+        );
+    }
 });
 
 test('parsePrice rejects text without a leading number', () => {
@@ -93,6 +146,32 @@ test('extractLink takes the first http link from surrounding text', () => {
         extractLink('first http://one.test then https://two.test'),
         'http://one.test'
     );
+});
+
+test('isRenderableLink accepts only one whole http or https url', () => {
+    assert.equal(isRenderableLink('https://example.com/a?b=1'), true);
+    assert.equal(isRenderableLink('http://example.com'), true);
+    assert.equal(isRenderableLink(null), false);
+    assert.equal(isRenderableLink(undefined), false);
+    assert.equal(isRenderableLink(''), false);
+    assert.equal(isRenderableLink('example.com'), false);
+    assert.equal(isRenderableLink('ftp://example.com/a'), false);
+    assert.equal(isRenderableLink('https://example.com/a b'), false);
+    assert.equal(
+        isRenderableLink('https://example.com/a\nhttps://b.com'),
+        false
+    );
+    assert.equal(isRenderableLink(' https://example.com'), false);
+    assert.equal(
+        isRenderableLink(`https://example.com/${'a'.repeat(2048)}`),
+        false
+    );
+});
+
+test('truncateWithMark keeps short text and cuts long text to the limit with an ellipsis', () => {
+    assert.equal(truncateWithMark('abc', 3), 'abc');
+    assert.equal(truncateWithMark('abcd', 3), 'ab…');
+    assert.equal(Array.from(truncateWithMark('😀'.repeat(20), 10)).length, 10);
 });
 
 test('extractLink rejects missing, malformed and oversized links', () => {

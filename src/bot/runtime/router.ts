@@ -11,6 +11,7 @@ import type {
     ScreenId,
     ScreenModule
 } from './types';
+import { resolveLateAlbumInput } from './album';
 import { clearPendingInput } from './context';
 
 export const PENDING_INPUT_SCREENS = {
@@ -172,7 +173,9 @@ export const createRouter = (modules: readonly ScreenExports[]): Router => {
     };
 
     const dispatchInput = async (req: BotRequest, message: Message) => {
-        const pending = req.session.pendingInput;
+        const pending =
+            req.session.pendingInput ??
+            resolveLateAlbumInput(req.session, message);
 
         if (pending === null) {
             await renderScreen(req, 'home');

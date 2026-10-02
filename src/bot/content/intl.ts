@@ -45,7 +45,8 @@ export const formatCurrency = (
 ) => {
     return new Intl.NumberFormat(getLocaleTag(locale), {
         style: 'currency',
-        currency: currency || DEFAULT_CURRENCY
+        currency: currency || DEFAULT_CURRENCY,
+        currencyDisplay: 'narrowSymbol'
     }).format(value);
 };
 

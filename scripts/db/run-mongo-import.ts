@@ -3,17 +3,19 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
+    assertPreviewResetTarget,
     assertRemoteD1Target,
     executeImportSql,
     getProjectRoot,
     preflightImportTarget,
+    resetPreviewTarget,
     type ImportTarget
 } from './d1-import-target';
 import { loadD1Environment } from './d1-child-environment';
 import { getDefaultGithubRepository, prepareMongoImport } from './mongo-import';
 
 const usage =
-    'Usage: run-mongo-import.ts <local|production|preview> [--input-dir <path>] [--github-ref <ref>] [--allow-local-production-source]';
+    'Usage: run-mongo-import.ts <local|production|preview> [--input-dir <path>] [--github-ref <ref>] [--allow-local-production-source] [--reset-preview]';
 
 const parseTarget = (value: string | undefined): ImportTarget => {
     if (value === 'local' || value === 'production' || value === 'preview') {
@@ -27,17 +29,23 @@ export interface ImportCliOptions {
     inputDirectory?: string;
     githubRef?: string;
     allowLocalProductionSource: boolean;
+    resetPreview: boolean;
 }
 
 export const parseImportOptions = (arguments_: string[]): ImportCliOptions => {
     const rest = arguments_.filter(argument => argument !== '--');
-    const options: ImportCliOptions = { allowLocalProductionSource: false };
+    const options: ImportCliOptions = {
+        allowLocalProductionSource: false,
+        resetPreview: false
+    };
 
     for (let index = 0; index < rest.length; index += 1) {
         const argument = rest[index];
 
         if (argument === '--allow-local-production-source') {
             options.allowLocalProductionSource = true;
+        } else if (argument === '--reset-preview') {
+            options.resetPreview = true;
         } else if (argument === '--input-dir' || argument === '--github-ref') {
             const value = rest[index + 1];
 
@@ -208,8 +216,15 @@ export const resolveMongoBackupRepository = (
 
 export const runMongoImport = async (
     target: ImportTarget,
-    cliOptions: ImportCliOptions = { allowLocalProductionSource: false }
+    cliOptions: ImportCliOptions = {
+        allowLocalProductionSource: false,
+        resetPreview: false
+    }
 ) => {
+    if (cliOptions.resetPreview) {
+        assertPreviewResetTarget(target);
+    }
+
     const projectRoot = getProjectRoot();
 
     if (target !== 'local') {
@@ -233,6 +248,11 @@ export const runMongoImport = async (
 
     try {
         const report = await prepareMongoImport({ source, outputDirectory });
+
+        if (cliOptions.resetPreview) {
+            resetPreviewTarget(target);
+        }
+
         const preflightCounts = preflightImportTarget(target);
 
         console.log(
@@ -245,6 +265,8 @@ export const runMongoImport = async (
                     skippedGives: report.skipped.gives,
                     orphanWishes: report.orphanWishes.count,
                     droppedKeys: report.droppedKeys,
+                    invalidLinks: report.invalidLinks,
+                    resetPreview: cliOptions.resetPreview,
                     aggregates: report.aggregates,
                     validation: report.validation,
                     preflightCounts,

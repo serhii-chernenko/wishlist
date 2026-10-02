@@ -21,6 +21,7 @@ The Mongo to D1 cutover (section 8) and parts of the Workers Builds setup (secti
 12. [Observability](#12-observability)
 13. [Troubleshooting](#13-troubleshooting)
 14. [Lessons from princess that apply](#14-lessons-from-princess-that-apply)
+15. [Follow-ups](#15-follow-ups)
 
 ## 1. Architecture at a glance
 
@@ -101,7 +102,7 @@ Follow the comments in the file (`cloudflared tunnel create wishlist-dev`, then 
 pnpm run dev
 ```
 
-`pnpm run dev` (alias `worker:dev`) starts `wrangler dev`, starts `cloudflared` when `cloudflared.yml` exists, sets the local webhook once the Worker is ready and deletes it on shutdown. For the plain Worker without the tunnel and webhook automation use `pnpm run worker:dev:raw`. Local webhook helpers: `pnpm telegram:webhook:set:local`, `telegram:webhook:info:local`, `telegram:webhook:delete:local`.
+`pnpm run dev` (alias `worker:dev`) starts `wrangler dev`, starts `cloudflared` when `cloudflared.yml` exists, sets the local webhook once the Worker is ready and deletes it on shutdown. For the plain Worker without the tunnel and webhook automation use `pnpm run worker:dev:raw`. Local webhook helpers: `pnpm telegram:webhook:set:local`, `telegram:webhook:info:local`, `telegram:webhook:delete:local`. The local bot (`BOT_ENVIRONMENT="local"`) serves only `ADMIN_ID`, like the preview bot: updates from any other user are ignored silently, so set `ADMIN_ID` in `.dev.vars` to your own Telegram id.
 
 Local D1:
 
@@ -299,6 +300,7 @@ Do these in order. Steps marked "dashboard" cannot be done with `cf` or `wrangle
 - Long-lived preview named `preview`: `https://preview-wishlist.chernenko.workers.dev`. It serves the preview bot `@InevixTestBot`.
 - Every preview, including per-branch previews, shares the `wishlist-preview` database and the single preview-bot webhook.
 - Previews run with `BOT_ENVIRONMENT="preview"`: no cron, no queue consumer, no release broadcast. Preview logs are in the Cloudflare dashboard (Wrangler cannot tail a preview).
+- The preview bot serves only the admin. When `BOT_ENVIRONMENT` is `preview` or `local`, every update whose sender is not `ADMIN_ID` is ignored silently: the webhook answers `200 {ignored:true}`, the bot sends no reply, nothing is written to the ledger, and telemetry records outcome `ignored` with rejection reason `previewAccessDenied`. If `ADMIN_ID` is empty, nobody is served. This keeps imported production data (usernames, phone numbers, wishes) away from anyone else who finds the preview bot. To test with another account, temporarily change `ADMIN_ID` for the preview and restore it afterwards.
 - Telegram file ids belong to the bot that received the photo. After importing production data into preview, imported wishes show the text fallback instead of images (the bot logs `wish_media_failed`). Test images with fresh uploads, including a 3-photo album.
 
 Redeploy the long-lived preview. Do not put `--` before `--name`; pnpm would pass it through and wrangler would drop the name:
@@ -484,9 +486,12 @@ Then follow [section 4](#4-deploy-with-workers-builds): tokens, repository conne
 ### E4. Rehearsal on preview (before any freeze)
 
 ```sh
-pnpm db:import:preview --github-ref "$(gh api repos/serhii-chernenko/wishlist-db/commits/main --jq .sha)"
+pnpm db:import:preview --reset-preview --github-ref "$(gh api repos/serhii-chernenko/wishlist-db/commits/main --jq .sha)"
 pnpm db:reconcile:preview
 ```
+
+- The import refuses a target whose tables are not empty. Preview traffic from E3 (a `/start`, `preview:smoke`) leaves rows in `sessions` and `telegram_updates`, so the rehearsal uses `--reset-preview`. The flag is valid only for the preview target and the import script refuses it for `production` and `local`. After the import SQL is generated and validated, and before the empty-target check, it deletes every row from `sessions`, `telegram_updates`, `release_announcements`, `gives`, `wishes` and `users` of the `wishlist-preview` database. Preview data is disposable; never run the flag against a database you want to keep.
+- The report printed by the import now includes `invalidLinks`: the number of wish links that were not a single valid `http` or `https` URL and were stored as NULL. Links are trimmed and reduced to the first URL, the same way the bot parses a link typed by a user.
 
 - Check the figures in the table above. The reconciliation report must match them and `PRAGMA foreign_key_check` must be empty.
 - Walk the parity checklist by hand with the preview bot in a private chat: registration (username, phone, both), wishlist with pagination, add and edit every field including a 3-photo album, visibility, filters, share via telegra.ph, find by `@username` and by phone, give and take, give list, payments, stats, donate, feedback, language switch, `/releases`, and an old button from chat history.
@@ -526,25 +531,35 @@ pnpm db:reconcile:preview
     MONGO_BACKUP_REF=$SHA pnpm db:import:prepare:github
     ```
 
-    Compare the `sourceCounts` and the newest `updatedAt` of the report with the live numbers. If they differ, export locally and import from the directory:
+    Compare the `sourceCounts` and the newest `updatedAt` of the report with the live numbers. If they differ, export locally. Only export here; do not import yet, because the Time Travel bookmark in step 4 must be taken before any import:
 
     ```sh
     ( set -a; . env/.env.mongo; for c in users wishes gives; do mongoexport --uri "$MONGODB_URI" --collection $c --jsonFormat=relaxed --out .mongo/$c.json; done )
-    pnpm db:import:prod --input-dir .mongo --allow-local-production-source
     ```
 
-    The `--allow-local-production-source` flag is mandatory for a production import from a directory and cannot be combined with a pinned `MONGO_BACKUP_REF`.
+    Step 5 then imports from `.mongo` instead of the pinned SHA.
 
-4. **Time Travel bookmark.** Record it before writing anything:
+4. **Time Travel bookmark.** Record it before any import, including the local-export variant:
 
     ```sh
     pnpm exec wrangler d1 time-travel info wishlist-production --env production
     ```
 
-5. **Import and reconcile** (insert-only: never run it against populated tables):
+5. **Import and reconcile** (insert-only: never run it against populated tables). Import the pinned SHA:
 
     ```sh
     MONGO_BACKUP_REF=$SHA pnpm db:import:prod
+    ```
+
+    or, only if step 3 fell back to the local export:
+
+    ```sh
+    pnpm db:import:prod --input-dir .mongo --allow-local-production-source
+    ```
+
+    The `--allow-local-production-source` flag is mandatory for a production import from a directory and cannot be combined with a pinned `MONGO_BACKUP_REF`. Then reconcile:
+
+    ```sh
     pnpm db:reconcile:prod
     pnpm db:query:prod --command "SELECT count(*) FROM users; SELECT count(*) FROM wishes; SELECT count(*) FROM gives;"
     ```
@@ -577,7 +592,7 @@ pnpm db:reconcile:preview
     gh pr merge <n> --merge
     ```
 
-2. Workers Builds migrates (a no-op), deploys and runs `releases:broadcast:prod`. Queue delivery is still paused, so rows are only queued. Expect `inserted` to be about the number of registered, non-blocked users:
+2. Workers Builds migrates (a no-op), deploys and runs `releases:broadcast:prod`. Queue delivery is still paused, so rows are only queued. The reported `inserted` may be about 0: production has run 2.0.0 since E4, so the `*/10` cron has most likely already inserted and enqueued the announcements within ten minutes of the E5 import, and the deploy-time broadcast finds nothing new (the unique index and `onConflictDoNothing` make that harmless). Do not read `inserted` as the signal. Verify the rows instead; expect about the number of registered, non-blocked users in `queued`:
 
     ```sh
     cf builds list --external-script-id "$WISHLIST_TAG"
@@ -749,29 +764,29 @@ Princess's imported dashboards got `Edit - everyone in account` permission from 
 
 ## 13. Troubleshooting
 
-| Symptom                                                  | Likely cause                                                                                                               | Fix                                                                                                                                      |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| D1 error `7403` on the first call                        | Transient D1 error on the first call of a session                                                                          | Rerun the same command. `db:migrate:ci` retries it itself                                                                                |
-| Prices show `грн` instead of the hryvnia sign            | workerd ICU data formats `uk-UA` UAH as `грн` while Node prints `₴` (`test/integration/intl-workerd.test.ts` documents it) | Cosmetic. Only change `formatCurrency` if the sign is required; then verify the new output under workerd, not Node                       |
-| `Invalid access token`                                   | Expired `wrangler login`                                                                                                   | `pnpm exec wrangler login`                                                                                                               |
-| Build fails with `Missing script: db:migrate:ci`         | Build command was switched before the script reached the built branch, or a legacy `main` build                            | Expected for legacy `main` before the go-live merge. Otherwise rebase the branch or restore the previous build command                   |
-| Production deploy fails on required secrets              | One of `ADMIN_ID`, `BOT_TOKEN`, `NEW_RELIC_LICENSE_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_PATH` is missing     | `printf %s "$VALUE" \| pnpm exec wrangler secret put NAME --env production`                                                              |
-| `db:migrate:ci` refuses to run                           | Not inside Workers Builds, empty `WORKERS_CI_BRANCH`, or database ids missing or equal                                     | Use `db:migrate:prod` or `db:migrate:preview` locally; fix the build variables                                                           |
-| Second concurrent preview build fails on duplicate DDL   | Two branch builds raced on the same new migration                                                                          | Rerun the failed build                                                                                                                   |
-| `/health` returns 401                                    | Missing or wrong `X-Telegram-Bot-Api-Secret-Token` header                                                                  | Send the correct secret. 401 without the header is expected                                                                              |
-| `pnpm preview:point` times out                           | The Workers Builds check did not finish, or the preview does not answer on `/health`                                       | Check the PR comment for the preview URL, then `pnpm telegram:webhook:set:preview --url <url> --drop-pending-updates=true`               |
-| `preview:point` refuses to change the webhook            | The token in `.dev.vars.preview` is not `@InevixTestBot`'s                                                                 | Fix `.dev.vars.preview`                                                                                                                  |
-| Bot does not answer, `getWebhookInfo` shows `last_error` | Wrong URL, secret or path, or the Worker is failing                                                                        | `pnpm telegram:webhook:info:prod`, `pnpm worker:tail:prod`, then set the webhook again                                                   |
-| Pending update count grows, errors are 400               | Update type the Worker rejected                                                                                            | Updates without `message`, `callback_query` or `my_chat_member` return `200 {ignored:true}`. Check `allowed_updates` in the webhook info |
-| Old inline button shows "This button is outdated"        | Button from the legacy bot in chat history                                                                                 | Expected: the bot answers with a toast and the home menu                                                                                 |
-| Photos missing in preview after a data copy or import    | File ids are bound to the bot that received them                                                                           | Expected. The bot falls back to text and logs `wish_media_failed`. Test with fresh uploads                                               |
-| Album: no success message after sending photos           | The isolate was evicted during the 1.5 second debounce                                                                     | Send any text; the bot shows the edit menu. Photos are already saved                                                                     |
-| A user stops getting announcements                       | The user blocked the bot (`blocked_at` set)                                                                                | Expected. The flag clears on their next update                                                                                           |
-| Broadcast shows many `failed` or `skipped` rows          | Telegram errors or an ambiguous delivery                                                                                   | `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`, inspect `release_announcements` and logs                      |
-| No `bot_state_snapshot` events for over an hour          | The `*/10` cron is not firing, or the New Relic drain fails                                                                | Check Cron Events in the dashboard and `new_relic_drain_failed`. The deploy-time broadcast does not depend on the cron                   |
-| `Row counts differ after copy`                           | Production changed during `db:copy:production-to-preview`                                                                  | Rerun the command                                                                                                                        |
-| Import refuses `--input-dir` for production              | Safety guard                                                                                                               | Add `--allow-local-production-source`, and do not combine it with `MONGO_BACKUP_REF`                                                     |
-| D1 write fails with too many parameters                  | More than 100 bound parameters in one statement                                                                            | Chunk rows to `floor(100 / columnCount)` or fewer                                                                                        |
+| Symptom                                                  | Likely cause                                                                                                           | Fix                                                                                                                                      |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| D1 error `7403` on the first call                        | Transient D1 error on the first call of a session                                                                      | Rerun the same command. `db:migrate:ci` retries it itself                                                                                |
+| `Invalid access token`                                   | Expired `wrangler login`                                                                                               | `pnpm exec wrangler login`                                                                                                               |
+| Build fails with `Missing script: db:migrate:ci`         | Build command was switched before the script reached the built branch, or a legacy `main` build                        | Expected for legacy `main` before the go-live merge. Otherwise rebase the branch or restore the previous build command                   |
+| Production deploy fails on required secrets              | One of `ADMIN_ID`, `BOT_TOKEN`, `NEW_RELIC_LICENSE_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_PATH` is missing | `printf %s "$VALUE" \| pnpm exec wrangler secret put NAME --env production`                                                              |
+| `db:migrate:ci` refuses to run                           | Not inside Workers Builds, empty `WORKERS_CI_BRANCH`, or database ids missing or equal                                 | Use `db:migrate:prod` or `db:migrate:preview` locally; fix the build variables                                                           |
+| Second concurrent preview build fails on duplicate DDL   | Two branch builds raced on the same new migration                                                                      | Rerun the failed build                                                                                                                   |
+| `/health` returns 401                                    | Missing or wrong `X-Telegram-Bot-Api-Secret-Token` header                                                              | Send the correct secret. 401 without the header is expected                                                                              |
+| `pnpm preview:point` times out                           | The Workers Builds check did not finish, or the preview does not answer on `/health`                                   | Check the PR comment for the preview URL, then `pnpm telegram:webhook:set:preview --url <url> --drop-pending-updates=true`               |
+| `preview:point` refuses to change the webhook            | The token in `.dev.vars.preview` is not `@InevixTestBot`'s                                                             | Fix `.dev.vars.preview`                                                                                                                  |
+| Bot does not answer, `getWebhookInfo` shows `last_error` | Wrong URL, secret or path, or the Worker is failing                                                                    | `pnpm telegram:webhook:info:prod`, `pnpm worker:tail:prod`, then set the webhook again                                                   |
+| Pending update count grows, errors are 400               | Update type the Worker rejected                                                                                        | Updates without `message`, `callback_query` or `my_chat_member` return `200 {ignored:true}`. Check `allowed_updates` in the webhook info |
+| Old inline button shows "This button is outdated"        | Button from the legacy bot in chat history                                                                             | Expected: the bot answers with a toast and the home menu                                                                                 |
+| Photos missing in preview after a data copy or import    | File ids are bound to the bot that received them                                                                       | Expected. The bot falls back to text and logs `wish_media_failed`. Test with fresh uploads                                               |
+| Album: no success message after sending photos           | The isolate was evicted during the 1.5 second debounce                                                                 | Send any text; the bot shows the edit menu. Photos are already saved                                                                     |
+| A user stops getting announcements                       | The user blocked the bot (`blocked_at` set)                                                                            | Expected. The flag clears on their next update                                                                                           |
+| Broadcast shows many `failed` or `skipped` rows          | Telegram errors or an ambiguous delivery                                                                               | `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`, inspect `release_announcements` and logs                      |
+| No `bot_state_snapshot` events for over an hour          | The `*/10` cron is not firing, or the New Relic drain fails                                                            | Check Cron Events in the dashboard and `new_relic_drain_failed`. The deploy-time broadcast does not depend on the cron                   |
+| `Row counts differ after copy`                           | Production changed during `db:copy:production-to-preview`                                                              | Rerun the command                                                                                                                        |
+| Import says the target is not empty (preview)            | Preview traffic left rows in `sessions` or `telegram_updates`, or an earlier import                                    | Rerun with `--reset-preview` (preview only; it deletes all application rows)                                                             |
+| Import refuses `--input-dir` for production              | Safety guard                                                                                                           | Add `--allow-local-production-source`, and do not combine it with `MONGO_BACKUP_REF`                                                     |
+| D1 write fails with too many parameters                  | More than 100 bound parameters in one statement                                                                        | Chunk rows to `floor(100 / columnCount)` or fewer                                                                                        |
 
 ## 14. Lessons from princess that apply
 
@@ -797,3 +812,13 @@ Princess runs on the same stack and went through the same migration. These point
 - **GitHub Releases are tagged on `GITHUB_SHA`.** Tagging an older `--target` sha failed with HTTP 403 in princess.
 - **`cf` quirks.** List flags are arrays (repeat the flag, do not pass JSON), `cf builds workers create` requires a Previews base config even when previews are off, `cf workers secrets update <NAME> --worker <worker>` takes the secret name positionally, and `wrangler queues delete` takes `-y` while `cf queues delete` takes `--force`.
 - **Wrangler stays the deploy tool.** The `cf` CLI is used for resources and Workers Builds configuration; `wrangler.jsonc` and Wrangler remain the source of truth for the Worker, because `wrangler tail`, `wrangler preview base-config secret put` and `wrangler queues pause-delivery` have no `cf` equivalent.
+
+## 15. Follow-ups
+
+Security and robustness items found by the pre-cutover audit and review that were deliberately deferred. None blocks the cutover. The same list is mirrored in [MIGRATION_STATUS.md](../MIGRATION_STATUS.md).
+
+- **M1. Separate admin secret.** `/admin/release-broadcast` is protected by the same secret as the Telegram webhook, as in princess. Give it its own secret.
+- **M3. Per-user rate limiting.** Nothing limits how fast one user can drive the bot, the D1 queries and the Telegram calls behind it. Add per-user rate limiting.
+- **L1. Low-severity audit finding.** Deferred; details are in the pre-cutover security audit report, which is not stored in the repository.
+- **L2. Bot token in URLs.** Telegraf calls `https://api.telegram.org/bot<token>/...`. Check traces and logs (evlog, New Relic, Workers Logs) for the token inside outgoing URLs and scrub it.
+- **L4 to L9. Low-severity audit findings.** Deferred; details are in the same audit report.

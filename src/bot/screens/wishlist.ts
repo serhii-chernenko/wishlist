@@ -29,6 +29,7 @@ import {
     updateSession
 } from '../services/wish-screen-context';
 import { getErrorType } from '../errors';
+import { deriveRequest } from '../runtime/context';
 import { buildAuthorName } from '../services/share-service';
 
 export interface WishlistParams {
@@ -274,6 +275,11 @@ export const callbacks: CallbackTable = {
                 ? LL.filters.success.reset()
                 : LL.filters.success.set()
         );
-        await render(req, undefined);
+        await render(
+            deriveRequest(req, {
+                user: { ...user, wishlistFilter: action.filter }
+            }),
+            undefined
+        );
     }
 };

@@ -194,6 +194,60 @@ describe('Album debounce through waitUntil and the D1 marker', () => {
         assert.equal(editMenuCount(), 1);
     });
 
+    it('appends and renders a photo of the same album that arrives after the debounce already rendered', async () => {
+        const { wish } = await startImagePrompt();
+
+        await sendAlbum('album-late', ['p1', 'p2']);
+        await webhook.settle();
+
+        assert.equal(savedCount(), 1);
+        assert.equal(editMenuCount(), 1);
+        assert.equal((await readSession()).pendingInput, null);
+
+        webhook.clearApiCalls();
+        await webhook.sendHolding(
+            webhook.builders.photo(alice, {
+                fileId: 'p3',
+                mediaGroupId: 'album-late'
+            })
+        );
+
+        assert.deepEqual(await readImages(wish.id), ['p1', 'p2', 'p3']);
+        assert.equal(
+            webhook.messageTexts().includes(LL.greeting.user()),
+            false
+        );
+        assert.equal(savedCount(), 0);
+
+        await webhook.settle();
+
+        assert.equal(savedCount(), 1);
+        assert.equal(editMenuCount(), 1);
+        assert.deepEqual(await readImages(wish.id), ['p1', 'p2', 'p3']);
+        assert.deepEqual(await readSession(), {
+            pendingInput: null,
+            mediaGroupId: null,
+            mediaGroupMarker: null
+        });
+    });
+
+    it('does not append a photo of a different album after the render', async () => {
+        const { wish } = await startImagePrompt();
+
+        await sendAlbum('album-first', ['p1', 'p2']);
+        await webhook.settle();
+        webhook.clearApiCalls();
+        await webhook.send(
+            webhook.builders.photo(alice, {
+                fileId: 'stray',
+                mediaGroupId: 'album-other'
+            })
+        );
+
+        assert.deepEqual(await readImages(wish.id), ['p1', 'p2']);
+        assert.ok(webhook.messageTexts().includes(LL.greeting.user()));
+    });
+
     it('does not use the debounce for a lone photo', async () => {
         const { wish } = await startImagePrompt();
 
