@@ -78,7 +78,8 @@
         "evlog": "2.24.0",
         "hono": "4.12.10",
         "telegraf": "^4.16.3",
-        "typesafe-i18n": "^5.27.1"
+        "typesafe-i18n": "^5.27.1",
+        "ulid": "^3.0.2"
     },
     "devDependencies": {
         "@changesets/cli": "^2.31.0",
