@@ -1121,7 +1121,7 @@ describe('wishlist screens on D1', () => {
                 wishes[0]?.item.html.includes('Також хочуть подарувати: 1')
             );
             assert.ok(wishes[0]?.item.html.includes('<b>@Alice</b>'));
-            assert.ok(wishes[1]?.item.html.includes('<b>+380501112233</b>'));
+            assert.ok(!wishes[1]?.item.html.includes('380501112233'));
             assert.equal(wishes[1]?.item.html.includes('hidden-name'), false);
             assert.deepEqual(callbackDataOf(wishes[0]?.keyboard), [
                 `g:r:${first.id}`

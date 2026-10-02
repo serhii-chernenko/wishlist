@@ -13,7 +13,7 @@ import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
     createWishFormatters,
     createWishScreenServices,
-    getOwnerReference,
+    getOwnerPublicUsername,
     openLinkButton,
     requireUser,
     updateSession
@@ -65,7 +65,7 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
 
     for (const { wish, owner } of page.items) {
         const otherGivers = (giversByWish.get(wish.id) ?? []).length - 1;
-        const reference = owner === null ? null : getOwnerReference(owner);
+        const reference = owner === null ? null : getOwnerPublicUsername(owner);
         const html =
             renderWishHtml(LL, wish, formatters, {
                 audience: 'watcher',

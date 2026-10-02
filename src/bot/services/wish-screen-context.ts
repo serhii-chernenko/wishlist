@@ -69,14 +69,14 @@ export const openLinkButton = (
         : [];
 };
 
-export const getOwnerReference = (
-    owner: Pick<UserRecord, 'username' | 'usernameSearchable' | 'phone'>
+export const getOwnerPublicUsername = (
+    owner: Pick<UserRecord, 'username' | 'usernameSearchable'>
 ) => {
     if (owner.usernameSearchable && owner.username) {
         return `@${owner.username}`;
     }
 
-    return owner.phone;
+    return null;
 };
 
 export const isFindableOwner = (
