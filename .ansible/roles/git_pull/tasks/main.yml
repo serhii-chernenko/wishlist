@@ -1,8 +1,0 @@
-- name: Update Wishlist Bot repo on VPS
-  git:
-    repo: "git@github.com:{{ GITHUB_REPO }}.git"
-    dest: "{{ dir }}"
-    update: true
-    single_branch: true
-    version: main
-    accept_newhostkey: true
