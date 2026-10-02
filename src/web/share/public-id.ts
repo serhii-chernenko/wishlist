@@ -4,6 +4,8 @@ export type SharePageLanguage = (typeof SHARE_PAGE_LANGUAGES)[number];
 
 export const SHARE_PUBLIC_ID_PATTERN = /^[0-9a-hjkmnp-tv-z]{26}$/;
 
+export const CANONICAL_SHARE_HOST = 'wishlist.chernenko.dev';
+
 const SHARE_PATH_SEGMENT = 'w';
 
 export const isSharePageLanguage = (

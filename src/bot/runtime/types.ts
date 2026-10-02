@@ -181,7 +181,6 @@ export type InternalFailureEvent =
     | 'telegraf_middleware_failed'
     | 'wish_media_failed'
     | 'deferred_render_failed'
-    | 'telegraph_failed'
     | 'share_failed'
     | 'feedback_delivery_failed';
 

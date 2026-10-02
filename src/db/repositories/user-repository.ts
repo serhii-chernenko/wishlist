@@ -274,21 +274,6 @@ export const createUserRepository = (db: AppDb) => {
                 return updated.length > 0;
             });
         },
-        setTelegraphToken(
-            id: number,
-            telegraphAccessToken: string,
-            now: Date = new Date()
-        ) {
-            return tryDb(async () => {
-                const updated = await db
-                    .update(users)
-                    .set({ telegraphAccessToken, updatedAt: now })
-                    .where(eq(users.id, id))
-                    .returning({ id: users.id });
-
-                return updated.length > 0;
-            });
-        },
         markBlockedByTelegramId(telegramId: number, now: Date) {
             return tryDb(async () => {
                 const blocked = await db

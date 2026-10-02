@@ -312,8 +312,7 @@ const en: Translation = {
         telegram: '🔗 Telegram channel'
     },
     share: {
-        title: 'Wish list of {name}',
-        payments: `If you can't give me a specific gift, I have added payment details you can send money to, so I can buy the gift myself:\n\n{0}`
+        title: 'Wish list of {name}'
     },
     markup: {
         title: '❤️ <b>{0}</b>',

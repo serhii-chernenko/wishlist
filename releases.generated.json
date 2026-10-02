@@ -15,6 +15,11 @@
                     "pl": "Długie listy życzeń są teraz podzielone na strony: przycisk „Pokaż więcej” wczytuje kolejne życzenia."
                 },
                 {
+                    "uk": "«Поділитися» тепер створює власну сторінку твого листа бажань на wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.",
+                    "en": "\"Share\" now creates your own wish list page on wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates itself after every change, it has a language switcher, and you can stop sharing at any time. Old telegra.ph pages stay but no longer update.",
+                    "pl": "„Udostępnij” tworzy teraz własną stronę twojej listy życzeń na wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane."
+                },
+                {
                     "uk": "Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.",
                     "en": "The /releases command shows the history of bot changes, and the bot now announces new versions on its own.",
                     "pl": "Polecenie /releases pokazuje historię zmian bota, a o nowych wersjach bot teraz informuje sam."
@@ -25,6 +30,11 @@
                     "uk": "Бот переїхав на нову хмарну інфраструктуру: тепер він працює швидше та надійніше. Усі листи бажань і списки «Хочу подарувати» збережені.",
                     "en": "The bot has moved to a new cloud infrastructure, so it is faster and more reliable. All wish lists and \"I want to give\" lists are safe.",
                     "pl": "Bot przeniósł się do nowej infrastruktury w chmurze, więc działa szybciej i stabilniej. Wszystkie listy życzeń i listy „Chcę podarować” zostały zachowane."
+                },
+                {
+                    "uk": "Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.",
+                    "en": "You can now support the author via Monobank, Ko-fi, PayPal or Revolut.",
+                    "pl": "Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut."
                 }
             ],
             "fixed": [

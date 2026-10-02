@@ -27,17 +27,17 @@ The bot answers only in private chats.
 - **Find a wish list.** Search by `@username` or by phone number. Third-party lists can be filtered by price, and you can mark a wish as "I want to give".
 - **Visibility.** Choose whether others can find you by username, by phone number, or both.
 - **Payments requisites.** Add details (a Monobank jar, a card number, a PayPal contact, a Buymeacoffee link) for people who cannot give you a gift and would rather send money.
-- **Share.** Publish your wish list as a telegra.ph page and share the link.
+- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results.
 - **Stats.** Active users, wishes created and wishes fulfilled all time.
-- **Donate.** Ways to support the project.
+- **Donate.** Ways to support the project: Monobank, Ko-fi, PayPal and Revolut.
 - **Feedback.** Send a message to the author.
 - **Language.** Ukrainian, English, Polish or Auto.
 
 ## Tech stack
 
-- Cloudflare Workers (Hono)
+- Cloudflare Workers (Hono, with Hono JSX for the public share pages)
 - Telegraf as the update parser and Telegram API client, with a hand-written stateless router
-- Cloudflare D1 with Drizzle ORM (sessions, users, wishes, gives, update ledger, announcements)
+- Cloudflare D1 with Drizzle ORM (sessions, users, wishes, gives, shares, update ledger, announcements)
 - Cloudflare Queues for release announcements, Cron Triggers for maintenance
 - Effect for repositories, typesafe-i18n for the `uk`, `en` and `pl` locales
 - evlog telemetry sent to New Relic in production
@@ -150,8 +150,9 @@ The `.dev.vars*` and `env/*` files hold secrets and are never committed. See the
 ```
 src/
   worker/      Hono app, webhook route, health and admin routes, queues, cron tasks, telemetry
+  web/         Public share pages (Hono JSX): routes, rendering, page cache, fingerprint, styles
   bot/         Telegraf bot composition, router runtime, callback_data, screens, services,
-               telegra.ph client, input validators, content (keyboards, markup, filters)
+               input validators, content (keyboards, markup, filters, support links)
   db/          Drizzle client, schemas (one file per table), repositories
   i18n/        typesafe-i18n sources for uk, en and pl
 scripts/
@@ -159,6 +160,7 @@ scripts/
   db/          migrations, Mongo import and reconciliation, production to preview copy
   releases/    changeset validation, changelog stamping, manifest sync, GitHub releases, broadcast trigger
   telegram/    webhook, bot commands and preview bot helpers
+public/        static assets served by the Worker (favicon, apple touch icon, OG image)
 drizzle/       generated migrations
 docs/          OPERATIONS.md and the New Relic dashboard template
 test/          unit and D1 integration tests
@@ -191,7 +193,7 @@ Release notes are written in `.changeset/*.md`. Every bullet is in Ukrainian and
 - Telegram channel: [t.me/serhii_chernenko](https://t.me/serhii_chernenko)
 - YouTube: [youtube.com/@serhii.chernenko](https://youtube.com/@serhii.chernenko)
 - X: [x.com/serhiichernenko](https://x.com/serhiichernenko)
-- Buy me a coffee: [buymeacoffee.com/serhiichernenko](https://www.buymeacoffee.com/serhiichernenko)
+- Support the author: [Monobank](https://send.monobank.ua/jar/4ZGhPQqyMh), [Ko-fi](https://ko-fi.com/serhiichernenko), [PayPal](https://www.paypal.me/chernenkoserhii), [Revolut](https://revolut.me/serhiichernenko)
 - Princess bot, the author's other Telegram bot: [@ixPrincessBot](https://t.me/ixPrincessBot)
 
 ## License

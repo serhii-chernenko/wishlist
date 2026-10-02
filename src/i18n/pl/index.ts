@@ -320,9 +320,7 @@ const pl: Translation = {
         telegram: '🔗 Kanał na Telegramie'
     },
     share: {
-        title: 'Lista życzeń od {name}',
-        payments:
-            'Jeśli nie możesz podarować mi konkretnego prezentu, poniżej są moje dane płatnicze, za pomocą których można przesłać pieniądze, żeby prezent można było kupić samodzielnie:\n\n{0}'
+        title: 'Lista życzeń od {name}'
     },
     markup: {
         title: '❤️ <b>{0}</b>',

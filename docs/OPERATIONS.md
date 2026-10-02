@@ -18,26 +18,27 @@ The Mongo to D1 cutover (section 8) and parts of the Workers Builds setup (secti
 9. [Rollback](#9-rollback)
 10. [Production operations](#10-production-operations)
 11. [Releases and announcements](#11-releases-and-announcements)
-12. [Observability](#12-observability)
-13. [Troubleshooting](#13-troubleshooting)
-14. [Lessons from princess that apply](#14-lessons-from-princess-that-apply)
-15. [Follow-ups](#15-follow-ups)
+12. [Share pages](#12-share-pages)
+13. [Observability](#13-observability)
+14. [Troubleshooting](#14-troubleshooting)
+15. [Lessons from princess that apply](#15-lessons-from-princess-that-apply)
+16. [Follow-ups](#16-follow-ups)
 
 ## 1. Architecture at a glance
 
-| Piece             | Value                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Runtime           | Cloudflare Worker `wishlist` (wrangler env `production`), Hono + Telegraf                                            |
-| Domain            | `wishlist.chernenko.dev` (custom domain)                                                                             |
-| Telegram webhook  | Secret header (`X-Telegram-Bot-Api-Secret-Token`) plus secret path (`TELEGRAM_WEBHOOK_PATH`)                         |
-| Production D1     | `wishlist-production` (`6d194ed1-4446-4092-af68-606a33601801`)                                                       |
-| Preview D1        | `wishlist-preview` (`3ab03825-4610-4164-9bec-2c47d00ac73e`)                                                          |
-| Production queues | `wishlist-release-announcements` (producer and consumer) with dead-letter queue `wishlist-release-announcements-dlq` |
-| Preview queue     | `wishlist-preview-release-announcements` (producer only, nothing consumes it)                                        |
-| Production crons  | `0 0 * * *` (daily maintenance), `*/10 * * * *` (release broadcast and state snapshot)                               |
-| Account           | Cloudflare account `5396970bbe7f97f2d01c5b759444cd40`                                                                |
-| Bots              | Production `@wishlist_ua_bot`, preview `@InevixTestBot`                                                              |
-| Legacy            | Node.js long polling on a VPS with MongoDB Atlas, tagged `legacy-1.7.1` (`924b0e3`). Not part of 2.0.0.              |
+| Piece             | Value                                                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime           | Cloudflare Worker `wishlist` (wrangler env `production`), Hono + Hono JSX + Telegraf                                              |
+| Domain            | `wishlist.chernenko.dev` (custom domain): the bot webhook and the public share pages (`/w/<id>`, `/<lang>/w/<id>`, `/robots.txt`) |
+| Telegram webhook  | Secret header (`X-Telegram-Bot-Api-Secret-Token`) plus secret path (`TELEGRAM_WEBHOOK_PATH`)                                      |
+| Production D1     | `wishlist-production` (`6d194ed1-4446-4092-af68-606a33601801`)                                                                    |
+| Preview D1        | `wishlist-preview` (`3ab03825-4610-4164-9bec-2c47d00ac73e`)                                                                       |
+| Production queues | `wishlist-release-announcements` (producer and consumer) with dead-letter queue `wishlist-release-announcements-dlq`              |
+| Preview queue     | `wishlist-preview-release-announcements` (producer only, nothing consumes it)                                                     |
+| Production crons  | `0 0 * * *` (daily maintenance), `*/10 * * * *` (release broadcast and state snapshot)                                            |
+| Account           | Cloudflare account `5396970bbe7f97f2d01c5b759444cd40`                                                                             |
+| Bots              | Production `@wishlist_ua_bot`, preview `@InevixTestBot`                                                                           |
+| Legacy            | Node.js long polling on a VPS with MongoDB Atlas, tagged `legacy-1.7.1` (`924b0e3`). Not part of 2.0.0.                           |
 
 Config lives in `wrangler.jsonc` (strict JSON). The preview Worker shape is under `env.production.previews`.
 
@@ -69,6 +70,7 @@ Design points:
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `users`                 | Registered users (guests have no row). Language, currency, visibility, payments, filter, `release_version`, `blocked_at` |
 | `wishes`                | Wishes. `user_id` is `NULL` for wishes imported from users that the legacy bot had already deleted                       |
+| `wishlist_shares`       | One row per shared list: opaque ULID `public_id`, `display_name`, `revoked_at` (see section 12)                          |
 | `gives`                 | "I want to give" marks, unique per `(user_id, wish_id)`                                                                  |
 | `sessions`              | Router state per private-chat user, pruned after 90 days                                                                 |
 | `telegram_updates`      | Webhook idempotency ledger, pruned by the daily cron                                                                     |
@@ -157,7 +159,7 @@ Files (all git-ignored, mode 600). They, together with Cloudflare, hold the only
 
 `env/.env.d1.example` also lists `CLOUDFLARE_D1_TOKEN`, `CLOUDFLARE_D1_TOKEN_PREVIEW` and `CLOUDFLARE_API_TOKEN`. The two D1 tokens are the copies of the Workers Builds tokens (section 4). `CLOUDFLARE_API_TOKEN` is only for token auth mode, not for `wrangler-login`. The Mongo import additionally reads a git-ignored `env/.env.mongo` (Mongo connection string and the legacy admin id), used only during the cutover.
 
-Public (non-secret) variables such as `WISHLIST_TG_URL`, `TG_CHANNEL`, `BUYMEACOFFEE_URL` and `ENABLE_RELEASE_BROADCAST` live in `wrangler.jsonc` for each environment. `ENABLE_RELEASE_BROADCAST` is `"false"` locally and in previews and `"true"` in production.
+Public (non-secret) variables such as `WISHLIST_TG_URL`, `TG_CHANNEL`, `ENABLE_RELEASE_BROADCAST` and the four support links `MONOBANK_URL`, `KOFI_URL`, `PAYPAL_URL` and `REVOLUT_URL` live in `wrangler.jsonc` for each environment. The support links feed the donate screen and the footer of the share pages; an empty value hides that link. The Worker also has an `assets` binding for `public/` and a `CF_VERSION_METADATA` binding (the deploy id used in the share page cache fingerprint). `ENABLE_RELEASE_BROADCAST` is `"false"` locally and in previews and `"true"` in production.
 
 ## 4. Deploy with Workers Builds
 
@@ -395,6 +397,8 @@ Known D1 behavior:
 
 ### Migration rules
 
+Share pages ship with the additive migration that creates `wishlist_shares` (section 12). The old `users.telegraph_access_token` column stays in the schema, unused and `NULL`, so the code in production keeps working across the deploy. Drop it in 2.1 with two steps: deploy code that no longer lists the column, then migrate (`ALTER TABLE users DROP COLUMN telegraph_access_token`, not a table rebuild).
+
 Keep every migration additive (new tables, new nullable or defaulted columns, new indexes). During a deploy the old code runs against the new schema for a short time, and a migration is applied before the code that needs it. Ship destructive changes (drop, rename, new NOT NULL without default) in two releases: first stop using the column, then drop it.
 
 ## 7. Copy production data into preview
@@ -435,7 +439,7 @@ Forward-looking. Order matters. Record every timestamp and SHA in [MIGRATION_STA
 | `release_version` | `1.7.1`: 289, `1.7.0`: 2, `0.0.0`: 8 (users with no version)                               |
 | Foreign keys      | `PRAGMA foreign_key_check` returns no rows                                                 |
 
-Importer facts: `telegramId` is an int for some users and a float for others, and the importer accepts integral floats and `$numberLong` / `$numberDouble` / `$numberInt`. Missing currency becomes `UAH`. Empty-string `telegraphAccessToken` and `payments` become `NULL`. Imported users get `language = uk`. Recompute the numbers from the importer report on every run; they can change if users act before the freeze.
+Importer facts: `telegramId` is an int for some users and a float for others, and the importer accepts integral floats and `$numberLong` / `$numberDouble` / `$numberInt`. Missing currency becomes `UAH`. `payments` becomes `NULL` when empty, and `telegraph_access_token` is always stored as `NULL`: telegra.ph sharing no longer exists. Imported users get `language = uk`. Recompute the numbers from the importer report on every run; they can change if users act before the freeze.
 
 ### E0. Branch and safety
 
@@ -494,7 +498,7 @@ pnpm db:reconcile:preview
 - The report printed by the import now includes `invalidLinks`: the number of wish links that were not a single valid `http` or `https` URL and were stored as NULL. Links are trimmed and reduced to the first URL, the same way the bot parses a link typed by a user.
 
 - Check the figures in the table above. The reconciliation report must match them and `PRAGMA foreign_key_check` must be empty.
-- Walk the parity checklist by hand with the preview bot in a private chat: registration (username, phone, both), wishlist with pagination, add and edit every field including a 3-photo album, visibility, filters, share via telegra.ph, find by `@username` and by phone, give and take, give list, payments, stats, donate, feedback, language switch, `/releases`, and an old button from chat history.
+- Walk the parity checklist by hand with the preview bot in a private chat: registration (username, phone, both), wishlist with pagination, add and edit every field including a 3-photo album, visibility, filters, share through a public page (consent, link, language switcher, edit and reload, stop sharing, share again), find by `@username` and by phone, give and take, give list, payments, stats, donate, feedback, language switch, `/releases`, and an old button from chat history.
 - Imported photos cannot render with the preview bot (file ids belong to the production bot); the text fallback is expected.
 - Gate before the cutover: PR CI green, reviewer sign-off, approval of the copy and the changelog. Then run `pnpm changeset:version` (with `RELEASE_DATE` set to the cutover day), commit, push, and redeploy the final branch build with `pnpm worker:deploy:prod`.
 
@@ -732,21 +736,79 @@ The kill switch variable `ENABLE_RELEASE_BROADCAST` (`"true"` in production in `
 
 The same `CHANGELOG.md` entries are published as GitHub Releases, using the English text of each bullet. The `release` job in `.github/workflows/main.yml` runs after `validate` passes on every push to `main` and calls `pnpm releases:github`. The first automatic version is `2.0.0` (`FIRST_AUTOMATIC_VERSION`); earlier versions are never published automatically. The tag is named like the version and points at the `main` commit that published it. Versions that already have a release are skipped, so a push that does not touch `CHANGELOG.md` only logs `already exists; skipping`. The workflow only publishes notes; it does not deploy.
 
-## 12. Observability
+## 12. Share pages
+
+The Worker serves a public page for every list that its owner shared. The pages are server-rendered with Hono JSX (`src/web`), have no client JavaScript, and share the Worker, the D1 binding and the telemetry with the bot.
+
+### Routes
+
+| Route                | Behavior                                                                                                                                                                                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /w/<id>`        | The link the bot hands out. `302` to `/<lang>/w/<id>`, where the language is the best match of `Accept-Language` among `uk`, `pl`, `en`, else the owner's language. `Vary: Accept-Language`, `Cache-Control: private, no-store`. It is also the `x-default` alternate |
+| `GET /<lang>/w/<id>` | The page, with `lang` in `uk`, `en`, `pl`. An uppercase id gets a `301` to the lowercase URL                                                                                                                                                                          |
+| `GET /robots.txt`    | Generated per environment (see Indexing)                                                                                                                                                                                                                              |
+
+An id that does not match `^[0-9a-hjkmnp-tv-z]{26}$`, an unknown id, or a list of a blocked owner answers `404`. A stopped share answers `410`. Both are `noindex` and `no-store`. The page itself shows only wishes that are neither hidden nor removed (at most 100, with a notice when there are more), the name saved at consent, the `@username` only if the owner is searchable by username, and the owner's payment details. It never shows the phone number, the give list or givers.
+
+### Ids
+
+`wishlist_shares.public_id` is a lowercase ULID (`ulid` package, Web Crypto): 26 Crockford base32 characters, of which the first 10 are a 48-bit millisecond timestamp and the last 16 are 80 random bits. The random part cannot be guessed or walked, unlike a sequential id. The time part does reveal when the share (or the latest "New link") was created, to the millisecond. That is accepted. URLs never contain names or usernames.
+
+Lifecycle:
+
+- The id is created on the first share. Pressing Share again returns the same URL.
+- Stop sharing sets `revoked_at` and clears `display_name`; the page answers `410`.
+- Sharing again clears `revoked_at`, so the old link works again and old recipients regain access.
+- "New link" replaces `public_id` after a confirmation, for a link that leaked. The old link answers `404`.
+- The bot builds the URL from the origin of the webhook request, not from a variable, so a branch preview hands out its own `workers.dev` host.
+
+### Caching
+
+Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the deploy id (`CF_VERSION_METADATA.id`), the language, the public id, the share's `updated_at`, the username (only if searchable), the payment details, the currency, the number of visible wishes and the latest `updated_at` among visible wishes. Any wish change, payment or visibility change, and every deploy therefore produces a new fingerprint. Gives and a profile sync that only touches last-seen do not.
+
+- The fingerprint is the `ETag`. Browsers get `Cache-Control: no-cache`, revalidate, and receive `304` on a match.
+- The rendered HTML is stored in the Cache API (`caches.default`) under `<origin>/__share-cache/<lang>/<id>/<fingerprint>` with `Cache-Control: public, max-age=86400` and never with cookies. A change makes a new key, so no purge is needed; old entries expire after 24 hours.
+- Every `200` carries `Server-Timing: share-cache;desc=hit|miss|bypass`. The second view of an unchanged page must show `hit`.
+- The Cache API is per data center, so each data center renders once per fingerprint.
+- **Cache API caveat.** It does nothing on `*.workers.dev`. Previews always render and report `miss`. Verify caching only on `https://wishlist.chernenko.dev`.
+- `D1` is read twice on a miss (fingerprint, then wishes) and once on a hit or a `304`.
+
+### Indexing and privacy
+
+- A page is `index, follow` only when `BOT_ENVIRONMENT` is `production`, the request host is exactly `wishlist.chernenko.dev`, and the list has at least one visible wish. Everything else (previews, `*.workers.dev` version URLs, empty lists, `404`, `410`) is `noindex`. Canonical and `hreflang` links always use the request origin.
+- `robots.txt` allows `/` and disallows `/__share-cache/` on the production host, and disallows everything elsewhere. There is deliberately no sitemap, so lists are never enumerated.
+- The first Share shows a consent screen: the Telegram profile name, visible wishes and payment details become public, anyone with the link can open the page, search engines may index it, and sharing can be stopped at any time. The name is saved as `display_name` (64 characters at most), refreshed silently on later shares and deleted when sharing stops.
+- Pages send `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a CSP with `default-src 'none'`. Owner links get `rel="nofollow ugc noopener noreferrer"`.
+- Telemetry never contains the public id (the path is normalized to `/w/:publicId`). Cloudflare invocation logs do contain the path, as they already do for the webhook path.
+- Old telegra.ph pages stay online but are no longer updated.
+
+### Assets and data
+
+- `public/` (favicon, Apple touch icon, OG image) is served by the `assets` binding. The files are placeholders and can be replaced in place.
+- `pnpm db:copy:production-to-preview` copies `users`, `wishes` and `gives`, deliberately not `wishlist_shares`, so no public id of a real list exists in preview. Create shares in preview through the preview bot.
+
+### Production rollout
+
+1. Apply the `wishlist_shares` migration to production D1 before the code that reads it is deployed: `pnpm db:migrate:prod`, then `pnpm worker:deploy:prod`. This is an explicit exception to the "no manual production migration before a merge" rule, approved for this release. The migration is additive.
+2. Smoke test as the admin: Share, consent, open the link twice (the second view shows `share-cache;desc=hit`), edit a wish and reload, stop (`410`), share again.
+3. Check that `share_page_served` events reach New Relic (page `Share pages` of the dashboard).
+
+## 13. Observability
 
 Workers Logs and traces stay enabled in every environment. The Worker emits one safe evlog wide event for each HTTP request, Telegram webhook outcome, scheduled run, release broadcast and release-announcement queue batch. In production, evlog's OTLP drain sends them to New Relic. The `NEW_RELIC_LICENSE_KEY` secret exists only on the production Worker and in the ignored `.dev.vars.production`. Delivery is registered with `waitUntil`, and a drain failure only produces a local warning.
 
 Use the `Log_wishlist` data partition (30-day retention) with the rule `` `service.name` = 'wishlist' AND botEnvironment = 'production' ``. Filter by the same attributes in queries. `eventName`, `outcome`, `elapsedMs`, `commandCategory`, `callbackCategory`, `errorType` and the counts are top-level attributes for NRQL. The measured duration is `elapsedMs`: evlog overwrites `durationMs` and `duration` with its own near-zero elapsed time when an event is emitted, so never chart those two.
 
-Telemetry never contains Telegram identifiers, message text, webhook paths, headers, wish contents, payment details or secrets. `callbackCategory` is a closed prefix such as `wish:edit`, `third:give` or `language:set`, `legacy` or `invalid`, never an id.
+Telemetry never contains Telegram identifiers, message text, webhook paths, headers, wish contents, payment details, share page public ids or secrets. `callbackCategory` is a closed prefix such as `wish:edit`, `third:give` or `language:set`, `legacy` or `invalid`, never an id.
 
-Dashboard (import template `docs/newrelic-dashboard.json`; queries read `Log_wishlist`, not the default `Log` event type). One dashboard, `Wishlist Bot`, with three pages and 49 widgets, live at <https://one.eu.newrelic.com/dashboards/detail/ODU2OTkwOHxWSVp8REFTSEJPQVJEfGRhOjI3NjIyMzA?account=8569908>:
+Dashboard (import template `docs/newrelic-dashboard.json`; queries read `Log_wishlist`, not the default `Log` event type). One dashboard, `Wishlist Bot`, with four pages and 57 widgets, live at <https://one.eu.newrelic.com/dashboards/detail/ODU2OTkwOHxWSVp8REFTSEJPQVJEfGRhOjI3NjIyMzA?account=8569908>:
 
-| Page       | Widgets | Contents                                                                                                                                                                                                                                                                                                                     |
-| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production | 16      | Ingest freshness and rate, webhook failures, outcomes and latency (`elapsedMs`), idempotency outcomes, rejected webhook reasons, processing and Worker errors, scheduled heartbeat and duration, release broadcast coverage, release queue failures, wishes created per day, update and command mix, HTTP 5xx                |
-| Audience   | 15      | Registered and blocked users, active users over 1, 7 and 30 days, snapshots in the last hour, users by language, wishes in the system, hidden and priority wishes, gives, users with payment details, new registrations                                                                                                      |
-| Actions    | 18      | Wishes created, updated and removed, gives added and removed, feedback, updates by field, searches by result (`found`, `notFound`, `self`, `tooLong`), shares by result (`success`, `failed`, `empty`), callback mix, pages, filters and language changes, payments, update types, commands by category (real commands only) |
+| Page        | Widgets | Contents                                                                                                                                                                                                                                                                                                                                   |
+| ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Production  | 16      | Ingest freshness and rate, webhook failures, outcomes and latency (`elapsedMs`), idempotency outcomes, rejected webhook reasons, processing and Worker errors, scheduled heartbeat and duration, release broadcast coverage, release queue failures, wishes created per day, update and command mix, HTTP 5xx                              |
+| Audience    | 15      | Registered and blocked users, active users over 1, 7 and 30 days, snapshots in the last hour, users by language, wishes in the system, hidden and priority wishes, gives, users with payment details, new registrations                                                                                                                    |
+| Actions     | 18      | Wishes created, updated and removed, gives added and removed, feedback, updates by field, searches by result (`found`, `notFound`, `self`, `tooLong`), shares by result (`published`, `existing`, `empty`, `failed`), callback mix, pages, filters and language changes, payments, update types, commands by category (real commands only) |
+| Share pages | 8       | Page views and cache hit ratio (30 days), page errors, views per day by result, latency p50 and p95 by cache outcome, views by locale, 404 and 410 per day, shares published, stopped and rotated per day                                                                                                                                  |
 
 A data partition receives data only from its creation time, so events sent before `Log_wishlist` existed stay in `Log`; query `FROM Log, Log_wishlist` for the full history.
 
@@ -758,40 +820,47 @@ Key event names:
 | HTTP and worker   | `http_request_completed`, `http_request_failed`, `worker_readiness_check_failed`, `worker_readiness_auth_failed`, `worker_admin_auth_failed`                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Scheduled         | `scheduled_worker_invoked`, `scheduled_run_completed`, `scheduled_run_failed`, `telegram_update_ledger_pruned`, `sessions_pruned`, `sessions_prune_failed`                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Release broadcast | `release_broadcast_completed`, `release_broadcast_failed`, `release_broadcast_skipped`, `release_broadcast_stale_recovered`, `release_announcement_sent`, `release_announcement_skipped`, `release_announcement_failed`, `release_announcement_ambiguous`, `release_announcement_handler_error`, `release_announcement_state_write_failed`, `release_announcement_rate_limited`, `release_announcement_invalid_job`, `release_announcement_stale_job`, `release_announcement_notes_missing`, `release_announcement_queue_batch_completed`, `release_announcement_queue_batch_failed` |
-| Bot behavior      | `bot_action_completed` with `action` one of `user_registered`, `visibility_changed`, `wish_created`, `wish_updated`, `wish_removed`, `wishlist_cleaned`, `wishlist_shared`, `wishlist_filtered`, `wishlist_searched`, `give_added`, `give_removed`, `give_list_cleaned`, `payments_updated`, `payments_removed`, `feedback_sent`, `language_changed`                                                                                                                                                                                                                                 |
+| Bot behavior      | `bot_action_completed` with `action` one of `user_registered`, `visibility_changed`, `wish_created`, `wish_updated`, `wish_removed`, `wishlist_cleaned`, `wishlist_shared`, `wishlist_share_stopped`, `wishlist_share_rotated`, `wishlist_filtered`, `wishlist_searched`, `give_added`, `give_removed`, `give_list_cleaned`, `payments_updated`, `payments_removed`, `feedback_sent`, `language_changed`                                                                                                                                                                             |
+| Share pages       | `share_page_served` with `result` one of `rendered`, `cached`, `notModified`, `redirected`, `notFound`, `gone`, `error`, `cacheOutcome` one of `hit`, `miss`, `bypass`, plus `locale`, `status`, `elapsedMs` and `visibleWishes`. The path is always the normalized `/w/:publicId`                                                                                                                                                                                                                                                                                                   |
 | Telemetry itself  | `new_relic_drain_failed`, `telemetry_emit_failed`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 State snapshot and heartbeat. Each run of the `*/10 * * * *` cron emits `bot_state_snapshot` after reading aggregate counts from D1: registered, blocked and active (1, 7, 30 days) users, total, active, hidden, priority and done wishes, gives, users with payment details, and a user count per language (`uk`, `en`, `pl`, `auto`). The snapshot doubles as the cron heartbeat: use the `Snapshots in last hour` widget to catch missing cron activity. A snapshot failure emits `bot_state_snapshot_failed` and does not fail the broadcast or maintenance. A zero error count does not prove that the drain works, so check ingest freshness and the latest scheduled run together when data seems missing.
 
 Princess's imported dashboards got `Edit - everyone in account` permission from New Relic. If the wishlist dashboard gets the same, limit New Relic account membership to trusted operators.
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
-| Symptom                                                  | Likely cause                                                                                                           | Fix                                                                                                                                      |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| D1 error `7403` on the first call                        | Transient D1 error on the first call of a session                                                                      | Rerun the same command. `db:migrate:ci` retries it itself                                                                                |
-| `Invalid access token`                                   | Expired `wrangler login`                                                                                               | `pnpm exec wrangler login`                                                                                                               |
-| Build fails with `Missing script: db:migrate:ci`         | Build command was switched before the script reached the built branch, or a legacy `main` build                        | Expected for legacy `main` before the go-live merge. Otherwise rebase the branch or restore the previous build command                   |
-| Production deploy fails on required secrets              | One of `ADMIN_ID`, `BOT_TOKEN`, `NEW_RELIC_LICENSE_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_PATH` is missing | `printf %s "$VALUE" \| pnpm exec wrangler secret put NAME --env production`                                                              |
-| `db:migrate:ci` refuses to run                           | Not inside Workers Builds, empty `WORKERS_CI_BRANCH`, or database ids missing or equal                                 | Use `db:migrate:prod` or `db:migrate:preview` locally; fix the build variables                                                           |
-| Second concurrent preview build fails on duplicate DDL   | Two branch builds raced on the same new migration                                                                      | Rerun the failed build                                                                                                                   |
-| `/health` returns 401                                    | Missing or wrong `X-Telegram-Bot-Api-Secret-Token` header                                                              | Send the correct secret. 401 without the header is expected                                                                              |
-| `pnpm preview:point` times out                           | The Workers Builds check did not finish, or the preview does not answer on `/health`                                   | Check the PR comment for the preview URL, then `pnpm telegram:webhook:set:preview --url <url> --drop-pending-updates=true`               |
-| `preview:point` refuses to change the webhook            | The token in `.dev.vars.preview` is not `@InevixTestBot`'s                                                             | Fix `.dev.vars.preview`                                                                                                                  |
-| Bot does not answer, `getWebhookInfo` shows `last_error` | Wrong URL, secret or path, or the Worker is failing                                                                    | `pnpm telegram:webhook:info:prod`, `pnpm worker:tail:prod`, then set the webhook again                                                   |
-| Pending update count grows, errors are 400               | Update type the Worker rejected                                                                                        | Updates without `message`, `callback_query` or `my_chat_member` return `200 {ignored:true}`. Check `allowed_updates` in the webhook info |
-| Old inline button shows "This button is outdated"        | Button from the legacy bot in chat history                                                                             | Expected: the bot answers with a toast and the home menu                                                                                 |
-| Photos missing in preview after a data copy or import    | File ids are bound to the bot that received them                                                                       | Expected. The bot falls back to text and logs `wish_media_failed`. Test with fresh uploads                                               |
-| Album: no success message after sending photos           | The isolate was evicted during the 1.5 second debounce                                                                 | Send any text; the bot shows the edit menu. Photos are already saved                                                                     |
-| A user stops getting announcements                       | The user blocked the bot (`blocked_at` set)                                                                            | Expected. The flag clears on their next update                                                                                           |
-| Broadcast shows many `failed` or `skipped` rows          | Telegram errors or an ambiguous delivery                                                                               | `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`, inspect `release_announcements` and logs                      |
-| No `bot_state_snapshot` events for over an hour          | The `*/10` cron is not firing, or the New Relic drain fails                                                            | Check Cron Events in the dashboard and `new_relic_drain_failed`. The deploy-time broadcast does not depend on the cron                   |
-| `Row counts differ after copy`                           | Production changed during `db:copy:production-to-preview`                                                              | Rerun the command                                                                                                                        |
-| Import says the target is not empty (preview)            | Preview traffic left rows in `sessions` or `telegram_updates`, or an earlier import                                    | Rerun with `--reset-preview` (preview only; it deletes all application rows)                                                             |
-| Import refuses `--input-dir` for production              | Safety guard                                                                                                           | Add `--allow-local-production-source`, and do not combine it with `MONGO_BACKUP_REF`                                                     |
-| D1 write fails with too many parameters                  | More than 100 bound parameters in one statement                                                                        | Chunk rows to `floor(100 / columnCount)` or fewer                                                                                        |
+| Symptom                                                                           | Likely cause                                                                                                               | Fix                                                                                                                                      |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| D1 error `7403` on the first call                                                 | Transient D1 error on the first call of a session                                                                          | Rerun the same command. `db:migrate:ci` retries it itself                                                                                |
+| `Invalid access token`                                                            | Expired `wrangler login`                                                                                                   | `pnpm exec wrangler login`                                                                                                               |
+| Build fails with `Missing script: db:migrate:ci`                                  | Build command was switched before the script reached the built branch, or a legacy `main` build                            | Expected for legacy `main` before the go-live merge. Otherwise rebase the branch or restore the previous build command                   |
+| Production deploy fails on required secrets                                       | One of `ADMIN_ID`, `BOT_TOKEN`, `NEW_RELIC_LICENSE_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_PATH` is missing     | `printf %s "$VALUE" \| pnpm exec wrangler secret put NAME --env production`                                                              |
+| `db:migrate:ci` refuses to run                                                    | Not inside Workers Builds, empty `WORKERS_CI_BRANCH`, or database ids missing or equal                                     | Use `db:migrate:prod` or `db:migrate:preview` locally; fix the build variables                                                           |
+| Second concurrent preview build fails on duplicate DDL                            | Two branch builds raced on the same new migration                                                                          | Rerun the failed build                                                                                                                   |
+| `/health` returns 401                                                             | Missing or wrong `X-Telegram-Bot-Api-Secret-Token` header                                                                  | Send the correct secret. 401 without the header is expected                                                                              |
+| `pnpm preview:point` times out                                                    | The Workers Builds check did not finish, or the preview does not answer on `/health`                                       | Check the PR comment for the preview URL, then `pnpm telegram:webhook:set:preview --url <url> --drop-pending-updates=true`               |
+| `preview:point` refuses to change the webhook                                     | The token in `.dev.vars.preview` is not `@InevixTestBot`'s                                                                 | Fix `.dev.vars.preview`                                                                                                                  |
+| Bot does not answer, `getWebhookInfo` shows `last_error`                          | Wrong URL, secret or path, or the Worker is failing                                                                        | `pnpm telegram:webhook:info:prod`, `pnpm worker:tail:prod`, then set the webhook again                                                   |
+| Pending update count grows, errors are 400                                        | Update type the Worker rejected                                                                                            | Updates without `message`, `callback_query` or `my_chat_member` return `200 {ignored:true}`. Check `allowed_updates` in the webhook info |
+| Old inline button shows "This button is outdated"                                 | Button from the legacy bot in chat history                                                                                 | Expected: the bot answers with a toast and the home menu                                                                                 |
+| Photos missing in preview after a data copy or import                             | File ids are bound to the bot that received them                                                                           | Expected. The bot falls back to text and logs `wish_media_failed`. Test with fresh uploads                                               |
+| Album: no success message after sending photos                                    | The isolate was evicted during the 1.5 second debounce                                                                     | Send any text; the bot shows the edit menu. Photos are already saved                                                                     |
+| A user stops getting announcements                                                | The user blocked the bot (`blocked_at` set)                                                                                | Expected. The flag clears on their next update                                                                                           |
+| Broadcast shows many `failed` or `skipped` rows                                   | Telegram errors or an ambiguous delivery                                                                                   | `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`, inspect `release_announcements` and logs                      |
+| No `bot_state_snapshot` events for over an hour                                   | The `*/10` cron is not firing, or the New Relic drain fails                                                                | Check Cron Events in the dashboard and `new_relic_drain_failed`. The deploy-time broadcast does not depend on the cron                   |
+| `Row counts differ after copy`                                                    | Production changed during `db:copy:production-to-preview`                                                                  | Rerun the command                                                                                                                        |
+| Import says the target is not empty (preview)                                     | Preview traffic left rows in `sessions` or `telegram_updates`, or an earlier import                                        | Rerun with `--reset-preview` (preview only; it deletes all application rows)                                                             |
+| Import refuses `--input-dir` for production                                       | Safety guard                                                                                                               | Add `--allow-local-production-source`, and do not combine it with `MONGO_BACKUP_REF`                                                     |
+| Share link answers 404                                                            | The id is malformed, the share was never created, or the owner blocked the bot                                             | Check the id (26 characters, no `i`, `l`, `o`, `u`), then `SELECT revoked_at FROM wishlist_shares WHERE public_id = '...'`               |
+| Share link answers 410                                                            | The owner pressed Stop sharing                                                                                             | Expected. Sharing again restores the same link                                                                                           |
+| Share page looks stale                                                            | Cache entry from the previous content or deploy                                                                            | The key changes with every content change and deploy, so wait for the browser to revalidate (`ETag`). Check `Server-Timing: share-cache` |
+| `Server-Timing: share-cache;desc=miss` on every view of a `*.workers.dev` preview | The Cache API does nothing on `workers.dev`                                                                                | Expected. Test caching only on `https://wishlist.chernenko.dev`                                                                          |
+| Share page has `noindex` in production                                            | The request host is not `wishlist.chernenko.dev`, the list has no visible wishes, or `BOT_ENVIRONMENT` is not `production` | Expected for previews, empty lists and error pages                                                                                       |
+| Share page returns 500 and the bot says sharing failed                            | The `wishlist_shares` migration is missing in that D1                                                                      | Apply migrations (`pnpm db:migrate:prod`) before the deploy that needs them                                                              |
+| D1 write fails with too many parameters                                           | More than 100 bound parameters in one statement                                                                            | Chunk rows to `floor(100 / columnCount)` or fewer                                                                                        |
 
-## 14. Lessons from princess that apply
+## 15. Lessons from princess that apply
 
 Princess runs on the same stack and went through the same migration. These points carry over:
 
@@ -816,12 +885,16 @@ Princess runs on the same stack and went through the same migration. These point
 - **`cf` quirks.** List flags are arrays (repeat the flag, do not pass JSON), `cf builds workers create` requires a Previews base config even when previews are off, `cf workers secrets update <NAME> --worker <worker>` takes the secret name positionally, and `wrangler queues delete` takes `-y` while `cf queues delete` takes `--force`.
 - **Wrangler stays the deploy tool.** The `cf` CLI is used for resources and Workers Builds configuration; `wrangler.jsonc` and Wrangler remain the source of truth for the Worker, because `wrangler tail`, `wrangler preview base-config secret put` and `wrangler queues pause-delivery` have no `cf` equivalent.
 
-## 15. Follow-ups
+## 16. Follow-ups
 
 Security and robustness items found by the pre-cutover audit and review that were deliberately deferred. None blocks the cutover. The same list is mirrored in [MIGRATION_STATUS.md](../MIGRATION_STATUS.md).
 
 - **M1. Separate admin secret.** `/admin/release-broadcast` is protected by the same secret as the Telegram webhook, as in princess. Give it its own secret.
 - **M3. Per-user rate limiting.** Nothing limits how fast one user can drive the bot, the D1 queries and the Telegram calls behind it. Add per-user rate limiting.
+- **Drop `users.telegraph_access_token` in 2.1.** The column is unused and `NULL` (the importer no longer writes tokens). Remove it from the Drizzle schema, the importer mapping, the reconcile metric and the fixtures; deploy the code first, then generate and apply the migration.
+- **Share page images.** Wish photos are left out of the pages. An image proxy or R2 copies would add them.
+- **Per-list OG images.** The link preview uses one static image.
+- **Rate limiting the public routes.** `/w/*` is unauthenticated; cache hits are cheap, but nothing limits misses.
 - **L1. Low-severity audit finding.** Deferred; details are in the pre-cutover security audit report, which is not stored in the repository.
 - **L2. Bot token in URLs.** Telegraf calls `https://api.telegram.org/bot<token>/...`. Check traces and logs (evlog, New Relic, Workers Logs) for the token inside outgoing URLs and scrub it.
 - **L4 to L9. Low-severity audit findings.** Deferred; details are in the same audit report.

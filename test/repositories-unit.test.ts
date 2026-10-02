@@ -25,7 +25,6 @@ const expectedMethods: Record<string, string[]> = {
         'setLanguage',
         'setPayments',
         'setWishlistFilter',
-        'setTelegraphToken',
         'markBlockedByTelegramId',
         'clearBlocked',
         'findSearchable',

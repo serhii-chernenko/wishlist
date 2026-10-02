@@ -23,6 +23,7 @@ import {
 } from './share/fingerprint';
 import {
     buildSharePath,
+    CANONICAL_SHARE_HOST,
     normalizeSharePublicId,
     type SharePageLanguage
 } from './share/public-id';
@@ -88,6 +89,13 @@ const withSecurityHeaders = (headers: Headers) => {
     }
 
     return headers;
+};
+
+const isProductionCanonicalHost = (env: WorkerBindings, requestUrl: string) => {
+    return (
+        env.BOT_ENVIRONMENT === 'production' &&
+        new URL(requestUrl).host === CANONICAL_SHARE_HOST
+    );
 };
 
 const getErrorStatus = (kind: SharePageErrorKind) => {
@@ -175,7 +183,8 @@ const servePage = async ({
         lastUpdatedAt: share.lastUpdatedAt,
         wishes,
         indexable:
-            c.env.BOT_ENVIRONMENT === 'production' && share.visibleCount > 0,
+            isProductionCanonicalHost(c.env, c.req.url) &&
+            share.visibleCount > 0,
         botUrl: c.env.WISHLIST_TG_URL,
         githubUrl: c.env.GITHUB_REPO_URL,
         supportLinks: getSupportLinks(c.env, getTranslator(language))
@@ -402,10 +411,9 @@ export const registerShareRoutes = (
     };
 
     app.get('/robots.txt', c => {
-        const body =
-            c.env.BOT_ENVIRONMENT === 'production'
-                ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\n`
-                : 'User-agent: *\nDisallow: /\n';
+        const body = isProductionCanonicalHost(c.env, c.req.url)
+            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\n`
+            : 'User-agent: *\nDisallow: /\n';
 
         return c.body(body, 200, {
             'Content-Type': 'text/plain; charset=utf-8',

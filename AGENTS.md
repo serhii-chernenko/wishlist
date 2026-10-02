@@ -97,4 +97,4 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 ## Observability
 
 - Production Worker telemetry goes to New Relic through evlog's OTLP drain. Local and preview environments do not ingest into New Relic.
-- Never include Telegram identifiers, message text, webhook paths, headers, wish contents, or secrets in telemetry attributes.
+- Never include Telegram identifiers, message text, webhook paths, headers, wish contents, share page public ids, or secrets in telemetry attributes. Share page paths are normalized to `/w/:publicId`.

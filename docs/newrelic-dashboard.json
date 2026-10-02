@@ -1049,6 +1049,180 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Share pages",
+            "description": "Public share pages on wishlist.chernenko.dev in the production Wishlist service. Share page ids never appear in telemetry.",
+            "widgets": [
+                {
+                    "title": "Page views (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Views' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Cache hit ratio (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE cacheOutcome = 'hit') AS 'Hit ratio' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached') SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Page errors (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Errors' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result = 'error' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Views per day by result",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' FACET result TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Latency p50 / p95 by cache outcome (ms)",
+                    "layout": {
+                        "column": 7,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentile(elapsedMs, 50, 95) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached') FACET cacheOutcome TIMESERIES SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Views by locale",
+                    "layout": {
+                        "column": 1,
+                        "row": 8,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') FACET locale SINCE 30 days ago LIMIT 4"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "404 and 410 per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 8,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('notFound', 'gone') FACET result TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Published, stopped and rotated per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 12,
+                        "width": 12,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND (action IN ('wishlist_share_stopped', 'wishlist_share_rotated') OR (action = 'wishlist_shared' AND result = 'published')) FACET action TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     ],
     "variables": []

@@ -13,6 +13,12 @@
 - [added] Довгі списки бажань тепер розбиті на сторінки: кнопка «Показати ще» підвантажує наступні бажання.
     - en: Long wish lists are now split into pages: the "Show more" button loads the next wishes.
     - pl: Długie listy życzeń są teraz podzielone na strony: przycisk „Pokaż więcej” wczytuje kolejne życzenia.
+- [added] «Поділитися» тепер створює власну сторінку твого листа бажань на wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.
+    - en: "Share" now creates your own wish list page on wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates itself after every change, it has a language switcher, and you can stop sharing at any time. Old telegra.ph pages stay but no longer update.
+    - pl: „Udostępnij” tworzy teraz własną stronę twojej listy życzeń na wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane.
+- [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
+    - en: You can now support the author via Monobank, Ko-fi, PayPal or Revolut.
+    - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.
 - [added] Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.
     - en: The /releases command shows the history of bot changes, and the bot now announces new versions on its own.
     - pl: Polecenie /releases pokazuje historię zmian bota, a o nowych wersjach bot teraz informuje sam.

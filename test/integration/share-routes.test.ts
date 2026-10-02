@@ -11,6 +11,8 @@ import type { D1Harness } from './d1-harness';
 
 const baseTime = Date.parse('2026-10-01T12:00:00.000Z');
 const ownerTelegramId = 9_001;
+const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
+const WORKERS_DEV_ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 const EXPECTED_CSP =
     "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -648,7 +650,7 @@ describe('share page routes', () => {
     });
 
     it('serves robots.txt per environment', async () => {
-        const production = await request('/robots.txt');
+        const production = await request(`${CANONICAL_ORIGIN}/robots.txt`);
 
         assert.equal(production.status, 200);
         assert.match(
@@ -662,7 +664,7 @@ describe('share page routes', () => {
 
         for (const environment of ['preview', 'local']) {
             const response = await request(
-                '/robots.txt',
+                `${CANONICAL_ORIGIN}/robots.txt`,
                 {},
                 buildEnv({ BOT_ENVIRONMENT: environment })
             );
@@ -678,7 +680,9 @@ describe('share page routes', () => {
     it('allows indexing only in production for non-empty lists', async () => {
         const { owner, publicId } = await seedShare();
 
-        const production = await (await request(`/uk/w/${publicId}`)).text();
+        const production = await (
+            await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`)
+        ).text();
 
         assert.match(
             production,
@@ -705,6 +709,40 @@ describe('share page routes', () => {
         assert.equal(empty.status, 200);
         assert.match(emptyBody, /<meta name="robots" content="noindex"\/>/);
         assert.match(emptyBody, /Тут поки що порожньо/);
+    });
+
+    it('keeps production pages noindex outside the canonical host', async () => {
+        const { publicId } = await seedShare();
+
+        const workersDev = await request(
+            `${WORKERS_DEV_ORIGIN}/uk/w/${publicId}`
+        );
+        const workersDevBody = await workersDev.text();
+
+        assert.equal(workersDev.status, 200);
+        assert.match(
+            workersDevBody,
+            /<meta name="robots" content="noindex"\/>/
+        );
+        assert.match(
+            workersDevBody,
+            new RegExp(
+                `<link rel="canonical" href="${WORKERS_DEV_ORIGIN}/uk/w/${publicId}"`
+            )
+        );
+
+        const robots = await request(`${WORKERS_DEV_ORIGIN}/robots.txt`);
+
+        assert.equal(await robots.text(), 'User-agent: *\nDisallow: /\n');
+
+        const canonical = await (
+            await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`)
+        ).text();
+
+        assert.match(
+            canonical,
+            /<meta name="robots" content="index, follow"\/>/
+        );
     });
 
     it('shows a truncation notice and at most 100 wishes for huge lists', async () => {

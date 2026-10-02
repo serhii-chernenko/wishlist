@@ -357,7 +357,6 @@ describe('D1 repositories', () => {
             await run(repositories.users.setLanguage(user.id, 'pl'));
             await run(repositories.users.setPayments(user.id, 'IBAN 1'));
             await run(repositories.users.setWishlistFilter(user.id, 3));
-            await run(repositories.users.setTelegraphToken(user.id, 'token'));
             await run(
                 repositories.users.updateReleaseVersion(user.id, '2.0.0')
             );
@@ -367,7 +366,6 @@ describe('D1 repositories', () => {
             assert.equal(updated?.language, 'pl');
             assert.equal(updated?.payments, 'IBAN 1');
             assert.equal(updated?.wishlistFilter, 3);
-            assert.equal(updated?.telegraphAccessToken, 'token');
             assert.equal(updated?.releaseVersion, '2.0.0');
 
             await run(repositories.users.setLanguage(user.id, null));
