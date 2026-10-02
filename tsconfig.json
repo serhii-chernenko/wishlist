@@ -15,6 +15,7 @@
     "include": [
         "drizzle.config.ts",
         "drizzle.production.config.ts",
+        "drizzle.preview.config.ts",
         "scripts/**/*.ts",
         "types/**/*.d.ts",
         "src/**/*.ts",

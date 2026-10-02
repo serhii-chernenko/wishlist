@@ -100,6 +100,8 @@
 !/test/*.ts
 !/test/fixtures
 !/test/fixtures/*.ts
+!/test/fixtures/mongo
+!/test/fixtures/mongo/*.ts
 !/test/integration
 !/test/integration/*.ts
 !/types
