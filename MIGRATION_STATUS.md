@@ -19,7 +19,7 @@ The step-by-step cutover, rollback and Workers Builds setup are in
 | State             | MongoDB Atlas (Mongoose); sessions lost on restart | Cloudflare D1 via Drizzle; sessions stored in D1 (ids only); update ledger for idempotency                                |
 | Timers            | 2 second `setTimer` before navigating              | Navigation in the same update; only the photo album debounce (1.5 s, `waitUntil` plus a D1 marker)                        |
 | Blocked users     | Deleted with their wishes on a 403                 | Soft-block: `users.blocked_at`, data kept, excluded from search, broadcast and stats                                      |
-| Languages         | Ukrainian, plus an unmerged multilang branch       | `uk`, `en`, `pl` and Auto (typesafe-i18n); imported users start in Auto                                                   |
+| Languages         | Ukrainian, plus an unmerged multilang branch       | `uk`, `en`, `pl` and Auto (typesafe-i18n); imported users start in Ukrainian                                              |
 | Rendering         | Markdown; one message per wish                     | HTML parse mode with escaping everywhere; 10 wishes per page                                                              |
 | Releases          | Hand-written `changelog.json`                      | Changesets (Ukrainian bullets with nested `en:` and `pl:` lines), `CHANGELOG.md`, generated manifest, `/releases`         |
 | Announcements     | None                                               | Cloudflare Queues, one job per registered non-blocked user, delivery held until after the go-live merge                   |
@@ -31,7 +31,7 @@ Decisions:
 
 - Workers Builds is connected before the cutover, not after, because branch previews, `preview:point` and `db:migrate:ci` need it during preview testing. Nothing is pushed to `main` until the go-live merge.
 - The cutover runs from the branch; go-live is the merge of the pull request. The release broadcast is held back by pausing queue delivery, not by a code flag.
-- Imported users get `language = NULL` (Auto). Their Telegram language is unknown at import, so the 2.0.0 announcement goes out in Ukrainian with a trilingual language note.
+- Imported users get `language = uk`: they have always used the bot in Ukrainian, and Auto would switch everyone whose Telegram is in another language. New users start in Auto. The 2.0.0 announcement carries a trilingual language note.
 - Wishes of users deleted by the legacy 403 cleanup are imported with `user_id` NULL, so the all-time wish stats still match. They are invisible in the bot.
 - Blocked users are soft-blocked and never deleted.
 - Groups are ignored; the bot serves private chats only.

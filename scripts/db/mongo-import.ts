@@ -82,6 +82,7 @@ const wishKeys = new Set([
     'updatedAt'
 ]);
 const giveKeys = new Set(['_id', 'userId', 'wishId']);
+const importedUserLanguage = 'uk';
 const droppedKeys = new Set(['__v', 'noticed', 'hideGreeting', 'language']);
 
 type SourceCollection = keyof typeof sourceFileNames;
@@ -134,6 +135,7 @@ export interface UserRow {
     payments: string | null;
     wishlistFilter: number | null;
     releaseVersion: string;
+    language: typeof importedUserLanguage;
     createdAt: number;
     updatedAt: number;
 }
@@ -1123,6 +1125,7 @@ const transformUsers = (records: MongoUserRecord[]): UserRow[] => {
             payments: record.payments,
             wishlistFilter: record.wishlistFilter,
             releaseVersion: record.version ?? defaultReleaseVersion,
+            language: importedUserLanguage,
             createdAt,
             updatedAt: createdAt
         };
@@ -1330,6 +1333,7 @@ const formatUserTuple = (row: UserRow): string => {
         quoteNullableString(row.payments),
         quoteNullableNumber(row.wishlistFilter),
         quoteString(row.releaseVersion),
+        quoteString(row.language),
         row.createdAt,
         row.updatedAt
     ].join(', ')})`;
@@ -1365,7 +1369,7 @@ const formatGiveTuple = (row: GiveRow): string => {
 };
 
 const userColumns =
-    '"id", "mongo_id", "telegram_id", "username", "username_searchable", "phone", "phone_digits", "currency", "telegraph_access_token", "payments", "wishlist_filter", "release_version", "created_at", "updated_at"';
+    '"id", "mongo_id", "telegram_id", "username", "username_searchable", "phone", "phone_digits", "currency", "telegraph_access_token", "payments", "wishlist_filter", "release_version", "language", "created_at", "updated_at"';
 const wishColumns =
     '"id", "mongo_id", "user_id", "title", "description", "link", "images", "priority", "hidden", "removed", "done", "price", "created_at", "updated_at"';
 const giveColumns = '"id", "mongo_id", "user_id", "wish_id", "created_at"';

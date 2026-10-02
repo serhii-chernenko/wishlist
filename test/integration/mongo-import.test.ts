@@ -171,12 +171,12 @@ describe('Mongo import SQL on D1', () => {
             });
         });
 
-        it('applies defaults, auto language and searchability to imported users', async () => {
+        it('applies defaults, Ukrainian language and searchability to imported users', async () => {
             await imported.run();
 
             const users = await harness.env.DB.prepare(
                 `SELECT count(*) AS total,
-                    sum(language IS NULL) AS auto,
+                    sum(language = 'uk') AS ukrainian,
                     sum(currency = 'UAH') AS uah,
                     sum(release_version = '0.0.0') AS unversioned,
                     sum(username_searchable) AS searchable,
@@ -188,7 +188,7 @@ describe('Mongo import SQL on D1', () => {
             ).first<{ total: number }>();
 
             assert.equal(users?.total, 24);
-            assert.equal(users?.auto, 24);
+            assert.equal(users?.ukrainian, 24);
             assert.equal(users?.uah, 24);
             assert.equal(users?.unversioned, 6);
             assert.equal(users?.searchable, 16);

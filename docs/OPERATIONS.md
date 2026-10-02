@@ -61,7 +61,7 @@ Design points:
 - **Album debounce.** While a wish is waiting for images, each photo is appended atomically (largest size, deduplicated, at most 9). Photos of one album are marked in `sessions.media_group_id` and `sessions.media_group_marker` (the `update_id` of the latest photo). The update schedules `waitUntil(wait 1500 ms, then task)`. The task re-reads the marker and only the last photo of the album sends the success message and renders the edit screen. If the isolate is evicted first, `pendingInput` stays on images and the user's next text gets the edit menu, which is a clean recovery.
 - **Soft-block.** A 403 from Telegram or a `kicked` status sets `users.blocked_at` instead of deleting data. Blocked users are excluded from search, from the release broadcast and from the active-user stats. The next update from the user clears the flag.
 - **Parse mode is HTML** everywhere, with all user content escaped. Wish lists are paginated, 10 wishes per page with a "Show more" button.
-- **Locales.** `uk` (base), `en` and `pl`, plus Auto. Auto resolves from the Telegram `language_code`: `uk*` gives uk, `pl*` gives pl, any other non-empty code gives en, none gives uk. Users imported from Mongo start in Auto with an unknown Telegram language, so their first announcement is Ukrainian. The language screen is reachable from the globe button on the home menu and from `/lang`.
+- **Locales.** `uk` (base), `en` and `pl`, plus Auto. Auto resolves from the Telegram `language_code`: `uk*` gives uk, `pl*` gives pl, any other non-empty code gives en, none gives uk. Users imported from Mongo start with an explicit `uk`, because Auto would switch long-time Ukrainian users whose Telegram is in another language; new users start in Auto. The language screen is reachable from the globe button on the home menu and from `/lang`.
 
 ### Tables
 
@@ -435,7 +435,7 @@ Forward-looking. Order matters. Record every timestamp and SHA in [MIGRATION_STA
 | `release_version` | `1.7.1`: 289, `1.7.0`: 2, `0.0.0`: 8 (users with no version)                               |
 | Foreign keys      | `PRAGMA foreign_key_check` returns no rows                                                 |
 
-Importer facts: `telegramId` is an int for some users and a float for others, and the importer accepts integral floats and `$numberLong` / `$numberDouble` / `$numberInt`. Missing currency becomes `UAH`. Empty-string `telegraphAccessToken` and `payments` become `NULL`. Imported users get `language = NULL` (Auto). Recompute the numbers from the importer report on every run; they can change if users act before the freeze.
+Importer facts: `telegramId` is an int for some users and a float for others, and the importer accepts integral floats and `$numberLong` / `$numberDouble` / `$numberInt`. Missing currency becomes `UAH`. Empty-string `telegraphAccessToken` and `payments` become `NULL`. Imported users get `language = uk`. Recompute the numbers from the importer report on every run; they can change if users act before the freeze.
 
 ### E0. Branch and safety
 
