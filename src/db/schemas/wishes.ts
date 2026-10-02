@@ -45,6 +45,12 @@ export const wishes = snakeCase.table(
                 table.priority,
                 table.updatedAt
             ),
+            index('wishes_share_fingerprint_index').on(
+                table.userId,
+                table.removed,
+                table.hidden,
+                table.updatedAt
+            ),
             index('wishes_done_index').on(table.done),
             check('wishes_price_check', sql`${table.price} >= 0`),
             check(

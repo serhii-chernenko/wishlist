@@ -9,5 +9,6 @@ export {
     telegramUpdateStatuses,
     userLanguages,
     users,
-    wishes
+    wishes,
+    wishlistShares
 } from './schemas';

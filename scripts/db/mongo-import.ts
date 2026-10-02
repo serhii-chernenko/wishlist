@@ -94,7 +94,6 @@ interface MongoUserRecord {
     username: string | null;
     phone: string | null;
     currency: string | null;
-    telegraphAccessToken: string | null;
     payments: string | null;
     wishlistFilter: number | null;
     version: string | null;
@@ -131,7 +130,7 @@ export interface UserRow {
     phone: string | null;
     phoneDigits: string | null;
     currency: string;
-    telegraphAccessToken: string | null;
+    telegraphAccessToken: null;
     payments: string | null;
     wishlistFilter: number | null;
     releaseVersion: string;
@@ -226,7 +225,6 @@ export interface ImportAggregates {
         usernameSearchable: number;
         withPhone: number;
         withPayments: number;
-        withTelegraphToken: number;
         withWishlistFilter: number;
         releaseVersions: Record<string, number>;
     };
@@ -381,11 +379,6 @@ const validateUserRecord = (
         username: readOptionalText(record.username, `${location}.username`, 64),
         phone,
         currency: readOptionalText(record.currency, `${location}.currency`, 16),
-        telegraphAccessToken: readOptionalText(
-            record.telegraphAccessToken,
-            `${location}.telegraphAccessToken`,
-            256
-        ),
         payments: readOptionalText(
             record.payments,
             `${location}.payments`,
@@ -1121,7 +1114,7 @@ const transformUsers = (records: MongoUserRecord[]): UserRow[] => {
             phoneDigits:
                 record.phone === null ? null : stripNonDigits(record.phone),
             currency: record.currency ?? defaultCurrency,
-            telegraphAccessToken: record.telegraphAccessToken,
+            telegraphAccessToken: null,
             payments: record.payments,
             wishlistFilter: record.wishlistFilter,
             releaseVersion: record.version ?? defaultReleaseVersion,
@@ -1278,9 +1271,6 @@ export const summarizeAggregates = (
             }),
             withPhone: countBy(userRows, user => user.phone !== null),
             withPayments: countBy(userRows, user => user.payments !== null),
-            withTelegraphToken: countBy(userRows, user => {
-                return user.telegraphAccessToken !== null;
-            }),
             withWishlistFilter: countBy(userRows, user => {
                 return user.wishlistFilter !== null;
             }),

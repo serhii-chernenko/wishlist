@@ -2,6 +2,7 @@ import type { AppDb } from '../client';
 import { createGiveRepository } from './give-repository';
 import { createReleaseAnnouncementRepository } from './release-announcement-repository';
 import { createSessionRepository } from './session-repository';
+import { createShareRepository } from './share-repository';
 import { createStatsRepository } from './stats-repository';
 import { createTelegramUpdateRepository } from './telegram-update-repository';
 import { createUserRepository } from './user-repository';
@@ -15,7 +16,8 @@ export const createRepositories = (db: AppDb) => {
         sessions: createSessionRepository(db),
         telegramUpdates: createTelegramUpdateRepository(db),
         releaseAnnouncements: createReleaseAnnouncementRepository(db),
-        stats: createStatsRepository(db)
+        stats: createStatsRepository(db),
+        shares: createShareRepository(db)
     };
 };
 
@@ -27,6 +29,8 @@ export type {
     GiveRecord
 } from './give-repository';
 export type { SessionRecord, SessionLanguage } from './session-repository';
+export type { PublicShareFingerprint, ShareRecord } from './share-repository';
+export { SHARE_DISPLAY_NAME_MAX_LENGTH } from './share-repository';
 export type { PublicStats, StatsSnapshot } from './stats-repository';
 export type {
     NewUser,

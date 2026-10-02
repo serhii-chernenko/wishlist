@@ -137,6 +137,16 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'wl:clean:y';
         case 'wishlistShare':
             return 'wl:share';
+        case 'wishlistSharePublish':
+            return 'wl:share:y';
+        case 'wishlistShareStop':
+            return 'wl:share:stop';
+        case 'wishlistShareStopConfirm':
+            return 'wl:share:stop:y';
+        case 'wishlistShareRotate':
+            return 'wl:share:new';
+        case 'wishlistShareRotateConfirm':
+            return 'wl:share:new:y';
         case 'wishlistFilterMenu':
             return 'wl:f';
         case 'wishlistFilter':
@@ -222,8 +232,29 @@ const decodeNavigation = (parts: readonly string[]): CallbackAction => {
     return { type: 'navigate', screen };
 };
 
+const SHARE_ACTIONS_BY_SUFFIX: ReadonlyMap<string, CallbackAction> = new Map([
+    ['', { type: 'wishlistShare' }],
+    ['y', { type: 'wishlistSharePublish' }],
+    ['stop', { type: 'wishlistShareStop' }],
+    ['stop:y', { type: 'wishlistShareStopConfirm' }],
+    ['new', { type: 'wishlistShareRotate' }],
+    ['new:y', { type: 'wishlistShareRotateConfirm' }]
+]);
+
+const decodeWishlistShare = (suffixParts: readonly string[]) => {
+    if (suffixParts.includes('')) {
+        return OUTDATED;
+    }
+
+    return SHARE_ACTIONS_BY_SUFFIX.get(suffixParts.join(':')) ?? OUTDATED;
+};
+
 const decodeWishlist = (parts: readonly string[]): CallbackAction => {
     const [, command, argument, ...rest] = parts;
+
+    if (command === 'share') {
+        return decodeWishlistShare(parts.slice(2));
+    }
 
     if (rest.length > 0) {
         return OUTDATED;
@@ -241,10 +272,6 @@ const decodeWishlist = (parts: readonly string[]): CallbackAction => {
         }
 
         return argument === 'y' ? { type: 'wishlistCleanConfirm' } : OUTDATED;
-    }
-
-    if (command === 'share' && argument === undefined) {
-        return { type: 'wishlistShare' };
     }
 
     if (command === 'f') {
@@ -513,6 +540,11 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishlistClean: 'wishlist:clean',
     wishlistCleanConfirm: 'wishlist:cleanConfirm',
     wishlistShare: 'wishlist:share',
+    wishlistSharePublish: 'wishlist:sharePublish',
+    wishlistShareStop: 'wishlist:shareStop',
+    wishlistShareStopConfirm: 'wishlist:shareStopConfirm',
+    wishlistShareRotate: 'wishlist:shareRotate',
+    wishlistShareRotateConfirm: 'wishlist:shareRotateConfirm',
     wishlistFilterMenu: 'wishlist:filterMenu',
     wishlistFilter: 'wishlist:filter',
     wishEdit: 'wish:edit',

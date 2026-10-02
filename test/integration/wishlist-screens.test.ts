@@ -115,8 +115,10 @@ describe('wishlist screens on D1', () => {
             ctx: { update: { update_id: 0 } } as unknown as Context,
             env: {
                 WISHLIST_TG_URL: 'https://t.me/wishlist_ua_bot',
-                BUYMEACOFFEE_URL: 'https://bmc.test',
-                MONOBANK_URL: 'https://mono.test'
+                MONOBANK_URL: 'https://mono.test',
+                KOFI_URL: 'https://kofi.test',
+                PAYPAL_URL: 'https://paypal.test',
+                REVOLUT_URL: 'https://revolut.test'
             },
             locale: 'uk',
             LL: getMessages('uk'),

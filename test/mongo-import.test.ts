@@ -937,3 +937,20 @@ test('serializer keeps raw float notation in NDJSON output', () => {
     assert.match(serialized, /"telegramId":5\.733470387E\+09/);
     assert.match(serialized, /"telegramId":6100000001\.0/);
 });
+
+test('Mongo import never stores legacy Telegraph access tokens', async context => {
+    const directory = createFixtureDirectory(context);
+    const records = createSyntheticMongoExport();
+
+    assert.ok(
+        records.users.some(user => {
+            return String(user.telegraphAccessToken ?? '').startsWith(
+                'fake-token-'
+            );
+        })
+    );
+
+    await runImport(directory);
+
+    assert.equal(readSql(directory).includes('fake-token-'), false);
+});

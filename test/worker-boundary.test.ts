@@ -90,6 +90,7 @@ const createBindings = (
 ): WorkerBindings => {
     return {
         DB,
+        CF_VERSION_METADATA: { id: 'test-version', tag: '', timestamp: '' },
         BOT_ENVIRONMENT: botEnvironment,
         ENABLE_RELEASE_BROADCAST:
             botEnvironment === 'production' ? 'true' : 'false',
@@ -100,9 +101,10 @@ const createBindings = (
         PRINCESS_TG_URL: 'https://t.me/ixPrincessBot',
         TG_CHANNEL: 'https://t.me/serhii_chernenko',
         YT_CHANNEL: 'https://youtube.com/@serhii.chernenko',
-        BUYMEACOFFEE_URL: 'https://www.buymeacoffee.com/serhiichernenko',
         MONOBANK_URL: 'https://send.monobank.ua/jar/4ZGhPQqyMh',
-        PAYPAL_EMAIL: 'contact@chernenko.digital',
+        KOFI_URL: 'https://ko-fi.com/serhiichernenko',
+        PAYPAL_URL: 'https://www.paypal.me/chernenkoserhii',
+        REVOLUT_URL: 'https://revolut.me/serhiichernenko',
         ADMIN_ID: '777000111',
         BOT_TOKEN: '123456:test-token',
         NEW_RELIC_LICENSE_KEY: '',

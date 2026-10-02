@@ -31,6 +31,11 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishlistClean' }, 'wl:clean'],
     [{ type: 'wishlistCleanConfirm' }, 'wl:clean:y'],
     [{ type: 'wishlistShare' }, 'wl:share'],
+    [{ type: 'wishlistSharePublish' }, 'wl:share:y'],
+    [{ type: 'wishlistShareStop' }, 'wl:share:stop'],
+    [{ type: 'wishlistShareStopConfirm' }, 'wl:share:stop:y'],
+    [{ type: 'wishlistShareRotate' }, 'wl:share:new'],
+    [{ type: 'wishlistShareRotateConfirm' }, 'wl:share:new:y'],
     [{ type: 'wishlistFilterMenu' }, 'wl:f'],
     [{ type: 'wishlistFilter', filter: 0 }, 'wl:f:0'],
     [{ type: 'wishlistFilter', filter: 4 }, 'wl:f:4'],
@@ -165,6 +170,12 @@ test('malformed new-style data decodes as outdated', () => {
         'wl:p:-1',
         'wl:p:01',
         'wl:clean:n',
+        'wl:share:',
+        'wl:share:n',
+        'wl:share:stop:n',
+        'wl:share:new:y:1',
+        'wl:share:constructor',
+        'wl:share::y',
         't:p:5',
         't:f:0',
         't:f:5:9',
@@ -188,6 +199,15 @@ test('callback categories are closed and never contain ids', () => {
     assert.equal(getCallbackCategory('w:e:12345'), 'wish:edit');
     assert.equal(getCallbackCategory('t:g:12345'), 'third:give');
     assert.equal(getCallbackCategory('x'), 'noop');
+    assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
+    assert.equal(
+        getCallbackCategory('wl:share:stop:y'),
+        'wishlist:shareStopConfirm'
+    );
+    assert.equal(
+        getCallbackCategory('wl:share:new:y'),
+        'wishlist:shareRotateConfirm'
+    );
 
     for (const [action] of ALL_VARIANTS) {
         const category = getCallbackCategory(encodeCallbackData(action));

@@ -86,6 +86,11 @@
 !/src/i18n/en/*.ts
 !/src/i18n/pl
 !/src/i18n/pl/*.ts
+!/src/web
+!/src/web/**
+!/src/**/*.tsx
+!/public
+!/public/**
 !/scripts
 !/scripts/cloudflare
 !/scripts/cloudflare/*.ts
@@ -98,12 +103,14 @@
 !/test
 !/test/*.cjs
 !/test/*.ts
+!/test/*.tsx
 !/test/fixtures
 !/test/fixtures/*.ts
 !/test/fixtures/mongo
 !/test/fixtures/mongo/*.ts
 !/test/integration
 !/test/integration/*.ts
+!/test/integration/*.tsx
 !/types
 !/types/*.d.ts
 !/tools

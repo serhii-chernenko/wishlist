@@ -15,6 +15,7 @@ import {
     singleColumnKeyboard
 } from '../content/keyboards';
 import { normalizeOffset, getPageWindow } from '../content/pagination';
+import { getSupportLinks } from '../content/support-links';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
 import type {
     BotRequest,
@@ -199,16 +200,7 @@ const shareWishlist = async (req: BotRequest) => {
             formatMoney: formatters.formatMoney,
             formatDate: formatters.formatDate,
             botUrl: req.env.WISHLIST_TG_URL,
-            donateLinks: [
-                {
-                    title: LL.donate.services.buymeacoffee.title(),
-                    url: req.env.BUYMEACOFFEE_URL
-                },
-                {
-                    title: LL.donate.services.monobank.title(),
-                    url: req.env.MONOBANK_URL
-                }
-            ]
+            donateLinks: getSupportLinks(req.env, LL)
         });
 
         if (outcome.status === 'empty') {

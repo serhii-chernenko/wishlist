@@ -49,7 +49,7 @@ const pl: Translation = {
         title: '🧐 Dowiedz się więcej',
         description: {
             sensitive:
-                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nTe dane posłużą wyłącznie do wyszukiwania list życzeń innych użytkowników, jeśli znasz ich numer.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu.\nŻadnych imion, żadnych nazwisk!\nDzięki za zainteresowanie tak ważnym tematem ❤️',
+                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nTe dane posłużą wyłącznie do wyszukiwania list życzeń innych użytkowników, jeśli znasz ich numer.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu.\nŻadnych imion, żadnych nazwisk, dopóki sam(-a) nie udostępnisz listy życzeń: wtedy bot zapisze imię z twojego Telegrama, żeby pokazać je na publicznej stronie. Gdy wyłączysz udostępnianie, imię zostanie usunięte.\nDzięki za zainteresowanie tak ważnym tematem ❤️',
             openSource:
                 '\n\n<b>Otwarty kod (Open Source)</b>\n\nOtwarty kod oznacza, że każdy chętny może\n- włączyć się w ulepszanie projektu\n- zobaczyć, jak napisany jest kod\n- ponadto projekt ma licencję GNU AGPLv3, co oznacza, że kod można w pełni skopiować do dowolnego innego projektu, nawet komercyjnego.',
             languages:
@@ -213,7 +213,26 @@ const pl: Translation = {
         },
         share: {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
-            empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.'
+            empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
+            consent:
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twoja nazwa użytkownika, jeśli można cię po niej znaleźć\n• wszystkie życzenia oprócz ukrytych\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+            ready: '✅ Twoja lista życzeń jest dostępna pod tym linkiem:\n{url}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
+            stopConfirm:
+                '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
+            stopped:
+                '✅ Gotowe, twoja lista życzeń nie jest już udostępniana.\nStrona pod linkiem już się nie otwiera.',
+            newConfirm:
+                '❓ Utworzyć nowy link?\n\nStary link od razu przestanie działać i nikt nie otworzy już nim twojej listy. Nowy link trzeba będzie ponownie wysłać znajomym.',
+            rotated:
+                '✅ Oto nowy link do twojej listy życzeń:\n{url}\n\nStary link już nie działa.',
+            sendText: 'Moja lista życzeń ❤️',
+            actions: {
+                publish: '✅ Udostępnij',
+                open: '🔗 Otwórz stronę',
+                send: '📤 Wyślij znajomym',
+                stop: '🚫 Wyłącz udostępnianie',
+                newLink: '🔄 Nowy link'
+            }
         }
     },
     giveList: {
@@ -274,13 +293,19 @@ const pl: Translation = {
     donate: {
         title: '💸 Wesprzyj autora darowizną 🥹👉👈',
         description:
-            'Bot będzie darmowy tak długo, jak to możliwe, żebyśmy my - Ukraińcy - mogli sprawiać sobie nawzajem prezenty.\nTo bardzo ważne, to naprawdę potrzebne. Bo mamy tylko siebie nawzajem!\n\nAle jeśli chcesz wesprzeć autora, możesz to zrobić za pomocą serwisów wymienionych poniżej albo przez PayPal:\n{paypal}\n\nA ja będę ci szczerze wdzięczny ❤️\n\nWiększość darowizn trafia na zbiórki dla Sił Zbrojnych Ukrainy.\nZbiórki i rozliczenia znajdziesz na moim kanale na Telegramie pod linkiem poniżej.',
+            'Bot będzie darmowy tak długo, jak to możliwe, żebyśmy my - Ukraińcy - mogli sprawiać sobie nawzajem prezenty.\nTo bardzo ważne, to naprawdę potrzebne. Bo mamy tylko siebie nawzajem!\n\nAle jeśli chcesz wesprzeć autora, możesz to zrobić za pomocą serwisów wymienionych poniżej albo bezpośrednio przez PayPal:\n{paypal}\n\nA ja będę ci szczerze wdzięczny ❤️\n\nWiększość darowizn trafia na zbiórki dla Sił Zbrojnych Ukrainy.\nZbiórki i rozliczenia znajdziesz na moim kanale na Telegramie pod linkiem poniżej.',
         services: {
-            buymeacoffee: {
-                title: '☕️ Buymeacoffee'
-            },
             monobank: {
                 title: '🫙 Monobank'
+            },
+            kofi: {
+                title: '☕️ Ko-fi'
+            },
+            paypal: {
+                title: '💳 PayPal'
+            },
+            revolut: {
+                title: '💸 Revolut'
             }
         }
     },
@@ -363,6 +388,50 @@ const pl: Translation = {
             footer: 'Wszystkie zmiany i poprzednie wersje: /releases'
         },
         empty: 'Na razie nie ma wpisów o aktualizacjach.'
+    },
+    web: {
+        header: {
+            count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
+            updated: 'Zaktualizowano {date}',
+            username: 'Telegram: @{username}'
+        },
+        payments: {
+            title: 'Dane płatnicze',
+            description:
+                'Jeśli nie możesz podarować mi konkretnego prezentu, możesz przesłać pieniądze na te dane, a prezent kupię sam(-a).'
+        },
+        wish: {
+            priority: 'Bardzo chcę',
+            price: 'Orientacyjna cena: {price}',
+            link: 'Zobacz na {host}',
+            created: 'Utworzono {date}',
+            updated: 'Zaktualizowano {date}'
+        },
+        empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
+        truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
+        footer: {
+            cta: 'Utwórz własną listę życzeń w bocie na Telegramie',
+            support: 'Wesprzyj autora',
+            openSource: 'Otwarty kod na GitHubie'
+        },
+        language: {
+            label: 'Język'
+        },
+        notFound: {
+            title: 'Nie znaleziono strony',
+            description:
+                'Link może zawierać literówkę albo ta lista życzeń już nie istnieje.',
+            cta: 'Otwórz bota'
+        },
+        gone: {
+            title: 'Ta lista życzeń nie jest już udostępniana',
+            description:
+                'Właściciel przestał udostępniać tę stronę. Jeśli udostępni ją ponownie, ten link znów zadziała.'
+        },
+        meta: {
+            description:
+                '{name}: {count} {{count:|życzenie||życzenia|życzeń|życzenia}} na liście życzeń'
+        }
     },
     commands: {
         start: 'Menu główne',

@@ -2,12 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    emitHttpRequestTelemetry,
+    emitSharePageServedTelemetry,
     emitTelemetryEvent,
     getCallbackDataCategory,
     getTelegramCallbackCategory,
     getTelegramCommandCategory,
     getTelegramUpdateType,
     normalizeTelemetryPath,
+    SHARE_PAGE_TELEMETRY_PATH,
     toWishlistAttributes
 } from '../src/worker/telemetry';
 import type { WorkerBindings } from '../src/worker/env';
@@ -100,6 +103,12 @@ test('callback categories map every callback family to a closed id-free label', 
         ['wl:clean', 'wishlist:clean'],
         ['wl:clean:y', 'wishlist:cleanConfirm'],
         ['wl:share', 'wishlist:share'],
+        ['wl:share:y', 'wishlist:sharePublish'],
+        ['wl:share:stop', 'wishlist:shareStop'],
+        ['wl:share:stop:y', 'wishlist:shareStopConfirm'],
+        ['wl:share:new', 'wishlist:shareRotate'],
+        ['wl:share:new:y', 'wishlist:shareRotateConfirm'],
+        ['wl:share:stop:n', 'invalid'],
         ['wl:f', 'wishlist:filter'],
         ['wl:f:3', 'wishlist:filter'],
         ['wl:f:x', 'wishlist:filter'],
@@ -444,4 +453,153 @@ test('telemetry never leaks Telegram ids or digits from callback data', async ()
     }
 
     assert.equal(shippedBodies.length > 0, true);
+});
+
+test('share page paths collapse to one id-free route and robots.txt stays known', () => {
+    const publicId = '01k6g4z8q3m2n7p5r9s1t0v6wx';
+
+    for (const path of [
+        `/w/${publicId}`,
+        `/uk/w/${publicId}`,
+        `/en/w/${publicId.toUpperCase()}`,
+        `/pl/w/${publicId}/extra`,
+        '/w/not-a-ulid',
+        '/w'
+    ]) {
+        assert.equal(
+            normalizeTelemetryPath(path, '/telegram/secret'),
+            SHARE_PAGE_TELEMETRY_PATH,
+            path
+        );
+    }
+
+    assert.equal(SHARE_PAGE_TELEMETRY_PATH, '/w/:publicId');
+    assert.equal(normalizeTelemetryPath('/robots.txt', null), '/robots.txt');
+    assert.equal(normalizeTelemetryPath('/de/w/abc', null), '/unknown');
+    assert.equal(normalizeTelemetryPath('/wishes', null), '/unknown');
+});
+
+test('share_page_served keeps cacheOutcome as a safe label next to numeric fields', () => {
+    assert.deepEqual(
+        toWishlistAttributes(
+            {
+                event: 'share_page_served',
+                result: 'cached',
+                cacheOutcome: 'hit',
+                locale: 'pl',
+                status: 200,
+                elapsedMs: 4,
+                visibleWishes: 12
+            },
+            'production'
+        ),
+        {
+            eventName: 'share_page_served',
+            result: 'cached',
+            cacheOutcome: 'hit',
+            locale: 'pl',
+            status: 200,
+            elapsedMs: 4,
+            visibleWishes: 12,
+            botEnvironment: 'production'
+        }
+    );
+    assert.equal(
+        toWishlistAttributes(
+            {
+                event: 'share_page_served',
+                cacheOutcome: '01k6g4z8q3m2n7p5r9s1t0v6wx' as 'hit'
+            },
+            'production'
+        ).cacheOutcome,
+        'invalid'
+    );
+});
+
+const crockfordAlphabet = '0123456789abcdefghjkmnpqrstvwxyz';
+
+const randomPublicId = (random: () => number) => {
+    return Array.from({ length: 26 }, () => {
+        return pickRandom(random, [...crockfordAlphabet]);
+    }).join('');
+};
+
+test('telemetry never leaks share public ids from paths or share events', async () => {
+    const random = createSeededRandom(20261003);
+    const originalFetch = globalThis.fetch;
+    const shippedBodies: string[] = [];
+    const background: Promise<unknown>[] = [];
+
+    globalThis.fetch = async (_input, init) => {
+        shippedBodies.push(String(init?.body));
+        return new Response('{}', { status: 200 });
+    };
+
+    try {
+        const env = {
+            NEW_RELIC_LICENSE_KEY: 'test-license-key',
+            BOT_ENVIRONMENT: 'production'
+        } as WorkerBindings;
+        const context = {
+            waitUntil(promise: Promise<unknown>) {
+                background.push(promise);
+            },
+            passThroughOnException() {}
+        } as unknown as ExecutionContext;
+        const pathTemplates = [
+            (id: string) => `/w/${id}`,
+            (id: string) => `/w/${id.toUpperCase()}`,
+            (id: string) => `/uk/w/${id}`,
+            (id: string) => `/en/w/${id}`,
+            (id: string) => `/pl/w/${id}`,
+            (id: string) => `/uk/w/${id}?utm=${id}`
+        ];
+
+        for (let iteration = 0; iteration < 100; iteration += 1) {
+            const publicId = randomPublicId(random);
+            const path = pickRandom(random, pathTemplates)(publicId);
+            const pathname = new URL(path, 'https://wishlist.test').pathname;
+
+            assert.equal(
+                normalizeTelemetryPath(pathname, '/telegram/secret'),
+                SHARE_PAGE_TELEMETRY_PATH,
+                path
+            );
+
+            emitHttpRequestTelemetry(
+                new Request(`https://wishlist.test${path}`),
+                new Response('ok', { status: 200 }),
+                env,
+                context,
+                Date.now()
+            );
+            emitSharePageServedTelemetry(env, context, {
+                method: 'GET',
+                result: 'rendered',
+                cacheOutcome: 'miss',
+                locale: 'uk',
+                status: 200,
+                elapsedMs: 3,
+                visibleWishes: 5
+            });
+
+            await Promise.all(background);
+
+            for (const body of shippedBodies.slice(-2)) {
+                assert.equal(body.includes(publicId), false, publicId);
+                assert.equal(
+                    body.includes(publicId.toUpperCase()),
+                    false,
+                    publicId
+                );
+            }
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+
+    assert.equal(shippedBodies.length, 200);
+    assert.ok(
+        shippedBodies.every(body => body.includes(SHARE_PAGE_TELEMETRY_PATH))
+    );
 });

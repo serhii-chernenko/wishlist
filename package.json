@@ -67,7 +67,7 @@
         "format": "oxfmt . && oxlint . --fix && oxfmt .",
         "format:check": "oxfmt --check .",
         "typecheck": "pnpm run i18n:generate && tsgo -p tsconfig.json --noEmit",
-        "test": "tsx --test \"test/**/*.test.ts\" \"test/**/*.test.cjs\"",
+        "test": "tsx --test \"test/**/*.test.ts\" \"test/**/*.test.tsx\" \"test/**/*.test.cjs\"",
         "check": "pnpm run changeset:validate && pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run releases:sync && pnpm test",
         "typesafe-i18n": "typesafe-i18n --no-watch"
     },

@@ -77,7 +77,14 @@ const expectedMethods: Record<string, string[]> = {
         'requeueStaleQueued',
         'skipStuckSending'
     ],
-    stats: ['publicStats', 'snapshot']
+    stats: ['publicStats', 'snapshot'],
+    shares: [
+        'findActiveByUserId',
+        'publish',
+        'revoke',
+        'rotate',
+        'findPublicFingerprint'
+    ]
 };
 
 test('createRepositories exposes exactly the contracted repositories and methods', () => {

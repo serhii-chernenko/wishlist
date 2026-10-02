@@ -99,6 +99,11 @@ export type CallbackAction =
     | { type: 'wishlistClean' }
     | { type: 'wishlistCleanConfirm' }
     | { type: 'wishlistShare' }
+    | { type: 'wishlistSharePublish' }
+    | { type: 'wishlistShareStop' }
+    | { type: 'wishlistShareStopConfirm' }
+    | { type: 'wishlistShareRotate' }
+    | { type: 'wishlistShareRotateConfirm' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
     | { type: 'wishEdit'; wishId: number }
@@ -159,6 +164,8 @@ export type BotActionName =
     | 'wish_removed'
     | 'wishlist_cleaned'
     | 'wishlist_shared'
+    | 'wishlist_share_stopped'
+    | 'wishlist_share_rotated'
     | 'wishlist_filtered'
     | 'wishlist_searched'
     | 'give_added'
@@ -175,7 +182,16 @@ export type InternalFailureEvent =
     | 'wish_media_failed'
     | 'deferred_render_failed'
     | 'telegraph_failed'
+    | 'share_failed'
     | 'feedback_delivery_failed';
+
+export type WishlistSharedResult =
+    | 'published'
+    | 'existing'
+    | 'empty'
+    | 'failed';
+
+export type WishlistShareChangeResult = 'success' | 'failed';
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {
@@ -202,6 +218,7 @@ export interface BotRequest {
     actor: User;
     user: UserRecord | null;
     sessionLanguage: AppLocale | null;
+    publicOrigin?: string;
     session: SessionState;
     isAdmin: boolean;
     repos: Repositories;

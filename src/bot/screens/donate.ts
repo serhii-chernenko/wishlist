@@ -1,23 +1,23 @@
 import {
     homeButton,
     optionalUrlButton,
-    singleColumnKeyboard
+    singleColumnKeyboard,
+    urlButton
 } from '../content/keyboards';
+import { getSupportLinks } from '../content/support-links';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import { escapeHtml } from '../utils/strings';
 
 const render = async (req: BotRequest) => {
     const { LL, env } = req;
-    const { services } = LL.donate;
+    const supportButtons = getSupportLinks(env, LL).map(link => {
+        return urlButton(link.title, link.url);
+    });
 
     await req.send.text(
-        LL.donate.description({ paypal: escapeHtml(env.PAYPAL_EMAIL) }),
+        LL.donate.description({ paypal: escapeHtml(env.PAYPAL_URL) }),
         singleColumnKeyboard([
-            optionalUrlButton(
-                services.buymeacoffee.title(),
-                env.BUYMEACOFFEE_URL
-            ),
-            optionalUrlButton(services.monobank.title(), env.MONOBANK_URL),
+            ...supportButtons,
             optionalUrlButton(LL.contacts.telegram(), env.TG_CHANNEL),
             homeButton(LL)
         ])

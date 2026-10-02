@@ -48,7 +48,7 @@ const en: Translation = {
         title: '🧐 Read more',
         description: {
             sensitive:
-                '<b>Private data</b>\n\nYour phone number is private information of every user!\nIt is used only to let other users find your wish list if they know your number.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number.\nNo names, no surnames!\nThanks for caring about this important topic ❤️',
+                '<b>Private data</b>\n\nYour phone number is private information of every user!\nIt is used only to let other users find your wish list if they know your number.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number.\nNo first names, no last names, unless you share your wish list yourself: then the bot keeps the name from your Telegram to show it on the public page. When you stop sharing, the name is deleted.\nThanks for caring about this important topic ❤️',
             openSource:
                 '\n\n<b>Open source</b>\n\nOpen source means that anyone can\n- help improve the project\n- see how the code is written\n- this project is also licensed under GNU AGPLv3, which means the code can be fully copied for any other project, even a commercial one.',
             languages:
@@ -207,7 +207,26 @@ const en: Translation = {
         },
         share: {
             success: '✅ Here is the link to your wish list:\n{url}',
-            empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.'
+            empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
+            consent:
+                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your username, if people can find you by it\n• all your wishes except hidden ones\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
+            ready: '✅ Your wish list is available at this link:\n{url}\n\nThe page updates itself after every change to your list.',
+            stopConfirm:
+                '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
+            stopped:
+                '✅ Done, you are no longer sharing your wish list.\nThe page at the link no longer opens.',
+            newConfirm:
+                '❓ Create a new link?\n\nThe old link will stop working right away, and nobody will be able to open your list with it anymore. You will need to send the new link to your friends again.',
+            rotated:
+                '✅ Here is the new link to your wish list:\n{url}\n\nThe old link no longer works.',
+            sendText: 'My wish list ❤️',
+            actions: {
+                publish: '✅ Share',
+                open: '🔗 Open page',
+                send: '📤 Send to friends',
+                stop: '🚫 Stop sharing',
+                newLink: '🔄 New link'
+            }
         }
     },
     giveList: {
@@ -266,13 +285,19 @@ const en: Translation = {
     donate: {
         title: '💸 Support the author with a donation 🥹👉👈',
         description:
-            'The bot will stay free for as long as possible, so that we Ukrainians can give each other gifts.\nThis is very important, this is really needed. Because we are all we have!\n\nBut if you want to support the author, you can do it with the services listed below, or with PayPal:\n{paypal}\n\nAnd I will be sincerely grateful ❤️\n\nMost of all donations go to fundraisers for the Armed Forces of Ukraine.\nThe fundraisers and reports can be found in my Telegram channel via the link below.',
+            'The bot will stay free for as long as possible, so that we Ukrainians can give each other gifts.\nThis is very important, this is really needed. Because we are all we have!\n\nBut if you want to support the author, you can do it with the services listed below, or directly via PayPal:\n{paypal}\n\nAnd I will be sincerely grateful ❤️\n\nMost of all donations go to fundraisers for the Armed Forces of Ukraine.\nThe fundraisers and reports can be found in my Telegram channel via the link below.',
         services: {
-            buymeacoffee: {
-                title: '☕️ Buymeacoffee'
-            },
             monobank: {
                 title: '🫙 Monobank'
+            },
+            kofi: {
+                title: '☕️ Ko-fi'
+            },
+            paypal: {
+                title: '💳 PayPal'
+            },
+            revolut: {
+                title: '💸 Revolut'
             }
         }
     },
@@ -354,6 +379,50 @@ const en: Translation = {
             footer: 'All changes and previous versions: /releases'
         },
         empty: 'There are no release notes yet.'
+    },
+    web: {
+        header: {
+            count: '{count} {{count:wish|wishes}}',
+            updated: 'Updated {date}',
+            username: 'Telegram: @{username}'
+        },
+        payments: {
+            title: 'Payment details',
+            description:
+                "If you can't give me a specific gift, you can send money using these details, and I will buy the gift myself."
+        },
+        wish: {
+            priority: 'Really want this',
+            price: 'Approximate price: {price}',
+            link: 'View on {host}',
+            created: 'Created {date}',
+            updated: 'Updated {date}'
+        },
+        empty: 'Nothing here yet. Wishes will appear as soon as they are added to the list.',
+        truncated: 'Showing the first {limit} wishes of the list.',
+        footer: {
+            cta: 'Create your own wish list in the Telegram bot',
+            support: 'Support the author',
+            openSource: 'Open source on GitHub'
+        },
+        language: {
+            label: 'Language'
+        },
+        notFound: {
+            title: 'Page not found',
+            description:
+                'The link may contain a typo, or this wish list no longer exists.',
+            cta: 'Open the bot'
+        },
+        gone: {
+            title: 'This wish list is no longer shared',
+            description:
+                'The owner has stopped sharing this page. If they share it again, this link will work again.'
+        },
+        meta: {
+            description:
+                '{name}: {count} {{count:wish|wishes}} on the wish list'
+        }
     },
     commands: {
         start: 'Main menu',

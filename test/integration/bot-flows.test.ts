@@ -1190,17 +1190,23 @@ describe('Bot flows through the Worker on D1', () => {
             );
         });
 
-        it('offers the donate links and the PayPal address', async () => {
+        it('offers the support links and the PayPal link without an email', async () => {
             await tap(alice, 'n:don');
 
             const message = webhook.lastMessage();
 
-            assert.ok(message.text.includes('contact@chernenko.digital'));
+            assert.ok(
+                message.text.includes('https://www.paypal.me/chernenkoserhii')
+            );
+            assert.doesNotMatch(message.text, /@chernenko\.digital/);
             assert.deepEqual(urlsOf(message), [
-                'https://www.buymeacoffee.com/serhiichernenko',
                 'https://send.monobank.ua/jar/4ZGhPQqyMh',
+                'https://ko-fi.com/serhiichernenko',
+                'https://www.paypal.me/chernenkoserhii',
+                'https://revolut.me/serhiichernenko',
                 'https://t.me/serhii_chernenko'
             ]);
+            assert.deepEqual(callbackDataOf(message), ['n:home']);
         });
 
         it('lists the project links on the privacy screen including X', async () => {

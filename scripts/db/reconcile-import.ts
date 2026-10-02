@@ -17,7 +17,6 @@ export interface ObservedAggregates {
     usernameSearchable: number;
     usersWithPhone: number;
     usersWithPayments: number;
-    usersWithTelegraphToken: number;
     usersWithWishlistFilter: number;
     wishesWithoutUser: number;
     images: number;
@@ -47,7 +46,6 @@ export const aggregateSql = [
     '  (SELECT COUNT(*) FROM "users" WHERE "username_searchable" = 1) AS "usernameSearchable",',
     '  (SELECT COUNT(*) FROM "users" WHERE "phone" IS NOT NULL) AS "usersWithPhone",',
     '  (SELECT COUNT(*) FROM "users" WHERE "payments" IS NOT NULL) AS "usersWithPayments",',
-    '  (SELECT COUNT(*) FROM "users" WHERE "telegraph_access_token" IS NOT NULL) AS "usersWithTelegraphToken",',
     '  (SELECT COUNT(*) FROM "users" WHERE "wishlist_filter" IS NOT NULL) AS "usersWithWishlistFilter",',
     '  (SELECT COUNT(*) FROM "wishes" WHERE "user_id" IS NULL) AS "wishesWithoutUser",',
     '  (SELECT COALESCE(SUM(json_array_length("images")), 0) FROM "wishes") AS "images",',
@@ -124,7 +122,6 @@ export const parseObservedAggregates = (
         usernameSearchable: read('usernameSearchable'),
         usersWithPhone: read('usersWithPhone'),
         usersWithPayments: read('usersWithPayments'),
-        usersWithTelegraphToken: read('usersWithTelegraphToken'),
         usersWithWishlistFilter: read('usersWithWishlistFilter'),
         wishesWithoutUser: read('wishesWithoutUser'),
         images: read('images'),
@@ -185,11 +182,6 @@ export const compareWithReport = (
         'usersWithPayments',
         expected.users.withPayments,
         actual.usersWithPayments
-    );
-    expectNumber(
-        'usersWithTelegraphToken',
-        expected.users.withTelegraphToken,
-        actual.usersWithTelegraphToken
     );
     expectNumber(
         'usersWithWishlistFilter',

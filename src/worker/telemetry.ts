@@ -37,6 +37,8 @@ export type TelemetryAction =
     | 'wish_removed'
     | 'wishlist_cleaned'
     | 'wishlist_shared'
+    | 'wishlist_share_stopped'
+    | 'wishlist_share_rotated'
     | 'wishlist_filtered'
     | 'wishlist_searched'
     | 'give_added'
@@ -48,6 +50,29 @@ export type TelemetryAction =
     | 'language_changed';
 
 export type TelemetryLocale = 'uk' | 'en' | 'pl' | 'auto';
+
+export const SHARE_PAGE_TELEMETRY_PATH = '/w/:publicId';
+
+export type SharePageResult =
+    | 'rendered'
+    | 'cached'
+    | 'notModified'
+    | 'redirected'
+    | 'notFound'
+    | 'gone'
+    | 'error';
+
+export type ShareCacheOutcome = 'hit' | 'miss' | 'bypass';
+
+export interface SharePageServedInput {
+    method: string;
+    result: SharePageResult;
+    cacheOutcome: ShareCacheOutcome;
+    locale?: Exclude<TelemetryLocale, 'auto'>;
+    status: number;
+    elapsedMs: number;
+    visibleWishes?: number;
+}
 
 type TelemetryFields = {
     event: string;
@@ -93,9 +118,18 @@ type TelemetryFields = {
     doneWishes?: number;
     gives?: number;
     usersWithPayments?: number;
+    cacheOutcome?: ShareCacheOutcome;
+    visibleWishes?: number;
 };
 
-const knownPaths = new Set(['/', '/health', '/admin/release-broadcast']);
+const knownPaths = new Set([
+    '/',
+    '/health',
+    '/admin/release-broadcast',
+    '/robots.txt'
+]);
+
+const sharePagePathPattern = /^(?:\/(?:uk|en|pl))?\/w(?:\/|$)/;
 
 const commandCategories = new Set(['start', 'lang', 'releases']);
 
@@ -110,7 +144,8 @@ const labelFieldNames = [
     'field',
     'locale',
     'outcome',
-    'idempotencyOutcome'
+    'idempotencyOutcome',
+    'cacheOutcome'
 ] as const;
 
 const safeLabelPattern = /^[A-Za-z][A-Za-z_:.-]{0,63}$/;
@@ -137,6 +172,11 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^wl:clean$/, 'wishlist:clean'],
     [/^wl:clean:y$/, 'wishlist:cleanConfirm'],
     [/^wl:share$/, 'wishlist:share'],
+    [/^wl:share:y$/, 'wishlist:sharePublish'],
+    [/^wl:share:stop$/, 'wishlist:shareStop'],
+    [/^wl:share:stop:y$/, 'wishlist:shareStopConfirm'],
+    [/^wl:share:new$/, 'wishlist:shareRotate'],
+    [/^wl:share:new:y$/, 'wishlist:shareRotateConfirm'],
     [/^wl:f(?::[0-4x])?$/, 'wishlist:filter'],
     [/^w:e:\d{1,12}$/, 'wish:edit'],
     [/^w:r:\d{1,12}$/, 'wish:remove'],
@@ -178,6 +218,10 @@ export const normalizeTelemetryPath = (
         path === '/telegram'
     ) {
         return '/telegram/webhook';
+    }
+
+    if (sharePagePathPattern.test(path)) {
+        return SHARE_PAGE_TELEMETRY_PATH;
     }
 
     return knownPaths.has(path) ? path : '/unknown';
@@ -366,6 +410,19 @@ export const emitTelemetryEvent = (
             })
         );
     }
+};
+
+export const emitSharePageServedTelemetry = (
+    env: WorkerBindings,
+    context: TelemetryContext,
+    input: SharePageServedInput
+) => {
+    emitTelemetryEvent(env, context, {
+        event: 'share_page_served',
+        path: SHARE_PAGE_TELEMETRY_PATH,
+        outcome: input.status >= 500 ? 'error' : 'success',
+        ...input
+    });
 };
 
 export const emitHttpRequestTelemetry = (

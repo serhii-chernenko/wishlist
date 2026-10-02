@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 
@@ -9,6 +10,10 @@ import {
 import { createD1Harness, type D1Harness } from './d1-harness';
 
 const migrationsFolder = path.resolve(process.cwd(), 'drizzle');
+
+const committedMigrationCount = fs
+    .readdirSync(migrationsFolder, { withFileTypes: true })
+    .filter(entry => entry.isDirectory()).length;
 const bookkeepingSql =
     'SELECT "hash", "created_at", "name" FROM "__drizzle_migrations" ORDER BY "id"';
 const schemaSql =
@@ -61,7 +66,7 @@ describe('wrangler-login migration bookkeeping', () => {
             migrationsFolder
         );
 
-        assert.equal(result.applied.length, 1);
+        assert.equal(result.applied.length, committedMigrationCount);
         assert.deepEqual(result.alreadyApplied, []);
         assert.deepEqual(
             await readRows(loginHarness, bookkeepingSql),
@@ -97,7 +102,7 @@ describe('wrangler-login migration bookkeeping', () => {
         );
 
         assert.deepEqual(result.applied, []);
-        assert.equal(result.alreadyApplied.length, 1);
+        assert.equal(result.alreadyApplied.length, committedMigrationCount);
     });
 
     it('treats a database already migrated by drizzle as up to date', async () => {
@@ -112,7 +117,7 @@ describe('wrangler-login migration bookkeeping', () => {
             );
 
             assert.deepEqual(result.applied, []);
-            assert.equal(result.alreadyApplied.length, 1);
+            assert.equal(result.alreadyApplied.length, committedMigrationCount);
             assert.deepEqual(
                 await readRows(migratedHarness, bookkeepingSql),
                 await readRows(drizzleHarness, bookkeepingSql)

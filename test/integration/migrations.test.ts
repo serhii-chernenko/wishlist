@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import {
@@ -6,6 +8,11 @@ import {
     migrationsTableName
 } from '../../scripts/db/copy-production-to-preview';
 import { countRows, createD1Harness, type D1Harness } from './d1-harness';
+
+const migrationsFolder = path.resolve(process.cwd(), 'drizzle');
+const committedMigrationCount = fs
+    .readdirSync(migrationsFolder, { withFileTypes: true })
+    .filter(entry => entry.isDirectory()).length;
 
 interface SchemaObject {
     type: string;
@@ -52,7 +59,8 @@ describe('D1 migrations', () => {
             'gives',
             'sessions',
             'telegram_updates',
-            'release_announcements'
+            'release_announcements',
+            'wishlist_shares'
         ]) {
             assert.equal(findObject(tableName)?.type, 'table', tableName);
         }
@@ -65,7 +73,8 @@ describe('D1 migrations', () => {
             'wishes_mongo_id_unique',
             'gives_user_wish_unique',
             'telegram_updates_bot_update_unique',
-            'release_announcements_version_user_unique'
+            'release_announcements_version_user_unique',
+            'wishlist_shares_public_id_unique'
         ]) {
             assert.match(findObject(indexName)?.sql ?? '', /UNIQUE INDEX/);
         }
@@ -74,6 +83,7 @@ describe('D1 migrations', () => {
             'users_phone_digits_index',
             'users_release_index',
             'wishes_owner_list_index',
+            'wishes_share_fingerprint_index',
             'wishes_done_index',
             'gives_wish_index',
             'sessions_updated_at_index',
@@ -100,7 +110,7 @@ describe('D1 migrations', () => {
 
         await harness.applyMigrations();
 
-        assert.equal(appliedBefore, 1);
+        assert.equal(appliedBefore, committedMigrationCount);
         assert.equal(
             await countRows(harness, '__drizzle_migrations'),
             appliedBefore
@@ -125,7 +135,7 @@ describe('D1 migrations', () => {
         assert.equal(table?.name, migrationsTableName);
         assert.ok(columns.some(column => column.name === 'hash'));
         assert.ok(columns.some(column => column.name === 'id'));
-        assert.equal(hashes.length, 1);
+        assert.equal(hashes.length, committedMigrationCount);
         assert.ok(hashes.every(row => row.hash.length > 0));
     });
 
