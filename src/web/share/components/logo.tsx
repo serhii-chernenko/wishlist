@@ -31,7 +31,7 @@ export const LogoMark = ({
                         transform={LOGO_HEART_TRANSFORM}
                         fill='#000'
                         stroke='#000'
-                        stroke-width='70'
+                        stroke-width='84'
                         stroke-linejoin='round'
                     />
                 </mask>
