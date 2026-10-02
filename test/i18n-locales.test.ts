@@ -8,6 +8,7 @@ import {
     normalizeLanguageInput,
     resolveAppLocale
 } from '../src/bot/i18n';
+import { getLanguageChoices } from '../src/bot/screens/language';
 import en from '../src/i18n/en';
 import pl from '../src/i18n/pl';
 import uk from '../src/i18n/uk';
@@ -83,25 +84,90 @@ test('no locale has empty strings other than intentional ones', () => {
     }
 });
 
-test('the language screen texts are identical in every locale', () => {
-    const languageKeys = [
-        'language.title',
-        'language.description',
-        'language.options.uk',
-        'language.options.en',
-        'language.options.pl',
-        'language.options.auto'
-    ];
+const languageOrderByLocale = {
+    uk: ['uk', 'en', 'pl'],
+    en: ['en', 'uk', 'pl'],
+    pl: ['pl', 'en', 'uk']
+} as const;
+const languageFlags = { uk: '🇺🇦', en: '🇺🇸', pl: '🇵🇱' } as const;
+const languageCodes = { uk: 'UA', en: 'EN', pl: 'PL' } as const;
+const languageParagraphStarts = {
+    uk: '🇺🇦 Змінити мову',
+    en: '🇺🇸 Change a language',
+    pl: '🇵🇱 Zmień język'
+} as const;
+const languageNameInLocale = {
+    uk: { uk: 'Українська', en: 'Ukrainian', pl: 'Ukraiński' },
+    en: { uk: 'Англійська', en: 'English', pl: 'Angielski' },
+    pl: { uk: 'Польська', en: 'Polish', pl: 'Polski' }
+} as const;
 
-    for (const key of languageKeys) {
-        for (const locale of ['en', 'pl']) {
-            assert.equal(
-                flat[locale]!.get(key),
-                ukrainian.get(key),
-                `${locale}:${key}`
+const autoNameInLocale = {
+    uk: 'Автоматично',
+    en: 'Auto',
+    pl: 'Automatycznie'
+} as const;
+
+test('the language screen lists the viewer language first in every locale', () => {
+    for (const locale of ['uk', 'en', 'pl'] as const) {
+        const order = languageOrderByLocale[locale];
+        const entries = flat[locale]!;
+
+        assert.equal(
+            entries.get('language.title'),
+            order
+                .map(code => `${languageFlags[code]} ${languageCodes[code]}`)
+                .join(' | '),
+            `${locale}:language.title`
+        );
+
+        const paragraphs = (entries.get('language.description') ?? '').split(
+            '\n\n'
+        );
+
+        assert.equal(paragraphs.length, 2, `${locale}:description`);
+        assert.deepEqual(
+            paragraphs[0]!.split('\n').map(line => line.split(' ')[0]),
+            order.map(code => languageFlags[code]),
+            `${locale}:language.description`
+        );
+        assert.equal(
+            paragraphs[0]!
+                .split('\n')[0]!
+                .startsWith(languageParagraphStarts[locale]),
+            true,
+            `${locale}:language.description first line`
+        );
+        assert.deepEqual(
+            paragraphs[1]!.split('\n').map(line => line.split(' ')[0]),
+            order.map(() => '🎲'),
+            `${locale}:language.description auto`
+        );
+
+        for (const option of ['uk', 'en', 'pl'] as const) {
+            const label = entries.get(`language.options.${option}`) ?? '';
+            const names = label.slice(label.indexOf(' ') + 1).split(' | ');
+
+            assert.ok(label.startsWith(languageFlags[option]), label);
+            assert.deepEqual(
+                names,
+                order.map(code => languageNameInLocale[option][code]),
+                `${locale}:language.options.${option}`
             );
         }
+
+        assert.equal(
+            entries.get('language.options.auto'),
+            `🎲 ${order.map(code => autoNameInLocale[code]).join(' | ')}`,
+            `${locale}:language.options.auto`
+        );
     }
+});
+
+test('the language keyboard puts the viewer language first and keeps Auto last', () => {
+    assert.deepEqual(getLanguageChoices('uk'), ['uk', 'en', 'pl', 'auto']);
+    assert.deepEqual(getLanguageChoices('en'), ['en', 'uk', 'pl', 'auto']);
+    assert.deepEqual(getLanguageChoices('pl'), ['pl', 'en', 'uk', 'auto']);
 });
 
 test('the language screen mentions all three languages', () => {
@@ -147,7 +213,11 @@ test('the approved privacy copy mentions the three languages and Cloudflare', ()
     assert.doesNotMatch(sensitive, /приватному сервері/);
     assert.match(
         flat.en!.get('privacy.description.languages') ?? '',
-        /Ukrainian, English and Polish/
+        /English, Ukrainian and Polish/
+    );
+    assert.match(
+        flat.pl!.get('privacy.description.languages') ?? '',
+        /po polsku, angielsku i ukraińsku/
     );
     assert.match(
         flat.en!.get('privacy.description.sensitive') ?? '',

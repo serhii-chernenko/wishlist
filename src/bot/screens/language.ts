@@ -4,7 +4,7 @@ import {
     homeButton,
     singleColumnKeyboard
 } from '../content/keyboards';
-import { resolveAppLocale } from '../i18n';
+import { type AppLocale, resolveAppLocale } from '../i18n';
 import { deriveRequest } from '../runtime/context';
 import type {
     BotRequest,
@@ -16,12 +16,17 @@ import { getStoredLanguageChoice } from '../services/user-service';
 import { escapeHtml } from '../utils/strings';
 import { screen as homeScreen } from './home';
 
-export const LANGUAGE_CHOICES: readonly LanguageChoice[] = [
-    'uk',
-    'en',
-    'pl',
-    'auto'
-];
+const LANGUAGE_ORDER_BY_LOCALE: Record<AppLocale, readonly AppLocale[]> = {
+    uk: ['uk', 'en', 'pl'],
+    en: ['en', 'uk', 'pl'],
+    pl: ['pl', 'en', 'uk']
+};
+
+export const getLanguageChoices = (
+    locale: AppLocale
+): readonly LanguageChoice[] => {
+    return [...LANGUAGE_ORDER_BY_LOCALE[locale], 'auto'];
+};
 
 export const getLanguageName = (
     LL: TranslationFunctions,
@@ -41,7 +46,7 @@ const render = async (req: BotRequest) => {
             LL.language.current(escapeHtml(getLanguageName(LL, current)))
         ].join('\n\n'),
         singleColumnKeyboard([
-            ...LANGUAGE_CHOICES.map(choice => {
+            ...getLanguageChoices(req.locale).map(choice => {
                 return callbackButton(LL.language.options[choice](), {
                     type: 'language',
                     choice

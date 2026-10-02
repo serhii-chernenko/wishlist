@@ -7,14 +7,14 @@ const en: Translation = {
         outdatedButton: 'This button is outdated. Here is the main menu 👇'
     },
     language: {
-        title: '🇺🇦 UA | 🇺🇸 EN | 🇵🇱 PL',
+        title: '🇺🇸 EN | 🇺🇦 UA | 🇵🇱 PL',
         description:
-            '🇺🇦 Змінити мову для інтерфейсу боту.\n🇺🇸 Change a language of the bot interface.\n🇵🇱 Zmień język interfejsu bota.\n\n🎲 Якщо обрати автоматичний режим, мова інтерфейсу боту буде така сама, як вказана в налаштуваннях Телеграму.\n🎲 If you choose the auto mode, a language of bot interface will be the same as it set in Telegram preferences.\n🎲 Jeśli wybierzesz tryb automatyczny, język interfejsu bota będzie taki sam jak ustawiony w Telegramie.',
+            '🇺🇸 Change a language of the bot interface.\n🇺🇦 Змінити мову для інтерфейсу боту.\n🇵🇱 Zmień język interfejsu bota.\n\n🎲 If you choose the auto mode, a language of bot interface will be the same as it set in Telegram preferences.\n🎲 Якщо обрати автоматичний режим, мова інтерфейсу боту буде така сама, як вказана в налаштуваннях Телеграму.\n🎲 Jeśli wybierzesz tryb automatyczny, język interfejsu bota będzie taki sam jak ustawiony w Telegramie.',
         options: {
-            uk: '🇺🇦 Українська | Ukrainian | Ukraiński',
-            en: '🇺🇸 Англійська | English | Angielski',
-            pl: '🇵🇱 Польська | Polish | Polski',
-            auto: '🎲 Автоматично | Auto | Automatycznie'
+            uk: '🇺🇦 Ukrainian | Українська | Ukraiński',
+            en: '🇺🇸 English | Англійська | Angielski',
+            pl: '🇵🇱 Polish | Польська | Polski',
+            auto: '🎲 Auto | Автоматично | Automatycznie'
         },
         names: {
             uk: 'Ukrainian',
@@ -24,7 +24,7 @@ const en: Translation = {
         },
         success: '✅ The interface language is now: {0}',
         current: 'Current language: {0}',
-        invalid: '❌ Unknown language: {0}\nAvailable options: uk, en, pl, auto'
+        invalid: '❌ Unknown language: {0}\nAvailable options: en, uk, pl, auto'
     },
     actions: {
         home: '🏠 Home',
@@ -52,7 +52,7 @@ const en: Translation = {
             openSource:
                 '\n\n<b>Open source</b>\n\nOpen source means that anyone can\n- help improve the project\n- see how the code is written\n- this project is also licensed under GNU AGPLv3, which means the code can be fully copied for any other project, even a commercial one.',
             languages:
-                '\n\n<b>Languages</b>\n\nThe bot speaks Ukrainian, English and Polish.\nYou can change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\nIf you would like to help with translations into other languages, leave your contact details in the feedback.',
+                '\n\n<b>Languages</b>\n\nThe bot speaks English, Ukrainian and Polish.\nYou can change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\nIf you would like to help with translations into other languages, leave your contact details in the feedback.',
             feedback: '\n\n<b>Leave feedback</b>',
             otherProjects: {
                 title: '\n\n<b>Other projects</b>',
