@@ -81,9 +81,9 @@ Decisions:
 
 ### Retirement
 
-- [ ] VPS container, image and app directories removed
-- [ ] `backup-dbs` no longer backs up wishlist; `wishlist-db` archived
-- [ ] Obsolete GitHub secrets and variables removed
+- [x] VPS container, image and app directories removed
+- [x] `backup-dbs` no longer backs up wishlist; `wishlist-db` archived
+- [x] Obsolete GitHub secrets and variables removed
 
 ## Follow-ups
 
@@ -109,6 +109,9 @@ All times UTC, 2026-10-02.
 - **D1 Time Travel bookmark** before the import: `00000008-00000000-000050f8-2623bc488d3927ed54b1998c30427379`.
 - **Import and reconciliation.** 299 users, 1202 wishes (163 without an owner), 18 gives (1 skipped `missingWish`), 716 images, 260 username-searchable, 108 with a phone, 12 with payments, 48 with a telegra.ph token, `release_version` 1.7.1: 289, 1.7.0: 2, 0.0.0: 8, 0 invalid links, 0 foreign key violations, 0 mismatches.
 - **Webhook.** Production webhook set at 12:51:36Z with `drop_pending_updates=false`, `max_connections=1`, `allowed_updates` `message`, `callback_query`, `my_chat_member`; bot commands set for the default scope and uk, en, pl. Downtime about two minutes.
+- **Production smoke.** No user wrote during the first hour. A synthetic admin `/start` (`update_id` 1, below any real Telegram id) at 13:52Z was processed end to end on production D1.
+- **Preview data.** `pnpm db:copy:production-to-preview --confirm-overwrite-preview` copied 299 users, 1202 wishes and 18 gives; `@InevixTestBot` points at the branch preview and serves only the admin.
+- **Legacy retirement.** At about 13:55Z the VPS container `wishlist_bot`, image `wishlist_bot_image` (1.12 GB), `/home/inevix/apps/wishlist` and the 2023 clone `/home/inevix/apps/backup/wishlist-db` were removed; all other containers stayed up. `node:18` stays because `nuxt-demo` builds from it. `backup-dbs` commit `8624b36` stops the wishlist backup (run green), its `WISHLIST_URI` secret was deleted, and `wishlist-db` is archived with its last snapshot `590da4f`. The wishlist repository has no GitHub secrets or variables left. MongoDB Atlas is untouched.
 - **Pull request.** [#1](https://github.com/serhii-chernenko/wishlist/pull/1).
 
 ### To finish after the announcement text is approved
@@ -120,4 +123,4 @@ All times UTC, 2026-10-02.
 
 ### Rollback
 
-Before the VPS cleanup: `pnpm telegram:webhook:delete:prod --drop-pending-updates=false`, then `docker update --restart=always wishlist_bot && docker start wishlist_bot` on the VPS. After the cleanup: rebuild from tag `legacy-1.7.1`; MongoDB Atlas is untouched. D1 data: `wrangler d1 time-travel restore wishlist-production --env production --bookmark=<bookmark>`.
+The VPS container is gone: to roll back, delete the production webhook (`pnpm telegram:webhook:delete:prod --drop-pending-updates=false`) and rebuild the legacy bot from tag `legacy-1.7.1`; MongoDB Atlas is untouched. D1 data: `wrangler d1 time-travel restore wishlist-production --env production --bookmark=<bookmark>`.
