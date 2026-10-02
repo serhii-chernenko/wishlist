@@ -1,9 +1,13 @@
 import type { Child } from 'hono/jsx';
 
-import { SHARE_PAGE_STYLES } from '../styles';
 import { SHARE_PAGE_LANGUAGES, type SharePageLanguage } from '../public-id';
 
 export const SITE_NAME = 'Wishlist';
+
+export const STYLESHEET_PATH = '/styles/share.css';
+
+const LIGHT_THEME_COLOR = '#f1e2fc';
+const DARK_THEME_COLOR = '#1b1324';
 
 export const OPEN_GRAPH_LOCALES = {
     uk: 'uk_UA',
@@ -24,6 +28,7 @@ export interface PageLayoutProps {
     description: string;
     indexable: boolean;
     alternates?: PageAlternates;
+    assetVersion: string;
     children?: Child;
 }
 
@@ -32,7 +37,8 @@ const PageHead = ({
     title,
     description,
     indexable,
-    alternates
+    alternates,
+    assetVersion
 }: Omit<PageLayoutProps, 'children'>) => {
     return (
         <head>
@@ -42,14 +48,29 @@ const PageHead = ({
                 content='width=device-width, initial-scale=1'
             />
             <meta name='color-scheme' content='light dark' />
+            <meta
+                name='theme-color'
+                content={LIGHT_THEME_COLOR}
+                media='(prefers-color-scheme: light)'
+            />
+            <meta
+                name='theme-color'
+                content={DARK_THEME_COLOR}
+                media='(prefers-color-scheme: dark)'
+            />
             <title>{title}</title>
             <meta name='description' content={description} />
             <meta
                 name='robots'
                 content={indexable ? 'index, follow' : 'noindex'}
             />
-            <link rel='icon' href='/favicon.svg' type='image/svg+xml' />
-            <link rel='icon' href='/favicon.ico' sizes='32x32' />
+            <link rel='icon' href='/favicon.ico' sizes='16x16 32x32 48x48' />
+            <link
+                rel='icon'
+                href='/favicon-32.png'
+                type='image/png'
+                sizes='32x32'
+            />
             <link rel='apple-touch-icon' href='/apple-touch-icon.png' />
             {alternates ? (
                 <PageSocialMeta
@@ -59,7 +80,10 @@ const PageHead = ({
                     alternates={alternates}
                 />
             ) : null}
-            <style dangerouslySetInnerHTML={{ __html: SHARE_PAGE_STYLES }} />
+            <link
+                rel='stylesheet'
+                href={`${STYLESHEET_PATH}?v=${encodeURIComponent(assetVersion)}`}
+            />
         </head>
     );
 };
@@ -125,10 +149,13 @@ export const PageLayout = (props: PageLayoutProps) => {
                 title={props.title}
                 description={props.description}
                 indexable={props.indexable}
+                assetVersion={props.assetVersion}
                 {...(props.alternates && { alternates: props.alternates })}
             />
-            <body>
-                <div class='page'>{props.children}</div>
+            <body class='min-h-dvh bg-base-200 text-base-content wrap-anywhere'>
+                <div class='mx-auto max-w-3xl px-4 pt-5 pb-10 sm:pt-8'>
+                    {props.children}
+                </div>
             </body>
         </html>
     );

@@ -13,6 +13,7 @@ export const wishlistShares = snakeCase.table(
             .references(() => users.id, { onDelete: 'cascade' }),
         publicId: text().notNull().$defaultFn(generateSharePublicId),
         displayName: text(),
+        showUsername: integer({ mode: 'boolean' }).notNull().default(false),
         revokedAt: integer({ mode: 'timestamp_ms' }),
         createdAt: integer({ mode: 'timestamp_ms' })
             .notNull()

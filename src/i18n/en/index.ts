@@ -209,7 +209,7 @@ const en: Translation = {
             success: '✅ Here is the link to your wish list:\n{url}',
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
-                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your username, if people can find you by it\n• all your wishes except hidden ones\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
+                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
             ready: '✅ Your wish list is available at this link:\n{url}\n\nThe page updates itself after every change to your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
@@ -227,7 +227,9 @@ const en: Translation = {
                 open: '🔗 Open page',
                 send: '📤 Send to friends',
                 stop: '🚫 Stop sharing',
-                newLink: '🔄 New link'
+                newLink: '🔄 New link',
+                showUsername: '👤 Show my @username',
+                hideUsername: '🙈 Hide my @username'
             }
         }
     },

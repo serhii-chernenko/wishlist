@@ -468,7 +468,43 @@ describe('wishlist screens on D1', () => {
                     public_id: string;
                     display_name: string | null;
                     revoked_at: number | null;
+                    show_username: number;
                 }>();
+        };
+
+        const createSearchableSharingOwner = async (
+            username = 'public_owner'
+        ) => {
+            const owner = await createUser({
+                username,
+                usernameSearchable: true
+            });
+
+            await run(
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'Bicycle',
+                    new Date()
+                )
+            );
+
+            return owner;
+        };
+
+        const usernameLabels = () => {
+            const { showUsername, hideUsername } =
+                getMessages('uk').wishlist.share.actions;
+
+            return { show: showUsername(), hide: hideUsername() };
+        };
+
+        const toggleTextOf = (keyboard: unknown) => {
+            return buttonsOf(keyboard).find(button => {
+                return (
+                    'callback_data' in button &&
+                    button.callback_data === 'wl:share:u'
+                );
+            })?.text;
         };
 
         it('shows the consent screen with the name and the request host', async () => {
@@ -743,6 +779,166 @@ describe('wishlist screens on D1', () => {
             });
         });
 
+        it('keeps the username off by default and offers the toggle to owners with a public username', async () => {
+            const owner = await createSearchableSharingOwner();
+            const { request, events } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+
+            assert.equal((await readShareRow(owner.id))?.show_username, 0);
+            assert.deepEqual(callbackDataOf(lastText(events).keyboard), [
+                'wl:share:u',
+                'wl:share:new',
+                'wl:share:stop',
+                'n:wl'
+            ]);
+            assert.equal(
+                toggleTextOf(lastText(events).keyboard),
+                usernameLabels().show
+            );
+        });
+
+        it('hides the toggle when the owner has no public username', async () => {
+            const notSearchable = await createSharingOwner();
+            const noUsername = await createUser({
+                usernameSearchable: true
+            });
+
+            await run(
+                harness.repositories.wishes.create(
+                    noUsername.id,
+                    'Book',
+                    new Date()
+                )
+            );
+
+            for (const owner of [notSearchable, noUsername]) {
+                const { request, events } = createRequest(owner, {
+                    publicOrigin: ORIGIN
+                });
+
+                await dispatch(request, 'wl:share:y');
+
+                assert.equal(
+                    callbackDataOf(lastText(events).keyboard).includes(
+                        'wl:share:u'
+                    ),
+                    false
+                );
+            }
+        });
+
+        it('toggles the username on and off and records the result', async () => {
+            const owner = await createSearchableSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+
+            const created = await readShareRow(owner.id);
+            const url = `${ORIGIN}/w/${created?.public_id}`;
+
+            await dispatch(request, 'wl:share:u');
+
+            const enabled = await readShareRow(owner.id);
+
+            assert.equal(enabled?.show_username, 1);
+            assert.equal(enabled?.public_id, created?.public_id);
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.share.ready({ url })
+            );
+            assert.equal(
+                toggleTextOf(lastText(events).keyboard),
+                usernameLabels().hide
+            );
+
+            await dispatch(request, 'wl:share:u');
+
+            assert.equal((await readShareRow(owner.id))?.show_username, 0);
+            assert.equal(
+                toggleTextOf(lastText(events).keyboard),
+                usernameLabels().show
+            );
+            assert.deepEqual(telemetry.slice(1), [
+                { action: 'wishlist_share_username_toggled', result: 'on' },
+                { action: 'wishlist_share_username_toggled', result: 'off' }
+            ]);
+        });
+
+        it('keeps the chosen username state when the share is pressed again', async () => {
+            const owner = await createSearchableSharingOwner();
+            const { request, events } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+            await dispatch(request, 'wl:share:u');
+            await dispatch(request, 'wl:share');
+
+            assert.equal((await readShareRow(owner.id))?.show_username, 1);
+            assert.equal(
+                toggleTextOf(lastText(events).keyboard),
+                usernameLabels().hide
+            );
+        });
+
+        it('does not enable the username for an owner who is not searchable', async () => {
+            const owner = await createSharingOwner();
+            const { request, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:y');
+            await dispatch(request, 'wl:share:u');
+
+            assert.equal((await readShareRow(owner.id))?.show_username, 0);
+            assert.deepEqual(telemetry, [
+                { action: 'wishlist_shared', result: 'published' }
+            ]);
+        });
+
+        it('sends a caller without a share to the consent screen and leaves other shares alone', async () => {
+            const sharer = await createSearchableSharingOwner();
+            const stranger =
+                await createSearchableSharingOwner('stranger_user');
+            const sharerRequest = createRequest(sharer, {
+                publicOrigin: ORIGIN
+            });
+            const strangerRequest = createRequest(stranger, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(sharerRequest.request, 'wl:share:y');
+            await dispatch(strangerRequest.request, 'wl:share:u');
+
+            assert.deepEqual(
+                callbackDataOf(lastText(strangerRequest.events).keyboard),
+                ['wl:share:y', 'n:wl']
+            );
+            assert.equal(await readShareRow(stranger.id), null);
+            assert.equal((await readShareRow(sharer.id))?.show_username, 0);
+            assert.deepEqual(strangerRequest.telemetry, []);
+        });
+
+        it('forgets the username choice after stopping and sharing again', async () => {
+            const owner = await createSearchableSharingOwner();
+            const { request } = createRequest(owner, { publicOrigin: ORIGIN });
+
+            await dispatch(request, 'wl:share:y');
+            await dispatch(request, 'wl:share:u');
+            await dispatch(request, 'wl:share:stop:y');
+            await dispatch(request, 'wl:share:y');
+
+            const row = await readShareRow(owner.id);
+
+            assert.equal(row?.revoked_at, null);
+            assert.equal(row?.show_username, 0);
+        });
+
         it('rotates the public id after confirmation', async () => {
             const owner = await createSharingOwner();
             const { request, events, telemetry } = createRequest(owner, {
@@ -876,7 +1072,8 @@ describe('wishlist screens on D1', () => {
                 'wl:share:stop',
                 'wl:share:stop:y',
                 'wl:share:new',
-                'wl:share:new:y'
+                'wl:share:new:y',
+                'wl:share:u'
             ]) {
                 await assert.rejects(dispatch(guest.request, data), {
                     name: 'BotUserError'

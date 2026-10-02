@@ -789,6 +789,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.deepEqual(buttonTextsOf(message), [
                 LL.wishlist.share.actions.open(),
                 LL.wishlist.share.actions.send(),
+                LL.wishlist.share.actions.showUsername(),
                 LL.wishlist.share.actions.newLink(),
                 LL.wishlist.share.actions.stop(),
                 LL.actions.back()
@@ -798,6 +799,7 @@ describe('Bot flows through the Worker on D1', () => {
                 `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(LL.wishlist.share.sendText())}`
             ]);
             assert.deepEqual(callbackDataOf(message), [
+                'wl:share:u',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'
@@ -830,6 +832,7 @@ describe('Bot flows through the Worker on D1', () => {
                 })
             );
             assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'wl:share:u',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'

@@ -21,29 +21,33 @@ export const LanguageSwitcher = ({
     const LL = getTranslator(language);
 
     return (
-        <nav class='switcher' aria-label={LL.web.language.label()}>
+        <nav
+            class='mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm'
+            aria-label={LL.web.language.label()}
+        >
             <span>{LL.web.language.label()}:</span>
-            <ul>
+            <div class='join'>
                 {SHARE_PAGE_LANGUAGES.map(option => {
-                    return (
-                        <li>
-                            {option === language ? (
-                                <span aria-current='page' lang={option}>
-                                    {LANGUAGE_ENDONYMS[option]}
-                                </span>
-                            ) : (
-                                <a
-                                    href={buildSharePath(publicId, option)}
-                                    hreflang={option}
-                                    lang={option}
-                                >
-                                    {LANGUAGE_ENDONYMS[option]}
-                                </a>
-                            )}
-                        </li>
+                    return option === language ? (
+                        <span
+                            class='btn btn-sm btn-primary join-item cursor-default'
+                            aria-current='page'
+                            lang={option}
+                        >
+                            {LANGUAGE_ENDONYMS[option]}
+                        </span>
+                    ) : (
+                        <a
+                            class='btn btn-sm join-item border-base-300'
+                            href={buildSharePath(publicId, option)}
+                            hreflang={option}
+                            lang={option}
+                        >
+                            {LANGUAGE_ENDONYMS[option]}
+                        </a>
                     );
                 })}
-            </ul>
+            </div>
         </nav>
     );
 };

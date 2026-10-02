@@ -150,7 +150,7 @@ The `.dev.vars*` and `env/*` files hold secrets and are never committed. See the
 ```
 src/
   worker/      Hono app, webhook route, health and admin routes, queues, cron tasks, telemetry
-  web/         Public share pages (Hono JSX): routes, rendering, page cache, fingerprint, styles
+  web/         Public share pages (Hono JSX): routes, rendering, page cache, fingerprint, Tailwind/daisyUI source in styles/
   bot/         Telegraf bot composition, router runtime, callback_data, screens, services,
                input validators, content (keyboards, markup, filters, support links)
   db/          Drizzle client, schemas (one file per table), repositories
@@ -160,7 +160,7 @@ scripts/
   db/          migrations, Mongo import and reconciliation, production to preview copy
   releases/    changeset validation, changelog stamping, manifest sync, GitHub releases, broadcast trigger
   telegram/    webhook, bot commands and preview bot helpers
-public/        static assets served by the Worker (favicon, apple touch icon, OG image)
+public/        static assets served by the Worker (favicon, apple touch icon, OG image, generated styles/share.css)
 drizzle/       generated migrations
 docs/          OPERATIONS.md and the New Relic dashboard template
 test/          unit and D1 integration tests

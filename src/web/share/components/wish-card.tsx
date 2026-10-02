@@ -35,56 +35,69 @@ export const WishCard = ({
 
     return (
         <li>
-            <article class={wish.priority ? 'wish is-priority' : 'wish'}>
-                <h2>{cutTitle(wish.title)}</h2>
-                {hasChips ? (
-                    <p class='chips'>
-                        {wish.priority ? (
-                            <span class='chip priority'>
-                                {LL.web.wish.priority()}
-                            </span>
-                        ) : null}
-                        {wish.price > 0 ? (
-                            <span class='chip'>
-                                {LL.web.wish.price({
-                                    price: formatCurrency(
-                                        wish.price,
-                                        language,
-                                        currency
-                                    )
-                                })}
-                            </span>
-                        ) : null}
+            <article
+                class={
+                    wish.priority
+                        ? 'card border-2 border-primary bg-base-100'
+                        : 'card card-border bg-base-100'
+                }
+            >
+                <div class='card-body gap-3 p-4 sm:p-6'>
+                    <h2 class='card-title text-xl leading-snug'>
+                        {cutTitle(wish.title)}
+                    </h2>
+                    {hasChips ? (
+                        <p class='flex flex-wrap gap-2'>
+                            {wish.priority ? (
+                                <span class='badge badge-primary h-auto py-1'>
+                                    <span aria-hidden='true'>♥</span>
+                                    {LL.web.wish.priority()}
+                                </span>
+                            ) : null}
+                            {wish.price > 0 ? (
+                                <span class='badge badge-outline h-auto py-1'>
+                                    {LL.web.wish.price({
+                                        price: formatCurrency(
+                                            wish.price,
+                                            language,
+                                            currency
+                                        )
+                                    })}
+                                </span>
+                            ) : null}
+                        </p>
+                    ) : null}
+                    {wish.description ? (
+                        <p>
+                            <InlineContent
+                                nodes={inlineMarkup(
+                                    cutDescription(wish.description),
+                                    {
+                                        emphasis: false
+                                    }
+                                )}
+                            />
+                        </p>
+                    ) : null}
+                    {hostname !== null && wish.link !== null ? (
+                        <div class='card-actions'>
+                            <a
+                                class='btn btn-secondary h-auto min-h-10 max-w-full py-2 text-start'
+                                href={wish.link}
+                                rel={OWNER_LINK_REL}
+                                target='_blank'
+                            >
+                                {LL.web.wish.link({ host: hostname })}
+                            </a>
+                        </div>
+                    ) : null}
+                    <p class='text-sm'>
+                        {LL.web.wish.created({ date: created })}
+                        {created !== updated
+                            ? ` · ${LL.web.wish.updated({ date: updated })}`
+                            : ''}
                     </p>
-                ) : null}
-                {wish.description ? (
-                    <p class='description'>
-                        <InlineContent
-                            nodes={inlineMarkup(
-                                cutDescription(wish.description),
-                                {
-                                    emphasis: false
-                                }
-                            )}
-                        />
-                    </p>
-                ) : null}
-                {hostname !== null && wish.link !== null ? (
-                    <a
-                        class='button'
-                        href={wish.link}
-                        rel={OWNER_LINK_REL}
-                        target='_blank'
-                    >
-                        {LL.web.wish.link({ host: hostname })}
-                    </a>
-                ) : null}
-                <p class='dates'>
-                    {LL.web.wish.created({ date: created })}
-                    {created !== updated
-                        ? ` · ${LL.web.wish.updated({ date: updated })}`
-                        : ''}
-                </p>
+                </div>
             </article>
         </li>
     );

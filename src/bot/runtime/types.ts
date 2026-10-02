@@ -104,6 +104,7 @@ export type CallbackAction =
     | { type: 'wishlistShareStopConfirm' }
     | { type: 'wishlistShareRotate' }
     | { type: 'wishlistShareRotateConfirm' }
+    | { type: 'wishlistShareUsername' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
     | { type: 'wishEdit'; wishId: number }
@@ -166,6 +167,7 @@ export type BotActionName =
     | 'wishlist_shared'
     | 'wishlist_share_stopped'
     | 'wishlist_share_rotated'
+    | 'wishlist_share_username_toggled'
     | 'wishlist_filtered'
     | 'wishlist_searched'
     | 'give_added'
@@ -191,6 +193,8 @@ export type WishlistSharedResult =
     | 'failed';
 
 export type WishlistShareChangeResult = 'success' | 'failed';
+
+export type WishlistShareUsernameResult = 'on' | 'off' | 'failed';
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {

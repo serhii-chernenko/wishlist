@@ -63,7 +63,9 @@ const expectedShareKeys = [
     'wishlist.share.actions.open',
     'wishlist.share.actions.send',
     'wishlist.share.actions.stop',
-    'wishlist.share.actions.newLink'
+    'wishlist.share.actions.newLink',
+    'wishlist.share.actions.showUsername',
+    'wishlist.share.actions.hideUsername'
 ];
 
 test('every locale has the full web.* key set and only plain text in it', () => {
@@ -162,6 +164,8 @@ test('the consent copy names the host and the public, indexable nature of the pa
 
         assert.ok(consent.includes('wishlist.chernenko.dev'), locale);
         assert.ok(consent.includes('Alice'), locale);
+        assert.ok(consent.includes('• '), locale);
+        assert.ok(consent.includes('@username'), locale);
 
         for (const hint of hints[locale]) {
             assert.ok(consent.includes(hint), `${locale}:${hint}`);

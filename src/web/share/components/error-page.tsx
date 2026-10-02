@@ -33,12 +33,20 @@ export const ErrorPage = ({
     const { title, description } = getErrorPageTexts(language, kind);
 
     return (
-        <main class='message'>
-            <h1>{title}</h1>
-            <p>{description}</p>
-            <a class='button' href={botUrl} rel='noopener noreferrer'>
-                {LL.web.notFound.cta()}
-            </a>
+        <main class='card card-border my-10 bg-base-100'>
+            <div class='card-body items-start gap-4 p-6 sm:p-8'>
+                <h1 class='text-3xl leading-tight font-extrabold text-balance'>
+                    {title}
+                </h1>
+                <p>{description}</p>
+                <a
+                    class='btn btn-primary'
+                    href={botUrl}
+                    rel='noopener noreferrer'
+                >
+                    {LL.web.notFound.cta()}
+                </a>
+            </div>
         </main>
     );
 };

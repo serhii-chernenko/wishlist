@@ -748,7 +748,7 @@ The Worker serves a public page for every list that its owner shared. The pages 
 | `GET /<lang>/w/<id>` | The page, with `lang` in `uk`, `en`, `pl`. An uppercase id gets a `301` to the lowercase URL                                                                                                                                                                          |
 | `GET /robots.txt`    | Generated per environment (see Indexing)                                                                                                                                                                                                                              |
 
-An id that does not match `^[0-9a-hjkmnp-tv-z]{26}$`, an unknown id, or a list of a blocked owner answers `404`. A stopped share answers `410`. Both are `noindex` and `no-store`. The page itself shows only wishes that are neither hidden nor removed (at most 100, with a notice when there are more), the name saved at consent, the `@username` only if the owner is searchable by username, and the owner's payment details. It never shows the phone number, the give list or givers.
+An id that does not match `^[0-9a-hjkmnp-tv-z]{26}$`, an unknown id, or a list of a blocked owner answers `404`. A stopped share answers `410`. Both are `noindex` and `no-store`. The page itself shows only wishes that are neither hidden nor removed (at most 100, with a notice when there are more), the name saved at consent, the `@username` only if the owner switched it on for the share (`wishlist_shares.show_username`, off by default) and is currently searchable by username, and the owner's payment details. It never shows the phone number, the give list or givers.
 
 ### Ids
 
@@ -757,14 +757,14 @@ An id that does not match `^[0-9a-hjkmnp-tv-z]{26}$`, an unknown id, or a list o
 Lifecycle:
 
 - The id is created on the first share. Pressing Share again returns the same URL.
-- Stop sharing sets `revoked_at` and clears `display_name`; the page answers `410`.
+- Stop sharing sets `revoked_at`, clears `display_name`, resets `show_username` to off; the page answers `410`.
 - Sharing again clears `revoked_at`, so the old link works again and old recipients regain access.
 - "New link" replaces `public_id` after a confirmation, for a link that leaked. The old link answers `404`.
 - The bot builds the URL from the origin of the webhook request, not from a variable, so a branch preview hands out its own `workers.dev` host.
 
 ### Caching
 
-Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the deploy id (`CF_VERSION_METADATA.id`), the language, the public id, the share's `updated_at`, the username (only if searchable), the payment details, the currency, the number of visible wishes and the latest `updated_at` among visible wishes. Any wish change, payment or visibility change, and every deploy therefore produces a new fingerprint. Gives and a profile sync that only touches last-seen do not.
+Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the deploy id (`CF_VERSION_METADATA.id`), the language, the public id, the share's `updated_at`, `show_username`, the username (only if switched on and searchable), the payment details, the currency, the number of visible wishes and the latest `updated_at` among visible wishes. Any wish change, payment or visibility change, and every deploy therefore produces a new fingerprint. Gives and a profile sync that only touches last-seen do not.
 
 - The fingerprint is the `ETag`. Browsers get `Cache-Control: no-cache`, revalidate, and receive `304` on a match.
 - The rendered HTML is stored in the Cache API (`caches.default`) under `<origin>/__share-cache/<lang>/<id>/<fingerprint>` with `Cache-Control: public, max-age=86400` and never with cookies. A change makes a new key, so no purge is needed; old entries expire after 24 hours.
@@ -777,19 +777,20 @@ Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the dep
 
 - A page is `index, follow` only when `BOT_ENVIRONMENT` is `production`, the request host is exactly `wishlist.chernenko.dev`, and the list has at least one visible wish. Everything else (previews, `*.workers.dev` version URLs, empty lists, `404`, `410`) is `noindex`. Canonical and `hreflang` links always use the request origin.
 - `robots.txt` allows `/` and disallows `/__share-cache/` on the production host, and disallows everything elsewhere. There is deliberately no sitemap, so lists are never enumerated.
-- The first Share shows a consent screen: the Telegram profile name, visible wishes and payment details become public, anyone with the link can open the page, search engines may index it, and sharing can be stopped at any time. The name is saved as `display_name` (64 characters at most), refreshed silently on later shares and deleted when sharing stops.
-- Pages send `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a CSP with `default-src 'none'`. Owner links get `rel="nofollow ugc noopener noreferrer"`.
+- The first Share shows a consent screen: the Telegram profile name, visible wishes and payment details become public, anyone with the link can open the page, search engines may index it, and sharing can be stopped at any time. The `@username` is listed there as shown only if the owner switches it on (a button on the link screen, offered only to owners who are searchable by username; the choice is forgotten when sharing stops). The name is saved as `display_name` (64 characters at most), refreshed silently on later shares and deleted when sharing stops.
+- Pages send `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a CSP with `default-src 'none'` and `style-src 'self'` (no inline styles). Owner links get `rel="nofollow ugc noopener noreferrer"`.
 - Telemetry never contains the public id (the path is normalized to `/w/:publicId`). Cloudflare invocation logs do contain the path, as they already do for the webhook path.
 - Old telegra.ph pages stay online but are no longer updated.
 
 ### Assets and data
 
-- `public/` (favicon, Apple touch icon, OG image) is served by the `assets` binding. The files are placeholders and can be replaced in place.
+- `public/` (favicon, Apple touch icon, OG image, `styles/share.css`) is served by the `assets` binding. The icons and the OG image are made from the bot avatar.
+- `public/styles/share.css` is generated and committed: `pnpm run css:build` compiles `src/web/styles/share.css` (Tailwind CSS 4 with daisyUI 5, custom themes `wishlist` and `wishlist-dark`, sources `src/web/**/*.ts(x)`). CI runs it and fails on drift. Pages link it as `/styles/share.css?v=<deploy id>`. Every text and background pair of both themes meets WCAG AAA (7:1); `test/share-styles.test.ts` enforces it for the theme colors.
 - `pnpm db:copy:production-to-preview` copies `users`, `wishes` and `gives`, deliberately not `wishlist_shares`, so no public id of a real list exists in preview. Create shares in preview through the preview bot.
 
 ### Production rollout
 
-1. Apply the `wishlist_shares` migration to production D1 before the code that reads it is deployed: `pnpm db:migrate:prod`, then `pnpm worker:deploy:prod`. This is an explicit exception to the "no manual production migration before a merge" rule, approved for this release. The migration is additive.
+1. Apply the `wishlist_shares` migrations to production D1 before the code that reads it is deployed: `pnpm db:migrate:prod`, then `pnpm worker:deploy:prod`. This is an explicit exception to the "no manual production migration before a merge" rule, approved for this release. The migration is additive.
 2. Smoke test as the admin: Share, consent, open the link twice (the second view shows `share-cache;desc=hit`), edit a wish and reload, stop (`410`), share again.
 3. Check that `share_page_served` events reach New Relic (page `Share pages` of the dashboard).
 

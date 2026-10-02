@@ -50,6 +50,7 @@ export const renderSharePage = (model: SharePageModel) => {
             description={description}
             indexable={model.indexable}
             alternates={buildAlternates(model)}
+            assetVersion={model.assetVersion}
         >
             <SharePage model={model} />
         </PageLayout>
@@ -61,7 +62,8 @@ export const renderSharePage = (model: SharePageModel) => {
 export const renderErrorPage = (
     language: SharePageLanguage,
     kind: SharePageErrorKind,
-    botUrl: string
+    botUrl: string,
+    assetVersion: string
 ) => {
     const { title, description } = getErrorPageTexts(language, kind);
     const document = (
@@ -70,6 +72,7 @@ export const renderErrorPage = (
             title={title}
             description={description}
             indexable={false}
+            assetVersion={assetVersion}
         >
             <ErrorPage language={language} kind={kind} botUrl={botUrl} />
         </PageLayout>

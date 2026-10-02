@@ -13,6 +13,7 @@ export interface PublicShareFingerprint {
     displayName: string | null;
     revokedAt: Date | null;
     shareUpdatedAt: Date;
+    showUsername: boolean;
     userId: number;
     username: string | null;
     usernameSearchable: boolean;
@@ -114,7 +115,12 @@ export const createShareRepository = (db: AppDb) => {
             return tryDb(async () => {
                 const revoked = await db
                     .update(wishlistShares)
-                    .set({ revokedAt: now, displayName: null, updatedAt: now })
+                    .set({
+                        revokedAt: now,
+                        displayName: null,
+                        showUsername: false,
+                        updatedAt: now
+                    })
                     .where(
                         and(
                             eq(wishlistShares.userId, userId),
@@ -142,6 +148,22 @@ export const createShareRepository = (db: AppDb) => {
                 return rotated ?? null;
             });
         },
+        setShowUsername(userId: number, showUsername: boolean, now: Date) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishlistShares)
+                    .set({ showUsername, updatedAt: now })
+                    .where(
+                        and(
+                            eq(wishlistShares.userId, userId),
+                            isNull(wishlistShares.revokedAt)
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
         findPublicFingerprint(publicId: string) {
             return tryDb(async (): Promise<PublicShareFingerprint | null> => {
                 const [row] = await db
@@ -150,6 +172,7 @@ export const createShareRepository = (db: AppDb) => {
                         displayName: wishlistShares.displayName,
                         revokedAt: wishlistShares.revokedAt,
                         shareUpdatedAt: wishlistShares.updatedAt,
+                        showUsername: wishlistShares.showUsername,
                         userId: users.id,
                         username: users.username,
                         usernameSearchable: users.usernameSearchable,

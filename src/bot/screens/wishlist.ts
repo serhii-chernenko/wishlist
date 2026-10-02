@@ -37,6 +37,7 @@ import type { ShareRecord } from '../../db/repositories';
 import { buildShareUrl } from '../../web/share/public-id';
 import {
     buildAuthorName,
+    canShowPublicUsername,
     resolvePublicOrigin
 } from '../services/share-service';
 
@@ -202,7 +203,10 @@ const TELEGRAM_SHARE_URL = 'https://t.me/share/url';
 
 type ShareActionName = Extract<
     BotActionName,
-    'wishlist_shared' | 'wishlist_share_stopped' | 'wishlist_share_rotated'
+    | 'wishlist_shared'
+    | 'wishlist_share_stopped'
+    | 'wishlist_share_rotated'
+    | 'wishlist_share_username_toggled'
 >;
 
 type ShareAttempt<Value> = { ok: true; value: Value } | { ok: false };
@@ -233,13 +237,34 @@ const buildTelegramShareUrl = (req: BotRequest, pageUrl: string) => {
     return `${TELEGRAM_SHARE_URL}?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(text)}`;
 };
 
-const buildShareLinkKeyboard = (req: BotRequest, pageUrl: string) => {
+const buildUsernameToggleButton = (
+    req: BotRequest,
+    share: Pick<ShareRecord, 'showUsername'>
+) => {
+    if (req.user === null || !canShowPublicUsername(req.user)) {
+        return null;
+    }
+
+    const { actions } = req.LL.wishlist.share;
+
+    return callbackButton(
+        share.showUsername ? actions.hideUsername() : actions.showUsername(),
+        { type: 'wishlistShareUsername' }
+    );
+};
+
+const buildShareLinkKeyboard = (
+    req: BotRequest,
+    share: Pick<ShareRecord, 'showUsername'>,
+    pageUrl: string
+) => {
     const { LL } = req;
     const { actions } = LL.wishlist.share;
 
     return singleColumnKeyboard([
         urlButton(actions.open(), pageUrl),
         urlButton(actions.send(), buildTelegramShareUrl(req, pageUrl)),
+        buildUsernameToggleButton(req, share),
         callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
         callbackButton(actions.stop(), { type: 'wishlistShareStop' }),
         navigationButton(LL.actions.back(), 'wishlist')
@@ -252,14 +277,14 @@ const getPublicOrigin = (req: BotRequest) => {
 
 const renderShareLink = async (
     req: BotRequest,
-    share: Pick<ShareRecord, 'publicId'>,
+    share: Pick<ShareRecord, 'publicId' | 'showUsername'>,
     buildText: (url: string) => string
 ) => {
     const pageUrl = buildShareUrl(getPublicOrigin(req), share.publicId);
 
     await req.send.text(
         buildText(escapeHtml(pageUrl)),
-        buildShareLinkKeyboard(req, pageUrl)
+        buildShareLinkKeyboard(req, share, pageUrl)
     );
 };
 
@@ -417,6 +442,41 @@ const rotateShare = async (req: BotRequest) => {
     });
 };
 
+const toggleShareUsername = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const attempt = await attemptShare(
+        req,
+        'wishlist_share_username_toggled',
+        () => {
+            return share.toggleUsername(user);
+        }
+    );
+
+    if (!attempt.ok) {
+        return;
+    }
+
+    if (attempt.value === null) {
+        await openShare(req);
+
+        return;
+    }
+
+    const { share: toggled, changed } = attempt.value;
+
+    if (changed) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_share_username_toggled',
+            result: toggled.showUsername ? 'on' : 'off'
+        });
+    }
+
+    await renderShareLink(req, toggled, url => {
+        return req.LL.wishlist.share.ready({ url });
+    });
+};
+
 export const callbacks: CallbackTable = {
     wishlistPage: async (req, action) => {
         await render(req, { offset: action.offset });
@@ -465,6 +525,9 @@ export const callbacks: CallbackTable = {
     },
     wishlistShareRotateConfirm: async req => {
         await rotateShare(req);
+    },
+    wishlistShareUsername: async req => {
+        await toggleShareUsername(req);
     },
     wishlistFilterMenu: async req => {
         requireUser(req);

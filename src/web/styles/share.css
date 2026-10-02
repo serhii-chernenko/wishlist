@@ -1,0 +1,96 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.tsx';
+@source '../**/*.ts';
+
+@plugin 'daisyui' {
+    themes: false;
+    logs: false;
+    include: alert, badge, button, card, footer, join;
+}
+
+@plugin 'daisyui/theme' {
+    name: 'wishlist';
+    default: true;
+    prefersdark: false;
+    color-scheme: 'light';
+    --color-base-100: #fcf7ff;
+    --color-base-200: #f1e2fc;
+    --color-base-300: #ddc4f1;
+    --color-base-content: #1a1022;
+    --color-primary: #f57aa6;
+    --color-primary-content: #1a0a12;
+    --color-secondary: #2aabe2;
+    --color-secondary-content: #05030a;
+    --color-accent: #2aabe2;
+    --color-accent-content: #05030a;
+    --color-neutral: #1a1022;
+    --color-neutral-content: #fcf7ff;
+    --color-info: #2aabe2;
+    --color-info-content: #05030a;
+    --color-success: #6fd39b;
+    --color-success-content: #04140a;
+    --color-warning: #ffc857;
+    --color-warning-content: #1f1400;
+    --color-error: #ff8a8a;
+    --color-error-content: #240505;
+    --radius-selector: 1rem;
+    --radius-field: 0.75rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 0;
+    --noise: 0;
+    --wishlist-link: #7a1040;
+}
+
+@plugin 'daisyui/theme' {
+    name: 'wishlist-dark';
+    default: false;
+    prefersdark: true;
+    color-scheme: 'dark';
+    --color-base-100: #261b30;
+    --color-base-200: #1b1324;
+    --color-base-300: #3a2b4a;
+    --color-base-content: #f6ecfd;
+    --color-primary: #f57aa6;
+    --color-primary-content: #1a0a12;
+    --color-secondary: #2aabe2;
+    --color-secondary-content: #05030a;
+    --color-accent: #2aabe2;
+    --color-accent-content: #05030a;
+    --color-neutral: #3a2b4a;
+    --color-neutral-content: #f6ecfd;
+    --color-info: #2aabe2;
+    --color-info-content: #05030a;
+    --color-success: #6fd39b;
+    --color-success-content: #04140a;
+    --color-warning: #ffc857;
+    --color-warning-content: #1f1400;
+    --color-error: #ff8a8a;
+    --color-error-content: #240505;
+    --radius-selector: 1rem;
+    --radius-field: 0.75rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 0;
+    --noise: 0;
+    --wishlist-link: #ffb3d0;
+}
+
+@theme inline {
+    --color-link: var(--wishlist-link);
+}
+
+.btn:hover,
+.btn:active,
+.btn:focus-visible,
+.btn[aria-current] {
+    --btn-bg: color-mix(
+        in oklab,
+        var(--btn-color, var(--color-base-200)),
+        #fff 12%
+    );
+}

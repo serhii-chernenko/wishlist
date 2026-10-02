@@ -1,4 +1,5 @@
 {
+    "ignorePatterns": ["public/**"],
     "jsPlugins": ["./tools/oxlint/arrow-body-plugin.mjs"],
     "env": {
         "node": true

@@ -7,6 +7,7 @@ import {
     SHARE_DISPLAY_NAME_MAX_LENGTH,
     type PublicShareFingerprint
 } from '../../src/db/repositories';
+import { resolvePublicUsername } from '../../src/web/share/fingerprint';
 import { isValidSharePublicId } from '../../src/web/share/public-id';
 import { createD1Harness, type D1Harness } from './d1-harness';
 
@@ -21,7 +22,8 @@ const fingerprintInputs = (row: PublicShareFingerprint | null) => {
         row.displayName,
         row.revokedAt?.getTime() ?? null,
         row.shareUpdatedAt.getTime(),
-        row.usernameSearchable ? row.username : null,
+        row.showUsername,
+        resolvePublicUsername(row),
         row.payments,
         row.currency,
         row.visibleCount,
@@ -178,6 +180,101 @@ describe('share repository', () => {
         assert.equal(reshared.publicId, created.publicId);
         assert.equal(reshared.revokedAt, null);
         assert.equal(reshared.displayName, 'Alice');
+    });
+
+    it('keeps the username hidden by default and bumps updatedAt when it is toggled', async () => {
+        const owner = await createOwner();
+        const created = await run(
+            repositories.shares.publish(owner.id, 'Alice', nextNow())
+        );
+
+        assert.equal(created.showUsername, false);
+
+        const enabledAt = nextNow();
+        const enabled = await run(
+            repositories.shares.setShowUsername(owner.id, true, enabledAt)
+        );
+
+        assert.equal(enabled?.showUsername, true);
+        assert.equal(enabled?.updatedAt.getTime(), enabledAt.getTime());
+        assert.equal(enabled?.publicId, created.publicId);
+        assert.equal(
+            (
+                await run(
+                    repositories.shares.findPublicFingerprint(created.publicId)
+                )
+            )?.showUsername,
+            true
+        );
+
+        const repeated = await run(
+            repositories.shares.publish(owner.id, 'Alice', nextNow())
+        );
+
+        assert.equal(repeated.showUsername, true);
+
+        const disabled = await run(
+            repositories.shares.setShowUsername(owner.id, false, nextNow())
+        );
+
+        assert.equal(disabled?.showUsername, false);
+    });
+
+    it('does not toggle the username of a stopped share or of a missing share', async () => {
+        const owner = await createOwner();
+        const stranger = await createOwner(ownerTelegramId + 1);
+
+        assert.equal(
+            await run(
+                repositories.shares.setShowUsername(owner.id, true, nextNow())
+            ),
+            null
+        );
+
+        await run(repositories.shares.publish(owner.id, 'Alice', nextNow()));
+        await run(repositories.shares.revoke(owner.id, nextNow()));
+
+        assert.equal(
+            await run(
+                repositories.shares.setShowUsername(owner.id, true, nextNow())
+            ),
+            null
+        );
+        assert.equal(
+            await run(
+                repositories.shares.setShowUsername(
+                    stranger.id,
+                    true,
+                    nextNow()
+                )
+            ),
+            null
+        );
+    });
+
+    it('asks for the username consent again after stopping and sharing again', async () => {
+        const owner = await createOwner();
+        const created = await run(
+            repositories.shares.publish(owner.id, 'Alice', nextNow())
+        );
+
+        await run(
+            repositories.shares.setShowUsername(owner.id, true, nextNow())
+        );
+        await run(repositories.shares.revoke(owner.id, nextNow()));
+
+        const revoked = await run(
+            repositories.shares.findPublicFingerprint(created.publicId)
+        );
+
+        assert.equal(revoked?.showUsername, false);
+
+        const reshared = await run(
+            repositories.shares.publish(owner.id, 'Alice', nextNow())
+        );
+
+        assert.equal(reshared.publicId, created.publicId);
+        assert.equal(reshared.showUsername, false);
     });
 
     it('rotates to a new public id and forgets the old one', async () => {
@@ -373,7 +470,31 @@ describe('share repository', () => {
                 nextNow()
             )
         );
-        await expectChange('users.setVisibility');
+        await expectNoChange('users.setVisibility (username not enabled)');
+
+        await run(
+            repositories.shares.setShowUsername(owner.id, true, nextNow())
+        );
+        await expectChange('shares.setShowUsername (on)');
+
+        await run(
+            repositories.users.setVisibility(
+                owner.id,
+                {
+                    usernameSearchable: false,
+                    phone: null,
+                    phoneDigits: null,
+                    username: owner.username
+                },
+                nextNow()
+            )
+        );
+        await expectChange('users.setVisibility (username hidden again)');
+
+        await run(
+            repositories.shares.setShowUsername(owner.id, false, nextNow())
+        );
+        await expectChange('shares.setShowUsername (off)');
 
         await run(
             repositories.wishes.softRemove(second.id, owner.id, true, nextNow())

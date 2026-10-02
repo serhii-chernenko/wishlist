@@ -6,7 +6,8 @@ import { matchAcceptLanguage } from '../src/web/share/accept-language';
 import {
     computeShareFingerprint,
     etagMatches,
-    getDeployId
+    getDeployId,
+    resolvePublicUsername
 } from '../src/web/share/fingerprint';
 import type { PublicShareFingerprint } from '../src/db/repositories';
 import type {
@@ -37,6 +38,7 @@ const buildModel = (
         language: 'en',
         publicId: PUBLIC_ID,
         origin: 'https://wishlist.chernenko.dev',
+        assetVersion: 'deploy-1',
         displayName: 'Alice',
         username: null,
         payments: null,
@@ -139,7 +141,7 @@ test('wishes without a renderable link get no link button', () => {
         })
     );
 
-    assert.doesNotMatch(html, /<article[^]*class="button"[^]*<\/article>/);
+    assert.doesNotMatch(html, /btn-secondary/);
     assert.doesNotMatch(html, /target="_blank"[^>]*>View on/);
     assert.doesNotMatch(html, /ftp:\/\//);
     assert.doesNotMatch(html, /javascript:/);
@@ -160,8 +162,11 @@ test('priority badge, price chip and dates follow the page language', () => {
         })
     );
 
-    assert.match(html, /class="chip priority">Дуже хочу</);
-    assert.match(html, /class="wish is-priority"/);
+    assert.match(
+        html,
+        /class="badge badge-primary h-auto py-1"><span aria-hidden="true">♥<\/span>Дуже хочу</
+    );
+    assert.match(html, /<article class="card border-2 border-primary/);
     assert.match(html, /Орієнтовна вартість: 2\s?500,00\s?₴/u);
     assert.match(html, /Створено 2 січня 2026/);
     assert.match(html, /Оновлено 3 лютого 2026/);
@@ -177,12 +182,12 @@ test('the updated date is hidden when it equals the created date', () => {
 test('payments are shown once and cut to the payments cap', () => {
     const html = renderSharePage(buildModel({ payments: 'p'.repeat(1500) }));
 
-    assert.match(html, /class="callout"/);
+    assert.match(html, /class="alert alert-info/);
     assert.equal(html.includes('p'.repeat(1000)), false);
     assert.equal(html.includes(`${'p'.repeat(999)}…`), true);
     assert.doesNotMatch(
         renderSharePage(buildModel({ payments: null })),
-        /class="callout"/
+        /alert-info/
     );
 });
 
@@ -253,17 +258,20 @@ test('robots meta is index only for indexable pages', () => {
 test('the language switcher links to the other languages and marks the current one', () => {
     const html = renderSharePage(buildModel({ language: 'en' }));
 
-    assert.match(html, /<span aria-current="page" lang="en">English<\/span>/);
+    assert.match(
+        html,
+        /<span class="btn btn-sm btn-primary join-item cursor-default" aria-current="page" lang="en">English<\/span>/
+    );
     assert.match(
         html,
         new RegExp(
-            `<a href="/uk/w/${PUBLIC_ID}" hreflang="uk" lang="uk">Українська</a>`
+            `<a class="btn btn-sm join-item border-base-300" href="/uk/w/${PUBLIC_ID}" hreflang="uk" lang="uk">Українська</a>`
         )
     );
     assert.match(
         html,
         new RegExp(
-            `<a href="/pl/w/${PUBLIC_ID}" hreflang="pl" lang="pl">Polski</a>`
+            `<a class="btn btn-sm join-item border-base-300" href="/pl/w/${PUBLIC_ID}" hreflang="pl" lang="pl">Polski</a>`
         )
     );
     assert.doesNotMatch(
@@ -298,7 +306,7 @@ test('the footer has the bot call to action, support links and the source link',
     );
     assert.doesNotMatch(
         renderSharePage(buildModel({ supportLinks: [] })),
-        /class="support"/
+        /Support the author|ko-fi\.com/
     );
 });
 
@@ -308,9 +316,13 @@ test('an empty list shows the empty state and a truncated list shows the notice'
     );
     const truncated = renderSharePage(buildModel({ visibleCount: 250 }));
 
-    assert.match(empty, /class="empty"/);
-    assert.doesNotMatch(empty, /class="notice"/);
-    assert.match(truncated, /class="notice">Showing the first 100 wishes/);
+    assert.match(empty, /card-dash[^>]*>Nothing here yet/);
+    assert.doesNotMatch(empty, /Showing the first/);
+    assert.match(
+        truncated,
+        /<p class="alert[^>]*>Showing the first 100 wishes/
+    );
+    assert.doesNotMatch(truncated, /Nothing here yet/);
 });
 
 test('the page has a doctype, no scripts and no external resources', () => {
@@ -319,7 +331,10 @@ test('the page has a doctype, no scripts and no external resources', () => {
     assert.ok(html.startsWith('<!DOCTYPE html><html lang="en">'));
     assert.doesNotMatch(html, /<script/i);
     assert.doesNotMatch(html, /\son[a-z]+=/i);
-    assert.doesNotMatch(html, /<link[^>]+rel="stylesheet"/);
+    assert.doesNotMatch(html, /<style/i);
+    assert.deepEqual(html.match(/<link[^>]+rel="stylesheet"[^>]*>/g), [
+        '<link rel="stylesheet" href="/styles/share.css?v=deploy-1"/>'
+    ]);
     assert.doesNotMatch(html, /<(?:iframe|object|embed|form|img)\b/i);
 });
 
@@ -351,7 +366,12 @@ test('error pages are noindex, localized and carry no list data', () => {
             const html = renderErrorPage(
                 language,
                 kind,
-                'https://t.me/wishlist_ua_bot'
+                'https://t.me/wishlist_ua_bot',
+                'deploy-1'
+            );
+            assert.match(
+                html,
+                /<link rel="stylesheet" href="\/styles\/share\.css\?v=deploy-1"/
             );
 
             assert.ok(html.startsWith('<!DOCTYPE html>'));
@@ -364,12 +384,12 @@ test('error pages are noindex, localized and carry no list data', () => {
     }
 
     assert.match(
-        renderErrorPage('en', 'gone', 'https://t.me/x'),
-        /<h1>This wish list is no longer shared<\/h1>/
+        renderErrorPage('en', 'gone', 'https://t.me/x', 'v'),
+        />This wish list is no longer shared<\/h1>/
     );
     assert.match(
-        renderErrorPage('en', 'notFound', 'https://t.me/x'),
-        /<h1>Page not found<\/h1>/
+        renderErrorPage('en', 'notFound', 'https://t.me/x', 'v'),
+        />Page not found<\/h1>/
     );
 });
 
@@ -392,6 +412,7 @@ const baseFingerprintInput: PublicShareFingerprint = {
     displayName: 'Alice',
     revokedAt: null,
     shareUpdatedAt: new Date(1_000),
+    showUsername: true,
     userId: 1,
     username: 'alice',
     usernameSearchable: true,
@@ -435,6 +456,7 @@ test('the fingerprint changes for every input that affects the page', async () =
                 ['publicId', { publicId: '0'.repeat(26) }],
                 ['shareUpdatedAt', { shareUpdatedAt: new Date(1_001) }],
                 ['username', { username: 'bob' }],
+                ['showUsername', { showUsername: false }],
                 ['payments', { payments: 'other' }],
                 ['currency', { currency: 'EUR' }],
                 ['visibleCount', { visibleCount: 4 }],
@@ -475,6 +497,36 @@ test('the fingerprint ignores a hidden username and unrelated fields', async () 
     });
 
     assert.equal(first, second);
+});
+
+test('the fingerprint ignores the username while the owner has not enabled it', async () => {
+    const notEnabled = { ...baseFingerprintInput, showUsername: false };
+    const first = await computeShareFingerprint('d', 'uk', notEnabled);
+    const second = await computeShareFingerprint('d', 'uk', {
+        ...notEnabled,
+        username: 'renamed'
+    });
+
+    assert.equal(first, second);
+});
+
+test('the public username needs both the owner choice and searchability', () => {
+    const owner = {
+        username: 'alice',
+        usernameSearchable: true,
+        showUsername: true
+    };
+
+    assert.equal(resolvePublicUsername(owner), 'alice');
+    assert.equal(
+        resolvePublicUsername({ ...owner, showUsername: false }),
+        null
+    );
+    assert.equal(
+        resolvePublicUsername({ ...owner, usernameSearchable: false }),
+        null
+    );
+    assert.equal(resolvePublicUsername({ ...owner, username: null }), null);
 });
 
 test('etagMatches understands strong, weak, list and wildcard validators', () => {

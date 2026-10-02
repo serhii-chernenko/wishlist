@@ -14,7 +14,7 @@ const ownerTelegramId = 9_001;
 const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
 const WORKERS_DEV_ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 const EXPECTED_CSP =
-    "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+    "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 interface StoredEntry {
     body: string;
@@ -350,6 +350,18 @@ describe('share page routes', () => {
                 }
             ],
             [
+                'setShowUsername',
+                () => {
+                    return run(
+                        repositories.shares.setShowUsername(
+                            owner.id,
+                            true,
+                            nextNow()
+                        )
+                    );
+                }
+            ],
+            [
                 'setVisibility',
                 () => {
                     return run(
@@ -627,26 +639,122 @@ describe('share page routes', () => {
         assert.equal(wish.title.length > 0, true);
     });
 
-    it('shows the username only when it is searchable', async () => {
-        const { owner, publicId } = await seedShare();
+    describe('username consent', () => {
+        const setSearchable = (
+            ownerId: number,
+            usernameSearchable: boolean,
+            phone: string | null = null
+        ) => {
+            return run(
+                repositories.users.setVisibility(
+                    ownerId,
+                    {
+                        usernameSearchable,
+                        phone,
+                        phoneDigits: phone?.replaceAll(/\D/g, '') ?? null,
+                        username: 'owner_user'
+                    },
+                    nextNow()
+                )
+            );
+        };
 
-        await run(
-            repositories.users.setVisibility(
-                owner.id,
-                {
-                    usernameSearchable: true,
-                    phone: null,
-                    phoneDigits: null,
-                    username: 'owner_user'
-                },
-                nextNow()
-            )
-        );
+        it('hides the username by default even when the owner is searchable', async () => {
+            const { owner, publicId } = await seedShare();
 
-        const body = await (await request(`/uk/w/${publicId}`)).text();
+            await setSearchable(owner.id, true);
 
-        assert.match(body, /@owner_user/);
-        assert.match(body, /href="https:\/\/t\.me\/owner_user"/);
+            const body = await (await request(`/uk/w/${publicId}`)).text();
+
+            assert.doesNotMatch(body, /@owner_user/);
+            assert.doesNotMatch(body, /t\.me\/owner_user/);
+        });
+
+        it('shows the username only after the owner enables it and only while searchable', async () => {
+            const { owner, publicId } = await seedShare();
+
+            await setSearchable(owner.id, true);
+
+            const hidden = await request(`/uk/w/${publicId}`);
+
+            await run(
+                repositories.shares.setShowUsername(owner.id, true, nextNow())
+            );
+
+            const shown = await request(`/uk/w/${publicId}`);
+            const shownBody = await shown.text();
+
+            assert.notEqual(etagOf(shown), etagOf(hidden));
+            assert.match(shownBody, /@owner_user/);
+            assert.match(shownBody, /href="https:\/\/t\.me\/owner_user"/);
+
+            await setSearchable(owner.id, false);
+
+            const notSearchable = await request(`/uk/w/${publicId}`);
+
+            assert.notEqual(etagOf(notSearchable), etagOf(shown));
+            assert.doesNotMatch(await notSearchable.text(), /@owner_user/);
+
+            await setSearchable(owner.id, true);
+            await run(
+                repositories.shares.setShowUsername(owner.id, false, nextNow())
+            );
+
+            const disabledAgain = await request(`/uk/w/${publicId}`);
+
+            assert.notEqual(etagOf(disabledAgain), etagOf(shown));
+            assert.doesNotMatch(await disabledAgain.text(), /@owner_user/);
+        });
+
+        it('never puts the phone number on the page, whatever the settings', async () => {
+            const { owner, publicId } = await seedShare();
+            const phone = '+380 50 123-45-67';
+            const phoneDigits = '380501234567';
+            const nationalDigits = '0501234567';
+
+            for (const usernameSearchable of [false, true]) {
+                for (const showUsername of [false, true]) {
+                    await setSearchable(owner.id, usernameSearchable, phone);
+                    await run(
+                        repositories.shares.setShowUsername(
+                            owner.id,
+                            showUsername,
+                            nextNow()
+                        )
+                    );
+
+                    for (const language of ['uk', 'en', 'pl']) {
+                        const response = await request(
+                            `/${language}/w/${publicId}`
+                        );
+                        const body = (await response.text()).replaceAll(
+                            publicId,
+                            ''
+                        );
+                        const digitsOnly = body.replaceAll(/\D/g, '');
+                        const label = `${language} searchable=${usernameSearchable} show=${showUsername}`;
+
+                        assert.equal(response.status, 200, label);
+                        assert.equal(
+                            digitsOnly.includes(phoneDigits),
+                            false,
+                            label
+                        );
+                        assert.equal(
+                            digitsOnly.includes(nationalDigits),
+                            false,
+                            label
+                        );
+                        assert.doesNotMatch(body, /\+380|tel:/i, label);
+                        assert.equal(
+                            body.includes('@owner_user'),
+                            usernameSearchable && showUsername,
+                            label
+                        );
+                    }
+                }
+            }
+        });
     });
 
     it('serves robots.txt per environment', async () => {
@@ -918,7 +1026,12 @@ describe('share page routes', () => {
         const response = await request(`/en/w/${publicId}`);
         const body = await response.text();
 
-        assert.match(body, /<h1>Wish list of Alice<\/h1>/);
+        assert.match(body, /<h1 [^>]*>Wish list of Alice<\/h1>/);
+        assert.match(
+            body,
+            /<link rel="stylesheet" href="\/styles\/share\.css\?v=[^"]+"\/>/
+        );
+        assert.doesNotMatch(body, /<style/i);
         assert.match(body, /Coffee &lt;script&gt;x&lt;\/script&gt;/);
         assert.doesNotMatch(body, /<script/i);
         assert.match(body, /shop\.test/);

@@ -15,6 +15,7 @@ export interface SharePageModel {
     language: SharePageLanguage;
     publicId: string;
     origin: string;
+    assetVersion: string;
     displayName: string | null;
     username: string | null;
     payments: string | null;

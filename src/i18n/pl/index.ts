@@ -215,7 +215,7 @@ const pl: Translation = {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
             empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
-                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twoja nazwa użytkownika, jeśli można cię po niej znaleźć\n• wszystkie życzenia oprócz ukrytych\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest dostępna pod tym linkiem:\n{url}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
@@ -233,7 +233,9 @@ const pl: Translation = {
                 open: '🔗 Otwórz stronę',
                 send: '📤 Wyślij znajomym',
                 stop: '🚫 Wyłącz udostępnianie',
-                newLink: '🔄 Nowy link'
+                newLink: '🔄 Nowy link',
+                showUsername: '👤 Pokazuj mój @username',
+                hideUsername: '🙈 Nie pokazuj @username'
             }
         }
     },

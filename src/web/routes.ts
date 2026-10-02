@@ -19,7 +19,8 @@ import { matchAcceptLanguage } from './share/accept-language';
 import {
     computeShareFingerprint,
     etagMatches,
-    getDeployId
+    getDeployId,
+    resolvePublicUsername
 } from './share/fingerprint';
 import {
     buildSharePath,
@@ -51,7 +52,7 @@ const NO_STORE = 'private, no-store';
 const NOINDEX = 'noindex';
 const SECURITY_HEADERS = {
     'Content-Security-Policy':
-        "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer'
 } as const;
@@ -155,8 +156,9 @@ const servePage = async ({
     cache: CacheLike | null;
     finish: FinishShareResponse;
 }) => {
+    const deployId = getDeployId(c.env);
     const fingerprint = await computeShareFingerprint(
-        getDeployId(c.env),
+        deployId,
         language,
         share
     );
@@ -216,8 +218,9 @@ const servePage = async ({
         language,
         publicId: share.publicId,
         origin,
+        assetVersion: deployId,
         displayName: share.displayName,
-        username: share.usernameSearchable ? share.username : null,
+        username: resolvePublicUsername(share),
         payments: share.payments,
         currency: share.currency,
         visibleCount: share.visibleCount,
@@ -322,7 +325,12 @@ export const registerShareRoutes = (
 
             return finish(
                 new Response(
-                    renderErrorPage(errorLanguage, kind, c.env.WISHLIST_TG_URL),
+                    renderErrorPage(
+                        errorLanguage,
+                        kind,
+                        c.env.WISHLIST_TG_URL,
+                        getDeployId(c.env)
+                    ),
                     { status, headers }
                 ),
                 kind === 'gone' ? 'gone' : 'notFound',

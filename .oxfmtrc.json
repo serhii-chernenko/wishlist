@@ -11,6 +11,7 @@
         "worker-configuration.d.ts",
         "releases.generated.json",
         "src/i18n/i18n-*.ts",
+        "public/styles/share.css",
         ".agents/skills/**",
         "skills-lock.json"
     ]

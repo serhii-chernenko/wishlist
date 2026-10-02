@@ -41,8 +41,9 @@ jobs:
                   pnpm run releases:sync
                   pnpm run cf-typegen
                   pnpm run db:generate
+                  pnpm run css:build
 
-                  generated_status="$(git status --short --untracked-files=all -- drizzle releases.generated.json src/i18n worker-configuration.d.ts)"
+                  generated_status="$(git status --short --untracked-files=all -- drizzle releases.generated.json src/i18n worker-configuration.d.ts public/styles/share.css)"
                   if [[ -n "$generated_status" ]]; then
                       echo '::error::Committed generated artifacts are out of date.'
                       printf '%s\n' "$generated_status"

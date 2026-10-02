@@ -10,6 +10,11 @@ type ShareRepositories = Pick<Repositories, 'wishes' | 'shares'>;
 
 export type SharePublishStatus = 'created' | 'existing' | 'updated';
 
+export interface ShareUsernameOutcome {
+    share: ShareRecord;
+    changed: boolean;
+}
+
 export type ShareEntryState = 'empty' | 'unshared' | 'shared';
 
 export type SharePublishOutcome =
@@ -25,6 +30,12 @@ export const resolvePublicOrigin = (
     }
 
     return origin ?? CANONICAL_SHARE_ORIGIN;
+};
+
+export const canShowPublicUsername = (
+    user: Pick<UserRecord, 'username' | 'usernameSearchable'>
+) => {
+    return Boolean(user.username) && user.usernameSearchable;
 };
 
 export const buildAuthorName = (person: {
@@ -97,6 +108,27 @@ export const createShareService = (
         },
         rotate(userId: number) {
             return runRepository(repositories.shares.rotate(userId, clock()));
+        },
+        async toggleUsername(
+            user: Pick<UserRecord, 'id' | 'username' | 'usernameSearchable'>
+        ): Promise<ShareUsernameOutcome | null> {
+            const current = await getShare(user.id);
+
+            if (current === null) {
+                return null;
+            }
+
+            const next = !current.showUsername;
+
+            if (next && !canShowPublicUsername(user)) {
+                return { share: current, changed: false };
+            }
+
+            const share = await runRepository(
+                repositories.shares.setShowUsername(user.id, next, clock())
+            );
+
+            return share === null ? null : { share, changed: true };
         }
     };
 };

@@ -19,6 +19,17 @@ export const getDeployId = (env: {
     return deployId ? deployId : FALLBACK_DEPLOY_ID;
 };
 
+export const resolvePublicUsername = (
+    share: Pick<
+        PublicShareFingerprint,
+        'showUsername' | 'usernameSearchable' | 'username'
+    >
+) => {
+    return share.showUsername && share.usernameSearchable
+        ? share.username
+        : null;
+};
+
 export const computeShareFingerprint = async (
     deployId: string,
     language: SharePageLanguage,
@@ -29,7 +40,8 @@ export const computeShareFingerprint = async (
         language,
         share.publicId,
         share.shareUpdatedAt.getTime(),
-        share.usernameSearchable ? share.username : null,
+        share.showUsername,
+        resolvePublicUsername(share),
         share.payments,
         share.currency,
         share.visibleCount,

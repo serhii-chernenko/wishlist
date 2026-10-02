@@ -39,6 +39,7 @@ export type TelemetryAction =
     | 'wishlist_shared'
     | 'wishlist_share_stopped'
     | 'wishlist_share_rotated'
+    | 'wishlist_share_username_toggled'
     | 'wishlist_filtered'
     | 'wishlist_searched'
     | 'give_added'
@@ -177,6 +178,7 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^wl:share:stop:y$/, 'wishlist:shareStopConfirm'],
     [/^wl:share:new$/, 'wishlist:shareRotate'],
     [/^wl:share:new:y$/, 'wishlist:shareRotateConfirm'],
+    [/^wl:share:u$/, 'wishlist:shareUsername'],
     [/^wl:f(?::[0-4x])?$/, 'wishlist:filter'],
     [/^w:e:\d{1,12}$/, 'wish:edit'],
     [/^w:r:\d{1,12}$/, 'wish:remove'],

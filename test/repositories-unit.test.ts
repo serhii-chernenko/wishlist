@@ -83,6 +83,7 @@ const expectedMethods: Record<string, string[]> = {
         'publish',
         'revoke',
         'rotate',
+        'setShowUsername',
         'findPublicFingerprint'
     ]
 };

@@ -6,6 +6,7 @@ import { Effect } from 'effect';
 import type { Repositories, ShareRecord } from '../src/db/repositories';
 import {
     buildAuthorName,
+    canShowPublicUsername,
     createShareService,
     resolvePublicOrigin
 } from '../src/bot/services/share-service';
@@ -19,6 +20,7 @@ const createShare = (overrides: Partial<ShareRecord> = {}): ShareRecord => {
         userId: OWNER.id,
         publicId: '01j9z0000000000000000000ab',
         displayName: 'Serhii',
+        showUsername: false,
         revokedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -85,9 +87,29 @@ const createFakes = (options: FakeOptions = {}) => {
                     return Effect.succeed(false);
                 }
 
-                stored = { ...stored, revokedAt: at, displayName: null };
+                stored = {
+                    ...stored,
+                    revokedAt: at,
+                    displayName: null,
+                    showUsername: false
+                };
 
                 return Effect.succeed(true);
+            },
+            setShowUsername: (
+                _userId: number,
+                showUsername: boolean,
+                at: Date
+            ) => {
+                calls.push('setShowUsername');
+
+                if (stored === null || stored.revokedAt !== null) {
+                    return Effect.succeed(null);
+                }
+
+                stored = { ...stored, showUsername, updatedAt: at };
+
+                return Effect.succeed(stored);
             },
             rotate: (_userId: number, at: Date) => {
                 calls.push('rotate');
@@ -304,4 +326,86 @@ test('production always uses the canonical origin, other environments keep the w
         resolvePublicOrigin(undefined, 'preview'),
         CANONICAL_SHARE_ORIGIN
     );
+});
+
+const SEARCHABLE_OWNER = {
+    id: 7,
+    username: 'serhii',
+    usernameSearchable: true
+};
+
+test('only a searchable username counts as a public username', () => {
+    assert.equal(canShowPublicUsername(SEARCHABLE_OWNER), true);
+    assert.equal(
+        canShowPublicUsername({
+            ...SEARCHABLE_OWNER,
+            usernameSearchable: false
+        }),
+        false
+    );
+    assert.equal(
+        canShowPublicUsername({ ...SEARCHABLE_OWNER, username: null }),
+        false
+    );
+    assert.equal(
+        canShowPublicUsername({ ...SEARCHABLE_OWNER, username: '' }),
+        false
+    );
+});
+
+test('toggling the username flips it on and off and reports the change', async () => {
+    const { repositories } = createFakes({ stored: createShare() });
+    const service = createShareService(repositories, () => now);
+    const enabled = await service.toggleUsername(SEARCHABLE_OWNER);
+    const disabled = await service.toggleUsername(SEARCHABLE_OWNER);
+
+    assert.equal(enabled?.changed, true);
+    assert.equal(enabled?.share.showUsername, true);
+    assert.equal(disabled?.changed, true);
+    assert.equal(disabled?.share.showUsername, false);
+});
+
+test('toggling the username on is refused without a public username', async () => {
+    const { repositories, calls } = createFakes({ stored: createShare() });
+    const service = createShareService(repositories, () => now);
+    const outcome = await service.toggleUsername({
+        ...SEARCHABLE_OWNER,
+        usernameSearchable: false
+    });
+
+    assert.equal(outcome?.changed, false);
+    assert.equal(outcome?.share.showUsername, false);
+    assert.equal(calls.includes('setShowUsername'), false);
+});
+
+test('toggling the username off is always allowed', async () => {
+    const { repositories } = createFakes({
+        stored: createShare({ showUsername: true })
+    });
+    const outcome = await createShareService(
+        repositories,
+        () => now
+    ).toggleUsername({ ...SEARCHABLE_OWNER, username: null });
+
+    assert.equal(outcome?.changed, true);
+    assert.equal(outcome?.share.showUsername, false);
+});
+
+test('toggling the username without an active share does nothing', async () => {
+    const { repositories, calls } = createFakes();
+    const withoutShare = await createShareService(
+        repositories,
+        () => now
+    ).toggleUsername(SEARCHABLE_OWNER);
+    const stopped = createFakes({
+        stored: createShare({ revokedAt: now, displayName: null })
+    });
+    const afterStop = await createShareService(
+        stopped.repositories,
+        () => now
+    ).toggleUsername(SEARCHABLE_OWNER);
+
+    assert.equal(withoutShare, null);
+    assert.equal(afterStop, null);
+    assert.equal(calls.includes('setShowUsername'), false);
 });

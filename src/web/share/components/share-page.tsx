@@ -10,6 +10,7 @@ import type { SharePageModel } from '../view-model';
 import { PageFooter } from './footer';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
+import { CURRENT_COLOR_LINK_CLASS } from './link-classes';
 import { WishCard } from './wish-card';
 
 const TELEGRAM_USERNAME_PATTERN = /^[A-Za-z0-9_]{1,64}$/;
@@ -27,12 +28,17 @@ const PaymentsCallout = ({
     );
 
     return (
-        <section class='callout'>
-            <h2>{LL.web.payments.title()}</h2>
-            <p class='hint'>{LL.web.payments.description()}</p>
-            <p>
-                <InlineContent nodes={nodes} />
-            </p>
+        <section class='alert alert-info mb-6'>
+            <div class='grid gap-2 text-base'>
+                <h2 class='text-lg font-bold'>{LL.web.payments.title()}</h2>
+                <p>{LL.web.payments.description()}</p>
+                <p class='font-medium'>
+                    <InlineContent
+                        nodes={nodes}
+                        linkClass={CURRENT_COLOR_LINK_CLASS}
+                    />
+                </p>
+            </div>
         </section>
     );
 };
@@ -48,12 +54,16 @@ const PageHero = ({ model }: { model: SharePageModel }) => {
         TELEGRAM_USERNAME_PATTERN.test(model.username);
 
     return (
-        <header class='hero'>
-            <h1>{heading}</h1>
-            <ul class='facts'>
-                <li>{LL.web.header.count({ count: model.visibleCount })}</li>
+        <header class='mb-6'>
+            <h1 class='mb-3 text-3xl leading-tight font-extrabold text-balance sm:text-4xl'>
+                {heading}
+            </h1>
+            <ul class='flex flex-wrap gap-2'>
+                <li class='badge badge-lg h-auto py-1'>
+                    {LL.web.header.count({ count: model.visibleCount })}
+                </li>
                 {model.lastUpdatedAt ? (
-                    <li>
+                    <li class='badge badge-lg h-auto py-1'>
                         {LL.web.header.updated({
                             date: formatDate(
                                 model.lastUpdatedAt,
@@ -65,6 +75,7 @@ const PageHero = ({ model }: { model: SharePageModel }) => {
                 {showsUsername && model.username !== null ? (
                     <li>
                         <a
+                            class={`badge badge-lg badge-secondary h-auto py-1 ${CURRENT_COLOR_LINK_CLASS}`}
                             href={`https://t.me/${model.username}`}
                             rel='noopener noreferrer'
                             target='_blank'
@@ -98,9 +109,11 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                     />
                 ) : null}
                 {model.wishes.length === 0 ? (
-                    <p class='empty'>{LL.web.empty()}</p>
+                    <p class='card card-dash bg-base-100 p-8 text-center'>
+                        {LL.web.empty()}
+                    </p>
                 ) : (
-                    <ul class='wishes'>
+                    <ul class='grid gap-4'>
                         {model.wishes.map(wish => {
                             return (
                                 <WishCard
@@ -113,7 +126,7 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                     </ul>
                 )}
                 {model.visibleCount > SHAREABLE_WISHES_LIMIT ? (
-                    <p class='notice'>
+                    <p class='alert mt-4 border-base-300 bg-base-100'>
                         {LL.web.truncated({ limit: SHAREABLE_WISHES_LIMIT })}
                     </p>
                 ) : null}
