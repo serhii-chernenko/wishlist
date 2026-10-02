@@ -47,6 +47,8 @@ import {
     screen as wishlistScreen
 } from '../../src/bot/screens/wishlist';
 import type { UserRecord } from '../../src/db/repositories';
+import { createApp } from '../../src/worker/app';
+import type { WorkerBindings } from '../../src/worker/env';
 import {
     createD1Harness,
     seedGeneratedWishes,
@@ -108,6 +110,7 @@ describe('wishlist screens on D1', () => {
             isAdmin?: boolean;
             session?: SessionState;
             publicOrigin?: string;
+            environment?: string;
             actorName?: string;
             repos?: BotRequest['repos'];
         } = {}
@@ -124,7 +127,10 @@ describe('wishlist screens on D1', () => {
                 MONOBANK_URL: 'https://mono.test',
                 KOFI_URL: 'https://kofi.test',
                 PAYPAL_URL: 'https://paypal.test',
-                REVOLUT_URL: 'https://revolut.test'
+                REVOLUT_URL: 'https://revolut.test',
+                ...(options.environment === undefined
+                    ? {}
+                    : { BOT_ENVIRONMENT: options.environment })
             },
             locale: 'uk',
             LL: getMessages('uk'),
@@ -614,6 +620,129 @@ describe('wishlist screens on D1', () => {
             });
         });
 
+        describe('an active share without visible wishes', () => {
+            const requestSharePage = (publicId: string) => {
+                const app = createApp({}, {}, {});
+
+                return app.request(`/uk/w/${publicId}`, {}, {
+                    ...harness.env,
+                    BOT_ENVIRONMENT: 'production'
+                } as unknown as WorkerBindings);
+            };
+
+            const assertManageableThenStop = async (
+                owner: UserRecord,
+                context: ReturnType<typeof createRequest>
+            ) => {
+                const { request, events, telemetry } = context;
+                const row = await readShareRow(owner.id);
+
+                assert.ok(row);
+                assert.ok(
+                    callbackDataOf(lastText(events).keyboard).includes(
+                        'wl:share'
+                    )
+                );
+
+                await dispatch(request, 'wl:share');
+
+                const link = lastText(events);
+                const url = `${ORIGIN}/w/${row.public_id}`;
+
+                assert.equal(
+                    link.html,
+                    `${getMessages('uk').wishlist.share.ready({ url })}\n\n${getMessages('uk').wishlist.share.pageEmpty()}`
+                );
+                assert.deepEqual(callbackDataOf(link.keyboard), [
+                    'wl:share:new',
+                    'wl:share:stop',
+                    'n:wl'
+                ]);
+                assert.equal(
+                    telemetry.some(entry => {
+                        return entry['result'] === 'empty';
+                    }),
+                    false
+                );
+                assert.equal(
+                    (await requestSharePage(row.public_id)).status,
+                    200
+                );
+
+                await dispatch(request, 'wl:share:stop');
+                await dispatch(request, 'wl:share:stop:y');
+
+                assert.notEqual(
+                    (await readShareRow(owner.id))?.revoked_at,
+                    null
+                );
+                assert.deepEqual(telemetry.at(-1), {
+                    action: 'wishlist_share_stopped',
+                    result: 'success'
+                });
+                assert.equal(
+                    (await requestSharePage(row.public_id)).status,
+                    410
+                );
+            };
+
+            it('stays manageable after the list is cleaned', async () => {
+                const owner = await createSharingOwner();
+                const context = createRequest(owner, { publicOrigin: ORIGIN });
+
+                await dispatch(context.request, 'wl:share:y');
+                await dispatch(context.request, 'wl:clean:y');
+                await assertManageableThenStop(owner, context);
+
+                assert.equal(
+                    callbackDataOf(lastText(context.events).keyboard).includes(
+                        'wl:share'
+                    ),
+                    false
+                );
+            });
+
+            it('stays manageable after every wish is hidden', async () => {
+                const owner = await createUser({ username: 'hider' });
+                const wish = await run(
+                    harness.repositories.wishes.create(
+                        owner.id,
+                        'Bicycle',
+                        new Date()
+                    )
+                );
+
+                assert.ok(wish);
+
+                const context = createRequest(owner, { publicOrigin: ORIGIN });
+
+                await dispatch(context.request, 'wl:share:y');
+                await run(
+                    harness.repositories.wishes.toggleHidden(
+                        wish.id,
+                        owner.id,
+                        new Date()
+                    )
+                );
+                await wishlistScreen.render(context.request, undefined);
+                await assertManageableThenStop(owner, context);
+            });
+
+            it('does not offer sharing on an empty list without an active share', async () => {
+                const owner = await createUser();
+                const { request, events } = createRequest(owner);
+
+                await wishlistScreen.render(request, undefined);
+
+                assert.equal(
+                    callbackDataOf(lastText(events).keyboard).includes(
+                        'wl:share'
+                    ),
+                    false
+                );
+            });
+        });
+
         it('rotates the public id after confirmation', async () => {
             const owner = await createSharingOwner();
             const { request, events, telemetry } = createRequest(owner, {
@@ -685,6 +814,54 @@ describe('wishlist screens on D1', () => {
                 { action: 'wishlist_shared', result: 'empty' },
                 { action: 'wishlist_shared', result: 'empty' }
             ]);
+        });
+
+        it('builds the canonical link in production whatever the request origin is', async () => {
+            const owner = await createSharingOwner();
+            const { request, events } = createRequest(owner, {
+                publicOrigin: ORIGIN,
+                environment: 'production'
+            });
+
+            await dispatch(request, 'wl:share');
+
+            assert.ok(lastText(events).html.includes('wishlist.chernenko.dev'));
+            assert.equal(lastText(events).html.includes(ORIGIN), false);
+
+            await dispatch(request, 'wl:share:y');
+
+            const row = await readShareRow(owner.id);
+
+            assert.ok(
+                lastText(events).html.includes(
+                    `https://wishlist.chernenko.dev/w/${row?.public_id}`
+                )
+            );
+        });
+
+        it('shows the current state instead of stopped when there is nothing to stop', async () => {
+            const owner = await createSharingOwner();
+            const { request, events, telemetry } = createRequest(owner, {
+                publicOrigin: ORIGIN
+            });
+
+            await dispatch(request, 'wl:share:stop:y');
+
+            assert.equal(
+                events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html ===
+                            getMessages('uk').wishlist.share.stopped()
+                    );
+                }),
+                false
+            );
+            assert.deepEqual(callbackDataOf(lastText(events).keyboard), [
+                'wl:share:y',
+                'n:wl'
+            ]);
+            assert.deepEqual(telemetry, []);
         });
 
         it('rejects every share callback from a guest', async () => {

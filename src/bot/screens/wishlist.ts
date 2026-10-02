@@ -49,6 +49,7 @@ const buildMenu = (
     options: {
         filter: WishFilter | null;
         hasWishes: boolean;
+        canShare: boolean;
         nextOffset: number | null;
     }
 ) => {
@@ -68,7 +69,7 @@ const buildMenu = (
         options.hasWishes
             ? callbackButton(LL.actions.clean(), { type: 'wishlistClean' })
             : null,
-        options.hasWishes
+        options.canShare
             ? callbackButton(LL.actions.share(), { type: 'wishlistShare' })
             : null,
         homeButton(LL)
@@ -80,7 +81,7 @@ const buildMenu = (
 const render = async (req: BotRequest, params: WishlistParams | undefined) => {
     const { LL } = req;
     const user = requireUser(req);
-    const { wishes } = createWishScreenServices(req);
+    const { wishes, share } = createWishScreenServices(req);
     const filter = wishes.getOwnerFilter(user);
     const formatters = createWishFormatters(req);
     let offset = params?.offset ?? 0;
@@ -96,7 +97,12 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
     if (page.total === 0) {
         await req.send.text(
             filter === null ? LL.wishlist.empty() : LL.wishlist.filtered(),
-            buildMenu(req, { filter, hasWishes: false, nextOffset: null })
+            buildMenu(req, {
+                filter,
+                hasWishes: false,
+                canShare: (await share.getShare(user.id)) !== null,
+                nextOffset: null
+            })
         );
 
         return;
@@ -157,6 +163,7 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
         buildMenu(req, {
             filter,
             hasWishes: true,
+            canShare: true,
             nextOffset: window.nextOffset
         })
     );
@@ -239,15 +246,16 @@ const buildShareLinkKeyboard = (req: BotRequest, pageUrl: string) => {
     ]);
 };
 
+const getPublicOrigin = (req: BotRequest) => {
+    return resolvePublicOrigin(req.publicOrigin, req.env.BOT_ENVIRONMENT);
+};
+
 const renderShareLink = async (
     req: BotRequest,
     share: Pick<ShareRecord, 'publicId'>,
     buildText: (url: string) => string
 ) => {
-    const pageUrl = buildShareUrl(
-        resolvePublicOrigin(req.publicOrigin),
-        share.publicId
-    );
+    const pageUrl = buildShareUrl(getPublicOrigin(req), share.publicId);
 
     await req.send.text(
         buildText(escapeHtml(pageUrl)),
@@ -267,7 +275,7 @@ const renderShareEmpty = async (req: BotRequest) => {
 const renderShareConsent = async (req: BotRequest) => {
     const { LL } = req;
     const name = buildAuthorName(req.actor) || SHARE_PAGE_FALLBACK_NAME;
-    const { host } = new URL(resolvePublicOrigin(req.publicOrigin));
+    const { host } = new URL(getPublicOrigin(req));
 
     await req.send.text(
         LL.wishlist.share.consent({
@@ -307,7 +315,11 @@ const publishShare = async (req: BotRequest) => {
         result: outcome.status === 'created' ? 'published' : 'existing'
     });
     await renderShareLink(req, outcome.share, url => {
-        return req.LL.wishlist.share.ready({ url });
+        const ready = req.LL.wishlist.share.ready({ url });
+
+        return outcome.pageEmpty
+            ? `${ready}\n\n${req.LL.wishlist.share.pageEmpty()}`
+            : ready;
     });
 };
 
@@ -365,13 +377,16 @@ const stopShare = async (req: BotRequest) => {
         return;
     }
 
-    if (attempt.value) {
-        req.telemetry.botActionCompleted({
-            action: 'wishlist_share_stopped',
-            result: 'success'
-        });
+    if (!attempt.value) {
+        await openShare(req);
+
+        return;
     }
 
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_share_stopped',
+        result: 'success'
+    });
     await req.send.text(req.LL.wishlist.share.stopped());
     await render(req, undefined);
 };

@@ -38,6 +38,7 @@ const expectedMethods: Record<string, string[]> = {
         'findVisible',
         'listOwned',
         'listVisibleOf',
+        'hasShareable',
         'listShareable',
         'updateFields',
         'togglePriority',

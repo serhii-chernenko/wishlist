@@ -3,11 +3,10 @@ import type {
     ShareRecord,
     UserRecord
 } from '../../db/repositories';
+import { CANONICAL_SHARE_ORIGIN } from '../../web/share/public-id';
 import { runRepository } from './run-repository';
 
 type ShareRepositories = Pick<Repositories, 'wishes' | 'shares'>;
-
-export const DEFAULT_PUBLIC_ORIGIN = 'https://wishlist.chernenko.dev';
 
 export type SharePublishStatus = 'created' | 'existing' | 'updated';
 
@@ -15,10 +14,17 @@ export type ShareEntryState = 'empty' | 'unshared' | 'shared';
 
 export type SharePublishOutcome =
     | { status: 'empty' }
-    | { status: SharePublishStatus; share: ShareRecord };
+    | { status: SharePublishStatus; share: ShareRecord; pageEmpty: boolean };
 
-export const resolvePublicOrigin = (origin: string | undefined) => {
-    return origin ?? DEFAULT_PUBLIC_ORIGIN;
+export const resolvePublicOrigin = (
+    origin: string | undefined,
+    environment?: string
+) => {
+    if (environment === 'production') {
+        return CANONICAL_SHARE_ORIGIN;
+    }
+
+    return origin ?? CANONICAL_SHARE_ORIGIN;
 };
 
 export const buildAuthorName = (person: {
@@ -42,11 +48,7 @@ export const createShareService = (
     clock: () => Date = () => new Date()
 ) => {
     const hasShareableWishes = async (userId: number) => {
-        const wishes = await runRepository(
-            repositories.wishes.listShareable(userId)
-        );
-
-        return wishes.length > 0;
+        return runRepository(repositories.wishes.hasShareable(userId));
     };
 
     const getShare = (userId: number) => {
@@ -67,19 +69,18 @@ export const createShareService = (
             user: Pick<UserRecord, 'id'>,
             displayName: string
         ): Promise<SharePublishOutcome> {
-            if (!(await hasShareableWishes(user.id))) {
+            const previous = await getShare(user.id);
+
+            if (previous === null && !(await hasShareableWishes(user.id))) {
                 return { status: 'empty' };
             }
 
-            const previous = await runRepository(
-                repositories.shares.findActiveByUserId(user.id)
-            );
             const share = await runRepository(
                 repositories.shares.publish(user.id, displayName, clock())
             );
 
             if (previous === null) {
-                return { status: 'created', share };
+                return { status: 'created', share, pageEmpty: false };
             }
 
             return {
@@ -87,7 +88,8 @@ export const createShareService = (
                     previous.displayName === share.displayName
                         ? 'existing'
                         : 'updated',
-                share
+                share,
+                pageEmpty: !(await hasShareableWishes(user.id))
             };
         },
         stop(userId: number) {

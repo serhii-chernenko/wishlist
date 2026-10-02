@@ -17,6 +17,7 @@ export interface ApplicationTableCounts {
     users: number;
     wishes: number;
     gives: number;
+    wishlistShares: number;
     sessions: number;
     telegramUpdates: number;
     releaseAnnouncements: number;
@@ -27,6 +28,7 @@ export const emptyTargetSql = [
     '  (SELECT COUNT(*) FROM "users") AS "users",',
     '  (SELECT COUNT(*) FROM "wishes") AS "wishes",',
     '  (SELECT COUNT(*) FROM "gives") AS "gives",',
+    '  (SELECT COUNT(*) FROM "wishlist_shares") AS "wishlistShares",',
     '  (SELECT COUNT(*) FROM "sessions") AS "sessions",',
     '  (SELECT COUNT(*) FROM "telegram_updates") AS "telegramUpdates",',
     '  (SELECT COUNT(*) FROM "release_announcements") AS "releaseAnnouncements";'
@@ -38,6 +40,7 @@ export const previewResetSql = [
     'DELETE FROM "release_announcements";',
     'DELETE FROM "gives";',
     'DELETE FROM "wishes";',
+    'DELETE FROM "wishlist_shares";',
     'DELETE FROM "users";'
 ].join('\n');
 
@@ -100,6 +103,7 @@ export const parseApplicationTableCounts = (
         users: readRowCount('users'),
         wishes: readRowCount('wishes'),
         gives: readRowCount('gives'),
+        wishlistShares: readRowCount('wishlistShares'),
         sessions: readRowCount('sessions'),
         telegramUpdates: readRowCount('telegramUpdates'),
         releaseAnnouncements: readRowCount('releaseAnnouncements')

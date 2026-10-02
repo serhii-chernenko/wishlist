@@ -6,6 +6,8 @@ export const SHARE_PUBLIC_ID_PATTERN = /^[0-9a-hjkmnp-tv-z]{26}$/;
 
 export const CANONICAL_SHARE_HOST = 'wishlist.chernenko.dev';
 
+export const CANONICAL_SHARE_ORIGIN = `https://${CANONICAL_SHARE_HOST}`;
+
 const SHARE_PATH_SEGMENT = 'w';
 
 export const isSharePageLanguage = (

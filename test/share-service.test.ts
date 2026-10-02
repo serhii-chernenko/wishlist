@@ -7,9 +7,9 @@ import type { Repositories, ShareRecord } from '../src/db/repositories';
 import {
     buildAuthorName,
     createShareService,
-    DEFAULT_PUBLIC_ORIGIN,
     resolvePublicOrigin
 } from '../src/bot/services/share-service';
+import { CANONICAL_SHARE_ORIGIN } from '../src/web/share/public-id';
 
 const now = new Date('2026-01-02T10:00:00Z');
 const OWNER = { id: 7 };
@@ -29,7 +29,7 @@ const createShare = (overrides: Partial<ShareRecord> = {}): ShareRecord => {
 interface FakeOptions {
     shareableCount?: number;
     stored?: ShareRecord | null;
-    failOn?: 'listShareable' | 'findActiveByUserId' | 'publish';
+    failOn?: 'hasShareable' | 'findActiveByUserId' | 'publish';
 }
 
 const createFakes = (options: FakeOptions = {}) => {
@@ -44,12 +44,10 @@ const createFakes = (options: FakeOptions = {}) => {
     };
     const repositories = {
         wishes: {
-            listShareable: () => {
+            hasShareable: () => {
                 return (
-                    fail('listShareable') ??
-                    Effect.succeed(
-                        Array.from({ length: options.shareableCount ?? 1 })
-                    )
+                    fail('hasShareable') ??
+                    Effect.succeed((options.shareableCount ?? 1) > 0)
                 );
             }
         },
@@ -168,6 +166,36 @@ test('publishing without visible wishes is empty and writes nothing', async () =
     assert.equal(calls.includes('publish'), false);
 });
 
+test('publishing an active share with no visible wishes keeps it manageable', async () => {
+    const { repositories, calls } = createFakes({
+        shareableCount: 0,
+        stored: createShare()
+    });
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
+    );
+
+    assert.equal(outcome.status, 'existing');
+    assert.ok('share' in outcome);
+    assert.equal(outcome.pageEmpty, true);
+    assert.equal(calls.includes('publish'), true);
+});
+
+test('re-activating a revoked share with no visible wishes is empty', async () => {
+    const { repositories, calls } = createFakes({
+        shareableCount: 0,
+        stored: createShare({ revokedAt: now, displayName: null })
+    });
+    const outcome = await createShareService(repositories, () => now).publish(
+        OWNER,
+        'Serhii'
+    );
+
+    assert.deepEqual(outcome, { status: 'empty' });
+    assert.equal(calls.includes('publish'), false);
+});
+
 test('repository failures propagate from publish', async () => {
     const { repositories } = createFakes({ failOn: 'publish' });
 
@@ -251,10 +279,29 @@ test('buildAuthorName prefers the full name and falls back to the username', () 
     assert.equal(buildAuthorName({}), '');
 });
 
-test('the public origin falls back to the production host only when missing', () => {
-    assert.equal(resolvePublicOrigin(undefined), DEFAULT_PUBLIC_ORIGIN);
+test('the public origin falls back to the canonical host only when missing', () => {
+    assert.equal(resolvePublicOrigin(undefined), CANONICAL_SHARE_ORIGIN);
     assert.equal(
         resolvePublicOrigin('https://branch-wishlist.chernenko.workers.dev'),
         'https://branch-wishlist.chernenko.workers.dev'
+    );
+});
+
+test('production always uses the canonical origin, other environments keep the webhook origin', () => {
+    const webhookOrigin = 'https://branch-wishlist.chernenko.workers.dev';
+
+    assert.equal(
+        resolvePublicOrigin(webhookOrigin, 'production'),
+        CANONICAL_SHARE_ORIGIN
+    );
+    assert.equal(
+        resolvePublicOrigin(undefined, 'production'),
+        CANONICAL_SHARE_ORIGIN
+    );
+    assert.equal(resolvePublicOrigin(webhookOrigin, 'preview'), webhookOrigin);
+    assert.equal(resolvePublicOrigin(webhookOrigin, 'local'), webhookOrigin);
+    assert.equal(
+        resolvePublicOrigin(undefined, 'preview'),
+        CANONICAL_SHARE_ORIGIN
     );
 });

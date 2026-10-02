@@ -48,6 +48,7 @@ export const SHARE_CACHE_PATH_PREFIX = '/__share-cache';
 const DEFAULT_LANGUAGE: SharePageLanguage = 'uk';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const NO_STORE = 'private, no-store';
+const NOINDEX = 'noindex';
 const SECURITY_HEADERS = {
     'Content-Security-Policy':
         "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
@@ -98,6 +99,37 @@ const isProductionCanonicalHost = (env: WorkerBindings, requestUrl: string) => {
     );
 };
 
+type CacheLookup =
+    | { outcome: 'hit'; response: Response }
+    | { outcome: 'miss'; response: undefined }
+    | { outcome: 'bypass'; response: undefined };
+
+const lookupCachedPage = async (
+    cache: CacheLike | null,
+    cacheKey: string
+): Promise<CacheLookup> => {
+    if (cache === null) {
+        return { outcome: 'bypass', response: undefined };
+    }
+
+    try {
+        const response = await cache.match(cacheKey);
+
+        return response
+            ? { outcome: 'hit', response }
+            : { outcome: 'miss', response: undefined };
+    } catch (error) {
+        console.warn(
+            JSON.stringify({
+                event: 'share_cache_match_failed',
+                errorType: error instanceof Error ? error.name : typeof error
+            })
+        );
+
+        return { outcome: 'bypass', response: undefined };
+    }
+};
+
 const getErrorStatus = (kind: SharePageErrorKind) => {
     return kind === 'gone' ? 410 : 404;
 };
@@ -128,21 +160,29 @@ const servePage = async ({
         language,
         share
     );
+    const indexable =
+        isProductionCanonicalHost(c.env, c.req.url) && share.visibleCount > 0;
     const baseHeaders = () => {
-        return withSecurityHeaders(
+        const headers = withSecurityHeaders(
             new Headers({
                 'Cache-Control': 'no-cache',
                 ETag: `"${fingerprint}"`,
                 'Content-Language': language
             })
         );
+
+        if (!indexable) {
+            headers.set('X-Robots-Tag', NOINDEX);
+        }
+
+        return headers;
     };
 
     if (etagMatches(c.req.header('If-None-Match'), fingerprint)) {
         return finish(
             new Response(null, { status: 304, headers: baseHeaders() }),
             'notModified',
-            'bypass'
+            'hit'
         );
     }
 
@@ -153,7 +193,8 @@ const servePage = async ({
         share.publicId,
         fingerprint
     );
-    const cached = cache ? await cache.match(cacheKey) : undefined;
+    const lookup = await lookupCachedPage(cache, cacheKey);
+    const cached = lookup.response;
 
     if (cached) {
         const headers = baseHeaders();
@@ -182,9 +223,7 @@ const servePage = async ({
         visibleCount: share.visibleCount,
         lastUpdatedAt: share.lastUpdatedAt,
         wishes,
-        indexable:
-            isProductionCanonicalHost(c.env, c.req.url) &&
-            share.visibleCount > 0,
+        indexable,
         botUrl: c.env.WISHLIST_TG_URL,
         githubUrl: c.env.GITHUB_REPO_URL,
         supportLinks: getSupportLinks(c.env, getTranslator(language))
@@ -221,15 +260,12 @@ const servePage = async ({
     const headers = baseHeaders();
 
     headers.set('Content-Type', HTML_CONTENT_TYPE);
-    headers.set(
-        'Server-Timing',
-        `share-cache;desc=${cache ? 'miss' : 'bypass'}`
-    );
+    headers.set('Server-Timing', `share-cache;desc=${lookup.outcome}`);
 
     return finish(
         new Response(html, { status: 200, headers }),
         'rendered',
-        cache ? 'miss' : 'bypass'
+        lookup.outcome
     );
 };
 
@@ -280,7 +316,7 @@ export const registerShareRoutes = (
                     'Content-Type': HTML_CONTENT_TYPE,
                     'Cache-Control': NO_STORE,
                     'Content-Language': errorLanguage,
-                    'X-Robots-Tag': 'noindex'
+                    'X-Robots-Tag': NOINDEX
                 })
             );
 
@@ -318,7 +354,8 @@ export const registerShareRoutes = (
                     headers: withSecurityHeaders(
                         new Headers({
                             Location: location,
-                            'Cache-Control': 'public, max-age=86400'
+                            'Cache-Control': 'public, max-age=86400',
+                            'X-Robots-Tag': NOINDEX
                         })
                     )
                 }),
@@ -365,7 +402,8 @@ export const registerShareRoutes = (
                                     telemetryLanguage
                                 ),
                                 Vary: 'Accept-Language',
-                                'Cache-Control': NO_STORE
+                                'Cache-Control': NO_STORE,
+                                'X-Robots-Tag': NOINDEX
                             })
                         )
                     }),
@@ -400,7 +438,7 @@ export const registerShareRoutes = (
                         new Headers({
                             'Content-Type': 'text/plain; charset=utf-8',
                             'Cache-Control': NO_STORE,
-                            'X-Robots-Tag': 'noindex'
+                            'X-Robots-Tag': NOINDEX
                         })
                     )
                 }),

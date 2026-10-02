@@ -825,6 +825,81 @@ describe('share page routes', () => {
         assert.equal(response.status, 200);
     });
 
+    it('still renders when the cache lookup fails and reports a bypass', async () => {
+        const { publicId } = await seedShare();
+        const stored: string[] = [];
+        const failingCache: CacheLike = {
+            match: async () => {
+                throw new Error('cache unavailable');
+            },
+            put: async key => {
+                stored.push(key);
+            }
+        };
+        const app = createApp({}, {}, { cache: failingCache });
+        const response = await app.request(`/uk/w/${publicId}`, {}, buildEnv());
+
+        assert.equal(response.status, 200);
+        assert.equal(
+            response.headers.get('Server-Timing'),
+            'share-cache;desc=bypass'
+        );
+        assert.match(await response.text(), /Coffee/);
+    });
+
+    it('sends X-Robots-Tag noindex on every non-indexable response and omits it on indexable pages', async () => {
+        const { owner, publicId } = await seedShare();
+        const previewEnv = buildEnv({ BOT_ENVIRONMENT: 'preview' });
+
+        const indexable = await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`);
+
+        assert.equal(indexable.status, 200);
+        assert.equal(indexable.headers.get('X-Robots-Tag'), null);
+
+        const notModified = await request(
+            `${CANONICAL_ORIGIN}/uk/w/${publicId}`,
+            {
+                headers: { 'If-None-Match': etagOf(indexable) }
+            }
+        );
+
+        assert.equal(notModified.status, 304);
+        assert.equal(notModified.headers.get('X-Robots-Tag'), null);
+
+        const nonIndexable = [
+            await request(`${WORKERS_DEV_ORIGIN}/uk/w/${publicId}`),
+            await request(`/uk/w/${publicId}`, {}, previewEnv),
+            await request(`/w/${publicId}`, {}, previewEnv),
+            await request(`/uk/w/${publicId.toUpperCase()}`, {}, previewEnv)
+        ];
+
+        for (const response of nonIndexable) {
+            assert.equal(response.headers.get('X-Robots-Tag'), 'noindex');
+        }
+
+        const previewPage = nonIndexable[1];
+
+        assert.ok(previewPage);
+
+        const previewNotModified = await request(
+            `/uk/w/${publicId}`,
+            { headers: { 'If-None-Match': etagOf(previewPage) } },
+            previewEnv
+        );
+
+        assert.equal(previewNotModified.status, 304);
+        assert.equal(previewNotModified.headers.get('X-Robots-Tag'), 'noindex');
+
+        await run(repositories.wishes.softRemoveAll(owner.id, nextNow()));
+
+        const emptyOnCanonical = await request(
+            `${CANONICAL_ORIGIN}/uk/w/${publicId}`
+        );
+
+        assert.equal(emptyOnCanonical.status, 200);
+        assert.equal(emptyOnCanonical.headers.get('X-Robots-Tag'), 'noindex');
+    });
+
     it('keeps the root, readiness and unknown routes untouched', async () => {
         const root = await request('/');
 

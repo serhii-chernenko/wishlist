@@ -219,6 +219,8 @@ const en: Translation = {
                 '❓ Create a new link?\n\nThe old link will stop working right away, and nobody will be able to open your list with it anymore. You will need to send the new link to your friends again.',
             rotated:
                 '✅ Here is the new link to your wish list:\n{url}\n\nThe old link no longer works.',
+            pageEmpty:
+                'ℹ️ The page is empty right now: there are no visible wishes on it. The link works, and wishes will appear on the page as soon as you add them.',
             sendText: 'My wish list ❤️',
             actions: {
                 publish: '✅ Share',

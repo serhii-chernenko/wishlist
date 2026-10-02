@@ -1091,7 +1091,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT percentage(count(*), WHERE cacheOutcome = 'hit') AS 'Hit ratio' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached') SINCE 30 days ago"
+                                "query": "SELECT percentage(count(*), WHERE cacheOutcome = 'hit') AS 'Hit ratio' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') SINCE 30 days ago"
                             }
                         ]
                     }

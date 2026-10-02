@@ -10,6 +10,8 @@ import {
 } from '../../src/bot/content/releases';
 import {
     buildShareUrl,
+    CANONICAL_SHARE_HOST,
+    CANONICAL_SHARE_ORIGIN,
     isValidSharePublicId
 } from '../../src/web/share/public-id';
 import { createTestUser, type TestUser } from '../fixtures/telegram';
@@ -20,7 +22,6 @@ import {
     createWebhookHarness,
     DEFAULT_ADMIN_ID,
     urlsOf,
-    WEBHOOK_ORIGIN,
     type SentMessage,
     type WebhookHarness
 } from './webhook-harness';
@@ -733,7 +734,7 @@ describe('Bot flows through the Worker on D1', () => {
             );
         };
         const shareUrlOf = (publicId: string) => {
-            return buildShareUrl(WEBHOOK_ORIGIN, publicId);
+            return buildShareUrl(CANONICAL_SHARE_ORIGIN, publicId);
         };
         const seedSharedOwner = async () => {
             const owner = await webhook.registerUser(alice, {
@@ -757,7 +758,7 @@ describe('Bot flows through the Worker on D1', () => {
                 message.text,
                 LL.wishlist.share.consent({
                     name: 'Alice',
-                    host: new URL(WEBHOOK_ORIGIN).host
+                    host: CANONICAL_SHARE_HOST
                 })
             );
             assert.deepEqual(buttonTextsOf(message), [
@@ -768,7 +769,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(await readShare(owner.id), null);
         });
 
-        it('publishes after consent with a URL built from the webhook origin', async () => {
+        it('publishes after consent with a URL built from the canonical origin in production', async () => {
             const owner = await seedSharedOwner();
 
             await tap(alice, 'wl:share');

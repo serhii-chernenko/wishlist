@@ -821,6 +821,7 @@ test('the preview reset deletes dependent tables before their parents', () => {
         'release_announcements',
         'gives',
         'wishes',
+        'wishlist_shares',
         'users'
     ]);
 });
@@ -835,6 +836,7 @@ test('empty-target preflight counts only application tables and fails closed', (
                         users: 0,
                         wishes: 0,
                         gives: 0,
+                        wishlistShares: 0,
                         sessions: 0,
                         telegramUpdates: 0,
                         releaseAnnouncements: 0
@@ -853,6 +855,9 @@ test('empty-target preflight counts only application tables and fails closed', (
     assert.throws(() => {
         assertApplicationTablesEmpty({ ...counts, sessions: 2, users: 1 });
     }, /users=1, sessions=2/);
+    assert.throws(() => {
+        assertApplicationTablesEmpty({ ...counts, wishlistShares: 1 });
+    }, /wishlistShares=1/);
     assert.throws(() => {
         parseApplicationTableCounts(
             JSON.stringify([

@@ -193,6 +193,23 @@ export const createWishRepository = (db: AppDb) => {
                 };
             });
         },
+        hasShareable(userId: number) {
+            return tryDb(async () => {
+                const [wish] = await db
+                    .select({ id: wishes.id })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.hidden, false),
+                            eq(wishes.removed, false)
+                        )
+                    )
+                    .limit(1);
+
+                return wish !== undefined;
+            });
+        },
         listShareable(userId: number) {
             return tryDb(() => {
                 return db

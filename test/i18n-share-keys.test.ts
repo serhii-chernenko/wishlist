@@ -52,6 +52,7 @@ const expectedWebKeys = [
 const expectedShareKeys = [
     'wishlist.share.consent',
     'wishlist.share.ready',
+    'wishlist.share.pageEmpty',
     'wishlist.share.empty',
     'wishlist.share.stopConfirm',
     'wishlist.share.stopped',

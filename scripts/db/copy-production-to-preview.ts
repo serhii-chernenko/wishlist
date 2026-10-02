@@ -29,8 +29,10 @@ export const excludedTableNames = [
     migrationsTableName,
     'sessions',
     'telegram_updates',
-    'release_announcements'
+    'release_announcements',
+    'wishlist_shares'
 ];
+export const previewOnlyWipeTables = ['wishlist_shares'];
 export const copiedTablesInInsertOrder = ['users', 'wishes', 'gives'];
 export const deleteChunkSize = 1000;
 
@@ -102,6 +104,10 @@ export const countInsertStatements = (sql: string, table: string) => {
 };
 
 export const getWipeOrder = (tables: string[]) => [...tables].reverse();
+
+export const getPreviewWipeOrder = (tables: string[]) => {
+    return [...previewOnlyWipeTables, ...getWipeOrder(tables)];
+};
 
 export const getExportArguments = (
     configPath: string,
@@ -422,7 +428,7 @@ export const copyProductionToPreview = (dependencies: CopyDependencies) => {
         try {
             dependencies.log('Wiping preview application tables');
 
-            for (const table of getWipeOrder(productionTables)) {
+            for (const table of getPreviewWipeOrder(productionTables)) {
                 wipePreviewTable(dependencies, table);
             }
 
