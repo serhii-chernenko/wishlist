@@ -1,6 +1,6 @@
 {
     "name": "wishlist",
-    "version": "1.7.1",
+    "version": "2.0.0",
     "description": "Telegram bot that allows everybody to create and update their own wish list for whole time",
     "main": "index.js",
     "author": "inevix",

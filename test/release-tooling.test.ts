@@ -145,12 +145,10 @@ test('the committed changelog parses into the committed manifest', () => {
     ]);
 });
 
-test('the pending changesets are valid and round-trip through the changelog', () => {
+test('the pending changesets are valid', () => {
     const changesetFiles = fs
         .readdirSync('.changeset')
         .filter(name => name.endsWith('.md') && name !== 'README.md');
-
-    assert.ok(changesetFiles.includes('wishlist-2-0-0.md'));
 
     for (const fileName of changesetFiles) {
         const parts = fs
@@ -161,28 +159,14 @@ test('the pending changesets are valid and round-trip through the changelog', ()
             validateChangesetBody(fileName, parts.slice(2).join('---'));
         });
     }
+});
 
-    const body = fs
-        .readFileSync('.changeset/wishlist-2-0-0.md', 'utf8')
-        .split('---')
-        .slice(2)
-        .join('---')
-        .trim();
-    const [firstBullet, ...restBullets] = body.split(/\n(?=- \[)/);
-    const indent = (text: string) => {
-        return text
-            .split('\n')
-            .map(line => `    ${line}`)
-            .join('\n');
-    };
-    const changesetsShape = `## 2.0.0\n\n### Major Changes\n\n-   abc1234: ${firstBullet}\n${indent(restBullets.join('\n'))}\n`;
-    const [release] = parseChangelog(
-        changesetsShape.replace('## 2.0.0', '## 2.0.0 - 01.01.2027')
-    );
+test('every 2.0.0 changelog item is translated into English and Polish', () => {
+    const releases = parseChangelog(fs.readFileSync('CHANGELOG.md', 'utf8'));
+    const release = releases.find(entry => entry.version === '2.0.0');
     const items = Object.values(release?.groups ?? {}).flat();
-    const bulletCount = body.split(/\n(?=- \[)/).length;
 
-    assert.equal(items.length, bulletCount);
+    assert.equal(items.length, 10);
     assert.ok(items.every(item => item.uk && item.en && item.pl));
 });
 
