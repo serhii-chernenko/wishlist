@@ -63,6 +63,12 @@ describe('Bot flows through the Worker on D1', () => {
         username: 'carol'
     });
     const dana = createTestUser(104, { first_name: 'Dana' });
+    const aliceWithoutLanguageCode = {
+        id: alice.id,
+        is_bot: false as const,
+        first_name: 'Alice',
+        username: 'alice'
+    };
 
     const tap = (user: TestUser, data: string) => {
         return webhook.send(webhook.builders.callback(user, data));
@@ -1299,17 +1305,58 @@ describe('Bot flows through the Worker on D1', () => {
                 getMessages('pl').greeting.user()
             );
 
-            await command(
-                {
-                    id: alice.id,
-                    is_bot: false,
-                    first_name: 'Alice',
-                    username: 'alice'
-                },
-                '/start'
+            await command(aliceWithoutLanguageCode, '/start');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                getMessages('pl').greeting.user()
+            );
+        });
+
+        it('keeps the stored Telegram language code for Auto when a callback has no language code', async () => {
+            await webhook.registerUser(alice, { telegramLanguageCode: 'pl' });
+            await tap(aliceWithoutLanguageCode, 'n:home');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                getMessages('pl').greeting.user()
+            );
+            assert.equal(
+                (await readUser(alice.id))?.telegram_language_code,
+                'pl'
             );
 
-            assert.equal(webhook.lastMessage().text, LL.greeting.user());
+            await tap({ ...alice, language_code: 'en' }, 'n:home');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                getMessages('en').greeting.user()
+            );
+
+            await tap(aliceWithoutLanguageCode, 'n:home');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                getMessages('en').greeting.user()
+            );
+            assert.equal(
+                (await readUser(alice.id))?.telegram_language_code,
+                'en'
+            );
+        });
+
+        it('applies the stored Telegram language code when switching back to Auto without a language code', async () => {
+            await webhook.registerUser(alice, {
+                language: 'uk',
+                telegramLanguageCode: 'pl'
+            });
+            await command(aliceWithoutLanguageCode, '/lang auto');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                getMessages('pl').greeting.user()
+            );
+            assert.equal((await readUser(alice.id))?.language, null);
         });
 
         it('rejects an unknown language code', async () => {
@@ -1322,6 +1369,16 @@ describe('Bot flows through the Worker on D1', () => {
         it('keeps an explicit choice over the Telegram language code', async () => {
             await webhook.registerUser(alice, { language: 'uk' });
             await command({ ...alice, language_code: 'en' }, '/start');
+
+            assert.equal(webhook.lastMessage().text, LL.greeting.user());
+        });
+
+        it('keeps an explicit choice when a callback has no language code', async () => {
+            await webhook.registerUser(alice, {
+                language: 'uk',
+                telegramLanguageCode: 'en'
+            });
+            await tap(aliceWithoutLanguageCode, 'n:home');
 
             assert.equal(webhook.lastMessage().text, LL.greeting.user());
         });

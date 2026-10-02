@@ -456,7 +456,7 @@ export const registerTelegramRoutes = (
                 method: 'POST',
                 path: '/telegram/webhook',
                 status: response.status,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome,
                 commandCategory,
                 ...(updateType === undefined ? {} : { updateType }),

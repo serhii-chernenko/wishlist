@@ -212,14 +212,25 @@ const shareWishlist = async (req: BotRequest) => {
         });
 
         if (outcome.status === 'empty') {
+            req.telemetry.botActionCompleted({
+                action: 'wishlist_shared',
+                result: 'empty'
+            });
             await req.send.text(LL.wishlist.share.empty());
         } else {
-            req.telemetry.botActionCompleted({ action: 'wishlist_shared' });
+            req.telemetry.botActionCompleted({
+                action: 'wishlist_shared',
+                result: 'success'
+            });
             await req.send.text(
                 LL.wishlist.share.success({ url: escapeHtml(outcome.url) })
             );
         }
     } catch (error) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_shared',
+            result: 'failed'
+        });
         req.telemetry.internalFailure({
             event: 'telegraph_failed',
             errorType: getErrorType(error)

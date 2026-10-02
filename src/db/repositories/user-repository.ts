@@ -148,7 +148,9 @@ export const createUserRepository = (db: AppDb) => {
                     input.now.getTime() - LAST_SEEN_WRITE_INTERVAL_MILLISECONDS;
                 const needsSync = or(
                     sql`${users.username} is not ${input.username}`,
-                    sql`${users.telegramLanguageCode} is not ${input.telegramLanguageCode}`,
+                    input.telegramLanguageCode === null
+                        ? undefined
+                        : sql`${users.telegramLanguageCode} is not ${input.telegramLanguageCode}`,
                     sql`${users.blockedAt} is not null`,
                     sql`${users.lastSeenAt} is null`,
                     sql`${users.lastSeenAt} < ${staleBefore}`
@@ -165,7 +167,7 @@ export const createUserRepository = (db: AppDb) => {
                         .update(users)
                         .set({
                             username: input.username,
-                            telegramLanguageCode: input.telegramLanguageCode,
+                            telegramLanguageCode: sql`coalesce(${input.telegramLanguageCode}, ${users.telegramLanguageCode})`,
                             blockedAt: null,
                             lastSeenAt: sql`case when ${users.lastSeenAt} is null or ${users.lastSeenAt} < ${staleBefore} then ${input.now.getTime()} else ${users.lastSeenAt} end`,
                             updatedAt: input.now

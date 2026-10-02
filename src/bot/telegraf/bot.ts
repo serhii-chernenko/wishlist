@@ -249,7 +249,7 @@ const dispatchUpdate = async (scope: UpdateScope, runtime: UpdateRuntime) => {
     const { user, session } = await loadActor(repos, services, actor);
     const locale = resolveAppLocale(
         user ? user.language : session.language,
-        actor.language_code
+        actor.language_code ?? user?.telegramLanguageCode ?? null
     );
     const deferQueue = createDeferQueue({
         waitUntil: runtime.deps.waitUntil,

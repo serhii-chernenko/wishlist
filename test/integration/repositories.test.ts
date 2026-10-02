@@ -267,6 +267,38 @@ describe('D1 repositories', () => {
             assert.equal(refreshed?.lastSeenAt?.getTime(), later.getTime());
         });
 
+        it('keeps the stored Telegram language code when a sync carries none', async () => {
+            const user = await createUser({
+                username: 'coded',
+                telegramLanguageCode: 'pl'
+            });
+
+            const synced = await run(
+                repositories.users.syncProfile(user.id, {
+                    username: 'coded',
+                    telegramLanguageCode: null,
+                    now
+                })
+            );
+
+            assert.equal(synced?.telegramLanguageCode, 'pl');
+
+            const unchanged = await run(
+                repositories.users.syncProfile(user.id, {
+                    username: 'coded',
+                    telegramLanguageCode: null,
+                    now: new Date(now.getTime() + 60 * 1000)
+                })
+            );
+
+            assert.equal(unchanged, null);
+            assert.equal(
+                (await run(repositories.users.findById(user.id)))
+                    ?.telegramLanguageCode,
+                'pl'
+            );
+        });
+
         it('clears blockedAt on the next sync and supports username removal', async () => {
             const user = await createUser({ username: 'someone' });
 

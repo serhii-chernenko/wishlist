@@ -34,6 +34,9 @@ const releaseAnnouncementTelemetryFields = (entry: Record<string, unknown>) => {
         ...(typeof entry.attempts === 'number'
             ? { attempts: entry.attempts }
             : {}),
+        ...(typeof entry.errorType === 'string'
+            ? { errorType: entry.errorType }
+            : {}),
         ...(typeof entry.reason === 'string' ? { reason: entry.reason } : {})
     };
 };

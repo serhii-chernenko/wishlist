@@ -177,6 +177,16 @@ test('Wishlist telemetry exposes safe dimensions as queryable log attributes', (
     assert.equal(JSON.stringify(event).includes('message text'), false);
 });
 
+test('Wishlist telemetry reports the measured duration as elapsedMs and never as durationMs', () => {
+    const attributes = toWishlistAttributes(
+        { event: 'http_request_completed', status: 200, elapsedMs: 37 },
+        'production'
+    );
+
+    assert.equal(attributes.elapsedMs, 37);
+    assert.equal('durationMs' in attributes, false);
+});
+
 test('only production ships queryable evlog attributes to New Relic EU', async () => {
     const originalFetch = globalThis.fetch;
     const requests: { url: string; headers: Headers; body: string }[] = [];

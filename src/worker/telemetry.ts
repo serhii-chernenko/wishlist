@@ -54,7 +54,7 @@ type TelemetryFields = {
     method?: string;
     path?: string;
     status?: number;
-    durationMs?: number;
+    elapsedMs?: number;
     outcome?: string;
     errorType?: string;
     cron?: string;
@@ -382,7 +382,7 @@ export const emitHttpRequestTelemetry = (
         method: request.method,
         path: normalizeTelemetryPath(pathname, getTelegramWebhookPath(env)),
         status: response.status,
-        durationMs: Math.max(0, Date.now() - startedAt),
+        elapsedMs: Math.max(0, Date.now() - startedAt),
         outcome: response.status >= 500 ? 'error' : 'success'
     });
 };

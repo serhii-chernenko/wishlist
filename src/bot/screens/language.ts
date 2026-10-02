@@ -69,7 +69,7 @@ export const applyLanguageChoice = async (
     const storedLanguage = choice === 'auto' ? null : choice;
     const nextLocale = resolveAppLocale(
         storedLanguage,
-        req.actor.language_code
+        req.actor.language_code ?? req.user?.telegramLanguageCode ?? null
     );
     const nextReq = deriveRequest(req, {
         locale: nextLocale,

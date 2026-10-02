@@ -26,6 +26,10 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
     const query = rawText?.trim() ?? '';
 
     if (Array.from(query).length > FIND_QUERY_MAX_LENGTH) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'tooLong'
+        });
         await req.send.text(
             LL.findList.errors.tooLong(String(FIND_QUERY_MAX_LENGTH))
         );
@@ -41,6 +45,10 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
     });
 
     if (outcome.status === 'notFound') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'notFound'
+        });
         await req.send.text(LL.findList.errors.notFound());
         await render(req);
 
@@ -48,6 +56,10 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
     }
 
     if (outcome.status === 'self') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'self'
+        });
         await req.send.text(LL.findList.errors.foundYourself());
         await render(req);
 
@@ -68,7 +80,10 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
             filter: keepsFilter ? previous.filter : null
         }
     });
-    req.telemetry.botActionCompleted({ action: 'wishlist_searched' });
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_searched',
+        result: 'found'
+    });
     await thirdWishlistScreen.render(req, {
         ownerId: outcome.user.id,
         offset: 0

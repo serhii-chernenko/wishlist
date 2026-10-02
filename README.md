@@ -160,7 +160,7 @@ scripts/
   releases/    changeset validation, changelog stamping, manifest sync, GitHub releases, broadcast trigger
   telegram/    webhook, bot commands and preview bot helpers
 drizzle/       generated migrations
-docs/          OPERATIONS.md and the New Relic dashboard templates
+docs/          OPERATIONS.md and the New Relic dashboard template
 test/          unit and D1 integration tests
 .changeset/    pending release notes
 .github/       CI workflows (validate and publish GitHub Releases; they never deploy)

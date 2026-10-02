@@ -11,21 +11,21 @@ The step-by-step cutover, rollback and Workers Builds setup are in
 
 ## Target architecture
 
-| Concern           | Legacy 1.7.1                                       | Version 2.0.0                                                                                                             |
-| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Runtime           | Node.js process on a VPS (Docker, Ansible)         | Cloudflare Worker `wishlist` (Hono, strict TypeScript) on `wishlist.chernenko.dev`                                        |
-| Telegram delivery | Telegraf long polling                              | Telegraf webhook with a secret header and secret path, `max_connections=1` at first                                       |
-| Bot logic         | Telegraf Scenes and wizards, in-memory session     | Stateless router on Telegraf: `callback_data` carries action and ids, text input resolved by `session.state.pendingInput` |
-| State             | MongoDB Atlas (Mongoose); sessions lost on restart | Cloudflare D1 via Drizzle; sessions stored in D1 (ids only); update ledger for idempotency                                |
-| Timers            | 2 second `setTimer` before navigating              | Navigation in the same update; only the photo album debounce (1.5 s, `waitUntil` plus a D1 marker)                        |
-| Blocked users     | Deleted with their wishes on a 403                 | Soft-block: `users.blocked_at`, data kept, excluded from search, broadcast and stats                                      |
-| Languages         | Ukrainian, plus an unmerged multilang branch       | `uk`, `en`, `pl` and Auto (typesafe-i18n); imported users start in Ukrainian                                              |
-| Rendering         | Markdown; one message per wish                     | HTML parse mode with escaping everywhere; 10 wishes per page                                                              |
-| Releases          | Hand-written `changelog.json`                      | Changesets (Ukrainian bullets with nested `en:` and `pl:` lines), `CHANGELOG.md`, generated manifest, `/releases`         |
-| Announcements     | None                                               | Cloudflare Queues, one job per registered non-blocked user, delivery held until after the go-live merge                   |
-| Deployment        | GitHub Actions to Ansible to the VPS               | GitHub Actions only validate and publish GitHub Releases; Workers Builds deploys production and creates previews          |
-| Environments      | One production bot                                 | Production (`wishlist`, D1 `wishlist-production`), Worker Previews (D1 `wishlist-preview`, bot `@InevixTestBot`)          |
-| Observability     | Console output                                     | evlog wide events to New Relic (`Log_wishlist` partition, two dashboards); Workers Logs everywhere                        |
+| Concern           | Legacy 1.7.1                                       | Version 2.0.0                                                                                                                     |
+| ----------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime           | Node.js process on a VPS (Docker, Ansible)         | Cloudflare Worker `wishlist` (Hono, strict TypeScript) on `wishlist.chernenko.dev`                                                |
+| Telegram delivery | Telegraf long polling                              | Telegraf webhook with a secret header and secret path, `max_connections=1` at first                                               |
+| Bot logic         | Telegraf Scenes and wizards, in-memory session     | Stateless router on Telegraf: `callback_data` carries action and ids, text input resolved by `session.state.pendingInput`         |
+| State             | MongoDB Atlas (Mongoose); sessions lost on restart | Cloudflare D1 via Drizzle; sessions stored in D1 (ids only); update ledger for idempotency                                        |
+| Timers            | 2 second `setTimer` before navigating              | Navigation in the same update; only the photo album debounce (1.5 s, `waitUntil` plus a D1 marker)                                |
+| Blocked users     | Deleted with their wishes on a 403                 | Soft-block: `users.blocked_at`, data kept, excluded from search, broadcast and stats                                              |
+| Languages         | Ukrainian, plus an unmerged multilang branch       | `uk`, `en`, `pl` and Auto (typesafe-i18n); imported users start in Ukrainian                                                      |
+| Rendering         | Markdown; one message per wish                     | HTML parse mode with escaping everywhere; 10 wishes per page                                                                      |
+| Releases          | Hand-written `changelog.json`                      | Changesets (Ukrainian bullets with nested `en:` and `pl:` lines), `CHANGELOG.md`, generated manifest, `/releases`                 |
+| Announcements     | None                                               | Cloudflare Queues, one job per registered non-blocked user, delivery held until after the go-live merge                           |
+| Deployment        | GitHub Actions to Ansible to the VPS               | GitHub Actions only validate and publish GitHub Releases; Workers Builds deploys production and creates previews                  |
+| Environments      | One production bot                                 | Production (`wishlist`, D1 `wishlist-production`), Worker Previews (D1 `wishlist-preview`, bot `@InevixTestBot`)                  |
+| Observability     | Console output                                     | evlog wide events to New Relic (`Log_wishlist` partition, one `Wishlist Bot` dashboard with three pages); Workers Logs everywhere |
 
 Decisions:
 
@@ -50,7 +50,7 @@ Decisions:
       `env/.env.d1`, `env/.env.mongo` (all git-ignored)
 - [x] Preview bot `@InevixTestBot`, production bot `@wishlist_ua_bot`
 - [x] Mongo Atlas reachable locally (299 users, 1202 wishes, 19 gives on 2026-10-02)
-- [ ] New Relic `Log_wishlist` data partition (needs a New Relic login; events go to `Log` until then)
+- [x] New Relic `Log_wishlist` data partition and the `Wishlist Bot` dashboard (https://one.eu.newrelic.com/dashboards/detail/ODU2OTkwOHxWSVp8REFTSEJPQVJEfGRhOjI3NjIyMzA?account=8569908)
 - [x] Workers Builds connected to `serhii-chernenko/wishlist` (script tag `21c2265d1d9f4a7b91f45ee2c28d79e9`)
 - [x] Worker Previews base config secrets
 - [x] API tokens `wishlist-builds-d1-production` and `wishlist-builds-d1-preview` (D1 Edit)

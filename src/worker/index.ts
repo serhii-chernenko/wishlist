@@ -22,7 +22,7 @@ export default {
                 method: request.method,
                 path: '/unknown',
                 status: 500,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome: 'error',
                 errorType: error instanceof Error ? error.name : typeof error
             });
@@ -39,7 +39,7 @@ export default {
                 event: 'scheduled_run_completed',
                 cron: controller.cron,
                 taskNames: summary.taskNames,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome: 'success',
                 prunedProcessedTelegramUpdates:
                     summary.prunedProcessedTelegramUpdates,
@@ -51,7 +51,7 @@ export default {
             emitTelemetryEvent(env, ctx, {
                 event: 'scheduled_run_failed',
                 cron: controller.cron,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome: 'error',
                 errorType: error instanceof Error ? error.name : typeof error
             });
@@ -66,14 +66,14 @@ export default {
             emitTelemetryEvent(env, ctx, {
                 event: 'release_announcement_queue_batch_completed',
                 messageCount: batch.messages.length,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome: 'success'
             });
         } catch (error) {
             emitTelemetryEvent(env, ctx, {
                 event: 'release_announcement_queue_batch_failed',
                 messageCount: batch.messages.length,
-                durationMs: Math.max(0, Date.now() - startedAt),
+                elapsedMs: Math.max(0, Date.now() - startedAt),
                 outcome: 'error',
                 errorType: error instanceof Error ? error.name : typeof error
             });
