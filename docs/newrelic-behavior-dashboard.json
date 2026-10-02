@@ -1,0 +1,712 @@
+{
+    "name": "Wishlist Bot — Wishes & Audience",
+    "description": "Production bot behavior: audience, languages, wish and give activity, searches, shares and navigation. Aggregate metrics only; no user identities leave D1.",
+    "permissions": "PUBLIC_READ_WRITE",
+    "pages": [
+        {
+            "name": "Audience",
+            "description": "Latest D1 snapshot: registered, blocked and active users, languages and wish totals.",
+            "widgets": [
+                {
+                    "title": "Registered users",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(registeredUsers) AS 'Registered' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Blocked users",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(blockedUsers) AS 'Blocked' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users (1 day)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(activeUsers1d) AS 'Active 1d' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users (7 days)",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(activeUsers7d) AS 'Active 7d' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users (30 days)",
+                    "layout": {
+                        "column": 5,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(activeUsers30d) AS 'Active 30d' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Snapshots in last hour",
+                    "layout": {
+                        "column": 9,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Snapshots' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 1 hour ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Registered vs blocked users",
+                    "layout": {
+                        "column": 1,
+                        "row": 7,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(registeredUsers) AS 'Registered', latest(blockedUsers) AS 'Blocked' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by window",
+                    "layout": {
+                        "column": 7,
+                        "row": 7,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(activeUsers1d) AS '1 day', latest(activeUsers7d) AS '7 days', latest(activeUsers30d) AS '30 days' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Users by language",
+                    "layout": {
+                        "column": 1,
+                        "row": 11,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(languageCount) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'user_language_count' FACET locale SINCE 2 hours ago LIMIT 4"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Language mix over time",
+                    "layout": {
+                        "column": 7,
+                        "row": 11,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(languageCount) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'user_language_count' FACET locale TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wishes in the system",
+                    "layout": {
+                        "column": 1,
+                        "row": 16,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(totalWishes) AS 'All time', latest(activeWishes) AS 'Active', latest(doneWishes) AS 'Done' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Hidden, priority and given wishes",
+                    "layout": {
+                        "column": 7,
+                        "row": 16,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(hiddenWishes) AS 'Hidden', latest(priorityWishes) AS 'Priority', latest(gives) AS 'Gives' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Users with payment details",
+                    "layout": {
+                        "column": 1,
+                        "row": 20,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(usersWithPayments) AS 'With payments' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "New registrations (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 20,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Registrations' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'user_registered' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "New registrations per day",
+                    "layout": {
+                        "column": 9,
+                        "row": 20,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'user_registered' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Actions",
+            "description": "Completed bot actions and navigation from the last 30 days.",
+            "widgets": [
+                {
+                    "title": "Wishes created (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Created' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_created' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wishes updated (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Updated' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_updated' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wishes removed (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Removed' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_removed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Gives added (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Gives added' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'give_added' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Gives removed (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Gives removed' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'give_removed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Feedback sent (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 4,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Feedback' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'feedback_sent' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wish activity per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 7,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wish_created', 'wish_updated', 'wish_removed') FACET action TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wish updates by field",
+                    "layout": {
+                        "column": 7,
+                        "row": 7,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_updated' FACET field SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Removed wishes: done vs not",
+                    "layout": {
+                        "column": 1,
+                        "row": 11,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_removed' FACET result SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wishlist searches by result",
+                    "layout": {
+                        "column": 7,
+                        "row": 11,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wishlist_searched' FACET result SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Gives added and removed per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 15,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('give_added', 'give_removed', 'give_list_cleaned') FACET action TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Wishlist shares by result",
+                    "layout": {
+                        "column": 7,
+                        "row": 15,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wishlist_shared' FACET result SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Callback mix",
+                    "layout": {
+                        "column": 1,
+                        "row": 19,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND updateType = 'callback_query' FACET callbackCategory SINCE 30 days ago LIMIT 40"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Pages loaded per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 19,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory IN ('wishlist:page', 'third:page', 'give:page') FACET callbackCategory TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Filters and language changes per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 24,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wishlist_filtered', 'language_changed', 'visibility_changed') FACET action TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Payments updated and removed per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 24,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('payments_updated', 'payments_removed') FACET action TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Update types",
+                    "layout": {
+                        "column": 1,
+                        "row": 28,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' FACET updateType SINCE 7 days ago LIMIT 5"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Commands by category",
+                    "layout": {
+                        "column": 7,
+                        "row": 28,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND commandCategory NOT IN ('nonCommand', 'message') FACET commandCategory SINCE 30 days ago LIMIT 15"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
