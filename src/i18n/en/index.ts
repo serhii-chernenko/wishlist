@@ -139,7 +139,8 @@ const en: Translation = {
             description:
                 'Send the title of the new wish in the next message.\nNo more than {0} characters!',
             error: `❌ That doesn't look like a good title!\nTry again.`,
-            success: '✅ The new wish was added to your list!'
+            success: '✅ The new wish was added to your list!',
+            limit: '❌ Your wish list is full: it can hold up to 500 wishes.\nRemove some wishes first.'
         },
         edit: {
             description: '✏️ Wish editing menu',
@@ -212,7 +213,7 @@ const en: Translation = {
             success: '✅ Here is the link to your wish list:\n{url}',
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
-                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
+                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
             ready: '✅ Your wish list is available at this link:\n{url}\n\nThe page updates itself after every change to your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
@@ -580,6 +581,8 @@ const en: Translation = {
                 'Nothing to share yet: add at least one wish that others can see.',
             notShared: 'You are not sharing your wish list right now.',
             imagesFull: 'A wish can have up to 9 photos.',
+            wishLimit:
+                'Your wish list is full: it can hold up to 500 wishes. Remove some first.',
             imageChanged:
                 'The photos have changed. Refresh the screen and try again.',
             ownWish: 'You cannot give your own wish.',
@@ -759,6 +762,9 @@ const en: Translation = {
         editor: {
             createTitle: 'New wish',
             editTitle: 'Edit wish',
+            requiredMark: 'required',
+            titleMissing: 'Add a title for your wish',
+            fixFields: 'Fix the highlighted fields: {count}',
             title: {
                 label: 'Title',
                 hint: 'In short, what exactly you want.',
@@ -933,7 +939,7 @@ const en: Translation = {
                 lead: 'The bot will create a public page of your wish list on {host}. It will show:',
                 name: 'the name from your Telegram: {name}',
                 username: 'your @username, only if you turn it on yourself',
-                wishes: 'all wishes except hidden ones',
+                wishes: 'all wishes except hidden ones, with their photos',
                 payments: 'your payment details, if you added them',
                 public: 'Anyone with the link can open the page, and it may appear in search engine results.',
                 private:

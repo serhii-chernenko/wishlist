@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    checkDraftForSubmit,
     countFreePhotoSlots,
     createPhotoQueue,
     draftFromWish,
@@ -279,4 +280,51 @@ test('upload errors map to photo failure kinds', () => {
     assert.equal(toPhotoFailureKind('writeAccessRequired'), 'writeAccess');
     assert.equal(toPhotoFailureKind('upstream'), 'failed');
     assert.equal(toPhotoFailureKind(null), 'failed');
+});
+
+test('an empty draft fails submit on the title alone', () => {
+    assert.deepEqual(checkDraftForSubmit(EMPTY_DRAFT), {
+        ok: false,
+        errors: { title: 'empty' },
+        firstInvalid: 'title',
+        onlyTitleMissing: true
+    });
+});
+
+test('submit focuses the first invalid field in form order', () => {
+    const check = checkDraftForSubmit(
+        draft({ title: '', price: 'lots', link: 'shop' })
+    );
+
+    assert.equal(check.ok, false);
+
+    if (!check.ok) {
+        assert.equal(check.firstInvalid, 'title');
+        assert.equal(check.onlyTitleMissing, false);
+        assert.deepEqual(check.errors, {
+            title: 'empty',
+            price: 'invalid',
+            link: 'invalid'
+        });
+    }
+
+    const later = checkDraftForSubmit(draft({ link: 'shop' }));
+
+    assert.equal(later.ok ? null : later.firstInvalid, 'link');
+});
+
+test('a link in the title is not reported as a missing title', () => {
+    const check = checkDraftForSubmit(draft({ title: 'https://shop' }));
+
+    assert.equal(check.ok ? null : check.onlyTitleMissing, false);
+});
+
+test('server errors still block a resubmit until the field changes', () => {
+    assert.deepEqual(checkDraftForSubmit(draft(), { price: 'invalid' }), {
+        ok: false,
+        errors: { price: 'invalid' },
+        firstInvalid: 'price',
+        onlyTitleMissing: false
+    });
+    assert.deepEqual(checkDraftForSubmit(draft()), { ok: true });
 });

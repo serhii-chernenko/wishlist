@@ -1161,18 +1161,6 @@
         font-size: clamp(1.75rem, 8vw, 2.5rem);
     }
 
-    .home-hero .hero-heart {
-        position: static;
-        width: 3.25rem;
-        height: 2.75rem;
-        margin: 0.25rem 0 0 -0.125rem;
-        transform: rotate(-8deg);
-    }
-
-    .home-hero .hero-heart .heart-halo {
-        display: none;
-    }
-
     .hero-stats {
         display: flex;
         flex-wrap: wrap;
@@ -1234,8 +1222,28 @@
         box-shadow: 3px 3px 0 var(--ink);
     }
 
-    .menu-list > li + li {
-        border-top: 2px dashed var(--ink);
+    .menu-list {
+        --divider: color-mix(in srgb, var(--ink) 18%, var(--tag));
+        --divider-inset: 3.75rem;
+    }
+
+    .menu-list > li {
+        position: relative;
+    }
+
+    .menu-list > li + li::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0.875rem;
+        left: var(--divider-inset);
+        height: 1px;
+        background: var(--divider);
+        pointer-events: none;
+    }
+
+    .row-list {
+        --divider-inset: 3rem;
     }
 
     .menu-row {
@@ -1317,21 +1325,27 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .menu-list-pairs > li + li {
-        border-top: 0;
+    .menu-list-pairs {
+        --divider-inset: 3.25rem;
     }
 
-    .menu-list-pairs > li:nth-child(n + 3) {
-        border-top: 2px dashed var(--ink);
+    .menu-list-pairs > li:nth-child(2)::before {
+        content: none;
     }
 
-    .menu-list-pairs > li:nth-child(odd) {
-        border-right: 2px dashed var(--ink);
+    .menu-list-pairs > li:nth-child(odd):not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 0.75rem;
+        right: 0;
+        bottom: 0.75rem;
+        width: 1px;
+        background: var(--divider);
+        pointer-events: none;
     }
 
     .menu-list-pairs > li:last-child:nth-child(odd) {
         grid-column: 1 / -1;
-        border-right: 0;
     }
 
     .menu-list-pairs .menu-row {
@@ -1620,6 +1634,34 @@
 
     .editor-sheet .note-body > :first-child {
         margin-top: 0;
+    }
+
+    .field-mark {
+        margin-inline-start: 0.5rem;
+        text-transform: lowercase;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .field-mark-required {
+        padding: 0 0.4375rem;
+        font-weight: 600;
+        color: var(--on-heart);
+        background: var(--heart);
+        border: 1.5px solid var(--ink);
+        border-radius: 999px;
+    }
+
+    .field-counter-limit {
+        color: var(--color-error);
+    }
+
+    .field:has([aria-invalid='true']) .field-label {
+        color: var(--color-error);
+    }
+
+    :where(.input, .textarea)[aria-invalid='true'] {
+        border-width: 3px;
     }
 
     .field-host {

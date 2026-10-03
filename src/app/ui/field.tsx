@@ -23,6 +23,9 @@ export interface FieldProps {
     disabled?: boolean;
     autoFocus?: boolean;
     showCounter?: boolean;
+    required?: boolean;
+    requiredMark?: string;
+    optionalMark?: string;
     after?: Child;
     onBlur?: () => void;
 }
@@ -45,12 +48,15 @@ const Counter = ({
     const LL = useLL();
     const near = isNearLimit(count, max);
     const left = Math.max(0, max - count);
+    const stateClass =
+        left === 0
+            ? ' field-counter-near field-counter-limit'
+            : near
+              ? ' field-counter-near'
+              : '';
 
     return (
-        <p
-            id={id}
-            class={near ? 'field-counter field-counter-near' : 'field-counter'}
-        >
+        <p id={id} class={`field-counter${stateClass}`}>
             <span aria-hidden='true'>{LL.common.counter({ count, max })}</span>
             <span class='sr-only' aria-live='polite'>
                 {near
@@ -81,6 +87,9 @@ export const Field = ({
     disabled = false,
     autoFocus = false,
     showCounter = maxLength !== undefined,
+    required = false,
+    requiredMark,
+    optionalMark,
     after,
     onBlur
 }: FieldProps) => {
@@ -114,6 +123,7 @@ export const Field = ({
         disabled,
         autofocus: autoFocus,
         'aria-invalid': error ? 'true' : 'false',
+        'aria-required': required ? 'true' : undefined,
         'aria-describedby': describedBy,
         onInput: handleInput,
         onBlur: () => {
@@ -125,6 +135,17 @@ export const Field = ({
         <div class='field'>
             <label class='field-label' for={id}>
                 {label}
+                {required && requiredMark !== undefined ? (
+                    <span
+                        class='field-mark field-mark-required'
+                        aria-hidden='true'
+                    >
+                        {requiredMark}
+                    </span>
+                ) : null}
+                {!required && optionalMark !== undefined ? (
+                    <span class='field-mark'>{optionalMark}</span>
+                ) : null}
             </label>
             {multiline ? (
                 <textarea {...shared} rows={rows} />

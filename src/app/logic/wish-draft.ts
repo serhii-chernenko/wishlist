@@ -132,6 +132,46 @@ export const visibleDraftErrors = (
     return visible;
 };
 
+export type SubmitCheck =
+    | { ok: true }
+    | {
+          ok: false;
+          errors: DraftErrors;
+          firstInvalid: DraftTextField;
+          onlyTitleMissing: boolean;
+      };
+
+const MISSING_CODES: ReadonlySet<FieldErrorCode> = new Set([
+    'empty',
+    'required'
+]);
+
+/** Validates every field for a Save press; the first invalid field in form order gets focus and a lone missing title gets its own message. */
+export const checkDraftForSubmit = (
+    draft: WishDraft,
+    serverErrors: DraftErrors = {}
+): SubmitCheck => {
+    const errors: DraftErrors = { ...validateDraft(draft), ...serverErrors };
+    const invalid = DRAFT_TEXT_FIELDS.filter(field => {
+        return errors[field] !== undefined;
+    });
+    const [firstInvalid] = invalid;
+
+    if (firstInvalid === undefined) {
+        return { ok: true };
+    }
+
+    return {
+        ok: false,
+        errors,
+        firstInvalid,
+        onlyTitleMissing:
+            invalid.length === 1 &&
+            firstInvalid === 'title' &&
+            MISSING_CODES.has(errors.title as FieldErrorCode)
+    };
+};
+
 const toNullableText = (value: string) => {
     return isBlank(value) ? null : value.trim();
 };

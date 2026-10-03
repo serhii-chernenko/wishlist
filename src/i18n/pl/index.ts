@@ -143,7 +143,8 @@ const pl: Translation = {
             description:
                 'Podaj nazwę nowego życzenia w następnej wiadomości.\nNie więcej niż {0} znaków!',
             error: '❌ To nie wygląda na dobrą nazwę!\nSpróbuj jeszcze raz.',
-            success: '✅ Nowe życzenie zostało dodane do listy!'
+            success: '✅ Nowe życzenie zostało dodane do listy!',
+            limit: '❌ Lista życzeń jest pełna: może zawierać do 500 życzeń.\nNajpierw usuń kilka z nich.'
         },
         edit: {
             description: '✏️ Menu edycji życzenia',
@@ -218,7 +219,7 @@ const pl: Translation = {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
             empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
-                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest dostępna pod tym linkiem:\n{url}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
@@ -590,6 +591,8 @@ const pl: Translation = {
                 'Na razie nie ma czego udostępnić: dodaj choć jedno życzenie widoczne dla innych.',
             notShared: 'Obecnie nie udostępniasz swojej listy życzeń.',
             imagesFull: 'Do jednego życzenia można dodać najwyżej 9 zdjęć.',
+            wishLimit:
+                'Lista życzeń jest pełna: może zawierać do 500 życzeń. Najpierw usuń kilka z nich.',
             imageChanged:
                 'Zdjęcia już się zmieniły. Odśwież ekran i spróbuj ponownie.',
             ownWish: 'Nie można podarować własnego życzenia.',
@@ -771,6 +774,9 @@ const pl: Translation = {
         editor: {
             createTitle: 'Nowe życzenie',
             editTitle: 'Edycja życzenia',
+            requiredMark: 'wymagane',
+            titleMissing: 'Dodaj nazwę życzenia',
+            fixFields: 'Popraw zaznaczone pola: {count}',
             title: {
                 label: 'Nazwa',
                 hint: 'Krótko, czego dokładnie chcesz.',
@@ -945,7 +951,7 @@ const pl: Translation = {
                 lead: 'Bot utworzy publiczną stronę twojej listy życzeń na {host}. Będzie na niej:',
                 name: 'imię z twojego Telegrama: {name}',
                 username: 'twój @username, tylko jeśli go włączysz',
-                wishes: 'wszystkie życzenia poza ukrytymi',
+                wishes: 'wszystkie życzenia poza ukrytymi, wraz z ich zdjęciami',
                 payments: 'twoje dane płatnicze, jeśli są dodane',
                 public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
                 private:

@@ -13,7 +13,9 @@ import { getFieldErrors, hasErrorCode } from '../logic/errors';
 import { formatIsoDate, getLinkHost } from '../logic/format';
 import { runOptimistic } from '../logic/optimistic';
 import {
+    checkDraftForSubmit,
     countFreePhotoSlots,
+    DRAFT_TEXT_FIELDS,
     createPhotoQueue,
     draftFromWish,
     EMPTY_DRAFT,
@@ -90,6 +92,15 @@ type UploadOutcome =
 
 const fieldId = (field: DraftTextField) => {
     return `${FIELD_ID_PREFIX}${field}`;
+};
+
+const revealField = (field: DraftTextField) => {
+    const element = document.getElementById(fieldId(field));
+
+    if (element !== null) {
+        element.focus({ preventScroll: true });
+        element.scrollIntoView({ block: 'center' });
+    }
 };
 
 const currencySymbol = (locale: AppLocale, currency: string) => {
@@ -424,7 +435,6 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     const mode = wish === null ? 'create' : 'edit';
     const dirty = isDraftDirty(baseline, draft);
     const clientErrors = validateDraft(draft);
-    const valid = Object.keys(clientErrors).length === 0;
     const shownErrors: DraftErrors = {
         ...visibleDraftErrors(clientErrors, touched),
         ...serverErrors
@@ -479,11 +489,29 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     const showServerErrors = (errors: DraftErrors) => {
         setServerErrors(errors);
 
-        const [first] = Object.keys(errors) as DraftTextField[];
+        const [first] = DRAFT_TEXT_FIELDS.filter(field => {
+            return errors[field] !== undefined;
+        });
 
         if (first !== undefined) {
-            document.getElementById(fieldId(first))?.focus();
+            revealField(first);
         }
+    };
+
+    const rejectSubmit = (
+        check: Extract<ReturnType<typeof checkDraftForSubmit>, { ok: false }>
+    ) => {
+        setTouched(new Set(DRAFT_TEXT_FIELDS));
+        haptics.error();
+        toast.show(
+            check.onlyTitleMissing
+                ? LL.editor.titleMissing()
+                : LL.editor.fixFields({
+                      count: Object.keys(check.errors).length
+                  }),
+            'error'
+        );
+        revealField(check.firstInvalid);
     };
 
     const handleFailure = (error: unknown) => {
@@ -517,7 +545,19 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     };
 
     const save = async () => {
-        if (saving || !dirty || !valid) {
+        if (saving) {
+            return;
+        }
+
+        const check = checkDraftForSubmit(draft, serverErrors);
+
+        if (!check.ok) {
+            rejectSubmit(check);
+
+            return;
+        }
+
+        if (!dirty) {
             return;
         }
 
@@ -578,7 +618,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
         onClick: () => {
             void save();
         },
-        disabled: !dirty || !valid,
+        disabled: mode === 'edit' && !dirty,
         progress: saving
     });
 
@@ -758,6 +798,8 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     onBlur={touch('title')}
                     error={errorFor('title')}
                     maxLength={limits.title}
+                    required
+                    requiredMark={LL.editor.requiredMark()}
                     multiline
                     rows={2}
                 />
@@ -771,6 +813,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     onBlur={touch('description')}
                     error={errorFor('description')}
                     maxLength={limits.description}
+                    optionalMark={LL.common.optional()}
                     multiline
                     rows={4}
                 />
@@ -785,6 +828,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     error={errorFor('price')}
                     inputMode='decimal'
                     suffix={currencySymbol(locale, me.currency)}
+                    optionalMark={LL.common.optional()}
                     showCounter={false}
                 />
                 <Field
@@ -797,6 +841,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     onBlur={touch('link')}
                     error={errorFor('link')}
                     type='url'
+                    optionalMark={LL.common.optional()}
                     inputMode='url'
                     maxLength={limits.link}
                     showCounter={false}

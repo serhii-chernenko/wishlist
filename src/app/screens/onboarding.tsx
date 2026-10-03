@@ -13,8 +13,8 @@ import type { Route, ScreenId, ScreenProps } from '../nav/routes';
 import { useLL, useNav, useSession } from '../state/context';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
-import { HeartSticker } from '../ui/heart';
 import { Icon, type IconNode } from '../ui/icon';
+import { AppLogo } from '../ui/logo';
 import { ScreenLayout } from '../ui/screen';
 
 const STRING_PATH = 'M0 56 C1 30 20 6 44 8 S72 34 92 22 S110 2 120 8';
@@ -49,7 +49,7 @@ export const HomeHero = ({
             <svg class='hero-string' viewBox='0 0 112 64' aria-hidden='true'>
                 <path d={STRING_PATH} />
             </svg>
-            <HeartSticker class='hero-heart' />
+            <AppLogo class='hero-logo' />
             <p class='hero-title' aria-hidden='true'>
                 <span class='hero-name'>{title}</span>
             </p>

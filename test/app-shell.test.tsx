@@ -58,7 +58,7 @@ test('the shell is served with the documented headers', async () => {
     assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
     assert.equal(
         response.headers.get('Permissions-Policy'),
-        'geolocation=(), microphone=()'
+        'camera=(), geolocation=(), microphone=()'
     );
     assert.match(response.headers.get('ETag') ?? '', /^"[0-9a-f]{32}"$/);
 });
