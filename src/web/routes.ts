@@ -1,8 +1,10 @@
 import { Effect } from 'effect';
 import type { Context } from 'hono';
 
+import { APP_SHELL_PATH } from '../shared/app-links';
 import { getSupportLinks } from '../bot/content/support-links';
 import { resolveAppLocale } from '../bot/i18n';
+import { getRuntimeCrypto } from '../api/auth/crypto';
 import { createDb } from '../db/client';
 import { createRepositories } from '../db/repositories';
 import type { PublicShareFingerprint, Repositories } from '../db/repositories';
@@ -15,6 +17,7 @@ import {
 } from '../worker/telemetry';
 import { getTranslator } from '../bot/i18n';
 import type { SharePageErrorKind } from './share/components/error-page';
+import { buildShareWishPhotos } from './image-proxy/share-photos';
 import { matchAcceptLanguage } from './share/accept-language';
 import {
     computeHomeFingerprint,
@@ -40,7 +43,7 @@ import {
     renderSharePage
 } from './share/render';
 import { buildSitemap } from './share/sitemap';
-import type { SharePageModel } from './share/view-model';
+import type { SharePageModel, ShareWishView } from './share/view-model';
 
 export interface CacheLike {
     match(key: string): Promise<Response | undefined>;
@@ -61,6 +64,8 @@ const DEFAULT_LANGUAGE: SharePageLanguage = 'uk';
 const PERMANENT_REDIRECT_MAX_AGE_SECONDS = 86_400;
 const HOME_CACHE_SEGMENT = 'home';
 const SITEMAP_PATH = '/sitemap.xml';
+const IMAGE_PATH_ROOT = '/img/';
+const API_PATH_ROOT = '/api/';
 const LANGUAGE_SEGMENT_PATTERN = `(?:${Object.values(LANGUAGE_URL_SEGMENTS).join('|')})`;
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const NO_STORE = 'private, no-store';
@@ -311,8 +316,29 @@ const servePage = async ({
         indexable,
         cache,
         render: async () => {
-            const wishes = await Effect.runPromise(
-                repositories.wishes.listShareable(share.userId)
+            const crypto = getRuntimeCrypto();
+            const wishes: ShareWishView[] = await Promise.all(
+                (
+                    await Effect.runPromise(
+                        repositories.wishes.listShareable(share.userId)
+                    )
+                ).map(async wish => {
+                    return {
+                        title: wish.title,
+                        description: wish.description,
+                        link: wish.link,
+                        price: wish.price,
+                        priority: wish.priority,
+                        createdAt: wish.createdAt,
+                        updatedAt: wish.updatedAt,
+                        photos: await buildShareWishPhotos({
+                            crypto,
+                            language,
+                            publicId: share.publicId,
+                            wish
+                        })
+                    };
+                })
             );
             const model: SharePageModel = {
                 language,
@@ -513,7 +539,7 @@ export const registerShareRoutes = (
 
     app.get('/robots.txt', c => {
         const body = isProductionCanonicalHost(c.env, c.req.url)
-            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
+            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\nDisallow: ${APP_SHELL_PATH}\nDisallow: ${API_PATH_ROOT}\nDisallow: ${IMAGE_PATH_ROOT}\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
             : 'User-agent: *\nDisallow: /\n';
 
         return c.body(body, 200, {

@@ -3,6 +3,7 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { Effect } from 'effect';
 
+import { getRuntimeCrypto, sha256Hex } from '../../src/api/auth/crypto';
 import { createApp } from '../../src/worker/app';
 import type { WorkerBindings } from '../../src/worker/env';
 import type { CacheLike } from '../../src/web/routes';
@@ -767,7 +768,7 @@ describe('share page routes', () => {
         );
         assert.equal(
             await production.text(),
-            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
+            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
         );
 
         for (const environment of ['preview', 'local']) {
@@ -1329,5 +1330,85 @@ describe('share page routes', () => {
                 `rel="canonical" href="http://localhost/en/w/${publicId}"`
             )
         );
+    });
+
+    it('renders lazy cover photos with share image URLs and an open in Telegram link', async () => {
+        const owner = await createOwner({ language: 'en' });
+        const wish = await createWish(owner.id, 'Camera');
+        const publicId = await publish(owner.id);
+
+        for (const fileId of ['file-one', 'file-two', 'file-three']) {
+            await run(
+                repositories.wishes.appendImage(
+                    wish.id,
+                    owner.id,
+                    fileId,
+                    nextNow()
+                )
+            );
+        }
+
+        const response = await request(`/en/w/${publicId}`);
+        const body = await response.text();
+        const hash = (await sha256Hex(getRuntimeCrypto(), 'file-one')).slice(
+            0,
+            16
+        );
+
+        assert.equal(response.status, 200);
+        assert.match(
+            body,
+            new RegExp(
+                `<img src="/img/s/${publicId}/${wish.id}/0/${hash}" alt="Photo 1 of 3" loading="lazy"/>`
+            )
+        );
+        assert.doesNotMatch(body, /alt="[^"]*Camera/);
+        assert.doesNotMatch(body, /file-one|file-two|file-three/);
+        assert.match(
+            body,
+            new RegExp(
+                `href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${publicId}"[^>]*>Open in Telegram and pick a gift</a>`
+            )
+        );
+    });
+
+    it('keeps twenty wishes with nine photos each below 60 KB', async () => {
+        const owner = await createOwner({ language: 'uk' });
+        const publicId = await publish(owner.id);
+
+        for (let index = 0; index < 20; index += 1) {
+            const wish = await createWish(owner.id, `Wish ${index}`, {
+                description: 'о'.repeat(300),
+                link: `https://shop.test/items/${index}`,
+                price: 1000 + index
+            });
+
+            for (let photo = 0; photo < 9; photo += 1) {
+                await run(
+                    repositories.wishes.appendImage(
+                        wish.id,
+                        owner.id,
+                        `file-${index}-${photo}`,
+                        nextNow()
+                    )
+                );
+            }
+        }
+
+        const body = await (await request(`/ua/w/${publicId}`)).text();
+
+        assert.equal(body.match(/<img /g)?.length, 20);
+        assert.ok(
+            Buffer.byteLength(body) < 60_000,
+            `${Buffer.byteLength(body)}`
+        );
+    });
+
+    it('leaves the open in Telegram link out of an empty list', async () => {
+        const owner = await createOwner({ language: 'en' });
+        const publicId = await publish(owner.id);
+        const body = await (await request(`/en/w/${publicId}`)).text();
+
+        assert.doesNotMatch(body, /startapp=/);
     });
 });

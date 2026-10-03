@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { buildShareImagePath } from '../src/web/image-proxy/share-photos';
 import { renderErrorPage, renderSharePage } from '../src/web/share/render';
 import { matchAcceptLanguage } from '../src/web/share/accept-language';
 import {
@@ -388,6 +389,21 @@ test('the footer has the bot call to action, support links and the source link',
     );
 });
 
+test('a non-empty list links to the Telegram app with the share start parameter', () => {
+    const html = renderSharePage(buildModel());
+    const empty = renderSharePage(
+        buildModel({ wishes: [], visibleCount: 0, indexable: false })
+    );
+
+    assert.match(
+        html,
+        new RegExp(
+            `href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${PUBLIC_ID}">Open in Telegram and pick a gift</a>`
+        )
+    );
+    assert.doesNotMatch(empty, /startapp=/);
+});
+
 test('an empty list shows the empty state and a truncated list shows the notice', () => {
     const empty = renderSharePage(
         buildModel({ wishes: [], visibleCount: 0, indexable: false })
@@ -452,7 +468,12 @@ test('twenty maximum size wishes stay below 60 KB', () => {
                     ...wish,
                     photos: Array.from({ length: 9 }, (_, photo) => {
                         return {
-                            url: `/img/s/${'f'.repeat(64)}`,
+                            url: buildShareImagePath(
+                                PUBLIC_ID,
+                                100_000 + index,
+                                photo,
+                                'f'.repeat(16)
+                            ),
                             alt: `Фото ${photo + 1} з 9, ${index}`
                         };
                     })
