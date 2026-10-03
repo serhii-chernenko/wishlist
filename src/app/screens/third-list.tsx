@@ -415,6 +415,12 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             ) : (
                 <>
                     <OwnerHeader owner={owner} total={total} />
+                    {payments === null ? null : (
+                        <Envelope title={LL.third.payments.title()}>
+                            <p>{LL.third.payments.text()}</p>
+                            <p class='third-payments-text'>{payments}</p>
+                        </Envelope>
+                    )}
                     {viewOnly ? (
                         <Tag class='third-view-only'>
                             <p role='note'>{LL.third.viewOnly()}</p>
@@ -482,12 +488,6 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                             ) : null}
                             {LL.common.showMore()}
                         </button>
-                    )}
-                    {payments === null ? null : (
-                        <Envelope title={LL.third.payments.title()}>
-                            <p>{LL.third.payments.text()}</p>
-                            <p class='third-payments-text'>{payments}</p>
-                        </Envelope>
                     )}
                 </>
             )}

@@ -210,6 +210,17 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
             LL.findList.filled.before(escapeHtml(query)) + appliedFilter,
             removeReplyKeyboard()
         );
+
+        if (owner.payments) {
+            await req.send.text(
+                LL.findList.filled.payments(
+                    escapeHtml(
+                        truncateWithMark(owner.payments, PAYMENTS_MAX_LENGTH)
+                    )
+                ),
+                removeReplyKeyboard()
+            );
+        }
     }
 
     const giversByWish = await gives.giversOf(
@@ -235,17 +246,6 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
                 wish,
                 summary.kind === 'you' || summary.kind === 'somebodyAndYou'
             )
-        );
-    }
-
-    if (owner.payments && !window.hasMore) {
-        await req.send.text(
-            LL.findList.filled.payments(
-                escapeHtml(
-                    truncateWithMark(owner.payments, PAYMENTS_MAX_LENGTH)
-                )
-            ),
-            removeReplyKeyboard()
         );
     }
 
