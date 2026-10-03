@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { buildAppUrl } from '../../src/shared/app-links';
 import { TELEGRAM_SECRET_HEADER } from '../../src/worker/telegram-auth';
 
 import { createWebhookUrl, requireEnv } from '../cloudflare/runtime-env';
@@ -53,6 +54,7 @@ const GH_PAGE_SIZE = 100;
 const MAX_PULL_REQUESTS_INSPECTED = 3;
 const SMOKE_COMMAND_TEXT = '/start';
 const STATUS_PATH = '/status';
+const PREVIEW_MENU_BUTTON_TEXT = 'App';
 const PREVIEW_ENVIRONMENT_COMMANDS = ['wait', 'point', 'smoke', 'reset'];
 const buildCheckNamePattern = /workers builds/i;
 const previewUrlHeaderPattern = /^### Preview URL:\s*(\S+)/m;
@@ -78,12 +80,14 @@ export const USAGE = [
     '      then for the preview to answer (default 120s).',
     '  point [--drop-pending-updates=true|false] [--no-wait]',
     '      Resolve the preview, wait for it, and point the preview bot webhook at it.',
+    '      Also sets the admin chat menu button (ADMIN_ID) to open the preview app.',
     '  smoke --chat-id <id> [--user-id <id>] [--url <origin>]',
     '      Opt-in. Sends a synthetic /start update to the preview webhook, so the',
     '      preview bot may reply in that chat. Use only a preview-only chat.',
     '      HTTP 200 only proves the Worker accepted the update.',
     '  reset [--drop-pending-updates=true|false]',
-    `      Point the preview bot webhook back at ${LONG_LIVED_PREVIEW_ORIGIN}.`
+    `      Point the preview bot webhook back at ${LONG_LIVED_PREVIEW_ORIGIN}`,
+    '      and restore the default menu button in the admin chat (ADMIN_ID).'
 ].join('\n');
 
 export interface PreviewDependencies {
@@ -1002,6 +1006,31 @@ const requireWebhookSecret = () => {
     return requireEnv('TELEGRAM_WEBHOOK_SECRET');
 };
 
+const readAdminChatId = () => {
+    const value = requireEnv('ADMIN_ID');
+
+    if (!/^[1-9]\d{0,15}$/.test(value)) {
+        throw new PreviewOperatorError('ADMIN_ID must be a positive integer');
+    }
+
+    return value;
+};
+
+const setAdminMenuButton = async (
+    dependencies: PreviewDependencies,
+    adminChatId: string,
+    menuButton: Record<string, unknown>
+) => {
+    await callTelegramApi(
+        'setChatMenuButton',
+        new URLSearchParams({
+            chat_id: adminChatId,
+            menu_button: JSON.stringify(menuButton)
+        }),
+        dependencies.telegram
+    );
+};
+
 export const requirePreviewBot = (dependencies: PreviewDependencies) => {
     return requirePreviewBotIdentity(() => {
         return callTelegramApi('getMe', undefined, dependencies.telegram);
@@ -1063,6 +1092,7 @@ export const pointPreviewWebhook = async (
 ) => {
     await requirePreviewBot(dependencies);
 
+    const adminChatId = readAdminChatId();
     const origin = options.noWait
         ? await resolvePreviewOrigin(dependencies, {})
         : await waitForPreview(dependencies, options);
@@ -1092,6 +1122,12 @@ export const pointPreviewWebhook = async (
 
     verifyWebhookTarget(dependencies, updatedPayload, expectedWebhookUrl);
 
+    await setAdminMenuButton(dependencies, adminChatId, {
+        type: 'web_app',
+        text: PREVIEW_MENU_BUTTON_TEXT,
+        web_app: { url: buildAppUrl(origin) }
+    });
+
     return origin;
 };
 
@@ -1101,6 +1137,7 @@ export const resetPreviewWebhook = async (
 ) => {
     await requirePreviewBot(dependencies);
 
+    const adminChatId = readAdminChatId();
     const expectedWebhookUrl = createWebhookUrl(LONG_LIVED_PREVIEW_ORIGIN);
 
     await setTelegramWebhook(
@@ -1112,6 +1149,8 @@ export const resetPreviewWebhook = async (
     const payload = await readWebhookInfo(dependencies.telegram);
 
     verifyWebhookTarget(dependencies, payload, expectedWebhookUrl);
+
+    await setAdminMenuButton(dependencies, adminChatId, { type: 'default' });
 };
 
 export const getSyntheticChatType = (chatId: number) => {

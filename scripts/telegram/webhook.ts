@@ -92,7 +92,7 @@ export const ALLOWED_UPDATES = [
 ] as const;
 export const DEFAULT_MAX_CONNECTIONS = 1;
 export const MAX_CONNECTIONS_LIMIT = 100;
-export const BOT_COMMAND_NAMES = ['start', 'lang', 'releases'] as const;
+export const BOT_COMMAND_NAMES = ['start', 'lang', 'releases', 'app'] as const;
 
 const dropPendingUpdatesFlagPrefix = '--drop-pending-updates=';
 const maxConnectionsFlagPrefix = '--max-connections=';

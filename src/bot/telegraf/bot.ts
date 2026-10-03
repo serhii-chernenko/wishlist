@@ -7,7 +7,11 @@ import { createDb } from '../../db/client';
 import { createRepositories } from '../../db/repositories';
 import type { WorkerBindings } from '../../worker/env';
 import { decodeCallbackData } from '../callback-data';
-import { removeReplyKeyboard } from '../content/keyboards';
+import {
+    appEntryButton,
+    removeReplyKeyboard,
+    singleColumnKeyboard
+} from '../content/keyboards';
 import { getMessages } from '../content/messages';
 import { getLatestReleaseVersion } from '../content/releases';
 import {
@@ -235,6 +239,20 @@ const dispatchCommand = async (
         case 'releases':
             await router.renderScreen(req, 'releases');
             return;
+        case 'app': {
+            const appButton = appEntryButton(req);
+
+            if (appButton === null) {
+                await router.renderScreen(req, 'home');
+                return;
+            }
+
+            await req.send.text(
+                req.LL.appEntry.text(),
+                singleColumnKeyboard([appButton])
+            );
+            return;
+        }
         default:
             await router.renderScreen(req, 'home');
     }

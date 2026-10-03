@@ -35,6 +35,7 @@ import {
 const secretToken = 'preview-secret-value';
 const webhookPath = '/telegram/hidden-preview-path';
 const botToken = '123456:preview-bot-token';
+const adminChatId = '4242';
 const headSha = 'a'.repeat(40);
 const previewOrigin = 'https://feat-demo-wishlist.chernenko.workers.dev';
 const otherOrigin = 'https://other-branch-wishlist.chernenko.workers.dev';
@@ -110,11 +111,13 @@ const withPreviewEnvironment = async (
     const previous = {
         BOT_TOKEN: process.env.BOT_TOKEN,
         TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
-        TELEGRAM_WEBHOOK_PATH: process.env.TELEGRAM_WEBHOOK_PATH
+        TELEGRAM_WEBHOOK_PATH: process.env.TELEGRAM_WEBHOOK_PATH,
+        ADMIN_ID: process.env.ADMIN_ID
     };
     const originalLog = console.log;
     const captured: string[] = [];
 
+    process.env.ADMIN_ID = adminChatId;
     process.env.BOT_TOKEN = botToken;
     process.env.TELEGRAM_WEBHOOK_SECRET = secretToken;
     process.env.TELEGRAM_WEBHOOK_PATH = webhookPath;
@@ -1336,10 +1339,16 @@ test('smoke requires a chat id', async () => {
     );
 });
 
+interface MenuButtonCall {
+    chat_id: string;
+    menu_button: Record<string, unknown>;
+}
+
 interface WebhookFake {
     fetchImplementation: typeof fetch;
     methods: string[];
     setUrls: string[];
+    menuButtonCalls: MenuButtonCall[];
 }
 
 const createWebhookFake = (
@@ -1351,6 +1360,7 @@ const createWebhookFake = (
     let currentUrl = initialUrl;
     const methods: string[] = [];
     const setUrls: string[] = [];
+    const menuButtonCalls: MenuButtonCall[] = [];
     const fetchImplementation = asFetch(async (input, init) => {
         const method = String(input).split('/').pop() ?? '';
 
@@ -1373,6 +1383,17 @@ const createWebhookFake = (
             return Response.json({ ok: true, result: true });
         }
 
+        if (method === 'setChatMenuButton') {
+            const parameters = new URLSearchParams(String(init?.body));
+
+            menuButtonCalls.push({
+                chat_id: parameters.get('chat_id') ?? '',
+                menu_button: JSON.parse(parameters.get('menu_button') ?? '{}')
+            });
+
+            return Response.json({ ok: true, result: true });
+        }
+
         return Response.json({
             ok: true,
             result: {
@@ -1384,7 +1405,7 @@ const createWebhookFake = (
         });
     });
 
-    return { fetchImplementation, methods, setUrls };
+    return { fetchImplementation, methods, setUrls, menuButtonCalls };
 };
 
 const pointDependencies = (
@@ -1420,12 +1441,41 @@ test('point reports the previous origin and sets the webhook', async () => {
             'getMe',
             'getWebhookInfo',
             'setWebhook',
-            'getWebhookInfo'
+            'getWebhookInfo',
+            'setChatMenuButton'
         ]);
         assert.deepEqual(fake.setUrls, [
             `https://feat-demo-wishlist.chernenko.workers.dev${webhookPath}`
         ]);
+        assert.deepEqual(fake.menuButtonCalls, [
+            {
+                chat_id: adminChatId,
+                menu_button: {
+                    type: 'web_app',
+                    text: 'App',
+                    web_app: {
+                        url: 'https://feat-demo-wishlist.chernenko.workers.dev/app'
+                    }
+                }
+            }
+        ]);
         assertNoSensitiveValues([...output, ...captured]);
+    });
+});
+
+test('point refuses to run without ADMIN_ID before touching the webhook', async () => {
+    await withPreviewEnvironment(async () => {
+        Reflect.deleteProperty(process.env, 'ADMIN_ID');
+
+        const fake = createWebhookFake(`${otherOrigin}${webhookPath}`);
+        const { dependencies } = pointDependencies(fake);
+
+        await assert.rejects(
+            runPreviewCommand('point', ['--no-wait'], dependencies),
+            /Missing required environment variable: ADMIN_ID/
+        );
+        assert.deepEqual(fake.methods, ['getMe']);
+        assert.deepEqual(fake.setUrls, []);
     });
 });
 
@@ -1523,7 +1573,8 @@ test('point with the default wait path waits, sets and verifies the webhook', as
             'getMe',
             'getWebhookInfo',
             'setWebhook',
-            'getWebhookInfo'
+            'getWebhookInfo',
+            'setChatMenuButton'
         ]);
         assert.deepEqual(
             requests.map(request => request.url),
@@ -1547,6 +1598,9 @@ test('reset points the webhook at the long-lived preview', async () => {
 
         assert.deepEqual(fake.setUrls, [
             `${LONG_LIVED_PREVIEW_ORIGIN}${webhookPath}`
+        ]);
+        assert.deepEqual(fake.menuButtonCalls, [
+            { chat_id: adminChatId, menu_button: { type: 'default' } }
         ]);
         assert.equal(JSON.parse(output[0] as string).urlMatchesExpected, true);
         assertNoSensitiveValues([...output, ...captured]);

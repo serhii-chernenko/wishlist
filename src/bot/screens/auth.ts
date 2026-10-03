@@ -110,7 +110,8 @@ const renderSuccessDetails = (
 const completeVisibility = async (
     req: BotRequest,
     authType: AuthType,
-    phone: string | null
+    phone: string | null,
+    via?: 'app'
 ) => {
     const result = await req.services.users.saveVisibility({
         actor: req.actor,
@@ -120,15 +121,22 @@ const completeVisibility = async (
         phone
     });
     const { LL } = req;
-    const prefix = result.created
-        ? LL.auth.success.guest()
-        : LL.auth.success.user();
 
     req.setSession({ ...req.session, pendingInput: null });
     req.telemetry.botActionCompleted({
         action: result.created ? 'user_registered' : 'visibility_changed',
         result: authType
     });
+
+    if (via === 'app') {
+        await req.send.text(LL.auth.success.app());
+        return;
+    }
+
+    const prefix = result.created
+        ? LL.auth.success.guest()
+        : LL.auth.success.user();
+
     await req.send.text(
         prefix +
             renderSuccessDetails(
@@ -185,16 +193,31 @@ const onInput = async (
                 ? req.LL.auth.errors.foreignContact()
                 : req.LL.auth.errors.phone()
         );
+
+        if (input.via === 'app') {
+            req.setSession({ ...req.session, pendingInput: null });
+            return;
+        }
+
         await promptForContact(req, input.authType);
         return;
     }
 
     if (input.authType === 'both' && !req.actor.username) {
+        if (input.via === 'app') {
+            req.setSession({ ...req.session, pendingInput: null });
+            await req.send.text(
+                req.LL.auth.errors.username(),
+                removeReplyKeyboard()
+            );
+            return;
+        }
+
         await renderMissingUsername(req);
         return;
     }
 
-    await completeVisibility(req, input.authType, contact.phone);
+    await completeVisibility(req, input.authType, contact.phone, input.via);
 };
 
 export const screen: ScreenModule = {

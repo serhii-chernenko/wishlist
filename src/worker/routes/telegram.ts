@@ -369,7 +369,8 @@ export const handleUpdateWithWishlistBot = async (
         botActionCompleted(input) {
             emitTelemetryEvent(env, context, {
                 event: 'bot_action_completed',
-                ...input
+                ...input,
+                channel: 'bot'
             });
         },
         internalFailure(input) {

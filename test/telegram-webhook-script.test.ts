@@ -886,6 +886,13 @@ test('raw production commands skip getMe and load the production env file', asyn
     });
 });
 
+test('the app command is registered after the existing commands', () => {
+    assert.deepEqual(
+        [...BOT_COMMAND_NAMES],
+        ['start', 'lang', 'releases', 'app']
+    );
+});
+
 test('localized bot commands cover the default scope plus uk, en and pl from the translations', async () => {
     const loadedSets = await loadLocalizedBotCommandSets();
 

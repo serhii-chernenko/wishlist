@@ -201,7 +201,7 @@ const sharePagePathPattern = /^(?:\/(?:ua|uk|en|pl))?\/w(?:\/|$)/;
 
 const homePagePathPattern = /^\/(?:ua|uk|en|pl)\/?$/;
 
-const commandCategories = new Set(['start', 'lang', 'releases']);
+const commandCategories = new Set(['start', 'lang', 'releases', 'app']);
 
 const labelFieldNames = [
     'commandCategory',

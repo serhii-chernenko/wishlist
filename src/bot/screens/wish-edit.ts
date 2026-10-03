@@ -2,6 +2,7 @@ import type { Message } from 'telegraf/types';
 
 import type { WishRecord } from '../../db/repositories';
 import {
+    appEntryButton,
     callbackButton,
     homeButton,
     inlineKeyboard,
@@ -93,6 +94,7 @@ const buildEditMenu = (req: BotRequest, wish: WishRecord) => {
             'price'
         ),
         callbackButton(LL.wishlist.add.title(), { type: 'wishAdd' }),
+        appEntryButton(req, `w_${wish.id}`),
         callbackButton(LL.actions.back(), {
             type: 'wishBack',
             wishId: wish.id

@@ -789,6 +789,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.deepEqual(buttonTextsOf(message), [
                 LL.wishlist.share.actions.open(),
                 LL.wishlist.share.actions.send(),
+                LL.actions.openApp(),
                 LL.wishlist.share.actions.showUsername(),
                 LL.wishlist.share.actions.newLink(),
                 LL.wishlist.share.actions.stop(),

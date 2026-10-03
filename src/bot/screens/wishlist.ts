@@ -7,6 +7,7 @@ import {
     buildFilterKeyboard
 } from '../content/filters';
 import {
+    appEntryButton,
     callbackButton,
     homeButton,
     inlineKeyboard,
@@ -73,6 +74,7 @@ const buildMenu = (
         options.canShare
             ? callbackButton(LL.actions.share(), { type: 'wishlistShare' })
             : null,
+        appEntryButton(req, 'wishes'),
         homeButton(LL)
     ];
 
@@ -264,6 +266,7 @@ const buildShareLinkKeyboard = (
     return singleColumnKeyboard([
         urlButton(actions.open(), pageUrl),
         urlButton(actions.send(), buildTelegramShareUrl(req, pageUrl)),
+        appEntryButton(req, 'share'),
         buildUsernameToggleButton(req, share),
         callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
         callbackButton(actions.stop(), { type: 'wishlistShareStop' }),

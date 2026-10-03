@@ -7,11 +7,13 @@ import type {
 } from 'telegraf/types';
 
 import type { TranslationFunctions } from '../../i18n/i18n-types';
+import { buildAppUrl } from '../../shared/app-links';
 import {
     encodeCallbackData,
     type EncodableCallbackAction
 } from '../callback-data';
-import type { NavigationScreenId } from '../runtime/types';
+import type { BotRequest, NavigationScreenId } from '../runtime/types';
+import { resolvePublicOrigin } from '../services/share-service';
 
 /**
  * Keyboard helpers return raw Bot API markup objects (not Telegraf `Markup`
@@ -29,6 +31,33 @@ export const urlButton = (
     url: string
 ): InlineKeyboardButton.UrlButton => {
     return { text, url };
+};
+
+export const webAppButton = (
+    text: string,
+    url: string
+): InlineKeyboardButton.WebAppButton => {
+    return { text, web_app: { url } };
+};
+
+export const isMiniAppEnabled = (req: Pick<BotRequest, 'env'>) => {
+    return req.env.MINI_APP_ENABLED === 'true';
+};
+
+export const appEntryButton = (
+    req: Pick<BotRequest, 'env' | 'publicOrigin' | 'LL'>,
+    start?: string
+): InlineKeyboardButton.WebAppButton | null => {
+    if (!isMiniAppEnabled(req)) {
+        return null;
+    }
+
+    const origin = resolvePublicOrigin(
+        req.publicOrigin,
+        req.env.BOT_ENVIRONMENT
+    );
+
+    return webAppButton(req.LL.actions.openApp(), buildAppUrl(origin, start));
 };
 
 export const navigationButton = (

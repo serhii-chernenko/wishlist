@@ -1,5 +1,9 @@
 import type { TranslationFunctions } from '../../i18n/i18n-types';
-import { navigationButton, singleColumnKeyboard } from '../content/keyboards';
+import {
+    appEntryButton,
+    navigationButton,
+    singleColumnKeyboard
+} from '../content/keyboards';
 import type {
     BotRequest,
     CallbackTable,
@@ -11,8 +15,11 @@ export const getLanguageButtonLabel = (LL: TranslationFunctions) => {
     return `${LL.actions.language()} ${LL.language.title()}`;
 };
 
-const guestKeyboard = (LL: TranslationFunctions) => {
+const guestKeyboard = (req: BotRequest) => {
+    const { LL } = req;
+
     return singleColumnKeyboard([
+        appEntryButton(req),
         navigationButton(LL.auth.title.guest(), 'auth'),
         navigationButton(LL.privacy.title(), 'privacy'),
         navigationButton(LL.feedback.title(), 'feedback'),
@@ -22,8 +29,11 @@ const guestKeyboard = (LL: TranslationFunctions) => {
     ]);
 };
 
-const userKeyboard = (LL: TranslationFunctions, user: UserRecord) => {
+const userKeyboard = (req: BotRequest, user: UserRecord) => {
+    const { LL } = req;
+
     return singleColumnKeyboard([
+        appEntryButton(req),
         navigationButton(LL.wishlist.title(), 'wishlist'),
         navigationButton(LL.giveList.title(), 'giveList'),
         navigationButton(LL.findList.title(), 'findList'),
@@ -48,12 +58,12 @@ const render = async (req: BotRequest) => {
     if (!user) {
         await req.send.text(
             `${LL.greeting.general()}\n\n${LL.greeting.guest()}`,
-            guestKeyboard(LL)
+            guestKeyboard(req)
         );
         return;
     }
 
-    await req.send.text(LL.greeting.user(), userKeyboard(LL, user));
+    await req.send.text(LL.greeting.user(), userKeyboard(req, user));
 };
 
 export const screen: ScreenModule = {
