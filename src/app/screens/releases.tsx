@@ -2,6 +2,8 @@ import { useState } from 'hono/jsx/dom';
 
 import { APP_RELEASES_PAGE_SIZE, type ReleasesDto } from '../../shared/app-api';
 import { formatReleaseDate } from '../logic/format';
+import { splitTextLinks } from '../logic/text-links';
+import { openLink } from '../telegram/links';
 import type { ScreenProps } from '../nav/routes';
 import {
     useApp,
@@ -15,6 +17,32 @@ import { EmptyState } from '../ui/empty-state';
 import { isResourcePending, ResourceView } from '../ui/resource-view';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
+
+const ReleaseText = ({ text }: { text: string }) => {
+    return (
+        <>
+            {splitTextLinks(text).map((segment, index) => {
+                return segment.kind === 'text' ? (
+                    segment.text
+                ) : (
+                    <a
+                        key={index}
+                        class='release-link'
+                        href={segment.href}
+                        rel='noopener noreferrer'
+                        target='_blank'
+                        onClick={(event: MouseEvent) => {
+                            event.preventDefault();
+                            openLink(segment.href);
+                        }}
+                    >
+                        {segment.text}
+                    </a>
+                );
+            })}
+        </>
+    );
+};
 
 export const ReleasesScreen = (_props: ScreenProps<'releases'>) => {
     const LL = useLL();
@@ -106,9 +134,11 @@ export const ReleasesScreen = (_props: ScreenProps<'releases'>) => {
                                                                             <li
                                                                                 key={`${index}-${item}`}
                                                                             >
-                                                                                {
-                                                                                    item
-                                                                                }
+                                                                                <ReleaseText
+                                                                                    text={
+                                                                                        item
+                                                                                    }
+                                                                                />
                                                                             </li>
                                                                         );
                                                                     }

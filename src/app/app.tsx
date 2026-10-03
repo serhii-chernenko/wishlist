@@ -2,8 +2,9 @@ import type { AppLocale, BootstrapDto } from '../shared/app-api';
 import type { ApiClient } from './api/client';
 import { createTranslator } from './i18n/i18n';
 import type { SystemScreenId } from './logic/errors';
-import { resolveStartRoutes } from './logic/nav';
+import { resolveInitialRoutes } from './logic/nav-persistence';
 import { createTelemetryGate } from './logic/telemetry';
+import { persistNavigation, readStoredNav } from './nav/persistence';
 import { createNavigator, Router, type NavigatorHandle } from './nav/router';
 import { BootErrorScreen } from './screens/boot-error';
 import { OutsideTelegramScreen } from './screens/outside-telegram';
@@ -67,7 +68,12 @@ export const createAppServices = ({
     const revalidation = createStore(0);
     const telemetryGate = createTelemetryGate();
     const navigation = createNavigator(
-        resolveStartRoutes(launch.startParam, bootstrap.me.registered),
+        resolveInitialRoutes({
+            stored: readStoredNav(),
+            initData: launch.initData,
+            startParam: launch.startParam,
+            registered: bootstrap.me.registered
+        }),
         session
     );
     const updateSession = (next: (current: Session) => Session) => {
@@ -118,6 +124,7 @@ export const createAppServices = ({
         }
     };
 
+    persistNavigation(navigation.state, launch.initData);
     setDocumentLanguage(bootstrap.me.locale);
 
     return { services, navigation };

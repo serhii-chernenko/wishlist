@@ -39,6 +39,7 @@ interface ThirdListData {
     items: ThirdWishDto[];
     total: number;
     nextOffset: number | null;
+    payments: string | null;
 }
 
 const SHARED_STALE_MS = 5 * 60 * 1000;
@@ -172,12 +173,14 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             return {
                 items: page.items,
                 total: page.total,
-                nextOffset: page.nextOffset
+                nextOffset: page.nextOffset,
+                payments: page.owner.payments
             };
         }
     );
 
     const preview = shared.data?.preview ?? null;
+    const payments = list.data?.payments ?? owner?.payments ?? null;
     const viewOnly = owner !== null && token === null;
     const visibleItems: ReadonlyArray<ThirdWishDto | SharedWishDto> = viewOnly
         ? (preview?.items ?? [])
@@ -313,7 +316,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                         : {
                               items: [...cached.items, ...page.items],
                               total: page.total,
-                              nextOffset: page.nextOffset
+                              nextOffset: page.nextOffset,
+                              payments: page.owner.payments
                           };
                 });
             }
@@ -479,10 +483,10 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                             {LL.common.showMore()}
                         </button>
                     )}
-                    {owner.payments === null ? null : (
+                    {payments === null ? null : (
                         <Envelope title={LL.third.payments.title()}>
                             <p>{LL.third.payments.text()}</p>
-                            <p class='third-payments-text'>{owner.payments}</p>
+                            <p class='third-payments-text'>{payments}</p>
                         </Envelope>
                     )}
                 </>
