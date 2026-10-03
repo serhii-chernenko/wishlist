@@ -26,6 +26,7 @@
     },
     "vars": {
         "BOT_ENVIRONMENT": "local",
+        "MINI_APP_ENABLED": "true",
         "ENABLE_RELEASE_BROADCAST": "false",
         "AUTHOR_TWITTER_LINK": "https://x.com/serhiichernenko",
         "WISHLIST_TG_URL": "https://t.me/wishlist_ua_bot",
@@ -53,6 +54,34 @@
             }
         ]
     },
+    "ratelimits": [
+        {
+            "name": "APP_API_LIMITER",
+            "namespace_id": "2121",
+            "simple": { "limit": 120, "period": 60 }
+        },
+        {
+            "name": "APP_SENSITIVE_LIMITER",
+            "namespace_id": "2122",
+            "simple": { "limit": 10, "period": 60 }
+        },
+        {
+            "name": "APP_UPLOAD_LIMITER",
+            "namespace_id": "2123",
+            "simple": { "limit": 20, "period": 60 }
+        },
+        {
+            "name": "IMAGE_PROXY_LIMITER",
+            "namespace_id": "2124",
+            "simple": { "limit": 300, "period": 60 }
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "IMAGES",
+            "bucket_name": "wishlist-images-preview"
+        }
+    ],
     "d1_databases": [
         {
             "binding": "DB",
@@ -85,6 +114,7 @@
             },
             "vars": {
                 "BOT_ENVIRONMENT": "production",
+                "MINI_APP_ENABLED": "false",
                 "ENABLE_RELEASE_BROADCAST": "true",
                 "AUTHOR_TWITTER_LINK": "https://x.com/serhiichernenko",
                 "WISHLIST_TG_URL": "https://t.me/wishlist_ua_bot",
@@ -134,6 +164,34 @@
                     }
                 ]
             },
+            "ratelimits": [
+                {
+                    "name": "APP_API_LIMITER",
+                    "namespace_id": "2101",
+                    "simple": { "limit": 120, "period": 60 }
+                },
+                {
+                    "name": "APP_SENSITIVE_LIMITER",
+                    "namespace_id": "2102",
+                    "simple": { "limit": 10, "period": 60 }
+                },
+                {
+                    "name": "APP_UPLOAD_LIMITER",
+                    "namespace_id": "2103",
+                    "simple": { "limit": 20, "period": 60 }
+                },
+                {
+                    "name": "IMAGE_PROXY_LIMITER",
+                    "namespace_id": "2104",
+                    "simple": { "limit": 300, "period": 60 }
+                }
+            ],
+            "r2_buckets": [
+                {
+                    "binding": "IMAGES",
+                    "bucket_name": "wishlist-images"
+                }
+            ],
             "d1_databases": [
                 {
                     "binding": "DB",
@@ -148,6 +206,7 @@
                 },
                 "vars": {
                     "BOT_ENVIRONMENT": "preview",
+                    "MINI_APP_ENABLED": "true",
                     "ENABLE_RELEASE_BROADCAST": "false",
                     "AUTHOR_TWITTER_LINK": "https://x.com/serhiichernenko",
                     "WISHLIST_TG_URL": "https://t.me/wishlist_ua_bot",
@@ -160,6 +219,34 @@
                     "PAYPAL_URL": "https://www.paypal.me/chernenkoserhii",
                     "REVOLUT_URL": "https://revolut.me/serhiichernenko"
                 },
+                "ratelimits": [
+                    {
+                        "name": "APP_API_LIMITER",
+                        "namespace_id": "2111",
+                        "simple": { "limit": 120, "period": 60 }
+                    },
+                    {
+                        "name": "APP_SENSITIVE_LIMITER",
+                        "namespace_id": "2112",
+                        "simple": { "limit": 10, "period": 60 }
+                    },
+                    {
+                        "name": "APP_UPLOAD_LIMITER",
+                        "namespace_id": "2113",
+                        "simple": { "limit": 20, "period": 60 }
+                    },
+                    {
+                        "name": "IMAGE_PROXY_LIMITER",
+                        "namespace_id": "2114",
+                        "simple": { "limit": 300, "period": 60 }
+                    }
+                ],
+                "r2_buckets": [
+                    {
+                        "binding": "IMAGES",
+                        "bucket_name": "wishlist-images-preview"
+                    }
+                ],
                 "d1_databases": [
                     {
                         "binding": "DB",

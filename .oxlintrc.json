@@ -4,6 +4,14 @@
     "env": {
         "node": true
     },
+    "overrides": [
+        {
+            "files": ["src/app/**"],
+            "env": {
+                "browser": true
+            }
+        }
+    ],
     "rules": {
         "arrow-body/explicit-return-for-wrapped-arrow": [
             "error",

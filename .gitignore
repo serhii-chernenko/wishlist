@@ -39,6 +39,7 @@
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !tsconfig.json
+!tsconfig.app.json
 !worker-configuration.d.ts
 !wrangler.jsonc
 !/env
@@ -90,6 +91,12 @@
 !/src/i18n/pl/*.ts
 !/src/web
 !/src/web/**
+!/src/app
+!/src/app/**
+!/src/api
+!/src/api/**
+!/src/shared
+!/src/shared/*.ts
 !/src/**/*.tsx
 !/public
 !/public/**

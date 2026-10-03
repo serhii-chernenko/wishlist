@@ -6,25 +6,20 @@
         "strict": true,
         "noEmit": true,
         "resolveJsonModule": true,
-        "lib": ["ES2022"],
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "skipLibCheck": true,
         "exactOptionalPropertyTypes": true,
         "noUncheckedIndexedAccess": true,
         "forceConsistentCasingInFileNames": true,
         "jsx": "react-jsx",
-        "jsxImportSource": "hono/jsx"
+        "jsxImportSource": "hono/jsx/dom",
+        "types": []
     },
     "include": [
-        "drizzle.config.ts",
-        "drizzle.production.config.ts",
-        "drizzle.preview.config.ts",
-        "scripts/**/*.ts",
-        "types/**/*.d.ts",
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "test/**/*.ts",
-        "test/**/*.tsx",
-        "worker-configuration.d.ts"
-    ],
-    "exclude": ["src/app/**"]
+        "src/app/**/*.ts",
+        "src/app/**/*.tsx",
+        "src/shared/**/*.ts",
+        "src/bot/input/*.ts",
+        "src/bot/content/intl.ts"
+    ]
 }

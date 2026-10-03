@@ -95,6 +95,12 @@ const createBindings = (
         ENABLE_RELEASE_BROADCAST:
             botEnvironment === 'production' ? 'true' : 'false',
         RELEASE_QUEUE: {} as WorkerBindings['RELEASE_QUEUE'],
+        IMAGES: {} as WorkerBindings['IMAGES'],
+        APP_API_LIMITER: {} as WorkerBindings['APP_API_LIMITER'],
+        APP_SENSITIVE_LIMITER: {} as WorkerBindings['APP_SENSITIVE_LIMITER'],
+        APP_UPLOAD_LIMITER: {} as WorkerBindings['APP_UPLOAD_LIMITER'],
+        IMAGE_PROXY_LIMITER: {} as WorkerBindings['IMAGE_PROXY_LIMITER'],
+        MINI_APP_ENABLED: 'true',
         AUTHOR_TWITTER_LINK: 'https://x.com/serhiichernenko',
         WISHLIST_TG_URL: 'https://t.me/wishlist_ua_bot',
         GITHUB_REPO_URL: 'https://github.com/serhii-chernenko/wishlist',

@@ -12,6 +12,8 @@
         "releases.generated.json",
         "src/i18n/i18n-*.ts",
         "public/styles/share.css",
+        "public/app/app.js",
+        "public/app/app.css",
         ".agents/skills/**",
         "skills-lock.json"
     ]
