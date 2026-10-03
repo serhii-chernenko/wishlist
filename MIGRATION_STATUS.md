@@ -71,10 +71,11 @@ Decisions:
 
 ### Telegram Mini App (in 2.0.0)
 
-- [ ] Plan approved (architecture, API, auth, photos, design system)
+- [x] Plan approved (architecture, API, auth, photos, design system): [docs/plans/mini-app.md](./docs/plans/mini-app.md)
 - [ ] Auth: initData validation, per-user rate limiting
 - [ ] JSON API under /api/app for every bot feature
-- [ ] Photo proxy (token-safe getFile, cached) for the app and share pages
+- [ ] Photo proxy (token-safe getFile, R2 durable cache) for the app and share pages
+- [ ] Compact card grid for share pages and the app
 - [ ] Photo upload from the app
 - [ ] App UI: Tailwind + daisyUI with the gift-tag design system, Telegram theme, BackButton/MainButton, haptics
 - [ ] Screens: own list, wish editor, give list, search, other lists, share settings, payments, visibility, language, feedback, stats, donate
@@ -136,10 +137,13 @@ All times UTC, 2026-10-02.
 
 ### To finish after the announcement text is approved
 
-1. Merge PR #1 with a merge commit. Workers Builds deploys `main` and runs `pnpm releases:broadcast:prod`.
-2. `pnpm db:query:prod --command "SELECT status, count(*) FROM release_announcements GROUP BY status"`. The `*/10` cron may already have queued the rows, so the deploy log can report about 0 inserted; the table is the source of truth.
-3. `gh release view 2.0.0 -R serhii-chernenko/wishlist` (published by the GitHub release job on `main`).
-4. `pnpm exec wrangler queues resume-delivery wishlist-release-announcements`, then repeat step 2 until nothing is `queued`. Pause again with `pause-delivery` on a burst of failures.
+0. Restamp the release date: change `## 2.0.0 - 02.10.2026` in `CHANGELOG.md` to the merge day, run `pnpm releases:sync`, re-render the announcement and get the final approval of the text.
+1. Check the announcement queue before resuming it. Messages expire after the 14 day retention set on 2026-10-02 (the queued rows were re-enqueued by the cron at about 14:00Z that day). Compare the backlog from `cf queues get 95010b2f32784a0291ec1a20ece8e639` with `SELECT count(*) FROM release_announcements WHERE status = 'queued'`. If the backlog is lower: `pnpm exec wrangler queues purge wishlist-release-announcements --force`, `DELETE FROM release_announcements WHERE status = 'queued'`, wait for the `*/10` cron (or run `pnpm releases:broadcast:prod`) to re-enqueue, verify the counts match, then continue.
+
+2. Merge PR #1 with a merge commit. Workers Builds deploys `main` and runs `pnpm releases:broadcast:prod`.
+3. `pnpm db:query:prod --command "SELECT status, count(*) FROM release_announcements GROUP BY status"`. The `*/10` cron may already have queued the rows, so the deploy log can report about 0 inserted; the table is the source of truth.
+4. `gh release view 2.0.0 -R serhii-chernenko/wishlist` (published by the GitHub release job on `main`).
+5. `pnpm exec wrangler queues resume-delivery wishlist-release-announcements`, then repeat step 2 until nothing is `queued`. Pause again with `pause-delivery` on a burst of failures.
 
 ### Rollback
 
