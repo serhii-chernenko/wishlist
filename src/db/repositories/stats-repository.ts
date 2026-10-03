@@ -16,6 +16,16 @@ export interface StatsSnapshot {
     activeUsers1d: number;
     activeUsers7d: number;
     activeUsers30d: number;
+    botOnlyUsers1d: number;
+    botOnlyUsers7d: number;
+    botOnlyUsers30d: number;
+    appOnlyUsers1d: number;
+    appOnlyUsers7d: number;
+    appOnlyUsers30d: number;
+    bothChannelUsers1d: number;
+    bothChannelUsers7d: number;
+    bothChannelUsers30d: number;
+    appUsersTotal: number;
     totalWishes: number;
     activeWishes: number;
     hiddenWishes: number;
@@ -66,6 +76,28 @@ export const createStatsRepository = (db: AppDb) => {
                 const isActive = (days: number) => {
                     return sql`${users.blockedAt} is null and ${users.lastSeenAt} >= ${activeSince(days)}`;
                 };
+                const isSeenIn = (
+                    column: typeof users.lastBotSeenAt,
+                    days: number
+                ) => {
+                    return sql`${column} >= ${activeSince(days)}`;
+                };
+                const channelUsers = (
+                    channel: 'botOnly' | 'appOnly' | 'both',
+                    days: number
+                ) => {
+                    const bot = isSeenIn(users.lastBotSeenAt, days);
+                    const app = isSeenIn(users.lastAppSeenAt, days);
+                    const mix = {
+                        botOnly: sql`${bot} and not coalesce(${app}, 0)`,
+                        appOnly: sql`${app} and not coalesce(${bot}, 0)`,
+                        both: sql`${bot} and ${app}`
+                    }[channel];
+
+                    return countWhere(
+                        sql`${users.blockedAt} is null and ${mix}`
+                    );
+                };
                 const languageCount = (language: string) => {
                     return countWhere(
                         sql`${users.blockedAt} is null and ${users.language} = ${language}`
@@ -81,6 +113,18 @@ export const createStatsRepository = (db: AppDb) => {
                             activeUsers1d: countWhere(isActive(1)),
                             activeUsers7d: countWhere(isActive(7)),
                             activeUsers30d: countWhere(isActive(30)),
+                            botOnlyUsers1d: channelUsers('botOnly', 1),
+                            botOnlyUsers7d: channelUsers('botOnly', 7),
+                            botOnlyUsers30d: channelUsers('botOnly', 30),
+                            appOnlyUsers1d: channelUsers('appOnly', 1),
+                            appOnlyUsers7d: channelUsers('appOnly', 7),
+                            appOnlyUsers30d: channelUsers('appOnly', 30),
+                            bothChannelUsers1d: channelUsers('both', 1),
+                            bothChannelUsers7d: channelUsers('both', 7),
+                            bothChannelUsers30d: channelUsers('both', 30),
+                            appUsersTotal: countWhere(
+                                sql`${users.lastAppSeenAt} is not null`
+                            ),
                             usersWithPayments: countWhere(
                                 sql`${users.payments} is not null`
                             ),
@@ -118,6 +162,16 @@ export const createStatsRepository = (db: AppDb) => {
                     activeUsers1d: userTotals?.activeUsers1d ?? 0,
                     activeUsers7d: userTotals?.activeUsers7d ?? 0,
                     activeUsers30d: userTotals?.activeUsers30d ?? 0,
+                    botOnlyUsers1d: userTotals?.botOnlyUsers1d ?? 0,
+                    botOnlyUsers7d: userTotals?.botOnlyUsers7d ?? 0,
+                    botOnlyUsers30d: userTotals?.botOnlyUsers30d ?? 0,
+                    appOnlyUsers1d: userTotals?.appOnlyUsers1d ?? 0,
+                    appOnlyUsers7d: userTotals?.appOnlyUsers7d ?? 0,
+                    appOnlyUsers30d: userTotals?.appOnlyUsers30d ?? 0,
+                    bothChannelUsers1d: userTotals?.bothChannelUsers1d ?? 0,
+                    bothChannelUsers7d: userTotals?.bothChannelUsers7d ?? 0,
+                    bothChannelUsers30d: userTotals?.bothChannelUsers30d ?? 0,
+                    appUsersTotal: userTotals?.appUsersTotal ?? 0,
                     totalWishes: wishTotals?.totalWishes ?? 0,
                     activeWishes: wishTotals?.activeWishes ?? 0,
                     hiddenWishes: wishTotals?.hiddenWishes ?? 0,

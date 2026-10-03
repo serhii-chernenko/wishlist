@@ -36,6 +36,7 @@ export type {
     NewUser,
     ProfileSyncInput,
     SearchableUserQuery,
+    SeenChannel,
     UserLanguage,
     UserRecord,
     VisibilityInput

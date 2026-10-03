@@ -17,6 +17,7 @@ import {
 } from '../../worker/telemetry';
 import {
     emitApiTelemetry,
+    runInBackground,
     type ApiContext,
     type ApiDeps,
     type ApiRoute,
@@ -179,6 +180,31 @@ const enforceRateLimit = async (
     return null;
 };
 
+const APP_SEEN_WRITE_INTERVAL_MILLISECONDS = 60 * 60 * 1000;
+
+const recordAppSeen = async (c: ApiContext) => {
+    const { user, repos, deps } = c.var;
+
+    if (user === null) {
+        return;
+    }
+
+    const now = deps.now();
+    const lastSeen = user.lastAppSeenAt?.getTime();
+
+    if (
+        lastSeen !== undefined &&
+        lastSeen >= now.getTime() - APP_SEEN_WRITE_INTERVAL_MILLISECONDS
+    ) {
+        return;
+    }
+
+    await runInBackground(
+        c,
+        Effect.runPromise(repos.users.markAppSeen(user.id, now))
+    );
+};
+
 const authenticate = async (
     c: ApiContext,
     route: ApiRoute
@@ -275,6 +301,8 @@ export const createAuthMiddleware = (
         if (rejection) {
             return rejection;
         }
+
+        await recordAppSeen(c);
 
         if (guard) {
             return guard(c, next);

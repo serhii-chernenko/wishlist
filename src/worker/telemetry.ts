@@ -11,8 +11,11 @@ import {
     type ApiErrorCode,
     type AppPlatform,
     type AuthRejectReason,
+    type AppTheme,
+    type ClientEventField,
     type ClientEventKind,
     type ClientScreen,
+    type FieldErrorCode,
     type RateLimitBucket
 } from '../shared/app-api';
 import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
@@ -168,6 +171,16 @@ export type TelemetryFields = {
     activeUsers1d?: number;
     activeUsers7d?: number;
     activeUsers30d?: number;
+    botOnlyUsers1d?: number;
+    botOnlyUsers7d?: number;
+    botOnlyUsers30d?: number;
+    appOnlyUsers1d?: number;
+    appOnlyUsers7d?: number;
+    appOnlyUsers30d?: number;
+    bothChannelUsers1d?: number;
+    bothChannelUsers7d?: number;
+    bothChannelUsers30d?: number;
+    appUsersTotal?: number;
     totalWishes?: number;
     activeWishes?: number;
     hiddenWishes?: number;
@@ -186,6 +199,8 @@ export type TelemetryFields = {
     scope?: ImageProxyScope;
     kind?: ClientEventKind;
     screen?: ClientScreen;
+    code?: FieldErrorCode;
+    theme?: AppTheme;
 };
 
 const knownPaths = new Set([
@@ -222,7 +237,9 @@ const labelFieldNames = [
     'startKind',
     'scope',
     'kind',
-    'screen'
+    'screen',
+    'code',
+    'theme'
 ] as const;
 
 const knownApiRoutes: ReadonlySet<string> = new Set([
@@ -589,6 +606,7 @@ export const appSessionStartedEvent = (input: {
     startKind: StartKind;
     isGuest: boolean;
     locale: Exclude<TelemetryLocale, 'auto'>;
+    theme: AppTheme;
 }): TelemetryFields => {
     return {
         event: 'app_session_started',
@@ -667,6 +685,8 @@ export const imageProxyServedEvent = (input: {
 export const appClientEvent = (input: {
     kind: ClientEventKind;
     screen: ClientScreen;
+    field?: ClientEventField;
+    code?: FieldErrorCode;
 }): TelemetryFields => {
     return {
         event: 'app_client_event',

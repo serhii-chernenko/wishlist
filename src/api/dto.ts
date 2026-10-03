@@ -242,6 +242,7 @@ export const toShareDto = (input: {
     state: ShareDto['state'];
     share: ShareRecord | null;
     url: string | null;
+    appUrl: string | null;
     user: Pick<UserRecord, 'username' | 'usernameSearchable'>;
     consentName: string;
     host: string;
@@ -249,6 +250,7 @@ export const toShareDto = (input: {
     return {
         state: input.state,
         url: input.state === 'shared' ? input.url : null,
+        appUrl: input.state === 'shared' ? input.appUrl : null,
         showUsername: input.share?.showUsername ?? false,
         canShowUsername: canShowPublicUsername(input.user),
         consent: { name: input.consentName, host: input.host }

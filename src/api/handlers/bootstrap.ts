@@ -4,7 +4,11 @@ import type { AppLocale } from '../../bot/i18n';
 import { decodeSessionLanguage } from '../../bot/runtime/session-store';
 import { createUserService } from '../../bot/services/user-service';
 import type { Repositories, UserRecord } from '../../db/repositories';
-import { toAppPlatform, type BootstrapDto } from '../../shared/app-api';
+import {
+    toAppPlatform,
+    toAppTheme,
+    type BootstrapDto
+} from '../../shared/app-api';
 import { getStartKind } from '../../shared/app-links';
 import { appSessionStartedEvent } from '../../worker/telemetry';
 import { emitApiTelemetry, type ApiHandler } from '../context';
@@ -63,7 +67,8 @@ export const bootstrap: ApiHandler = async c => {
             ? null
             : await createUserService({ repos, now: deps.now }).syncProfile(
                   storedUser,
-                  actor
+                  actor,
+                  'app'
               );
     const sessionLanguage = await readSessionLanguage(repos, actor.id, user);
     const locale = resolveRequestLocale(actor, user, sessionLanguage);
@@ -82,7 +87,8 @@ export const bootstrap: ApiHandler = async c => {
                 c.req.query('start') ?? c.var.initData.startParam
             ),
             isGuest: user === null,
-            locale
+            locale,
+            theme: toAppTheme(c.req.query('theme'))
         })
     );
 

@@ -401,6 +401,76 @@ describe('Mini App API auth and bootstrap', () => {
         );
     });
 
+    it('reports the theme from a closed set and falls back to unknown', async () => {
+        const themeOf = async (query: string) => {
+            events = [];
+            await request(`/bootstrap${query}`, { initData: signedFor() });
+
+            return eventsNamed('app_session_started')[0]?.theme;
+        };
+
+        assert.equal(await themeOf('?theme=dark'), 'dark');
+        assert.equal(await themeOf('?theme=light'), 'light');
+        assert.equal(await themeOf(''), 'unknown');
+        assert.equal(await themeOf('?theme=neon'), 'unknown');
+    });
+
+    it('stamps last_app_seen_at once per hour for registered users only', async () => {
+        await request('/bootstrap', { initData: signedFor() });
+        assert.equal(await countRows(harness, 'users'), 0);
+
+        const user = await createUser();
+
+        await request('/bootstrap', { initData: signedFor() });
+
+        const first = await run(harness.repositories.users.findById(user.id));
+
+        assert.equal(first?.lastAppSeenAt?.getTime(), NOW.getTime());
+        assert.equal(first?.lastBotSeenAt, null);
+
+        const later = new Date(NOW.getTime() + 30 * 60 * 1000);
+
+        assert.equal(
+            await run(harness.repositories.users.markAppSeen(user.id, later)),
+            false
+        );
+        assert.equal(
+            (
+                await run(harness.repositories.users.findById(user.id))
+            )?.lastAppSeenAt?.getTime(),
+            NOW.getTime()
+        );
+
+        const afterAnHour = new Date(NOW.getTime() + 61 * 60 * 1000);
+
+        assert.equal(
+            await run(
+                harness.repositories.users.markAppSeen(user.id, afterAnHour)
+            ),
+            true
+        );
+        assert.equal(
+            (
+                await run(harness.repositories.users.findById(user.id))
+            )?.lastAppSeenAt?.getTime(),
+            afterAnHour.getTime()
+        );
+    });
+
+    it('does not stamp last_app_seen_at when authentication is rejected', async () => {
+        const user = await createUser();
+
+        await request('/bootstrap', {
+            initData: signedFor(ADMIN, NOW_SECONDS - 10 * 24 * 3600)
+        });
+
+        assert.equal(
+            (await run(harness.repositories.users.findById(user.id)))
+                ?.lastAppSeenAt,
+            null
+        );
+    });
+
     it('bootstraps a user, syncs the profile and clears blocked_at', async () => {
         const user = await createUser({
             username: 'old_name',

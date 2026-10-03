@@ -447,6 +447,13 @@ describe('wishlist screens on D1', () => {
     describe('share', () => {
         const ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 
+        const toShareLinks = (publicId: string | undefined) => {
+            return {
+                appUrl: `https://t.me/wishlist_ua_bot?startapp=s_${publicId}`,
+                pageUrl: `${ORIGIN}/w/${publicId}`
+            };
+        };
+
         const createSharingOwner = async () => {
             const owner = await createUser({ username: 'sharer' });
 
@@ -563,13 +570,13 @@ describe('wishlist screens on D1', () => {
             await dispatch(request, 'wl:share:y');
 
             const row = await readShareRow(owner.id);
-            const url = `${ORIGIN}/w/${row?.public_id}`;
+            const links = toShareLinks(row?.public_id);
 
             assert.ok(row);
             assert.equal(row.display_name, 'Test');
             assert.equal(
                 lastText(events).html,
-                getMessages('uk').wishlist.share.ready({ url })
+                getMessages('uk').wishlist.share.ready(links)
             );
 
             const buttons = buttonsOf(lastText(events).keyboard);
@@ -579,8 +586,9 @@ describe('wishlist screens on D1', () => {
                     return 'url' in button ? [button.url] : [];
                 }),
                 [
-                    url,
-                    `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(getMessages('uk').wishlist.share.sendText())}`
+                    links.appUrl,
+                    links.pageUrl,
+                    `https://t.me/share/url?url=${encodeURIComponent(links.appUrl)}&text=${encodeURIComponent(getMessages('uk').wishlist.share.sendText({ pageUrl: links.pageUrl }))}`
                 ]
             );
 
@@ -685,11 +693,11 @@ describe('wishlist screens on D1', () => {
                 await dispatch(request, 'wl:share');
 
                 const link = lastText(events);
-                const url = `${ORIGIN}/w/${row.public_id}`;
+                const links = toShareLinks(row.public_id);
 
                 assert.equal(
                     link.html,
-                    `${getMessages('uk').wishlist.share.ready({ url })}\n\n${getMessages('uk').wishlist.share.pageEmpty()}`
+                    `${getMessages('uk').wishlist.share.ready(links)}\n\n${getMessages('uk').wishlist.share.pageEmpty()}`
                 );
                 assert.deepEqual(callbackDataOf(link.keyboard), [
                     'wl:share:new',
@@ -841,7 +849,7 @@ describe('wishlist screens on D1', () => {
             await dispatch(request, 'wl:share:y');
 
             const created = await readShareRow(owner.id);
-            const url = `${ORIGIN}/w/${created?.public_id}`;
+            const links = toShareLinks(created?.public_id);
 
             await dispatch(request, 'wl:share:u');
 
@@ -851,7 +859,7 @@ describe('wishlist screens on D1', () => {
             assert.equal(enabled?.public_id, created?.public_id);
             assert.equal(
                 lastText(events).html,
-                getMessages('uk').wishlist.share.ready({ url })
+                getMessages('uk').wishlist.share.ready(links)
             );
             assert.equal(
                 toggleTextOf(lastText(events).keyboard),
@@ -968,9 +976,9 @@ describe('wishlist screens on D1', () => {
             assert.notEqual(after?.public_id, before?.public_id);
             assert.equal(
                 lastText(events).html,
-                getMessages('uk').wishlist.share.rotated({
-                    url: `${ORIGIN}/w/${after?.public_id}`
-                })
+                getMessages('uk').wishlist.share.rotated(
+                    toShareLinks(after?.public_id)
+                )
             );
             assert.deepEqual(telemetry.at(-1), {
                 action: 'wishlist_share_rotated',

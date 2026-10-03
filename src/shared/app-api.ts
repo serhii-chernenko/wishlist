@@ -101,12 +101,30 @@ export const APP_PLATFORMS = [
 
 export type AppPlatform = (typeof APP_PLATFORMS)[number];
 
+export const APP_THEMES = ['light', 'dark', 'unknown'] as const;
+
+export type AppTheme = (typeof APP_THEMES)[number];
+
 export const CLIENT_EVENT_KINDS = [
     'renderError',
     'networkError',
     'sdkUnsupported',
-    'uploadFailed'
+    'uploadFailed',
+    'screenView',
+    'validationFailed'
 ] as const;
+
+export const CLIENT_EVENT_FIELDS = [
+    'title',
+    'description',
+    'price',
+    'link',
+    'query',
+    'payments',
+    'feedback'
+] as const;
+
+export type ClientEventField = (typeof CLIENT_EVENT_FIELDS)[number];
 
 export type ClientEventKind = (typeof CLIENT_EVENT_KINDS)[number];
 
@@ -266,6 +284,7 @@ export type MeDto = {
 export type ShareDto = {
     state: 'empty' | 'unshared' | 'shared';
     url: string | null;
+    appUrl: string | null;
     showUsername: boolean;
     canShowUsername: boolean;
     consent: { name: string; host: string };
@@ -368,10 +387,16 @@ export type ReleaseDto = {
 
 export type ReleasesDto = { items: ReleaseDto[]; total: number };
 
-export type ClientEventInput = { kind: ClientEventKind; screen: ClientScreen };
+export type ClientEventInput = {
+    kind: ClientEventKind;
+    screen: ClientScreen;
+    field?: ClientEventField;
+    code?: FieldErrorCode;
+};
 
 export type BootstrapQuery = {
     platform?: string;
+    theme?: string;
     version?: string;
     start?: string;
 };
@@ -816,6 +841,10 @@ export const toAppPlatform = (
     }
 
     return APP_PLATFORMS.find(platform => platform === value) ?? 'unknown';
+};
+
+export const toAppTheme = (value: string | null | undefined): AppTheme => {
+    return APP_THEMES.find(theme => theme === value) ?? 'unknown';
 };
 
 export const isApiErrorBody = (value: unknown): value is ApiErrorBody => {

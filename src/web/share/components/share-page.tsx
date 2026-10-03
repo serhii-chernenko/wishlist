@@ -8,8 +8,8 @@ import { SHAREABLE_WISHES_LIMIT } from '../../../db/repositories/wish-repository
 import { inlineMarkup, trimEdgeWhitespace } from '../inline-markup';
 import { buildSharePath } from '../public-id';
 import type { SharePageModel } from '../view-model';
-import { buildMainAppLink, formatStartParam } from '../../../shared/app-links';
-import { PageFooter } from './footer';
+import { buildShareAppLink } from '../../../shared/app-links';
+import { EXTERNAL_LINK_REL, PageFooter } from './footer';
 import { HeroTag } from './hero';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
@@ -41,29 +41,9 @@ const PaymentsEnvelope = ({
     );
 };
 
-const OpenInAppLink = ({ model }: { model: SharePageModel }) => {
-    const LL = getTranslator(model.language);
-
-    return (
-        <p class='notice'>
-            <a
-                class='chip'
-                href={buildMainAppLink(
-                    model.botUrl,
-                    formatStartParam({
-                        kind: 'share',
-                        publicId: model.publicId
-                    })
-                )}
-            >
-                {LL.web.footer.openInApp()}
-            </a>
-        </p>
-    );
-};
-
 const ShareHero = ({ model }: { model: SharePageModel }) => {
     const LL = getTranslator(model.language);
+    const appLink = buildShareAppLink(model.botUrl, model.publicId);
     const showsUsername =
         model.username !== null &&
         TELEGRAM_USERNAME_PATTERN.test(model.username);
@@ -96,6 +76,17 @@ const ShareHero = ({ model }: { model: SharePageModel }) => {
                         target='_blank'
                     >
                         {LL.web.header.username({ username: model.username })}
+                    </a>
+                </p>
+            ) : null}
+            {model.wishes.length > 0 && appLink !== null ? (
+                <p class='hero-action'>
+                    <a
+                        class='cta cta-text'
+                        href={appLink}
+                        rel={EXTERNAL_LINK_REL}
+                    >
+                        {LL.web.footer.openInApp()}
                     </a>
                 </p>
             ) : null}
@@ -137,9 +128,6 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                         })}
                     </ul>
                 )}
-                {model.wishes.length > 0 ? (
-                    <OpenInAppLink model={model} />
-                ) : null}
                 {model.visibleCount > SHAREABLE_WISHES_LIMIT ? (
                     <p class='notice'>
                         {LL.web.truncated({ limit: SHAREABLE_WISHES_LIMIT })}

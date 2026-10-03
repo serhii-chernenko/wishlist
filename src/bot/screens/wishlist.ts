@@ -36,6 +36,7 @@ import {
 import { getErrorType } from '../errors';
 import { deriveRequest } from '../runtime/context';
 import type { ShareRecord } from '../../db/repositories';
+import { buildShareAppLink } from '../../shared/app-links';
 import { buildShareUrl } from '../../web/share/public-id';
 import {
     buildAuthorName,
@@ -212,6 +213,11 @@ type ShareActionName = Extract<
     | 'wishlist_share_username_toggled'
 >;
 
+interface ShareLinks {
+    appUrl: string;
+    pageUrl: string;
+}
+
 type ShareAttempt<Value> = { ok: true; value: Value } | { ok: false };
 
 const attemptShare = async <Value>(
@@ -234,10 +240,10 @@ const attemptShare = async <Value>(
     }
 };
 
-const buildTelegramShareUrl = (req: BotRequest, pageUrl: string) => {
-    const text = req.LL.wishlist.share.sendText();
+const buildTelegramShareUrl = (req: BotRequest, links: ShareLinks) => {
+    const text = req.LL.wishlist.share.sendText({ pageUrl: links.pageUrl });
 
-    return `${TELEGRAM_SHARE_URL}?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(text)}`;
+    return `${TELEGRAM_SHARE_URL}?url=${encodeURIComponent(links.appUrl)}&text=${encodeURIComponent(text)}`;
 };
 
 const buildUsernameToggleButton = (
@@ -259,14 +265,15 @@ const buildUsernameToggleButton = (
 const buildShareLinkKeyboard = (
     req: BotRequest,
     share: Pick<ShareRecord, 'showUsername'>,
-    pageUrl: string
+    links: ShareLinks
 ) => {
     const { LL } = req;
     const { actions } = LL.wishlist.share;
 
     return singleColumnKeyboard([
-        urlButton(actions.open(), pageUrl),
-        urlButton(actions.send(), buildTelegramShareUrl(req, pageUrl)),
+        urlButton(actions.openTelegram(), links.appUrl),
+        urlButton(actions.openBrowser(), links.pageUrl),
+        urlButton(actions.send(), buildTelegramShareUrl(req, links)),
         appEntryButton(req, 'share'),
         buildUsernameToggleButton(req, share),
         callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
@@ -282,13 +289,22 @@ const getPublicOrigin = (req: BotRequest) => {
 const renderShareLink = async (
     req: BotRequest,
     share: Pick<ShareRecord, 'publicId' | 'showUsername'>,
-    buildText: (url: string) => string
+    buildText: (links: ShareLinks) => string
 ) => {
     const pageUrl = buildShareUrl(getPublicOrigin(req), share.publicId);
+    const links: ShareLinks = {
+        pageUrl,
+        appUrl:
+            buildShareAppLink(req.env.WISHLIST_TG_URL, share.publicId) ??
+            pageUrl
+    };
 
     await req.send.text(
-        buildText(escapeHtml(pageUrl)),
-        buildShareLinkKeyboard(req, share, pageUrl)
+        buildText({
+            appUrl: escapeHtml(links.appUrl),
+            pageUrl: escapeHtml(links.pageUrl)
+        }),
+        buildShareLinkKeyboard(req, share, links)
     );
 };
 
@@ -343,8 +359,8 @@ const publishShare = async (req: BotRequest) => {
         action: 'wishlist_shared',
         result: outcome.status === 'created' ? 'published' : 'existing'
     });
-    await renderShareLink(req, outcome.share, url => {
-        const ready = req.LL.wishlist.share.ready({ url });
+    await renderShareLink(req, outcome.share, links => {
+        const ready = req.LL.wishlist.share.ready(links);
 
         return outcome.pageEmpty
             ? `${ready}\n\n${req.LL.wishlist.share.pageEmpty()}`
@@ -441,8 +457,8 @@ const rotateShare = async (req: BotRequest) => {
         action: 'wishlist_share_rotated',
         result: 'success'
     });
-    await renderShareLink(req, attempt.value, url => {
-        return req.LL.wishlist.share.rotated({ url });
+    await renderShareLink(req, attempt.value, links => {
+        return req.LL.wishlist.share.rotated(links);
     });
 };
 
@@ -476,8 +492,8 @@ const toggleShareUsername = async (req: BotRequest) => {
         });
     }
 
-    await renderShareLink(req, toggled, url => {
-        return req.LL.wishlist.share.ready({ url });
+    await renderShareLink(req, toggled, links => {
+        return req.LL.wishlist.share.ready(links);
     });
 };
 

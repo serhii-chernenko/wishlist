@@ -448,6 +448,10 @@
             box-shadow 80ms ease-out;
     }
 
+    .cta-text {
+        padding-inline: 1.25rem;
+    }
+
     .cta-logo {
         flex: none;
         width: 1.75rem;

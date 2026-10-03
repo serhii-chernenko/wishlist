@@ -679,6 +679,7 @@ describe('Mini App API account, share, feedback and info', () => {
             assert.deepEqual(empty, {
                 state: 'empty',
                 url: null,
+                appUrl: null,
                 showUsername: false,
                 canShowUsername: true,
                 consent: { name: 'Olena Koval', host: 'wishlist.chernenko.dev' }
@@ -697,6 +698,7 @@ describe('Mini App API account, share, feedback and info', () => {
 
             assert.equal(unshared.state, 'unshared');
             assert.equal(unshared.url, null);
+            assert.equal(unshared.appUrl, null);
 
             const publishedResponse = await api('POST', '/share/publish', {
                 as: OWNER
@@ -715,6 +717,10 @@ describe('Mini App API account, share, feedback and info', () => {
             assert.equal(
                 published.url,
                 `${CANONICAL_ORIGIN}/w/${share?.publicId}`
+            );
+            assert.equal(
+                published.appUrl,
+                `${harness.env.WISHLIST_TG_URL}?startapp=s_${share?.publicId}`
             );
 
             const again = await readJson<ShareDto>(
@@ -779,6 +785,7 @@ describe('Mini App API account, share, feedback and info', () => {
             assert.equal(stopped.status, 200);
             assert.equal(stoppedBody.state, 'unshared');
             assert.equal(stoppedBody.url, null);
+            assert.equal(stoppedBody.appUrl, null);
 
             const rotatedPublicId = rotated.url?.slice(
                 rotated.url.lastIndexOf('/') + 1
@@ -1152,8 +1159,45 @@ describe('Mini App API account, share, feedback and info', () => {
             }
         });
 
+        it('records screen views and validation failures with closed-set labels', async () => {
+            const view = await api('POST', '/client-events', {
+                as: GUEST,
+                body: { kind: 'screenView', screen: 'wishes' }
+            });
+            const failure = await api('POST', '/client-events', {
+                as: GUEST,
+                body: {
+                    kind: 'validationFailed',
+                    screen: 'wishEditor',
+                    field: 'title',
+                    code: 'tooLong'
+                }
+            });
+
+            assert.equal(view.status, 204);
+            assert.equal(failure.status, 204);
+            assert.deepEqual(
+                eventsNamed('app_client_event').map(event => {
+                    return [event.kind, event.screen, event.field, event.code];
+                }),
+                [
+                    ['screenView', 'wishes', undefined, undefined],
+                    ['validationFailed', 'wishEditor', 'title', 'tooLong']
+                ]
+            );
+        });
+
         it('rejects values outside the closed sets', async () => {
             const cases: [unknown, Record<string, string>][] = [
+                [
+                    {
+                        kind: 'validationFailed',
+                        screen: 'wishEditor',
+                        field: 'secret',
+                        code: 'nope'
+                    },
+                    { field: 'invalid', code: 'invalid' }
+                ],
                 [
                     { kind: 'renderError', screen: 'secret' },
                     { screen: 'invalid' }

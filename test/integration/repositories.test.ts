@@ -267,6 +267,49 @@ describe('D1 repositories', () => {
             assert.equal(refreshed?.lastSeenAt?.getTime(), later.getTime());
         });
 
+        it('stamps lastBotSeenAt on bot syncs only and throttles it to once per hour', async () => {
+            const user = await createUser({ username: 'channels' });
+            const input = { username: 'channels', telegramLanguageCode: null };
+
+            const appSync = await run(
+                repositories.users.syncProfile(user.id, {
+                    ...input,
+                    now,
+                    channel: 'app'
+                })
+            );
+
+            assert.equal(appSync?.lastSeenAt?.getTime(), now.getTime());
+            assert.equal(appSync?.lastBotSeenAt, null);
+
+            const soon = new Date(now.getTime() + 10 * 60 * 1000);
+            const botSync = await run(
+                repositories.users.syncProfile(user.id, { ...input, now: soon })
+            );
+
+            assert.equal(botSync?.lastBotSeenAt?.getTime(), soon.getTime());
+
+            const unchanged = await run(
+                repositories.users.syncProfile(user.id, {
+                    ...input,
+                    now: new Date(soon.getTime() + 60 * 1000)
+                })
+            );
+
+            assert.equal(unchanged, null);
+
+            const later = new Date(soon.getTime() + 2 * hourMilliseconds);
+            const refreshed = await run(
+                repositories.users.syncProfile(user.id, {
+                    ...input,
+                    now: later
+                })
+            );
+
+            assert.equal(refreshed?.lastBotSeenAt?.getTime(), later.getTime());
+            assert.equal(refreshed?.lastAppSeenAt, null);
+        });
+
         it('keeps the stored Telegram language code when a sync carries none', async () => {
             const user = await createUser({
                 username: 'coded',
@@ -1389,6 +1432,16 @@ describe('D1 repositories', () => {
                 activeUsers1d: 1,
                 activeUsers7d: 2,
                 activeUsers30d: 2,
+                botOnlyUsers1d: 1,
+                botOnlyUsers7d: 2,
+                botOnlyUsers30d: 2,
+                appOnlyUsers1d: 0,
+                appOnlyUsers7d: 0,
+                appOnlyUsers30d: 0,
+                bothChannelUsers1d: 0,
+                bothChannelUsers7d: 0,
+                bothChannelUsers30d: 0,
+                appUsersTotal: 0,
                 totalWishes: 4,
                 activeWishes: 3,
                 hiddenWishes: 1,

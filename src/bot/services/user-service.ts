@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 import type { User } from 'telegraf/types';
 
+import type { SeenChannel } from '../../db/repositories';
 import { getLatestReleaseVersion } from '../content/releases';
 import type { AppLocale } from '../i18n';
 import type {
@@ -83,12 +84,17 @@ export const createUserService = (deps: {
     const now = deps.now ?? (() => new Date());
 
     return {
-        async syncProfile(user: UserRecord, actor: User) {
+        async syncProfile(
+            user: UserRecord,
+            actor: User,
+            channel: SeenChannel = 'bot'
+        ) {
             const synced = await Effect.runPromise(
                 repos.users.syncProfile(user.id, {
                     username: actor.username ?? null,
                     telegramLanguageCode: actor.language_code ?? null,
-                    now: now()
+                    now: now(),
+                    channel
                 })
             );
 

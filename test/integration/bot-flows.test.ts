@@ -736,6 +736,12 @@ describe('Bot flows through the Worker on D1', () => {
         const shareUrlOf = (publicId: string) => {
             return buildShareUrl(CANONICAL_SHARE_ORIGIN, publicId);
         };
+        const shareLinksOf = (publicId: string) => {
+            return {
+                appUrl: `https://t.me/wishlist_ua_bot?startapp=s_${publicId}`,
+                pageUrl: shareUrlOf(publicId)
+            };
+        };
         const seedSharedOwner = async () => {
             const owner = await webhook.registerUser(alice, {
                 payments: 'Card 1234 5678'
@@ -782,12 +788,13 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(share.display_name, 'Alice');
             assert.equal(share.revoked_at, null);
 
-            const url = shareUrlOf(share.public_id);
+            const links = shareLinksOf(share.public_id);
             const message = webhook.lastMessage();
 
-            assert.equal(message.text, LL.wishlist.share.ready({ url }));
+            assert.equal(message.text, LL.wishlist.share.ready(links));
             assert.deepEqual(buttonTextsOf(message), [
-                LL.wishlist.share.actions.open(),
+                LL.wishlist.share.actions.openTelegram(),
+                LL.wishlist.share.actions.openBrowser(),
                 LL.wishlist.share.actions.send(),
                 LL.actions.openApp(),
                 LL.wishlist.share.actions.showUsername(),
@@ -796,8 +803,9 @@ describe('Bot flows through the Worker on D1', () => {
                 LL.actions.back()
             ]);
             assert.deepEqual(urlsOf(message), [
-                url,
-                `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(LL.wishlist.share.sendText())}`
+                links.appUrl,
+                links.pageUrl,
+                `https://t.me/share/url?url=${encodeURIComponent(links.appUrl)}&text=${encodeURIComponent(LL.wishlist.share.sendText({ pageUrl: links.pageUrl }))}`
             ]);
             assert.deepEqual(callbackDataOf(message), [
                 'wl:share:u',
@@ -828,9 +836,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(second?.public_id, first.public_id);
             assert.equal(
                 webhook.lastMessage().text,
-                LL.wishlist.share.ready({
-                    url: shareUrlOf(first.public_id)
-                })
+                LL.wishlist.share.ready(shareLinksOf(first.public_id))
             );
             assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
                 'wl:share:u',
@@ -860,9 +866,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(share?.display_name, 'Alicia');
             assert.equal(
                 webhook.lastMessage().text,
-                LL.wishlist.share.ready({
-                    url: shareUrlOf(share?.public_id ?? '')
-                })
+                LL.wishlist.share.ready(shareLinksOf(share?.public_id ?? ''))
             );
         });
 
@@ -916,9 +920,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(restored?.display_name, 'Alice');
             assert.equal(
                 webhook.lastMessage().text,
-                LL.wishlist.share.ready({
-                    url: shareUrlOf(shared.public_id)
-                })
+                LL.wishlist.share.ready(shareLinksOf(shared.public_id))
             );
         });
 
@@ -956,9 +958,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(isValidSharePublicId(after.public_id));
             assert.equal(
                 webhook.lastMessage().text,
-                LL.wishlist.share.rotated({
-                    url: shareUrlOf(after.public_id)
-                })
+                LL.wishlist.share.rotated(shareLinksOf(after.public_id))
             );
         });
 

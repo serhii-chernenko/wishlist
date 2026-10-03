@@ -14,6 +14,16 @@ export interface BotStateSnapshot {
     activeUsers1d: number;
     activeUsers7d: number;
     activeUsers30d: number;
+    botOnlyUsers1d: number;
+    botOnlyUsers7d: number;
+    botOnlyUsers30d: number;
+    appOnlyUsers1d: number;
+    appOnlyUsers7d: number;
+    appOnlyUsers30d: number;
+    bothChannelUsers1d: number;
+    bothChannelUsers7d: number;
+    bothChannelUsers30d: number;
+    appUsersTotal: number;
     totalWishes: number;
     activeWishes: number;
     hiddenWishes: number;

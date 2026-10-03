@@ -5,6 +5,7 @@ import {
     resolvePublicOrigin
 } from '../../bot/services/share-service';
 import type { UserRecord } from '../../db/repositories';
+import { buildShareAppLink } from '../../shared/app-links';
 import { buildShareUrl } from '../../web/share/public-id';
 import type { ApiContext, ApiHandler } from '../context';
 import { requireUser } from '../context';
@@ -37,6 +38,10 @@ const respondWithShare = async (c: ApiContext, user: UserRecord) => {
             state: share === null && state === 'shared' ? 'unshared' : state,
             share,
             url: share === null ? null : buildShareUrl(origin, share.publicId),
+            appUrl:
+                share === null
+                    ? null
+                    : buildShareAppLink(c.env.WISHLIST_TG_URL, share.publicId),
             user,
             consentName:
                 buildAuthorName(c.var.actor) || SHARE_PAGE_FALLBACK_NAME,

@@ -1565,7 +1565,7 @@
                     }
                 },
                 {
-                    "title": "Client events by kind",
+                    "title": "Client errors by kind and screen",
                     "layout": {
                         "column": 1,
                         "row": 34,
@@ -1580,7 +1580,617 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' FACET kind, screen SINCE 30 days ago LIMIT 20"
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind NOT IN ('screenView', 'validationFailed') FACET kind, screen SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Usage & UX",
+            "description": "Who uses the bot, the Mini App or both, and how: sessions by platform, start kind, theme and locale, screen views, validation errors, top actions by channel, the share funnel, uploads, API latency and client errors. Counts come from aggregate snapshots and closed-label events; no user identities.",
+            "widgets": [
+                {
+                    "title": "Active users by channel (1 day)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers1) AS 'Bot only', latest(appOnlyUsers1) AS 'App only', latest(bothChannelUsers1) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by channel (7 days)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers7) AS 'Bot only', latest(appOnlyUsers7) AS 'App only', latest(bothChannelUsers7) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by channel (30 days)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers30) AS 'Bot only', latest(appOnlyUsers30) AS 'App only', latest(bothChannelUsers30) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by channel over time (1 day)",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers1) AS 'Bot only', latest(appOnlyUsers1) AS 'App only', latest(bothChannelUsers1) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by channel over time (7 days)",
+                    "layout": {
+                        "column": 5,
+                        "row": 4,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers7) AS 'Bot only', latest(appOnlyUsers7) AS 'App only', latest(bothChannelUsers7) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Active users by channel over time (30 days)",
+                    "layout": {
+                        "column": 9,
+                        "row": 4,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(botOnlyUsers30) AS 'Bot only', latest(appOnlyUsers30) AS 'App only', latest(bothChannelUsers30) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Users who opened the app",
+                    "layout": {
+                        "column": 1,
+                        "row": 8,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(appUsersTotal) AS 'Opened the app' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App adoption (% of registered)",
+                    "layout": {
+                        "column": 5,
+                        "row": 8,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(appUsersTotal) * 100 / latest(registeredUsers) AS 'Opened the app, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 8,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Sessions' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions per day by start kind",
+                    "layout": {
+                        "column": 1,
+                        "row": 11,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET startKind TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions by platform (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 11,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET platform SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions by theme (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 15,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET theme SINCE 30 days ago LIMIT 5"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions by locale (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 15,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET locale SINCE 30 days ago LIMIT 5"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "App sessions: guests vs registered (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 15,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET isGuest SINCE 30 days ago LIMIT 2"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Screen views by screen (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 19,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'screenView' FACET screen SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Screen views per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 19,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'screenView' FACET screen TIMESERIES 1 day SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Validation errors by field and code (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 23,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'validationFailed' FACET field, code SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Validation errors per day by field",
+                    "layout": {
+                        "column": 7,
+                        "row": 23,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'validationFailed' FACET field TIMESERIES 1 day SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Top actions by channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 27,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wish_created', 'give_added', 'wishlist_shared', 'wishlist_searched') FACET channel, action SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Top actions per day by channel",
+                    "layout": {
+                        "column": 7,
+                        "row": 27,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wish_created', 'give_added', 'wishlist_shared', 'wishlist_searched') FACET channel TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Share funnel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 31,
+                        "width": 4,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Share page views' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') SINCE 30 days ago"
+                            },
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'App sessions from share links' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' AND startKind = 'share' SINCE 30 days ago"
+                            },
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Gives added in the app' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND channel = 'app' AND action = 'give_added' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Share funnel per day",
+                    "layout": {
+                        "column": 5,
+                        "row": 31,
+                        "width": 8,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Share page views' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') TIMESERIES 1 day SINCE 30 days ago"
+                            },
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'App sessions from share links' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' AND startKind = 'share' TIMESERIES 1 day SINCE 30 days ago"
+                            },
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Gives added in the app' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND channel = 'app' AND action = 'give_added' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Photo uploads by result (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 35,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_photo_uploaded' FACET result SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Upload failures reported by clients per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 35,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Upload failures' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'uploadFailed' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API p95 by route (ms)",
+                    "layout": {
+                        "column": 1,
+                        "row": 39,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentile(elapsedMs, 95) AS 'p95' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' FACET route SINCE 1 day ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API latency p50 / p95 over time (ms)",
+                    "layout": {
+                        "column": 7,
+                        "row": 39,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentile(elapsedMs, 50, 95) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' TIMESERIES SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Client errors per day by kind",
+                    "layout": {
+                        "column": 1,
+                        "row": 43,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed') FACET kind TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Client errors by screen (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 43,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed') FACET kind, screen SINCE 30 days ago LIMIT 30"
                             }
                         ]
                     }

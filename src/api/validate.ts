@@ -179,6 +179,23 @@ export const createBodyReader = (body: Record<string, unknown>) => {
 
             return match;
         },
+        optionalOneOf<const Value extends string>(
+            name: string,
+            values: readonly Value[]
+        ): Value | undefined {
+            if (!has(name)) {
+                return undefined;
+            }
+
+            const value = body[name];
+            const match = values.find(candidate => candidate === value);
+
+            if (match === undefined) {
+                fail(name, 'invalid');
+            }
+
+            return match;
+        },
         nullableIntegerInRange(name: string, min: number, max: number) {
             if (!has(name)) {
                 fail(name, 'required');

@@ -31,6 +31,8 @@ export const users = snakeCase.table(
         releaseVersion: text().notNull().default('0.0.0'),
         blockedAt: integer({ mode: 'timestamp_ms' }),
         lastSeenAt: integer({ mode: 'timestamp_ms' }),
+        lastBotSeenAt: integer({ mode: 'timestamp_ms' }),
+        lastAppSeenAt: integer({ mode: 'timestamp_ms' }),
         createdAt: integer({ mode: 'timestamp_ms' })
             .notNull()
             .$defaultFn(() => new Date()),

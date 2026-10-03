@@ -19,10 +19,13 @@ export interface VisibilityInput {
     username: string | null;
 }
 
+export type SeenChannel = 'bot' | 'app';
+
 export interface ProfileSyncInput {
     username: string | null;
     telegramLanguageCode: string | null;
     now: Date;
+    channel?: SeenChannel;
 }
 
 export interface SearchableUserQuery {
@@ -146,6 +149,7 @@ export const createUserRepository = (db: AppDb) => {
             return tryDb(async () => {
                 const staleBefore =
                     input.now.getTime() - LAST_SEEN_WRITE_INTERVAL_MILLISECONDS;
+                const botSeen = (input.channel ?? 'bot') === 'bot';
                 const needsSync = or(
                     sql`${users.username} is not ${input.username}`,
                     input.telegramLanguageCode === null
@@ -153,7 +157,13 @@ export const createUserRepository = (db: AppDb) => {
                         : sql`${users.telegramLanguageCode} is not ${input.telegramLanguageCode}`,
                     sql`${users.blockedAt} is not null`,
                     sql`${users.lastSeenAt} is null`,
-                    sql`${users.lastSeenAt} < ${staleBefore}`
+                    sql`${users.lastSeenAt} < ${staleBefore}`,
+                    botSeen
+                        ? or(
+                              sql`${users.lastBotSeenAt} is null`,
+                              sql`${users.lastBotSeenAt} < ${staleBefore}`
+                          )
+                        : undefined
                 );
                 const syncedRows = await batchReturningLast(
                     db,
@@ -170,6 +180,11 @@ export const createUserRepository = (db: AppDb) => {
                             telegramLanguageCode: sql`coalesce(${input.telegramLanguageCode}, ${users.telegramLanguageCode})`,
                             blockedAt: null,
                             lastSeenAt: sql`case when ${users.lastSeenAt} is null or ${users.lastSeenAt} < ${staleBefore} then ${input.now.getTime()} else ${users.lastSeenAt} end`,
+                            ...(botSeen
+                                ? {
+                                      lastBotSeenAt: sql`case when ${users.lastBotSeenAt} is null or ${users.lastBotSeenAt} < ${staleBefore} then ${input.now.getTime()} else ${users.lastBotSeenAt} end`
+                                  }
+                                : {}),
                             updatedAt: input.now
                         })
                         .where(and(eq(users.id, id), needsSync))
@@ -177,6 +192,27 @@ export const createUserRepository = (db: AppDb) => {
                 );
 
                 return syncedRows[0] ?? null;
+            });
+        },
+        markAppSeen(id: number, now: Date) {
+            return tryDb(async () => {
+                const staleBefore =
+                    now.getTime() - LAST_SEEN_WRITE_INTERVAL_MILLISECONDS;
+                const touched = await db
+                    .update(users)
+                    .set({ lastAppSeenAt: now })
+                    .where(
+                        and(
+                            eq(users.id, id),
+                            or(
+                                sql`${users.lastAppSeenAt} is null`,
+                                sql`${users.lastAppSeenAt} < ${staleBefore}`
+                            )
+                        )
+                    )
+                    .returning({ id: users.id });
+
+                return touched.length > 0;
             });
         },
         releaseUsernameHolder(

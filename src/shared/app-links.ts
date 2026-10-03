@@ -111,3 +111,17 @@ export const buildMainAppLink = (botUrl: string, start?: string | null) => {
         ? `${base}?startapp`
         : `${base}?startapp=${validStart}`;
 };
+
+export const buildShareAppLink = (
+    botUrl: string | null | undefined,
+    publicId: string
+) => {
+    if (typeof botUrl !== 'string' || botUrl.trim() === '') {
+        return null;
+    }
+
+    return buildMainAppLink(
+        botUrl.trim(),
+        formatStartParam({ kind: 'share', publicId })
+    );
+};
