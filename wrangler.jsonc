@@ -41,6 +41,7 @@
     },
     "secrets": {
         "required": [
+            "ADMIN_ID",
             "BOT_TOKEN",
             "TELEGRAM_WEBHOOK_SECRET",
             "TELEGRAM_WEBHOOK_PATH"
@@ -58,22 +59,34 @@
         {
             "name": "APP_API_LIMITER",
             "namespace_id": "2121",
-            "simple": { "limit": 120, "period": 60 }
+            "simple": {
+                "limit": 120,
+                "period": 60
+            }
         },
         {
             "name": "APP_SENSITIVE_LIMITER",
             "namespace_id": "2122",
-            "simple": { "limit": 10, "period": 60 }
+            "simple": {
+                "limit": 10,
+                "period": 60
+            }
         },
         {
             "name": "APP_UPLOAD_LIMITER",
             "namespace_id": "2123",
-            "simple": { "limit": 20, "period": 60 }
+            "simple": {
+                "limit": 20,
+                "period": 60
+            }
         },
         {
             "name": "IMAGE_PROXY_LIMITER",
             "namespace_id": "2124",
-            "simple": { "limit": 300, "period": 60 }
+            "simple": {
+                "limit": 300,
+                "period": 60
+            }
         }
     ],
     "r2_buckets": [
@@ -168,22 +181,34 @@
                 {
                     "name": "APP_API_LIMITER",
                     "namespace_id": "2101",
-                    "simple": { "limit": 120, "period": 60 }
+                    "simple": {
+                        "limit": 120,
+                        "period": 60
+                    }
                 },
                 {
                     "name": "APP_SENSITIVE_LIMITER",
                     "namespace_id": "2102",
-                    "simple": { "limit": 10, "period": 60 }
+                    "simple": {
+                        "limit": 10,
+                        "period": 60
+                    }
                 },
                 {
                     "name": "APP_UPLOAD_LIMITER",
                     "namespace_id": "2103",
-                    "simple": { "limit": 20, "period": 60 }
+                    "simple": {
+                        "limit": 20,
+                        "period": 60
+                    }
                 },
                 {
                     "name": "IMAGE_PROXY_LIMITER",
                     "namespace_id": "2104",
-                    "simple": { "limit": 300, "period": 60 }
+                    "simple": {
+                        "limit": 300,
+                        "period": 60
+                    }
                 }
             ],
             "r2_buckets": [
@@ -209,7 +234,7 @@
                     "MINI_APP_ENABLED": "true",
                     "ENABLE_RELEASE_BROADCAST": "false",
                     "AUTHOR_TWITTER_LINK": "https://x.com/serhiichernenko",
-                    "WISHLIST_TG_URL": "https://t.me/wishlist_ua_bot",
+                    "WISHLIST_TG_URL": "https://t.me/InevixTestBot",
                     "GITHUB_REPO_URL": "https://github.com/serhii-chernenko/wishlist",
                     "PRINCESS_TG_URL": "https://t.me/ixPrincessBot",
                     "TG_CHANNEL": "https://t.me/serhii_chernenko",
@@ -223,22 +248,34 @@
                     {
                         "name": "APP_API_LIMITER",
                         "namespace_id": "2111",
-                        "simple": { "limit": 120, "period": 60 }
+                        "simple": {
+                            "limit": 120,
+                            "period": 60
+                        }
                     },
                     {
                         "name": "APP_SENSITIVE_LIMITER",
                         "namespace_id": "2112",
-                        "simple": { "limit": 10, "period": 60 }
+                        "simple": {
+                            "limit": 10,
+                            "period": 60
+                        }
                     },
                     {
                         "name": "APP_UPLOAD_LIMITER",
                         "namespace_id": "2113",
-                        "simple": { "limit": 20, "period": 60 }
+                        "simple": {
+                            "limit": 20,
+                            "period": 60
+                        }
                     },
                     {
                         "name": "IMAGE_PROXY_LIMITER",
                         "namespace_id": "2114",
-                        "simple": { "limit": 300, "period": 60 }
+                        "simple": {
+                            "limit": 300,
+                            "period": 60
+                        }
                     }
                 ],
                 "r2_buckets": [
