@@ -14,23 +14,28 @@ export const BottomBarFallback = () => {
     }
 
     return (
-        <div class='bottom-bar'>
-            <button
-                type='button'
-                class='btn btn-primary bottom-bar-button'
-                data-bottom-button
-                disabled={Boolean(state.disabled) || Boolean(state.progress)}
-                aria-busy={String(Boolean(state.progress))}
-                onClick={triggerBottomButton}
-            >
-                {state.progress ? (
-                    <span
-                        class='loading loading-spinner loading-sm'
-                        aria-hidden='true'
-                    />
-                ) : null}
-                {state.text}
-            </button>
-        </div>
+        <>
+            <div class='bottom-bar-spacer' aria-hidden='true' />
+            <div class='bottom-bar'>
+                <button
+                    type='button'
+                    class='btn btn-primary bottom-bar-button'
+                    data-bottom-button
+                    disabled={
+                        Boolean(state.disabled) || Boolean(state.progress)
+                    }
+                    aria-busy={String(Boolean(state.progress))}
+                    onClick={triggerBottomButton}
+                >
+                    {state.progress ? (
+                        <span
+                            class='loading loading-spinner loading-sm'
+                            aria-hidden='true'
+                        />
+                    ) : null}
+                    {state.text}
+                </button>
+            </div>
+        </>
     );
 };

@@ -1,43 +1,23 @@
 import { useEffect, useState } from 'hono/jsx/dom';
 
+import {
+    createBottomButtonRegistry,
+    type BottomButtonConfig,
+    type BottomButtonState
+} from '../logic/bottom-button';
 import { createStore, useLatest, type Store } from '../state/store';
 import { callSafely, getLaunchContext, supportsNative } from './sdk';
 import { BOTTOM_BUTTON_COLORS } from './theme';
 import type { WebAppBottomButton, WebAppHeaderButton } from './types';
 
-export interface BottomButtonConfig {
-    text: string;
-    onClick: () => void;
-    disabled?: boolean;
-    progress?: boolean;
-}
-
-export type BottomButtonState = Omit<BottomButtonConfig, 'onClick'> & {
-    owner: number;
-};
+export type { BottomButtonConfig, BottomButtonState };
 
 export const bottomButtonStore: Store<BottomButtonState | null> =
     createStore<BottomButtonState | null>(null);
 
-const bottomButtonHandlers = new Map<number, () => void>();
+const bottomButtonRegistry = createBottomButtonRegistry(bottomButtonStore);
 
-let nextOwner = 1;
-
-const allocateOwner = () => {
-    const owner = nextOwner;
-
-    nextOwner += 1;
-
-    return owner;
-};
-
-export const triggerBottomButton = () => {
-    const state = bottomButtonStore.get();
-
-    if (state !== null && !state.disabled && !state.progress) {
-        bottomButtonHandlers.get(state.owner)?.();
-    }
-};
+export const triggerBottomButton = bottomButtonRegistry.trigger;
 
 const getNativeBottomButton = (): WebAppBottomButton | null => {
     const { webApp, native } = getLaunchContext();
@@ -107,61 +87,19 @@ export const connectBottomButton = () => {
     };
 };
 
-const sameState = (
-    left: BottomButtonState | null,
-    right: BottomButtonState | null
-) => {
-    return (
-        left === right ||
-        (left !== null &&
-            right !== null &&
-            left.owner === right.owner &&
-            left.text === right.text &&
-            Boolean(left.disabled) === Boolean(right.disabled) &&
-            Boolean(left.progress) === Boolean(right.progress))
-    );
-};
-
 /** Owns the Telegram BottomButton (or its in-page fallback) while the calling screen is mounted; pass null to hide it. */
 export const useBottomButton = (config: BottomButtonConfig | null) => {
-    const [owner] = useState(allocateOwner);
+    const [owner] = useState(bottomButtonRegistry.allocateOwner);
     const handler = useLatest(config?.onClick);
 
     useEffect(() => {
-        bottomButtonHandlers.set(owner, () => {
+        return bottomButtonRegistry.register(owner, () => {
             handler.current?.();
         });
-
-        return () => {
-            bottomButtonHandlers.delete(owner);
-            bottomButtonStore.set(current => {
-                return current?.owner === owner ? null : current;
-            });
-        };
     }, []);
 
     useEffect(() => {
-        const next: BottomButtonState | null =
-            config === null
-                ? null
-                : {
-                      owner,
-                      text: config.text,
-                      ...(config.disabled !== undefined && {
-                          disabled: config.disabled
-                      }),
-                      ...(config.progress !== undefined && {
-                          progress: config.progress
-                      })
-                  };
-
-        bottomButtonStore.set(current => {
-            if (next === null) {
-                return current?.owner === owner ? null : current;
-            }
-
-            return sameState(current, next) ? current : next;
-        });
+        bottomButtonRegistry.publish(owner, config);
     });
 };
 

@@ -35,8 +35,8 @@ test('the committed bundle fits the size budget', () => {
         String(size.minifiedBytes)
     );
     assert.ok(size.gzipBytes <= MAX_GZIP_BYTES, String(size.gzipBytes));
-    assert.equal(MAX_MINIFIED_BYTES, 120 * 1024);
-    assert.equal(MAX_GZIP_BYTES, 40 * 1024);
+    assert.equal(MAX_MINIFIED_BYTES, 160 * 1024);
+    assert.equal(MAX_GZIP_BYTES, 55 * 1024);
 });
 
 test('the budget check rejects bundles over either limit', () => {

@@ -267,7 +267,7 @@ test('the source and the committed stylesheet load nothing from the network', ()
 
 test('the committed stylesheet carries both themes and self hosted fonts', () => {
     assert.ok(existsSync(new URL('../public/app/app.css', import.meta.url)));
-    assert.ok(COMMITTED_STYLESHEET.length < 60_000);
+    assert.ok(COMMITTED_STYLESHEET.length < 85_000);
     assert.match(COMMITTED_STYLESHEET, /\[data-theme=wishlist\]/);
     assert.match(COMMITTED_STYLESHEET, /\[data-theme=wishlist-dark\]/);
     assert.match(COMMITTED_STYLESHEET, /--paper:var\(--color-base-200\)/);

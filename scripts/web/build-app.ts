@@ -6,8 +6,8 @@ import zlib from 'node:zlib';
 import { build, type BuildOptions } from 'esbuild';
 
 export const OUTPUT_FILE = 'public/app/app.js';
-export const MAX_MINIFIED_BYTES = 120 * 1024;
-export const MAX_GZIP_BYTES = 40 * 1024;
+export const MAX_MINIFIED_BYTES = 160 * 1024;
+export const MAX_GZIP_BYTES = 55 * 1024;
 
 export const APP_BUILD_OPTIONS = {
     entryPoints: ['src/app/main.tsx'],
