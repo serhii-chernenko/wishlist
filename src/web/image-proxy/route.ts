@@ -29,6 +29,7 @@ import {
     APP_IMAGE_PATH_PREFIX,
     SHARE_IMAGE_PATH_PREFIX
 } from '../../shared/app-api';
+import { buildPhotoPlaceholderSvg } from '../../shared/photo-placeholder';
 import type { WorkerApp } from '../../worker/app';
 import type { WorkerBindings } from '../../worker/env';
 import {
@@ -60,7 +61,6 @@ type Authorization = { fileId: string; hash: string } | Rejection;
 const WISH_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const INDEX_PATTERN = /^(?:0|[1-9]\d{0,3})$/;
 const EXPIRY_PATTERN = /^\d{1,12}$/;
-const UPSTREAM_ERROR_STATUS = 502;
 const INTERNAL_ERROR_STATUS = 500;
 const TOO_MANY_REQUESTS_STATUS = 429;
 
@@ -78,6 +78,14 @@ const SUCCESS_CACHE_CONTROL: Record<ImageProxyScope, string> = {
     share: 'public, max-age=3600'
 };
 
+const PLACEHOLDER_CACHE_CONTROL: Record<ImageProxyScope, string> = {
+    app: 'private, max-age=300',
+    share: 'public, max-age=300'
+};
+
+const PLACEHOLDER_CONTENT_TYPE = 'image/svg+xml';
+const PLACEHOLDER_SVG = buildPhotoPlaceholderSvg();
+
 const readParam = (c: ProxyContext, name: string) => {
     return c.req.param(name) ?? '';
 };
@@ -93,18 +101,41 @@ const errorResponse = (status: number, extra: HeadersInit = {}) => {
     });
 };
 
-const imageResponse = (scope: ImageProxyScope, image: StoredImage) => {
+const buildImageResponse = (
+    scope: ImageProxyScope,
+    body: BodyInit,
+    contentType: string,
+    cacheControl: string
+) => {
     const headers = new Headers({
         ...BASE_HEADERS,
-        'Content-Type': image.contentType,
-        'Cache-Control': SUCCESS_CACHE_CONTROL[scope]
+        'Content-Type': contentType,
+        'Cache-Control': cacheControl
     });
 
     if (scope === 'app') {
         headers.set('Cross-Origin-Resource-Policy', 'same-origin');
     }
 
-    return new Response(image.body, { status: 200, headers });
+    return new Response(body, { status: 200, headers });
+};
+
+const imageResponse = (scope: ImageProxyScope, image: StoredImage) => {
+    return buildImageResponse(
+        scope,
+        image.body,
+        image.contentType,
+        SUCCESS_CACHE_CONTROL[scope]
+    );
+};
+
+const placeholderResponse = (scope: ImageProxyScope) => {
+    return buildImageResponse(
+        scope,
+        PLACEHOLDER_SVG,
+        PLACEHOLDER_CONTENT_TYPE,
+        PLACEHOLDER_CACHE_CONTROL[scope]
+    );
 };
 
 const settle = async (c: ProxyContext, task: Promise<unknown>) => {
@@ -333,8 +364,8 @@ const resolveImage = async (
 
     if (fetched === null) {
         return {
-            response: errorResponse(UPSTREAM_ERROR_STATUS),
-            result: 'upstreamError'
+            response: placeholderResponse(scope),
+            result: 'placeholder'
         };
     }
 

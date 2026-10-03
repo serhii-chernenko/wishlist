@@ -122,6 +122,7 @@ export type ImageProxyResult =
     | 'forbidden'
     | 'expired'
     | 'upstreamError'
+    | 'placeholder'
     | 'rateLimited';
 
 export interface SharePageServedInput {

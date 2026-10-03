@@ -2,6 +2,7 @@ import type { ApiImage } from '../../shared/app-api';
 import type { AppTranslator } from '../i18n/i18n';
 import type { PhotoFailureKind, PhotoUploadStatus } from '../logic/wish-draft';
 import { useLL } from '../state/context';
+import { PhotoFrame } from './photo-frame';
 
 export interface PendingPhotoTile {
     key: number;
@@ -149,11 +150,9 @@ export const PhotoPicker = ({
                 {images.map((image, index) => {
                     return (
                         <li key={image.hash} class='photo-tile'>
-                            <img
+                            <PhotoFrame
                                 src={image.url}
                                 alt={photoLabel(index)}
-                                loading='lazy'
-                                decoding='async'
                             />
                             <button
                                 type='button'

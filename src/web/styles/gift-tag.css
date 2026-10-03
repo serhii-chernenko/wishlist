@@ -1,4 +1,24 @@
 @layer components {
+    :root {
+        --photo-placeholder-bg: #ece6f1;
+        --photo-placeholder-fill: #d9d1e1;
+        --photo-placeholder-line: #c6bcd2;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+            --photo-placeholder-bg: #2a2131;
+            --photo-placeholder-fill: #3d3248;
+            --photo-placeholder-line: #51445e;
+        }
+    }
+
+    [data-theme='wishlist-dark'] {
+        --photo-placeholder-bg: #2a2131;
+        --photo-placeholder-fill: #3d3248;
+        --photo-placeholder-line: #51445e;
+    }
+
     .sr-only {
         position: absolute;
         width: 1px;
@@ -240,7 +260,33 @@
         display: block;
         width: 100%;
         height: 100%;
+        overflow: hidden;
+        font-size: 0;
+        color: transparent;
+        background: var(--photo-placeholder-bg);
         object-fit: cover;
+    }
+
+    .photo-placeholder {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .photo-placeholder-background {
+        fill: var(--photo-placeholder-bg);
+    }
+
+    .photo-placeholder-fill {
+        fill: var(--photo-placeholder-fill);
+    }
+
+    .photo-placeholder-line {
+        fill: var(--photo-placeholder-line);
+    }
+
+    .photo-placeholder-stroke {
+        stroke: var(--photo-placeholder-line);
     }
 
     .wish-photo:empty::after {

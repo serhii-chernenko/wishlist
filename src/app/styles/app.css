@@ -485,6 +485,10 @@
         display: block;
         width: 100%;
         height: 100%;
+        overflow: hidden;
+        font-size: 0;
+        color: transparent;
+        background: var(--photo-placeholder-bg);
         object-fit: cover;
     }
 

@@ -1,5 +1,6 @@
 import type { ApiImage } from '../../shared/app-api';
 import { useLL } from '../state/context';
+import { PhotoFrame } from './photo-frame';
 
 /** Read-only photo thumbnails; the editor's picker (WP7) adds upload and remove controls around it. */
 export const PhotoGrid = ({
@@ -22,15 +23,13 @@ export const PhotoGrid = ({
             {images.map((image, index) => {
                 return (
                     <li key={image.hash} class='photo-tile'>
-                        <img
+                        <PhotoFrame
                             src={image.url}
                             alt={LL.a11y.photo({
                                 index: index + 1,
                                 total: images.length,
                                 title
                             })}
-                            loading='lazy'
-                            decoding='async'
                         />
                         {onRemove === undefined ? null : (
                             <button

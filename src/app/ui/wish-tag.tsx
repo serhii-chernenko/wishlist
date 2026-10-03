@@ -5,6 +5,7 @@ import { getLinkHost } from '../logic/format';
 import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
 import { HeartSticker } from './heart';
+import { PhotoFrame } from './photo-frame';
 import { PriceChip } from './price-chip';
 
 export interface WishTagModel {
@@ -45,11 +46,9 @@ const WishCover = ({
 
     return (
         <div class='wish-photo'>
-            <img
+            <PhotoFrame
                 src={cover.url}
                 alt={LL.a11y.photo({ index: 1, total: images.length, title })}
-                loading='lazy'
-                decoding='async'
             />
             {morePhotos > 0 ? (
                 <span class='wish-photo-count' aria-hidden='true'>

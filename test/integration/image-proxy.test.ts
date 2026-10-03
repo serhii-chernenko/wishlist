@@ -588,18 +588,77 @@ describe('image proxy', () => {
         assert.deepEqual(telegram.getFileCalls, []);
     });
 
-    it('answers 502 without details when Telegram cannot return the file', async () => {
+    const assertPlaceholderResponse = async (
+        response: Response,
+        scope: 'app' | 'share'
+    ) => {
+        const body = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('Content-Type'), 'image/svg+xml');
+        assert.equal(
+            response.headers.get('Cache-Control'),
+            scope === 'app' ? 'private, max-age=300' : 'public, max-age=300'
+        );
+        assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+        assert.equal(
+            response.headers.get('Content-Security-Policy'),
+            "default-src 'none'; sandbox"
+        );
+        assert.equal(
+            response.headers.get('Cross-Origin-Resource-Policy'),
+            scope === 'app' ? 'same-origin' : null
+        );
+        assert.match(body, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+        assert.match(body, /<\/svg>$/);
+        assert.doesNotMatch(body, /<script|href=|telegram/i);
+        assertNoLeak(body);
+    };
+
+    it('answers a grey placeholder image for an app request when Telegram cannot return the file', async () => {
         const { wish } = await seedOwner();
 
         telegram.failGetFile = true;
 
         const response = await request(await appUrl(wish.id, 0));
 
-        assert.equal(response.status, 502);
-        assert.equal(response.headers.get('Cache-Control'), 'no-store');
-        assert.equal(await response.text(), '');
-        assert.deepEqual(servedEvents(), ['app:upstreamError:502']);
+        await assertPlaceholderResponse(response, 'app');
+        assert.deepEqual(servedEvents(), ['app:placeholder:200']);
         assert.equal((await harness.env.IMAGES.list()).objects.length, 0);
+        assert.equal(cache.entries.size, 0);
+    });
+
+    it('answers the same placeholder image for a share request when Telegram cannot return the file', async () => {
+        const { wish, publicId } = await seedOwner();
+
+        telegram.failGetFile = true;
+
+        const response = await request(await shareUrl(publicId, wish.id, 0));
+
+        await assertPlaceholderResponse(response, 'share');
+        assert.deepEqual(servedEvents(), ['share:placeholder:200']);
+        assert.equal((await harness.env.IMAGES.list()).objects.length, 0);
+        assert.equal(cache.entries.size, 0);
+    });
+
+    it('keeps the error responses for requests that are not authorized even when Telegram fails', async () => {
+        const { wish, publicId } = await seedOwner();
+
+        telegram.failGetFile = true;
+
+        const badSignature = await request(`${await appUrl(wish.id, 0)}x`);
+        const wrongHash = await request(
+            await shareUrl(publicId, wish.id, 0, 'not-the-file')
+        );
+
+        assert.deepEqual([badSignature.status, wrongHash.status], [403, 404]);
+        assert.equal(badSignature.headers.get('Content-Type'), null);
+        assert.equal(await badSignature.text(), '');
+        assert.deepEqual(servedEvents(), [
+            'app:forbidden:403',
+            'share:notFound:404'
+        ]);
+        assert.deepEqual(telegram.getFileCalls, []);
     });
 
     it('never exposes the token or the Telegram file URL in responses, headers or console output', async () => {
@@ -675,7 +734,9 @@ describe('image proxy', () => {
 
         const failing = await request(await appUrl(wish.id, 1));
 
-        assert.equal(failing.status, 502);
+        assert.equal(failing.status, 200);
+        assert.equal(failing.headers.get('Content-Type'), 'image/svg+xml');
+        assertNoLeak(await failing.clone().text());
         assert.match(
             consoleOutput.join('\n'),
             /"event":"image_proxy_upstream_failed","errorCode":404/
