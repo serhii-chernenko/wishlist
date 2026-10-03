@@ -50,38 +50,6 @@
     - en: Wish titles and descriptions no longer break message formatting, and dates are shown in Kyiv time.
     - pl: Tytuły i opisy życzeń nie psują już formatowania wiadomości, a daty są pokazywane według czasu kijowskiego.
 
-## 1.7.1 - 17.08.2024
-
-### Patch Changes
-
-- [notes] Сьогодні в мене день народження 🥳
-
-    Привітати мене можна у відгуках бота або донатом на банку:
-    https://send.monobank.ua/jar/4ZGhPQqyMh
-
-    Або PayPal:
-    contact@chernenko.digital
-
-    Дякую за увагу!😅
-    - en: It is my birthday today 🥳
-
-    You can congratulate me in the bot feedback or with a donation to the jar:
-    https://send.monobank.ua/jar/4ZGhPQqyMh
-
-    Or via PayPal:
-    contact@chernenko.digital
-
-    Thank you for your attention!😅
-    - pl: Dziś mam urodziny 🥳
-
-    Możesz mnie pozdrowić w opiniach do bota albo darowizną na słoik:
-    https://send.monobank.ua/jar/4ZGhPQqyMh
-
-    Albo przez PayPal:
-    contact@chernenko.digital
-
-    Dziękuję za uwagę!😅
-
 ## 1.7.0 - 24.12.2023
 
 ### Minor Changes

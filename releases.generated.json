@@ -87,19 +87,6 @@
         }
     },
     {
-        "version": "1.7.1",
-        "date": "17.08.2024",
-        "groups": {
-            "notes": [
-                {
-                    "uk": "Сьогодні в мене день народження 🥳\n\nПривітати мене можна у відгуках бота або донатом на банку:\nhttps://send.monobank.ua/jar/4ZGhPQqyMh\n\nАбо PayPal:\ncontact@chernenko.digital\n\nДякую за увагу!😅",
-                    "en": "It is my birthday today 🥳\n\nYou can congratulate me in the bot feedback or with a donation to the jar:\nhttps://send.monobank.ua/jar/4ZGhPQqyMh\n\nOr via PayPal:\ncontact@chernenko.digital\n\nThank you for your attention!😅",
-                    "pl": "Dziś mam urodziny 🥳\n\nMożesz mnie pozdrowić w opiniach do bota albo darowizną na słoik:\nhttps://send.monobank.ua/jar/4ZGhPQqyMh\n\nAlbo przez PayPal:\ncontact@chernenko.digital\n\nDziękuję za uwagę!😅"
-                }
-            ]
-        }
-    },
-    {
         "version": "1.7.0",
         "date": "24.12.2023",
         "groups": {

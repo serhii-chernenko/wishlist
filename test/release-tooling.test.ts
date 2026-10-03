@@ -135,8 +135,7 @@ test('the committed changelog parses into the committed manifest', () => {
     );
 
     assert.deepEqual(manifest, parsed);
-    assert.deepEqual(parsed.map(release => release.version).slice(-6), [
-        '1.7.1',
+    assert.deepEqual(parsed.map(release => release.version).slice(-5), [
         '1.7.0',
         '1.6.0',
         '1.5.0',
