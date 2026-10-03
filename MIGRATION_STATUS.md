@@ -69,6 +69,20 @@ Decisions:
 - [x] `pnpm run check` green (807 tests)
 - [x] WP9 Share pages: public pages on `wishlist.chernenko.dev` (Hono JSX, ULID links, edge cache, consent), telegra.ph removed, new support links, fourth dashboard page
 
+### Telegram Mini App (in 2.0.0)
+
+- [ ] Plan approved (architecture, API, auth, photos, design system)
+- [ ] Auth: initData validation, per-user rate limiting
+- [ ] JSON API under /api/app for every bot feature
+- [ ] Photo proxy (token-safe getFile, cached) for the app and share pages
+- [ ] Photo upload from the app
+- [ ] App UI: Tailwind + daisyUI with the gift-tag design system, Telegram theme, BackButton/MainButton, haptics
+- [ ] Screens: own list, wish editor, give list, search, other lists, share settings, payments, visibility, language, feedback, stats, donate
+- [ ] Bot entry points: "Open app" buttons, Main Mini App in BotFather, startapp deep links
+- [ ] Tests, review, security audit
+- [ ] Preview test on @InevixTestBot, production rollout
+- [ ] Docs and 2.0.0 changelog
+
 ### Cutover
 
 - [x] Preview rehearsal: real snapshot imported and reconciled
