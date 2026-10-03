@@ -312,6 +312,91 @@ test('input is routed by the pending input kind', async () => {
     assert.deepEqual(rendered, []);
 });
 
+const APP_CONTACT_MESSAGE = {
+    message_id: 1,
+    contact: { phone_number: '+380501112233', user_id: 100 }
+} as unknown as Message;
+const MINUTE_MS = 60 * 1000;
+
+const dispatchAppContact = async (
+    createdAt: number | undefined,
+    message: Message
+) => {
+    const rendered: ScreenId[] = [];
+    const inputs: PendingInput[] = [];
+    const router = createRouter(createFakeScreens(rendered, inputs));
+    const { req, holder } = createRequest({
+        user: REGISTERED_USER,
+        session: {
+            v: 1,
+            pendingInput: {
+                kind: 'contact',
+                authType: 'phone',
+                via: 'app',
+                ...(createdAt === undefined ? {} : { createdAt })
+            },
+            find: null
+        }
+    });
+
+    await router.dispatchInput(req, message);
+
+    return { rendered, inputs, holder };
+};
+
+test('a fresh app contact intent completes only with an actual contact', async () => {
+    const { rendered, inputs } = await dispatchAppContact(
+        Date.now() - MINUTE_MS,
+        APP_CONTACT_MESSAGE
+    );
+
+    assert.deepEqual(rendered, []);
+    assert.equal(inputs[0]?.kind, 'contact');
+});
+
+test('a fresh app contact intent is cleared by a non-contact message, which is routed normally', async () => {
+    const { rendered, inputs, holder } = await dispatchAppContact(
+        Date.now() - MINUTE_MS,
+        { message_id: 1, text: 'hello' } as Message
+    );
+
+    assert.deepEqual(inputs, []);
+    assert.deepEqual(rendered, ['home']);
+    assert.equal(holder.current.pendingInput, null);
+});
+
+test('an expired or timestampless app contact intent is cleared even for a contact', async () => {
+    for (const createdAt of [Date.now() - 11 * MINUTE_MS, undefined]) {
+        const { rendered, inputs, holder } = await dispatchAppContact(
+            createdAt,
+            APP_CONTACT_MESSAGE
+        );
+
+        assert.deepEqual(inputs, []);
+        assert.deepEqual(rendered, ['home']);
+        assert.equal(holder.current.pendingInput, null);
+    }
+});
+
+test('a chat contact intent without the app marker never expires', async () => {
+    const rendered: ScreenId[] = [];
+    const inputs: PendingInput[] = [];
+    const router = createRouter(createFakeScreens(rendered, inputs));
+    const { req } = createRequest({
+        user: REGISTERED_USER,
+        session: {
+            v: 1,
+            pendingInput: { kind: 'contact', authType: 'phone' },
+            find: null
+        }
+    });
+
+    await router.dispatchInput(req, { message_id: 1, text: 'hi' } as Message);
+
+    assert.equal(inputs[0]?.kind, 'contact');
+    assert.deepEqual(rendered, []);
+});
+
 test('input without pending input renders home', async () => {
     const rendered: ScreenId[] = [];
     const router = createRouter(createFakeScreens(rendered));

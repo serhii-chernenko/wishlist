@@ -183,6 +183,29 @@ test('the app contact intent keeps its via marker through a round trip', () => {
     assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
 });
 
+test('the app contact intent keeps its creation timestamp and drops an invalid one', () => {
+    const decoded = decodeSessionState(
+        '{"v":1,"pendingInput":{"kind":"contact","authType":"phone","via":"app","createdAt":1790000000000},"find":null}'
+    );
+
+    assert.deepEqual(decoded.pendingInput, {
+        kind: 'contact',
+        authType: 'phone',
+        via: 'app',
+        createdAt: 1_790_000_000_000
+    });
+
+    for (const createdAt of ['"now"', '-1', '0', '1.5', 'null']) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":{"kind":"contact","authType":"phone","via":"app","createdAt":${createdAt}},"find":null}`
+            ).pendingInput,
+            { kind: 'contact', authType: 'phone', via: 'app' },
+            createdAt
+        );
+    }
+});
+
 test('contact inputs saved before the via marker still decode without it', () => {
     const decoded = decodeSessionState(
         '{"v":1,"pendingInput":{"kind":"contact","authType":"both"},"find":null}'

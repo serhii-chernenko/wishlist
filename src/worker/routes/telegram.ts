@@ -160,10 +160,7 @@ export const isIgnorableTelegramUpdate = (
     );
 };
 
-const RESTRICTED_ACCESS_ENVIRONMENTS: ReadonlySet<string> = new Set([
-    'preview',
-    'local'
-]);
+const UNRESTRICTED_ACCESS_ENVIRONMENT = 'production';
 
 const getUpdateActorId = (update: RuntimeTelegramUpdate): number | null => {
     if ('message' in update) {
@@ -185,7 +182,7 @@ export const isAccessDeniedInRestrictedEnvironment = (
     env: Pick<WorkerBindings, 'BOT_ENVIRONMENT' | 'ADMIN_ID'>,
     update: RuntimeTelegramUpdate
 ) => {
-    if (!RESTRICTED_ACCESS_ENVIRONMENTS.has(env.BOT_ENVIRONMENT)) {
+    if (env.BOT_ENVIRONMENT === UNRESTRICTED_ACCESS_ENVIRONMENT) {
         return false;
     }
 

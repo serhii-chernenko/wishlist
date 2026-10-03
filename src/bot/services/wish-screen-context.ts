@@ -1,5 +1,6 @@
 import type { InlineKeyboardButton } from 'telegraf/types';
 
+import { releaseOrphanedImages } from '../../api/photos/image-cleanup';
 import type { UserRecord } from '../../db/repositories';
 import { getAllLocaleTexts } from '../content/messages';
 import { formatCurrency, formatDate } from '../content/intl';
@@ -47,6 +48,22 @@ export const createWishScreenServices = (req: BotRequest) => {
         search: createSearchService(req.repos),
         share: createShareService(req.repos)
     };
+};
+
+export const releaseRemovedImages = (
+    req: BotRequest,
+    fileIds: readonly string[]
+) => {
+    if (fileIds.length === 0) {
+        return;
+    }
+
+    req.defer(() => {
+        return releaseOrphanedImages(
+            { repositories: req.repos, bucket: req.env.IMAGES },
+            fileIds
+        );
+    }, 0);
 };
 
 export const updateSession = (

@@ -34,6 +34,9 @@ const expectedMethods: Record<string, string[]> = {
     ],
     wishes: [
         'create',
+        'countActive',
+        'listActiveImagesJson',
+        'listReferencedFileIds',
         'findOwned',
         'findVisible',
         'listOwned',

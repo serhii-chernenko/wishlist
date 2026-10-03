@@ -7,6 +7,7 @@ import test, { mock } from 'node:test';
 
 import { Telegraf } from 'telegraf';
 
+import { isPreviewAccessDenied } from '../src/api/auth/middleware';
 import { createApp } from '../src/worker/app';
 import type { WorkerBindings } from '../src/worker/env';
 import {
@@ -1046,6 +1047,61 @@ test('preview access check reads the sender of message, callback_query and my_ch
             true
         );
     }
+});
+
+test('only the production environment is unrestricted: preview, local, unknown and missing require ADMIN_ID', () => {
+    const update = JSON.parse(createTelegramUpdateBody(1));
+    const admin = 777000111;
+    const environments = [
+        'preview',
+        'local',
+        'staging',
+        'Production',
+        '',
+        undefined
+    ] as const;
+
+    for (const environment of environments) {
+        const env = {
+            BOT_ENVIRONMENT: environment,
+            ADMIN_ID: String(admin)
+        } as unknown as Pick<WorkerBindings, 'BOT_ENVIRONMENT' | 'ADMIN_ID'>;
+        const strangerEnv = { ...env, ADMIN_ID: '1' };
+        const noAdminEnv = { ...env, ADMIN_ID: undefined } as unknown as Pick<
+            WorkerBindings,
+            'BOT_ENVIRONMENT' | 'ADMIN_ID'
+        >;
+
+        assert.equal(
+            isAccessDeniedInRestrictedEnvironment(env, update),
+            false,
+            `webhook admin ${String(environment)}`
+        );
+        assert.equal(
+            isAccessDeniedInRestrictedEnvironment(strangerEnv, update),
+            true,
+            `webhook stranger ${String(environment)}`
+        );
+        assert.equal(
+            isAccessDeniedInRestrictedEnvironment(noAdminEnv, update),
+            true,
+            `webhook no admin ${String(environment)}`
+        );
+        assert.equal(isPreviewAccessDenied(env, admin), false);
+        assert.equal(isPreviewAccessDenied(strangerEnv, admin), true);
+        assert.equal(isPreviewAccessDenied(noAdminEnv, admin), true);
+    }
+
+    const production = {
+        BOT_ENVIRONMENT: 'production',
+        ADMIN_ID: '1'
+    } as const;
+
+    assert.equal(
+        isAccessDeniedInRestrictedEnvironment(production, update),
+        false
+    );
+    assert.equal(isPreviewAccessDenied(production, admin), false);
 });
 
 const createCallbackUpdateBody = (updateId: number, data = 'n:wl') => {

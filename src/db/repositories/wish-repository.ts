@@ -22,6 +22,7 @@ import {
     wishes,
     wishlistShares
 } from '../schema';
+import { chunk, DELETE_CHUNK_SIZE } from './chunk';
 import { createTryDb } from './try-db';
 
 export type WishRecord = typeof wishes.$inferSelect;
@@ -161,6 +162,61 @@ export const createWishRepository = (db: AppDb) => {
                     .returning();
 
                 return created ?? null;
+            });
+        },
+        countActive(userId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.removed, false)
+                        )
+                    );
+
+                return row?.total ?? 0;
+            });
+        },
+        listActiveImagesJson(userId: number) {
+            return tryDb(async () => {
+                const rows = await db
+                    .select({ images: wishes.images })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.removed, false)
+                        )
+                    );
+
+                return rows.map(row => {
+                    return row.images;
+                });
+            });
+        },
+        listReferencedFileIds(fileIds: readonly string[]) {
+            return tryDb(async () => {
+                const referenced = new Set<string>();
+
+                for (const fileIdChunk of chunk(fileIds, DELETE_CHUNK_SIZE)) {
+                    const placeholders = sql.join(
+                        fileIdChunk.map(fileId => {
+                            return sql`${fileId}`;
+                        }),
+                        sql`, `
+                    );
+                    const rows = await db.all<{ fileId: string }>(
+                        sql`select distinct json_each.value as fileId from ${wishes}, json_each(${wishes.images}) where ${wishes.removed} = 0 and json_each.value in (${placeholders})`
+                    );
+
+                    for (const row of rows) {
+                        referenced.add(row.fileId);
+                    }
+                }
+
+                return referenced;
             });
         },
         findOwned(wishId: number, userId: number) {

@@ -29,6 +29,7 @@ import type {
 import {
     createWishFormatters,
     createWishScreenServices,
+    releaseRemovedImages,
     requireUser,
     updateSession
 } from '../services/wish-screen-context';
@@ -492,11 +493,13 @@ export const callbacks: CallbackTable = {
         const { LL } = req;
         const user = requireUser(req);
         const { wishes } = createWishScreenServices(req);
+        const imageFileIds = await wishes.listActiveImageFileIds(user.id);
         const removed = await wishes.removeAll(user.id);
 
         if (removed === 0) {
             await req.send.text(LL.wishlist.clean.error());
         } else {
+            releaseRemovedImages(req, imageFileIds);
             req.telemetry.botActionCompleted({ action: 'wishlist_cleaned' });
             await req.send.text(LL.wishlist.clean.success());
         }

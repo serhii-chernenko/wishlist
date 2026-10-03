@@ -86,6 +86,17 @@ export const getTelemetryContext = (c: Context): TelemetryContext => {
     }
 };
 
+export const runInBackground = async (c: Context, task: Promise<unknown>) => {
+    const settled = task.catch(() => undefined);
+    const context = getTelemetryContext(c);
+
+    if (context) {
+        context.waitUntil(settled);
+    } else {
+        await settled;
+    }
+};
+
 export const emitApiTelemetry = (
     c: ApiContext,
     fields: Parameters<TelemetryEmitter>[2]

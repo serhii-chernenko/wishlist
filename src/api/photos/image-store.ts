@@ -8,7 +8,10 @@ export interface StoredImage {
 export interface ImageStore {
     get(key: string): Promise<StoredImage | null>;
     put(key: string, body: ArrayBuffer, contentType: string): Promise<void>;
+    deleteMany(keys: readonly string[]): Promise<void>;
 }
+
+const R2_DELETE_BATCH_SIZE = 1000;
 
 export const DEFAULT_IMAGE_CONTENT_TYPE = 'image/jpeg';
 
@@ -33,7 +36,10 @@ const getErrorType = (error: unknown) => {
     return error instanceof Error ? error.name : typeof error;
 };
 
-const logStoreFailure = (operation: 'get' | 'put', error: unknown) => {
+const logStoreFailure = (
+    operation: 'get' | 'put' | 'delete',
+    error: unknown
+) => {
     console.warn(
         JSON.stringify({
             event: 'image_store_failed',
@@ -85,6 +91,25 @@ export const createImageStore = (bucket: R2Bucket | undefined): ImageStore => {
                 });
             } catch (error) {
                 logStoreFailure('put', error);
+            }
+        },
+        async deleteMany(keys) {
+            if (bucket === undefined) {
+                return;
+            }
+
+            for (
+                let start = 0;
+                start < keys.length;
+                start += R2_DELETE_BATCH_SIZE
+            ) {
+                try {
+                    await bucket.delete(
+                        keys.slice(start, start + R2_DELETE_BATCH_SIZE)
+                    );
+                } catch (error) {
+                    logStoreFailure('delete', error);
+                }
             }
         }
     };

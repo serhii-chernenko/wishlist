@@ -20,8 +20,7 @@
             "invocation_logs": true
         },
         "traces": {
-            "enabled": true,
-            "head_sampling_rate": 0.05
+            "enabled": false
         }
     },
     "vars": {
@@ -121,8 +120,7 @@
                     "invocation_logs": true
                 },
                 "traces": {
-                    "enabled": true,
-                    "head_sampling_rate": 0.05
+                    "enabled": false
                 }
             },
             "vars": {
@@ -309,8 +307,7 @@
                         "invocation_logs": true
                     },
                     "traces": {
-                        "enabled": true,
-                        "head_sampling_rate": 0.05
+                        "enabled": false
                     }
                 }
             }

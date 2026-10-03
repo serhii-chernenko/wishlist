@@ -17,7 +17,7 @@ export const APP_SHELL_SECURITY_HEADERS = {
     'Content-Security-Policy': APP_SHELL_CSP,
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
-    'Permissions-Policy': 'geolocation=(), microphone=()',
+    'Permissions-Policy': 'camera=(), geolocation=(), microphone=()',
     'X-Robots-Tag': 'noindex'
 } as const;
 

@@ -87,7 +87,10 @@ const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
                 ? decoded({
                       kind: 'contact',
                       authType: value.authType,
-                      ...(value.via === 'app' ? { via: 'app' as const } : {})
+                      ...(value.via === 'app' ? { via: 'app' as const } : {}),
+                      ...(isPositiveInteger(value.createdAt)
+                          ? { createdAt: value.createdAt }
+                          : {})
                   })
                 : INVALID;
         default:

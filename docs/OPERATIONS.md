@@ -306,7 +306,7 @@ Do these in order. Steps marked "dashboard" cannot be done with `cf` or `wrangle
 - Long-lived preview named `preview`: `https://preview-wishlist.chernenko.workers.dev`. It serves the preview bot `@InevixTestBot`.
 - Every preview, including per-branch previews, shares the `wishlist-preview` database and the single preview-bot webhook.
 - Previews run with `BOT_ENVIRONMENT="preview"`: no cron, no queue consumer, no release broadcast. Preview logs are in the Cloudflare dashboard (Wrangler cannot tail a preview).
-- The preview bot serves only the admin. When `BOT_ENVIRONMENT` is `preview` or `local`, every update whose sender is not `ADMIN_ID` is ignored silently: the webhook answers `200 {ignored:true}`, the bot sends no reply, nothing is written to the ledger, and telemetry records outcome `ignored` with rejection reason `previewAccessDenied`. If `ADMIN_ID` is empty, nobody is served. This keeps imported production data (usernames, phone numbers, wishes) away from anyone else who finds the preview bot. To test with another account, temporarily change `ADMIN_ID` for the preview and restore it afterwards.
+- The preview bot serves only the admin. When `BOT_ENVIRONMENT` is anything other than `production` (`preview`, `local`, or a missing or unknown value), every update whose sender is not `ADMIN_ID` is ignored silently: the webhook answers `200 {ignored:true}`, the bot sends no reply, nothing is written to the ledger, and telemetry records outcome `ignored` with rejection reason `previewAccessDenied`. If `ADMIN_ID` is empty, nobody is served. This keeps imported production data (usernames, phone numbers, wishes) away from anyone else who finds the preview bot. To test with another account, temporarily change `ADMIN_ID` for the preview and restore it afterwards.
 - Telegram file ids belong to the bot that received the photo. After importing production data into preview, imported wishes show the text fallback instead of images (the bot logs `wish_media_failed`). Test images with fresh uploads, including a 3-photo album.
 
 Redeploy the long-lived preview. Do not put `--` before `--name`; pnpm would pass it through and wrangler would drop the name:
@@ -676,7 +676,7 @@ Logs:
 pnpm worker:tail:prod
 ```
 
-Or open Workers Observability in the Cloudflare dashboard (logs on, traces sampled at 5%).
+Or open Workers Observability in the Cloudflare dashboard (logs on, traces off).
 
 Manual deploy fallback when Workers Builds is down (uses `.dev.vars.production` as the secrets file):
 
@@ -802,7 +802,7 @@ Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the dep
 
 - Each wish card shows its photos through the image proxy, as `<img>` tags with `/img/s/<publicId>/<wishId>/<index>/<hash>`, `loading="lazy"` and alt text. The wishes sit in a compact card grid that breaks out of the text column: 1 column below about 26rem, 2 above, 3 from about 64rem, 4 from about 80rem. A wish without photos shows the logo heart placeholder. Description and dates fold into a `<details>` element, so no JavaScript is needed. The HTML stays under 60 KB for 20 wishes.
 - The proxy is the only way a photo leaves the Worker. It checks D1 live on every request: the share must be active, the owner not blocked, and the wish visible and owned by the share owner, and `<hash>` must equal the first 16 hex characters of SHA-256 of the stored `file_id` at that index. Anything else answers `404`, so a stopped share, a hidden wish or a replaced link serves no photo even if the page itself is still cached. Share image URLs have no expiry; they are not secret, they are authorized by the live check.
-- Responses carry `Content-Security-Policy: default-src 'none'; sandbox`, `X-Content-Type-Options: nosniff` and `Cache-Control: public, max-age=3600`. Bytes come from the Cache API, then from R2, and only on a miss from Telegram (section 17). Misses are limited by the `IMAGE_PROXY_LIMITER` binding per client IP hash.
+- Responses carry `Content-Security-Policy: default-src 'none'; sandbox`, `X-Content-Type-Options: nosniff` and `Cache-Control: public, max-age=3600`. Bytes come from the Cache API, then from R2, and only on a miss from Telegram (section 17). Every request is limited by the `IMAGE_PROXY_LIMITER` binding per client IP hash before the D1 lookup, and a request without `cf-connecting-ip` is answered `429`.
 - Photos change `wishes.updated_at` (through `appendImage`), so the page fingerprint already changes with them and no purge is needed.
 - Photos are never listed in `sitemap.xml`, and `/img/` is disallowed in `robots.txt`.
 - The page also has a secondary link that opens the list in the Mini App (`https://t.me/wishlist_ua_bot?startapp=s_<publicId>`). In previews it points to the production bot, which shows "not found".
@@ -821,7 +821,7 @@ Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the dep
 
 ## 13. Observability
 
-Workers Logs and traces stay enabled in every environment. The Worker emits one safe evlog wide event for each HTTP request, Telegram webhook outcome, scheduled run, release broadcast and release-announcement queue batch. In production, evlog's OTLP drain sends them to New Relic. The `NEW_RELIC_LICENSE_KEY` secret exists only on the production Worker and in the ignored `.dev.vars.production`. Delivery is registered with `waitUntil`, and a drain failure only produces a local warning.
+Workers Logs stay enabled in every environment; Workers traces are disabled (`observability.traces.enabled: false` in every wrangler block) because Telegram API calls carry the bot token in the URL path (`api.telegram.org/bot<token>/...` and `/file/bot<token>/...`), and traces record outgoing fetch URLs. Do not re-enable traces without scrubbing those URLs first. The Worker emits one safe evlog wide event for each HTTP request, Telegram webhook outcome, scheduled run, release broadcast and release-announcement queue batch. In production, evlog's OTLP drain sends them to New Relic. The `NEW_RELIC_LICENSE_KEY` secret exists only on the production Worker and in the ignored `.dev.vars.production`. Delivery is registered with `waitUntil`, and a drain failure only produces a local warning.
 
 Use the `Log_wishlist` data partition (30-day retention) with the rule `` `service.name` = 'wishlist' AND botEnvironment = 'production' ``. Filter by the same attributes in queries. `eventName`, `outcome`, `elapsedMs`, `commandCategory`, `callbackCategory`, `errorType` and the counts are top-level attributes for NRQL. The measured duration is `elapsedMs`: evlog overwrites `durationMs` and `duration` with its own near-zero elapsed time when an event is emitted, so never chart those two.
 
@@ -930,13 +930,13 @@ Security and robustness items found by the pre-cutover audit and review that wer
 - **M3. Per-user rate limiting.** Done for the Mini App API (per-user Cloudflare rate-limit bindings, section 17). The bot webhook still has no per-user limit: nothing limits how fast one user can drive the bot, the D1 queries and the Telegram calls behind it.
 - **Drop `users.telegraph_access_token` in 2.1.** The column is unused and `NULL` (the importer no longer writes tokens). Remove it from the Drizzle schema, the importer mapping, the reconcile metric and the fixtures; deploy the code first, then generate and apply the migration.
 - **Share page images.** Done: share pages show photos through the image proxy with an R2 durable cache (sections 12 and 17).
-- **R2 orphan cleanup.** Removing a photo or a wish leaves its object in R2. Orphans are harmless because every read is authorized first, but a periodic cleanup job should delete objects whose key no longer matches any stored `file_id`.
+- **R2 orphan cleanup.** Done for removals: removing a photo, clearing photos, removing a wish or cleaning the list deletes the R2 object of each removed `file_id` in `waitUntil`, unless another active wish still references it. Objects orphaned by older code or by a failed delete stay; a periodic job that deletes objects whose key matches no stored `file_id` is still a follow-up.
 - **Webhook rate limiting.** The Mini App API is limited per user; the Telegram webhook is not.
 - **S2 and S3 device verification.** `requestContact` (the phone visibility flow) and the photo file input must be confirmed on real devices (iOS, Android, Telegram Desktop, macOS, web K and A) on `@InevixTestBot` before and after the production rollout.
 - **Per-list OG images.** The link preview uses one static image.
 - **Rate limiting the public routes.** `/w/*` is unauthenticated; cache hits are cheap, but nothing limits misses.
 - **L1. Low-severity audit finding.** Deferred; details are in the pre-cutover security audit report, which is not stored in the repository.
-- **L2. Bot token in URLs.** Telegraf calls `https://api.telegram.org/bot<token>/...`, and the image proxy calls `getFile` and downloads `https://api.telegram.org/file/bot<token>/...`. Check traces and logs (evlog, New Relic, Workers Logs) for the token inside outgoing URLs and scrub it (spike S5).
+- **L2. Bot token in URLs.** Telegraf calls `https://api.telegram.org/bot<token>/...`, and the image proxy calls `getFile` and downloads `https://api.telegram.org/file/bot<token>/...`. Resolved by disabling Workers traces (spike S5); Workers Logs and evlog events never record outgoing URLs. Do not re-enable traces without scrubbing the token from URLs.
 - **L4 to L9. Low-severity audit findings.** Deferred; details are in the same audit report.
 
 ## 17. Telegram Mini App
@@ -948,7 +948,7 @@ The Mini App is a second view of the same data as the chat bot, with full parity
 - `GET /app` serves a Hono JSX shell (`src/web/app-shell`). The client is written in `hono/jsx/dom` (`src/app`) and bundled by esbuild into `public/app/app.js`, with `public/app/app.css` built by Tailwind CSS 4 and daisyUI 5. Both files are generated and committed. Never edit them by hand and never add an `index.html` under `public/app`.
 - The client calls a JSON API under `/api/app/*` (`src/api`, 35 endpoints). `src/shared/app-api.ts` is the contract imported by both sides; `src/shared/app-links.ts` holds the `startapp` grammar.
 - Business rules live only in `src/bot/services` and `src/bot/input`. The API and the bot call the same services over the same D1 tables, so a change made in one place shows up in the other.
-- No migrations were needed. The only stored-shape change is an optional `via: 'app'` on the `contact` pending input inside `sessions.state`; the previous decoder rebuilds the object and drops it, so a Worker rollback is safe.
+- No migrations were needed. The only stored-shape change is an optional `via: 'app'` and `createdAt` (epoch milliseconds) on the `contact` pending input inside `sessions.state`; the previous decoder rebuilds the object and drops it, so a Worker rollback is safe.
 - Build and checks: `pnpm run app:build` (esbuild, fails over 120 KB minified or 40 KB gzip), `pnpm run css:build` (share and app stylesheets), `pnpm run app:check` and `pnpm run css:check` (rebuild, then `git diff --exit-code`), `pnpm run app:smoke --base http://localhost:8787 --out <dir>` (headless Chrome screenshots of every `startapp` screen in light and dark; not run in CI). CI rebuilds both bundles and fails on drift in `public/app` and `public/styles/share.css`.
 - `.gitignore` is an allowlist; new source directories must be allowed there or they are never committed.
 
@@ -986,7 +986,7 @@ The signing keys need no new secret. They are derived with HMAC-SHA256 from `BOT
 
 ### Preview gate
 
-When `BOT_ENVIRONMENT` is `preview` or `local`, a validated user other than `ADMIN_ID` gets `403 previewAccessDenied` before any D1 read or write, the same rule as the webhook (section 5). To test with a second account, change `ADMIN_ID` for the preview temporarily and restore it afterwards.
+Only `BOT_ENVIRONMENT` `production` is unrestricted. In any other environment (`preview`, `local`, or a missing or unknown value) a validated user other than `ADMIN_ID` gets `403 previewAccessDenied` before any D1 read or write, the same rule as the webhook (section 5). To test with a second account, change `ADMIN_ID` for the preview temporarily and restore it afterwards.
 
 ### Rate limits
 
@@ -997,7 +997,7 @@ Cloudflare rate-limit bindings in every wrangler environment block (bindings are
 | `APP_API_LIMITER`       | 120            | `tg:<telegramId>`             | ordinary API calls                                                                             |
 | `APP_SENSITIVE_LIMITER` | 10             | `tg:<telegramId>`             | search, shared-list lookup, share publish and rotate, visibility, clean, feedback, chat intent |
 | `APP_UPLOAD_LIMITER`    | 20             | `tg:<telegramId>`             | photo uploads                                                                                  |
-| `IMAGE_PROXY_LIMITER`   | 300            | SHA-256 of `cf-connecting-ip` | image proxy, checked only on a cache miss                                                      |
+| `IMAGE_PROXY_LIMITER`   | 300            | SHA-256 of `cf-connecting-ip` | image proxy, checked before authorization and the cache; a missing `cf-connecting-ip` is `429` |
 
 Namespace ids are `2101` to `2104` in production, `2111` to `2114` in previews and `2121` to `2124` locally. The limits are per Cloudflare location, not global. If a binding is missing (whether `wrangler preview` honors `ratelimits` under `previews` is unverified), the request is allowed and `app_rate_limiter_missing` is emitted. The bot webhook itself is not rate limited (section 16).
 
@@ -1007,17 +1007,23 @@ Access to another user's list is bound by an opaque owner token, `base36(ownerId
 
 - Only a successful search mints a token. A share deep link (`startapp=s_<publicId>`) mints one only when the owner is findable; otherwise the list is read-only (no give buttons), which keeps it consistent with the bot.
 - A wrong viewer gets `403 tokenInvalid`, an expired token `410 tokenExpired`.
+- `DELETE /api/app/gives/:wishId` is idempotent: it answers `204` whether or not the give existed.
 - Give requires a valid token, a visible wish owned by the token's owner, a findable owner and a caller who is not the owner.
 - Difference from the bot: the app never writes `session.find`, so a token allows gives for every owner the user searched in the last 12 hours, not only the latest search.
 - Third-party payments and money use the owner's currency (the bot uses the viewer's). This is an intentional fix.
+- **Tokens in logs.** Workers request logs contain the path segments `/api/app/lists/<token>` and `/api/app/shared/<publicId>`; `redact_query_string` covers only the query string, not the path. This is accepted: owner tokens are viewer-bound and valid for 12 hours, and a share `publicId` is already public by design.
+
+### Client requirements
+
+The Mini App needs iOS 16.2 or newer for its styling (CSS `@layer`, `color-mix()` and `:has()`). Older WebViews render it unstyled or broken. The chat bot works on every client, so it remains the fallback.
 
 ### Photos
 
-- **Upload** (`POST /api/app/wishes/:id/images`, raw `image/jpeg|png|webp` body up to 10 MB). The client resizes first (longest edge 1600 px, JPEG quality 0.85). The Worker checks ownership and that fewer than 9 images exist, then `sendPhoto` to the user's own private chat with `disable_notification: true` (raw `fetch` and `FormData`), keeps the largest `file_id` through the existing atomic and deduplicating `appendImage`, writes the uploaded bytes to R2 straight away, and calls `deleteMessage` (best effort, through `waitUntil`). `wishes.images` therefore stays a JSON array of `file_id` strings and the bot's album rendering is unchanged. A Telegram 403 maps to `409 writeAccessRequired`; the user is not soft-blocked.
+- **Upload** (`POST /api/app/wishes/:id/images`, raw `image/jpeg|png|webp` body up to 5 MiB, with the magic bytes checked against the declared type). The client resizes first (longest edge 1600 px, JPEG quality 0.85). The Worker checks ownership and that fewer than 9 images exist, then `sendPhoto` to the user's own private chat with `disable_notification: true` (raw `fetch` and `FormData`), keeps the largest `file_id` through the existing atomic and deduplicating `appendImage`, and calls `deleteMessage` (best effort, through `waitUntil`). `wishes.images` therefore stays a JSON array of `file_id` strings and the bot's album rendering is unchanged. A Telegram 403 maps to `409 writeAccessRequired`; the user is not soft-blocked.
 - **Spike S1 passed** on 2026-10-02 (preview bot): after `deleteMessage` the `file_id` still works for `getFile` and for re-sending, so no carrier message stays in the chat.
 - **Image proxy** (one handler, two URL shapes). App: `/img/w/<wishId>/<index>/<hash>?e=<exp>&s=<sig>`, HMAC-signed, the expiry rounded up to the next hour plus one hour so the URL is stable within the hour and browsers cache it. Share pages: `/img/s/<publicId>/<wishId>/<index>/<hash>`, no expiry, and a live D1 check on every request (share active, owner not blocked, wish visible and owned by the share owner). `<hash>` is the first 16 hex characters of SHA-256(`file_id`).
-- **Cache layers.** The Cache API sits in front for hot paths (7 days, per data center; it does nothing on `*.workers.dev`). The durable layer is R2, binding `IMAGES`: bucket `wishlist-images` in production and `wishlist-images-preview` in previews and local. The object key is the full SHA-256 of the `file_id` and the `content-type` is kept as metadata. On a miss the Worker calls `getFile`, downloads from Telegram, writes R2 and the Cache API, and responds. Telegram stays the source of truth: an R2 failure degrades to a miss.
-- **Never exposed.** The upstream `api.telegram.org/file/bot...` URL is never logged or returned, and the proxy never echoes the token. Removing a photo or a wish deletes nothing in R2; orphans are harmless because every read is authorized first (cleanup is a follow-up).
+- **Cache layers.** The Cache API sits in front for hot paths (7 days, per data center; it does nothing on `*.workers.dev`). The durable layer is R2, binding `IMAGES`: bucket `wishlist-images` in production and `wishlist-images-preview` in previews and local. The object key is the full SHA-256 of the `file_id` and the `content-type` is kept as metadata. On a miss the Worker calls `getFile`, downloads Telegram's re-encoded file, writes R2 and the Cache API, and responds; uploaded bytes are never written to R2 directly. Telegram stays the source of truth: an R2 failure degrades to a miss.
+- **Never exposed.** The upstream `api.telegram.org/file/bot...` URL is never logged or returned, and the proxy never echoes the token. Removing a photo or a wish deletes its R2 object in `waitUntil` unless another active wish references the same `file_id`; the check uses `json_each` over `wishes.images`. The signed `/img/w` URLs stay valid for about 1 to 2 hours after a wish is hidden: the owner must still see their hidden photos, so `/img/w` checks only the signature and that the wish is not removed, not its `hidden` flag. This is an accepted trade-off; `/img/s` always checks visibility. A user can have at most 500 active wishes (`409 wishLimit`; the bot replies with `wishlist.add.limit`).
 - **Bucket creation.** Create both buckets before deploying a Worker that binds them: `pnpm exec wrangler r2 bucket create wishlist-images` and `pnpm exec wrangler r2 bucket create wishlist-images-preview` (skip a bucket that already exists).
 - **Chat fallback.** `POST /api/app/wishes/:id/images/chat-intent` sets the pending `wishField images` input and sends the bot's usual prompt, for devices where the file input fails (spike S3).
 
@@ -1026,7 +1032,7 @@ Access to another user's list is bound by an opaque owner token, `base36(ownerId
 The app and the bot are two views over the same D1 rows.
 
 1. The app never writes `session.find`.
-2. The app writes `pendingInput` in three cases only: the phone contact intent (`{kind:'contact', authType, via:'app'}`), the photo chat intent (`wishField` images), and clearing a pending contact intent. It never clears unrelated pending input, so a half-written feedback message in the chat survives.
+2. The app writes `pendingInput` in three cases only: the phone contact intent (`{kind:'contact', authType, via:'app'}`), the photo chat intent (`wishField` images), and clearing a pending contact intent. It never clears unrelated pending input, so a half-written feedback message in the chat survives. The contact intent expires after 10 minutes (a missing `createdAt` counts as expired), and while it is pending any message that is not a contact, as well as any command or button, clears it and is handled normally; only an actual contact message completes it.
 3. Removing a wish or cleaning the list calls `sessions.clearWishReferences` (best effort, failures only log): it clears `pendingInput` only if it is a `wishField` for a removed wish, and `album` only if `album.wishId` matches.
 4. App uploads are single `sendPhoto` calls, so album state and `sessions.media_group_*` are never touched.
 5. Language and registration go to the same columns the bot reads (`users.language` for users, `sessions.language` for guests).
@@ -1069,7 +1075,7 @@ No D1 migration is involved. Production already runs this branch, so the order f
 1. **R0.** All work merged on `feat/migration-to-v2`, `pnpm run check` green, the CI drift check covers `public/app`, security audit fixes in.
 2. **R1.** Push. Workers Builds builds the preview and `db:migrate:ci` reports nothing pending. Run `pnpm preview:point` and `pnpm telegram:commands:set:preview`.
 3. **R2.** One-time BotFather setup for `@InevixTestBot`.
-4. **R3.** Run spikes S1 to S5 and walk the parity checklist, cross-checking each feature in the chat: create in the app and see it in the bot; edit in the bot and see it in the app after Retry or the `activated` event; remove a wish in the app while the chat has a pending `wishField` for it; give in the app and see it in the bot's give list; stop sharing and see `410` on the page; upload 3 photos and see them in the bot album and on the share page; language Auto, feedback to the admin, stats, donate, what's new, a `s_<id>` deep link and an old chat button. Device matrix: iOS, Android, Telegram Desktop on Windows and Linux, Telegram macOS, web K and A. S5 checks that Workers Logs and traces contain no `Authorization` header and no `api.telegram.org/bot...` or `/file/bot...` URL.
+4. **R3.** Run spikes S1 to S5 and walk the parity checklist, cross-checking each feature in the chat: create in the app and see it in the bot; edit in the bot and see it in the app after Retry or the `activated` event; remove a wish in the app while the chat has a pending `wishField` for it; give in the app and see it in the bot's give list; stop sharing and see `410` on the page; upload 3 photos and see them in the bot album and on the share page; language Auto, feedback to the admin, stats, donate, what's new, a `s_<id>` deep link and an old chat button. Device matrix: iOS, Android, Telegram Desktop on Windows and Linux, Telegram macOS, web K and A. S5 is resolved by disabling Workers traces; it only needs a check that Workers Logs contain no `Authorization` header and no `api.telegram.org/bot...` or `/file/bot...` URL.
 5. **R4.** Check that both R2 buckets exist, set `MINI_APP_ENABLED` to `"true"` in the production vars, then `pnpm worker:deploy:prod` from the branch. Verify: `curl -sI https://wishlist.chernenko.dev/app` returns 200 with the exact CSP; `/api/app/bootstrap` without auth returns 401; `/app/app.js` is immutable; a share page with photos serves `/img/s/...` with 200 and the second view is a cache hit. Then `pnpm telegram:commands:set:prod` to add `/app`.
 6. **R5.** BotFather production setup.
 7. **R6.** Admin smoke from the profile "Open app", from `/app` and from the home inline button: create a wish with 2 photos and check it in the chat and on the share page; search a known user, give and take; switch language to Auto; send feedback.

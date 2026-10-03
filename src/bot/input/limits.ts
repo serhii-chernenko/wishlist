@@ -5,6 +5,7 @@ export const PRICE_MAX_VALUE = 1_000_000_000;
 export const PAYMENTS_MAX_LENGTH = 1000;
 export const FEEDBACK_MAX_LENGTH = 2000;
 export const FIND_QUERY_MAX_LENGTH = 64;
+export const MAX_ACTIVE_WISHES_PER_USER = 500;
 export const TRUNCATION_MARK = '…';
 
 export const cutText = (value: string, maxLength: number) => {

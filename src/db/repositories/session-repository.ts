@@ -197,7 +197,12 @@ export const createSessionRepository = (db: AppDb) => {
             now: Date
         ) {
             return tryDb(async () => {
-                const pendingInput = { kind: 'contact', authType, via: 'app' };
+                const pendingInput = {
+                    kind: 'contact',
+                    authType,
+                    via: 'app',
+                    createdAt: now.getTime()
+                };
                 const pendingInputJson = JSON.stringify(pendingInput);
                 const freshState = JSON.stringify({
                     v: 1,

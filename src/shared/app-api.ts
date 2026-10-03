@@ -37,7 +37,7 @@ export const APP_PAGE_SIZE = 20;
 export const APP_RELEASES_PAGE_SIZE = 3;
 export const APP_RELEASES_MAX_LIMIT = 20;
 export const APP_JSON_BODY_MAX_BYTES = 16 * 1024;
-export const APP_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+export const APP_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 export const APP_INIT_DATA_MAX_BYTES = 8 * 1024;
 export const APP_INIT_DATA_MAX_AGE_SECONDS = 24 * 60 * 60;
 export const APP_INIT_DATA_MAX_FUTURE_SKEW_SECONDS = 5 * 60;
@@ -160,6 +160,7 @@ export const API_ERROR_STATUS = {
     shareEmpty: 409,
     notShared: 409,
     imagesFull: 409,
+    wishLimit: 409,
     imageChanged: 409,
     ownWish: 409,
     writeAccessRequired: 409,

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { Effect } from 'effect';
@@ -50,6 +51,7 @@ import type { UserRecord } from '../../src/db/repositories';
 import { createApp } from '../../src/worker/app';
 import type { WorkerBindings } from '../../src/worker/env';
 import {
+    countRows,
     createD1Harness,
     seedGeneratedWishes,
     type D1Harness
@@ -1414,6 +1416,174 @@ describe('wishlist screens on D1', () => {
             await dispatch(confirm.request, `w:r:y:${wish.id}`);
             assert.equal((await readWish(wish.id))?.['removed'], 1);
             assert.equal((await readWish(wish.id))?.['done'], 1);
+        });
+    });
+
+    describe('wish limit and R2 cleanup', () => {
+        const imageKey = (fileId: string) => {
+            return createHash('sha256').update(fileId).digest('hex');
+        };
+
+        const putObject = async (fileId: string) => {
+            await harness.env.IMAGES.put(imageKey(fileId), 'bytes');
+        };
+
+        const hasObject = async (fileId: string) => {
+            return (await harness.env.IMAGES.get(imageKey(fileId))) !== null;
+        };
+
+        const withImages = (created: ReturnType<typeof createRequest>) => {
+            created.request.env = {
+                ...created.request.env,
+                IMAGES: harness.env.IMAGES
+            };
+
+            return created;
+        };
+
+        const flushDeferred = async (
+            created: ReturnType<typeof createRequest>
+        ) => {
+            for (const { task } of created.deferred) {
+                await task();
+            }
+        };
+
+        const seedWishWithImages = async (
+            userId: number,
+            fileIds: string[]
+        ) => {
+            const wish = await run(
+                harness.repositories.wishes.create(userId, 'wish', new Date())
+            );
+
+            assert.ok(wish);
+
+            for (const fileId of fileIds) {
+                await run(
+                    harness.repositories.wishes.appendImage(
+                        wish.id,
+                        userId,
+                        fileId,
+                        new Date()
+                    )
+                );
+                await putObject(fileId);
+            }
+
+            return wish;
+        };
+
+        beforeEach(async () => {
+            const listed = await harness.env.IMAGES.list();
+
+            await Promise.all(
+                listed.objects.map(object => {
+                    return harness.env.IMAGES.delete(object.key);
+                })
+            );
+        });
+
+        it('refuses to start the add flow at 500 active wishes and tells the user', async () => {
+            const owner = await createUser();
+
+            await seedGeneratedWishes(harness, owner.id, 500);
+
+            const { request, events, savedSessions } = createRequest(owner);
+
+            await wishAddScreen.render(request, undefined);
+
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.add.limit()
+            );
+            assert.equal(savedSessions.at(-1)?.pendingInput, null);
+        });
+
+        it('refuses a submitted title at 500 active wishes without creating a wish', async () => {
+            const owner = await createUser();
+
+            await seedGeneratedWishes(harness, owner.id, 500);
+
+            const { request, events } = createRequest(owner);
+
+            await wishAddScreen.onInput?.(
+                request,
+                { kind: 'wishTitleNew' },
+                textMessage('One too many')
+            );
+
+            assert.equal(
+                lastText(events).html,
+                getMessages('uk').wishlist.add.limit()
+            );
+            assert.equal(await countRows(harness, 'wishes'), 500);
+        });
+
+        it('lets a user below the limit add a wish, and removed wishes do not count', async () => {
+            const owner = await createUser();
+
+            await seedGeneratedWishes(harness, owner.id, 500);
+            await harness.env.DB.prepare(
+                'UPDATE wishes SET removed = 1 WHERE id = (SELECT min(id) FROM wishes)'
+            ).run();
+
+            const { request } = createRequest(owner);
+
+            await wishAddScreen.onInput?.(
+                request,
+                { kind: 'wishTitleNew' },
+                textMessage('Fits')
+            );
+
+            assert.equal(await countRows(harness, 'wishes'), 501);
+        });
+
+        it('deletes the R2 objects after the confirmed wish removal, keeping objects another wish uses', async () => {
+            const owner = await createUser();
+            const wish = await seedWishWithImages(owner.id, ['gone', 'kept']);
+
+            await seedWishWithImages(owner.id, ['kept']);
+
+            const confirm = withImages(createRequest(owner));
+
+            await dispatch(confirm.request, `w:r:y:${wish.id}`);
+            assert.equal(confirm.deferred.length, 1);
+            await flushDeferred(confirm);
+            assert.equal(await hasObject('gone'), false);
+            assert.equal(await hasObject('kept'), true);
+        });
+
+        it('deletes the R2 objects of every wish when the list is cleaned', async () => {
+            const owner = await createUser();
+            const stranger = await createUser();
+
+            await seedWishWithImages(owner.id, ['a']);
+            await seedWishWithImages(owner.id, ['b']);
+            await seedWishWithImages(stranger.id, ['c']);
+
+            const confirm = withImages(createRequest(owner));
+
+            await dispatch(confirm.request, 'wl:clean:y');
+            await flushDeferred(confirm);
+            assert.equal(await hasObject('a'), false);
+            assert.equal(await hasObject('b'), false);
+            assert.equal(await hasObject('c'), true);
+        });
+
+        it('deletes the R2 objects when the photos are cleared with the remove label', async () => {
+            const owner = await createUser();
+            const wish = await seedWishWithImages(owner.id, ['x', 'y']);
+            const clear = withImages(createRequest(owner));
+
+            await wishEditScreen.onInput?.(
+                clear.request,
+                { kind: 'wishField', wishId: wish.id, field: 'images' },
+                textMessage('❌ Видалити')
+            );
+            await flushDeferred(clear);
+            assert.equal(await hasObject('x'), false);
+            assert.equal(await hasObject('y'), false);
         });
     });
 

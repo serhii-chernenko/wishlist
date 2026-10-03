@@ -3,6 +3,7 @@ import { getErrorType } from '../../bot/errors';
 import { parseDescription } from '../../bot/input/description';
 import { PRICE_MAX_VALUE } from '../../bot/input/limits';
 import { parseLink } from '../../bot/input/link';
+import { parseWishImages } from '../../bot/input/wish-images';
 import { parsePrice } from '../../bot/input/price';
 import { parseTitle } from '../../bot/input/title';
 import { runRepository } from '../../bot/services/run-repository';
@@ -27,6 +28,7 @@ import {
 } from '../context';
 import { mintWishImages, toOwnWishDto, toPageDto } from '../dto';
 import { ApiError } from '../errors';
+import { releaseImagesInBackground } from '../photos/image-cleanup';
 import { emitAppAction } from '../telemetry';
 import {
     createBodyReader,
@@ -348,7 +350,13 @@ export const createWish: ApiHandler = async c => {
         priority: input.priority,
         hidden: input.hidden
     }) as NewWishFields;
-    const wish = await getWishService(c).createWithFields(user.id, fields);
+    const service = getWishService(c);
+
+    if (await service.isWishLimitReached(user.id)) {
+        throw new ApiError('wishLimit');
+    }
+
+    const wish = await service.createWithFields(user.id, fields);
 
     if (wish === null) {
         throw new ApiError('internal');
@@ -417,10 +425,17 @@ export const removeWish: ApiHandler = async c => {
 
     reader.finish();
 
-    if (!(await getWishService(c).remove(wishId, user.id, done === true))) {
+    const service = getWishService(c);
+    const removedWish = await service.findOwned(wishId, user.id);
+
+    if (
+        removedWish === null ||
+        !(await service.remove(wishId, user.id, done === true))
+    ) {
         throw new ApiError('notFound');
     }
 
+    await releaseImagesInBackground(c, parseWishImages(removedWish.images));
     await clearSessionReferences(c, [wishId]);
     emitAppAction(c, 'wish_removed', {
         result: done === true ? 'done' : 'dropped'
@@ -431,9 +446,12 @@ export const removeWish: ApiHandler = async c => {
 
 export const cleanWishes: ApiHandler = async c => {
     const user = requireUser(c);
-    const removed = await getWishService(c).removeAll(user.id);
+    const service = getWishService(c);
+    const imageFileIds = await service.listActiveImageFileIds(user.id);
+    const removed = await service.removeAll(user.id);
 
     if (removed > 0) {
+        await releaseImagesInBackground(c, imageFileIds);
         await clearSessionReferences(c, 'all');
         emitAppAction(c, 'wishlist_cleaned');
     }

@@ -60,7 +60,6 @@ type Authorization = { fileId: string; hash: string } | Rejection;
 const WISH_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const INDEX_PATTERN = /^(?:0|[1-9]\d{0,3})$/;
 const EXPIRY_PATTERN = /^\d{1,12}$/;
-const UNKNOWN_CLIENT = 'unknown';
 const UPSTREAM_ERROR_STATUS = 502;
 const INTERNAL_ERROR_STATUS = 500;
 const TOO_MANY_REQUESTS_STATUS = 429;
@@ -206,14 +205,21 @@ const authorizeShareImage = async (
     });
 };
 
-const enforceMissLimit = async (c: ProxyContext, deps: ProxyDeps) => {
+const enforceClientLimit = async (c: ProxyContext, deps: ProxyDeps) => {
+    const context = getTelemetryContext(c);
+    const client = c.req.header('cf-connecting-ip');
+
+    if (client === undefined || client === '') {
+        deps.emitTelemetry(c.env, context, appRateLimitedEvent('image'));
+
+        return true;
+    }
+
     const limiter = (deps.selectLimiter ?? selectBoundLimiter)(c.env, 'image');
-    const client = c.req.header('cf-connecting-ip') ?? UNKNOWN_CLIENT;
     const outcome = await checkRateLimit(
         limiter,
         await sha256Hex(deps.crypto, client)
     );
-    const context = getTelemetryContext(c);
 
     if (outcome === 'missing' || outcome === 'error') {
         deps.emitTelemetry(
@@ -303,15 +309,6 @@ const resolveImage = async (
         };
     }
 
-    if (await enforceMissLimit(c, deps)) {
-        return {
-            response: errorResponse(TOO_MANY_REQUESTS_STATUS, {
-                'Retry-After': String(RATE_LIMIT_RETRY_AFTER_SECONDS)
-            }),
-            result: 'rateLimited'
-        };
-    }
-
     const store = createImageStore(c.env.IMAGES);
     const stored = await store.get(key);
 
@@ -355,6 +352,31 @@ const resolveImage = async (
     return { response: imageResponse(scope, fetched), result: 'miss' };
 };
 
+const serve = async (
+    c: ProxyContext,
+    deps: ProxyDeps,
+    scope: ImageProxyScope,
+    authorize: (c: ProxyContext, deps: ProxyDeps) => Promise<Authorization>
+): Promise<ServedImage> => {
+    if (await enforceClientLimit(c, deps)) {
+        return {
+            response: errorResponse(TOO_MANY_REQUESTS_STATUS, {
+                'Retry-After': String(RATE_LIMIT_RETRY_AFTER_SECONDS)
+            }),
+            result: 'rateLimited'
+        };
+    }
+
+    const authorization = await authorize(c, deps);
+
+    return isRejection(authorization)
+        ? {
+              response: errorResponse(authorization.status),
+              result: authorization.result
+          }
+        : resolveImage(c, deps, scope, authorization.fileId);
+};
+
 const createImageHandler = (
     scope: ImageProxyScope,
     deps: ProxyDeps,
@@ -365,14 +387,7 @@ const createImageHandler = (
         let served: ServedImage;
 
         try {
-            const authorization = await authorize(c, deps);
-
-            served = isRejection(authorization)
-                ? {
-                      response: errorResponse(authorization.status),
-                      result: authorization.result
-                  }
-                : await resolveImage(c, deps, scope, authorization.fileId);
+            served = await serve(c, deps, scope, authorize);
         } catch (error) {
             console.error(
                 JSON.stringify({

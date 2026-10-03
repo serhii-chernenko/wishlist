@@ -24,18 +24,17 @@ import {
     emitApiTelemetry,
     getSigner,
     getTelegramApi,
-    getTelemetryContext,
     requireUser,
+    runInBackground,
     type ApiContext,
     type ApiHandler
 } from '../context';
 import { mintWishImages, resolveRequestLocale, toOwnWishDto } from '../dto';
 import { ApiError } from '../errors';
+import { releaseImagesInBackground } from '../photos/image-cleanup';
 import { getImageIdentity, IMAGE_HASH_PATTERN } from '../photos/image-key';
-import {
-    createImageStore,
-    normalizeImageContentType
-} from '../photos/image-store';
+import { matchesDeclaredImageType } from '../photos/image-signature';
+import { normalizeImageContentType } from '../photos/image-store';
 import { TelegramApiError, type TelegramApi } from '../telegram-api';
 import { readIdParam, readIndexParam, validationError } from '../validate';
 
@@ -51,17 +50,6 @@ const isTelegramForbidden = (error: unknown) => {
         error instanceof TelegramApiError &&
         error.response.error_code === TELEGRAM_FORBIDDEN_CODE
     );
-};
-
-const runInBackground = async (c: ApiContext, task: Promise<unknown>) => {
-    const settled = task.catch(() => undefined);
-    const context = getTelemetryContext(c);
-
-    if (context) {
-        context.waitUntil(settled);
-    } else {
-        await settled;
-    }
 };
 
 const getWishService = (c: ApiContext) => {
@@ -176,6 +164,11 @@ export const uploadWishImage: ApiHandler = async c => {
     }
 
     const bytes = await readUploadBody(c);
+
+    if (!matchesDeclaredImageType(bytes, contentType)) {
+        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
+    }
+
     const api = getTelegramApi(c);
     const sent = await sendUploadedPhoto(c, api, bytes, contentType);
     const cleanUp = runInBackground(
@@ -195,15 +188,6 @@ export const uploadWishImage: ApiHandler = async c => {
         user.id,
         photo.file_id
     );
-
-    if (appended.outcome === 'appended') {
-        const { key } = await getImageIdentity(
-            c.var.deps.crypto,
-            photo.file_id
-        );
-
-        await createImageStore(c.env.IMAGES).put(key, bytes, contentType);
-    }
 
     await cleanUp;
 
@@ -260,16 +244,20 @@ export const removeWishImage: ApiHandler = async c => {
         throw new ApiError('imageChanged');
     }
 
+    await releaseImagesInBackground(c, [fileId]);
+
     return respondWithWish(c, updated);
 };
 
 export const clearWishImages: ApiHandler = async c => {
-    const { user, wishId } = await requireOwnedWish(c);
+    const { user, wishId, wish } = await requireOwnedWish(c);
     const cleared = await getWishService(c).clearImages(wishId, user.id);
 
     if (!cleared) {
         throw new ApiError('notFound');
     }
+
+    await releaseImagesInBackground(c, parseWishImages(wish.images));
 
     return respondWithWish(c, await reloadOwnedWish(c, wishId));
 };

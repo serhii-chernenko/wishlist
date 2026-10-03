@@ -31,10 +31,7 @@ import {
 import { encodeText } from './crypto';
 import { validateInitData, type InitDataUser } from './init-data';
 
-const RESTRICTED_ENVIRONMENTS: ReadonlySet<string> = new Set([
-    'preview',
-    'local'
-]);
+const UNRESTRICTED_ENVIRONMENT = 'production';
 
 const API_SECURITY_HEADERS = {
     'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
@@ -55,7 +52,7 @@ export const isPreviewAccessDenied = (
     env: Pick<WorkerBindings, 'BOT_ENVIRONMENT' | 'ADMIN_ID'>,
     telegramUserId: number
 ) => {
-    if (!RESTRICTED_ENVIRONMENTS.has(env.BOT_ENVIRONMENT)) {
+    if (env.BOT_ENVIRONMENT === UNRESTRICTED_ENVIRONMENT) {
         return false;
     }
 

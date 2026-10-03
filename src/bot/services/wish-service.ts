@@ -8,6 +8,7 @@ import type {
     WishFlags
 } from '../../db/repositories/wish-repository';
 import { WISHES_PAGE_SIZE } from '../content/pagination';
+import { MAX_ACTIVE_WISHES_PER_USER } from '../input/limits';
 import { toWishFilter } from '../content/filters';
 import type { WishFilter } from '../runtime/types';
 import { parseWishImages } from '../input/wish-images';
@@ -44,6 +45,28 @@ export const createWishService = (
                     offset: request.offset,
                     limit: WISHES_PAGE_SIZE
                 })
+            );
+        },
+        countActive(userId: number) {
+            return runRepository(repositories.wishes.countActive(userId));
+        },
+        async isWishLimitReached(userId: number) {
+            return (
+                (await runRepository(
+                    repositories.wishes.countActive(userId)
+                )) >= MAX_ACTIVE_WISHES_PER_USER
+            );
+        },
+        async listActiveImageFileIds(userId: number) {
+            const imagesJson = await runRepository(
+                repositories.wishes.listActiveImagesJson(userId)
+            );
+
+            return imagesJson.flatMap(parseWishImages);
+        },
+        listReferencedFileIds(fileIds: readonly string[]) {
+            return runRepository(
+                repositories.wishes.listReferencedFileIds(fileIds)
             );
         },
         findOwned(wishId: number, userId: number) {

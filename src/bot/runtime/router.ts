@@ -6,6 +6,7 @@ import type {
     CallbackActionType,
     CallbackHandler,
     CallbackTable,
+    PendingInput,
     PendingInputKind,
     ScreenExports,
     ScreenId,
@@ -13,6 +14,7 @@ import type {
 } from './types';
 import { resolveLateAlbumInput } from './album';
 import { clearPendingInput } from './context';
+import { getMessageContact } from '../utils/telegram';
 
 export const PENDING_INPUT_SCREENS = {
     wishTitleNew: 'wishAdd',
@@ -22,6 +24,8 @@ export const PENDING_INPUT_SCREENS = {
     payments: 'payments',
     contact: 'auth'
 } as const satisfies Record<PendingInputKind, ScreenId>;
+
+export const APP_CONTACT_PENDING_TTL_MS = 10 * 60 * 1000;
 
 export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'wishlist',
@@ -102,6 +106,18 @@ const indexScreens = (modules: readonly ScreenExports[]) => {
     return screens;
 };
 
+const isStaleAppContact = (pending: PendingInput | null, message: Message) => {
+    if (pending?.kind !== 'contact' || pending.via !== 'app') {
+        return false;
+    }
+
+    const expired =
+        pending.createdAt === undefined ||
+        Date.now() - pending.createdAt > APP_CONTACT_PENDING_TTL_MS;
+
+    return expired || getMessageContact(message) === null;
+};
+
 export interface Router {
     renderScreen(req: BotRequest, id: ScreenId): Promise<void>;
     dispatchCallback(req: BotRequest, action: CallbackAction): Promise<void>;
@@ -173,6 +189,10 @@ export const createRouter = (modules: readonly ScreenExports[]): Router => {
     };
 
     const dispatchInput = async (req: BotRequest, message: Message) => {
+        if (isStaleAppContact(req.session.pendingInput, message)) {
+            clearPendingInput(req);
+        }
+
         const pending =
             req.session.pendingInput ??
             resolveLateAlbumInput(req.session, message);

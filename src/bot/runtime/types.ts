@@ -71,7 +71,12 @@ export type PendingInput =
     | { kind: 'findQuery' }
     | { kind: 'feedback' }
     | { kind: 'payments' }
-    | { kind: 'contact'; authType: 'phone' | 'both'; via?: 'app' };
+    | {
+          kind: 'contact';
+          authType: 'phone' | 'both';
+          via?: 'app';
+          createdAt?: number;
+      };
 
 export type PendingInputKind = PendingInput['kind'];
 

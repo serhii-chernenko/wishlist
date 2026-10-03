@@ -25,7 +25,6 @@ import {
     toVisibleWishDto,
     type ImageMintingContext
 } from '../dto';
-import { ApiError } from '../errors';
 import { emitAppAction } from '../telemetry';
 import { readIdParam, readOffset } from '../validate';
 
@@ -100,11 +99,9 @@ export const removeGive: ApiHandler = async c => {
     const wishId = readIdParam(c, 'wishId');
     const removed = await createGiveService(c.var.repos).take(user.id, wishId);
 
-    if (!removed) {
-        throw new ApiError('notFound');
+    if (removed) {
+        emitAppAction(c, 'give_removed');
     }
-
-    emitAppAction(c, 'give_removed');
 
     return c.body(null, 204);
 };

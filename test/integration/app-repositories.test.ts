@@ -854,24 +854,26 @@ describe('mini app repository additions', () => {
 
     describe('sessions.setPendingContact and clearPendingContact', () => {
         it('creates a session row with the app contact intent', async () => {
-            await run(
-                repositories.sessions.setPendingContact(1, 'phone', nextNow())
-            );
+            const now = nextNow();
+
+            await run(repositories.sessions.setPendingContact(1, 'phone', now));
 
             const state = await readState(1);
+            const expected = {
+                kind: 'contact',
+                authType: 'phone',
+                via: 'app',
+                createdAt: now.getTime()
+            };
 
             assert.deepEqual(state, {
                 v: 1,
-                pendingInput: {
-                    kind: 'contact',
-                    authType: 'phone',
-                    via: 'app'
-                },
+                pendingInput: expected,
                 find: null
             });
             assert.deepEqual(
                 decodeSessionState(JSON.stringify(state)).pendingInput,
-                { kind: 'contact', authType: 'phone', via: 'app' }
+                expected
             );
         });
 
@@ -889,13 +891,18 @@ describe('mini app repository additions', () => {
                     album: { mediaGroupId: 'g', wishId: 3 }
                 })
             );
-            await run(
-                repositories.sessions.setPendingContact(1, 'both', nextNow())
-            );
+            const now = nextNow();
+
+            await run(repositories.sessions.setPendingContact(1, 'both', now));
 
             assert.deepEqual(await readState(1), {
                 v: 1,
-                pendingInput: { kind: 'contact', authType: 'both', via: 'app' },
+                pendingInput: {
+                    kind: 'contact',
+                    authType: 'both',
+                    via: 'app',
+                    createdAt: now.getTime()
+                },
                 find: { targetUserId: 7, query: 'q', filter: 2 },
                 album: { mediaGroupId: 'g', wishId: 3 }
             });
@@ -908,16 +915,17 @@ describe('mini app repository additions', () => {
 
         it('replaces a broken state with a fresh one', async () => {
             await writeState(1, 'not json');
-            await run(
-                repositories.sessions.setPendingContact(1, 'phone', nextNow())
-            );
+            const now = nextNow();
+
+            await run(repositories.sessions.setPendingContact(1, 'phone', now));
 
             assert.deepEqual(await readState(1), {
                 v: 1,
                 pendingInput: {
                     kind: 'contact',
                     authType: 'phone',
-                    via: 'app'
+                    via: 'app',
+                    createdAt: now.getTime()
                 },
                 find: null
             });

@@ -34,6 +34,7 @@ import {
     createWishScreenServices,
     getRemoveLabels,
     openLinkButton,
+    releaseRemovedImages,
     requireUser,
     updateSession
 } from '../services/wish-screen-context';
@@ -455,6 +456,8 @@ const handleClearImages = async (req: BotRequest, wish: WishRecord) => {
 
         return;
     }
+
+    releaseRemovedImages(req, parseWishImages(wish.images));
 
     await finishFieldUpdate(
         req,

@@ -18,6 +18,11 @@ import { START_SCREENS } from '../../src/shared/app-links';
 
 const DEFAULT_BASE_URL = 'http://localhost:8787';
 const DEV_VARS_FILE = '.dev.vars';
+const LOCAL_HOSTNAMES: ReadonlySet<string> = new Set([
+    'localhost',
+    '127.0.0.1',
+    '[::1]'
+]);
 const VIEWPORT = { width: 390, height: 844, deviceScaleFactor: 2 };
 const TELEGRAM_VERSION = '9.0';
 const TELEGRAM_PLATFORM = 'unknown';
@@ -75,6 +80,22 @@ class SmokeError extends Error {
         this.name = 'SmokeError';
     }
 }
+
+const assertLocalBase = (baseUrl: string) => {
+    let hostname: string | null = null;
+
+    try {
+        hostname = new URL(baseUrl).hostname;
+    } catch {
+        hostname = null;
+    }
+
+    if (hostname === null || !LOCAL_HOSTNAMES.has(hostname)) {
+        throw new SmokeError(
+            `--base must point at localhost, 127.0.0.1 or [::1]; the smoke run signs initData with the bot token and must never reach a remote host (got ${baseUrl})`
+        );
+    }
+};
 
 const wait = (milliseconds: number) => {
     return new Promise<void>(resolve => {
@@ -811,6 +832,9 @@ const main = async () => {
         }
     });
     const baseUrl = values.base.replace(/\/+$/, '');
+
+    assertLocalBase(baseUrl);
+
     const outDirectory = path.resolve(
         values.out ?? path.join(os.tmpdir(), 'wishlist-app-smoke')
     );

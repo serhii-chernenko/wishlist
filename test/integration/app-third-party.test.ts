@@ -581,7 +581,8 @@ describe('Mini App API third-party lists, search and gives', () => {
                 `/gives/${wish.id}`
             );
 
-            assert.equal(takenAgain.status, 404);
+            assert.equal(takenAgain.status, 204);
+            assert.equal(await takenAgain.text(), '');
             assert.equal(
                 (
                     (await (
@@ -769,7 +770,7 @@ describe('Mini App API third-party lists, search and gives', () => {
                 `/gives/${wish.id}`
             );
 
-            assert.equal(response.status, 404);
+            assert.equal(response.status, 204);
             assert.equal(
                 (
                     (await (

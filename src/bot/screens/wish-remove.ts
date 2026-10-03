@@ -1,7 +1,9 @@
 import { callbackButton, singleColumnKeyboard } from '../content/keyboards';
+import { parseWishImages } from '../input/wish-images';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
     createWishScreenServices,
+    releaseRemovedImages,
     requireUser,
     updateSession
 } from '../services/wish-screen-context';
@@ -58,17 +60,18 @@ export const callbacks: CallbackTable = {
     wishRemoveConfirm: async (req, action) => {
         const user = requireUser(req);
         const { wishes } = createWishScreenServices(req);
-        const removed = await wishes.remove(
-            action.wishId,
-            user.id,
-            action.done
-        );
+        const removedWish = await wishes.findOwned(action.wishId, user.id);
+        const removed =
+            removedWish !== null &&
+            (await wishes.remove(action.wishId, user.id, action.done));
 
         if (!removed) {
             await renderStaleWish(req);
 
             return;
         }
+
+        releaseRemovedImages(req, parseWishImages(removedWish.images));
 
         req.telemetry.botActionCompleted({
             action: 'wish_removed',

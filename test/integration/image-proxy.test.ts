@@ -21,6 +21,7 @@ import { createD1Harness, type D1Harness } from './d1-harness';
 const NOW = new Date('2026-10-03T12:00:00.000Z');
 const OWNER_TELEGRAM_ID = 5_001;
 const OTHER_TELEGRAM_ID = 5_002;
+const CLIENT_IP = '198.51.100.9';
 const IMAGE_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 9, 8, 7, 6]);
 const FILE_IDS = ['file-a', 'file-b'];
 const SECRET_FILE_PATH = 'photos/secret-path-123.jpg';
@@ -141,7 +142,11 @@ describe('image proxy', () => {
         };
         const app = createApp({}, {}, {}, {}, deps);
 
-        return app.request(path, { headers }, buildEnv());
+        return app.request(
+            path,
+            { headers: { 'cf-connecting-ip': CLIENT_IP, ...headers } },
+            buildEnv()
+        );
     };
 
     const hashOf = async (fileId: string) => {
@@ -506,10 +511,14 @@ describe('image proxy', () => {
         );
     });
 
-    it('rate limits only cache misses, keyed by the hashed client IP', async () => {
-        const { wish } = await seedOwner();
+    it('rate limits before authorization and the cache, keyed by the hashed client IP', async () => {
+        const { wish, publicId } = await seedOwner();
         const url = await appUrl(wish.id, 0);
+        const shareImage = await shareUrl(publicId, wish.id, 0);
 
+        await request(url);
+        telegram.getFileCalls.length = 0;
+        events = [];
         limiter = {
             async limit({ key }) {
                 limiterKeys.push(key);
@@ -521,10 +530,22 @@ describe('image proxy', () => {
         const limited = await request(url, {
             'cf-connecting-ip': '203.0.113.7'
         });
+        const limitedShare = await request(shareImage, {
+            'cf-connecting-ip': '203.0.113.7'
+        });
+        const limitedUnknown = await request('/img/s/unknown/1/0/deadbeef', {
+            'cf-connecting-ip': '203.0.113.7'
+        });
 
         assert.equal(limited.status, 429);
         assert.equal(limited.headers.get('Retry-After'), '60');
-        assert.deepEqual(limiterKeys, [await sha256Hex(crypto, '203.0.113.7')]);
+        assert.equal(limitedShare.status, 429);
+        assert.equal(limitedUnknown.status, 429);
+        assert.deepEqual(limiterKeys, [
+            await sha256Hex(crypto, '203.0.113.7'),
+            await sha256Hex(crypto, '203.0.113.7'),
+            await sha256Hex(crypto, '203.0.113.7')
+        ]);
         assert.deepEqual(telegram.getFileCalls, []);
         assert.equal(
             events.some(event => {
@@ -535,29 +556,36 @@ describe('image proxy', () => {
             }),
             true
         );
-
-        limiter = null;
-        await request(url);
-        limiter = {
-            async limit({ key }) {
-                limiterKeys.push(key);
-
-                return { success: false };
-            }
-        };
-        limiterKeys.length = 0;
-
-        const cached = await request(url, {
-            'cf-connecting-ip': '203.0.113.7'
-        });
-
-        assert.equal(cached.status, 200);
-        assert.deepEqual(limiterKeys, []);
         assert.deepEqual(servedEvents(), [
             'app:rateLimited:429',
-            'app:miss:200',
-            'app:hit:200'
+            'share:rateLimited:429',
+            'share:rateLimited:429'
         ]);
+    });
+
+    it('fails closed with 429 when the client IP header is missing, without consulting the limiter', async () => {
+        const { wish, publicId } = await seedOwner();
+        let limiterCalls = 0;
+
+        limiter = {
+            async limit() {
+                limiterCalls += 1;
+
+                return { success: true };
+            }
+        };
+
+        const app = await request(await appUrl(wish.id, 0), {
+            'cf-connecting-ip': ''
+        });
+        const share = await request(await shareUrl(publicId, wish.id, 0), {
+            'cf-connecting-ip': ''
+        });
+
+        assert.equal(app.status, 429);
+        assert.equal(share.status, 429);
+        assert.equal(limiterCalls, 0);
+        assert.deepEqual(telegram.getFileCalls, []);
     });
 
     it('answers 502 without details when Telegram cannot return the file', async () => {

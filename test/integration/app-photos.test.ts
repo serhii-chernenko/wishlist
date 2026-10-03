@@ -33,6 +33,14 @@ const OTHER_TELEGRAM_ID = 4_002;
 const SENT_MESSAGE_ID = 9_001;
 const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 5, 6, 7, 8]);
+const WEBP_BYTES = new Uint8Array([
+    0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50
+]);
+const TELEGRAM_REENCODED_BYTES = new Uint8Array([
+    0xff, 0xd8, 0xff, 0xdb, 4, 3, 2, 1
+]);
+const CLIENT_IP = '198.51.100.9';
+const ACTIVE_WISH_LIMIT = 500;
 
 const OWNER: InitDataUserFixture = {
     id: OWNER_TELEGRAM_ID,
@@ -121,12 +129,18 @@ const createFakeTelegram = (): FakeTelegram => {
         async getFile(fileId) {
             fake.getFileCalls.push(fileId);
 
-            return { file_id: fileId, file_unique_id: 'u' };
+            return {
+                file_id: fileId,
+                file_unique_id: 'u',
+                file_path: `photos/${fileId}.jpg`
+            };
         },
         async downloadFile(filePath) {
             fake.downloadCalls.push(filePath);
 
-            throw new Error('unexpected download');
+            return new Response(TELEGRAM_REENCODED_BYTES, {
+                headers: { 'Content-Type': 'image/jpeg' }
+            });
         }
     };
 
@@ -197,6 +211,7 @@ describe('Mini App photo endpoints', () => {
         };
         const app = createApp({}, {}, {}, deps, deps);
         const headers = new Headers({
+            'cf-connecting-ip': CLIENT_IP,
             Authorization: `tma ${createSignedInitData({
                 user: init.user ?? OWNER,
                 authDate: NOW_SECONDS
@@ -330,7 +345,7 @@ describe('Mini App photo endpoints', () => {
 
     afterEach(restoreConsole);
 
-    it('uploads through Telegram, keeps the largest file id and writes R2 from the uploaded bytes', async () => {
+    it('uploads through Telegram, keeps the largest file id and never seeds R2 from the uploaded bytes', async () => {
         const { wish } = await seedWish();
         telegram.nextFileIds = ['AgAD-large'];
 
@@ -353,14 +368,8 @@ describe('Mini App photo endpoints', () => {
         ]);
 
         const key = await sha256Hex(createNodeApiCrypto(), 'AgAD-large');
-        const object = await harness.env.IMAGES.get(key);
 
-        assert.ok(object);
-        assert.equal(object.httpMetadata?.contentType, 'image/jpeg');
-        assert.deepEqual(
-            new Uint8Array(await object.arrayBuffer()),
-            JPEG_BYTES
-        );
+        assert.equal(await harness.env.IMAGES.get(key), null);
         assert.equal(body.images.length, 1);
         assert.equal(body.images[0]?.hash, key.slice(0, 16));
         assert.match(
@@ -370,19 +379,74 @@ describe('Mini App photo endpoints', () => {
         assert.deepEqual(eventResults(), ['appended']);
     });
 
-    it('serves the uploaded photo straight from R2 without a Telegram download', async () => {
+    it('populates R2 from the Telegram re-encoded file on the first proxy miss', async () => {
         const { wish } = await seedWish();
+        telegram.nextFileIds = ['AgAD-large'];
+
         const uploaded = (await (
             await upload(wish.id, PNG_BYTES, 'image/png')
         ).json()) as OwnWishDto;
         const image = await request(uploaded.images[0]?.url ?? '');
+        const key = await sha256Hex(createNodeApiCrypto(), 'AgAD-large');
+        const stored = await harness.env.IMAGES.get(key);
 
         restoreConsole();
         assert.equal(image.status, 200);
-        assert.equal(image.headers.get('Content-Type'), 'image/png');
-        assert.deepEqual(new Uint8Array(await image.arrayBuffer()), PNG_BYTES);
-        assert.deepEqual(telegram.getFileCalls, []);
-        assert.deepEqual(telegram.downloadCalls, []);
+        assert.equal(image.headers.get('Content-Type'), 'image/jpeg');
+        assert.deepEqual(
+            new Uint8Array(await image.arrayBuffer()),
+            TELEGRAM_REENCODED_BYTES
+        );
+        assert.deepEqual(telegram.getFileCalls, ['AgAD-large']);
+        assert.ok(stored);
+        assert.deepEqual(
+            new Uint8Array(await stored.arrayBuffer()),
+            TELEGRAM_REENCODED_BYTES
+        );
+    });
+
+    it('accepts PNG and WebP uploads whose magic bytes match the declared type', async () => {
+        const { wish } = await seedWish();
+        const png = await upload(wish.id, PNG_BYTES, 'image/png');
+        const webp = await upload(wish.id, WEBP_BYTES, 'image/webp');
+
+        restoreConsole();
+        assert.equal(png.status, 200);
+        assert.equal(webp.status, 200);
+        assert.equal(telegram.sendPhotoCalls.length, 2);
+    });
+
+    it('rejects uploads whose magic bytes do not match the declared type before Telegram', async () => {
+        const { wish } = await seedWish();
+        const pngAsJpeg = await upload(wish.id, PNG_BYTES, 'image/jpeg');
+        const jpegAsPng = await upload(wish.id, JPEG_BYTES, 'image/png');
+        const jpegAsWebp = await upload(wish.id, JPEG_BYTES, 'image/webp');
+        const riffWithoutWebp = await upload(
+            wish.id,
+            new Uint8Array([
+                0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x41, 0x56, 0x49, 0x20
+            ]),
+            'image/webp'
+        );
+        const text = await upload(wish.id, 'GIF89a-not-a-jpeg', 'image/jpeg');
+
+        restoreConsole();
+
+        for (const response of [
+            pngAsJpeg,
+            jpegAsPng,
+            jpegAsWebp,
+            riffWithoutWebp,
+            text
+        ]) {
+            assert.equal(response.status, 415);
+            assert.deepEqual(await readError(response), {
+                code: 'unsupportedMedia'
+            });
+        }
+
+        assert.deepEqual(telegram.sendPhotoCalls, []);
+        assert.deepEqual(await storedImages(wish.id), []);
     });
 
     it('rejects the tenth photo without calling Telegram', async () => {
@@ -667,5 +731,176 @@ describe('Mini App photo endpoints', () => {
 
         assert.doesNotMatch(printed, /api\.telegram\.org\/file\/bot/);
         assert.equal(printed.includes(TEST_BOT_TOKEN), false);
+    });
+
+    describe('R2 cleanup and the wish limit', () => {
+        const keyOf = (fileId: string) => {
+            return sha256Hex(createNodeApiCrypto(), fileId);
+        };
+
+        const putObject = async (fileId: string) => {
+            await harness.env.IMAGES.put(await keyOf(fileId), 'bytes');
+        };
+
+        const hasObject = async (fileId: string) => {
+            return (await harness.env.IMAGES.get(await keyOf(fileId))) !== null;
+        };
+
+        const createSecondWish = async (userId: number) => {
+            const second = await run(
+                harness.repositories.wishes.create(userId, 'Lens', NOW)
+            );
+
+            assert.ok(second);
+
+            return second;
+        };
+
+        const postJson = (path: string, body?: unknown) => {
+            return request(path, {
+                method: 'POST',
+                ...(body === undefined
+                    ? {}
+                    : {
+                          body: JSON.stringify(body),
+                          contentType: 'application/json'
+                      })
+            });
+        };
+
+        it('deletes the R2 object of a removed photo only when no other active wish references it', async () => {
+            const { user, wish } = await seedWish();
+            const other = await createSecondWish(user.id);
+
+            await seedImages(user.id, wish.id, ['solo', 'shared']);
+            await seedImages(user.id, other.id, ['shared']);
+            await putObject('solo');
+            await putObject('shared');
+
+            const crypto = createNodeApiCrypto();
+            const hashOf = async (fileId: string) => {
+                return (await sha256Hex(crypto, fileId)).slice(0, 16);
+            };
+
+            const removeShared = await request(
+                `/api/app/wishes/${wish.id}/images/1?hash=${await hashOf('shared')}`,
+                { method: 'DELETE' }
+            );
+
+            assert.equal(removeShared.status, 200);
+            assert.equal(await hasObject('shared'), true);
+
+            const removeSolo = await request(
+                `/api/app/wishes/${wish.id}/images/0?hash=${await hashOf('solo')}`,
+                { method: 'DELETE' }
+            );
+
+            restoreConsole();
+            assert.equal(removeSolo.status, 200);
+            assert.equal(await hasObject('solo'), false);
+            assert.equal(await hasObject('shared'), true);
+        });
+
+        it('deletes the R2 objects when all photos of a wish are cleared', async () => {
+            const { user, wish } = await seedWish();
+
+            await seedImages(user.id, wish.id, ['a', 'b']);
+            await putObject('a');
+            await putObject('b');
+
+            const response = await request(
+                `/api/app/wishes/${wish.id}/images`,
+                { method: 'DELETE' }
+            );
+
+            restoreConsole();
+            assert.equal(response.status, 200);
+            assert.equal(await hasObject('a'), false);
+            assert.equal(await hasObject('b'), false);
+        });
+
+        it('deletes the R2 objects of a removed wish but keeps ones another wish still uses', async () => {
+            const { user, wish } = await seedWish();
+            const other = await createSecondWish(user.id);
+
+            await seedImages(user.id, wish.id, ['gone', 'kept']);
+            await seedImages(user.id, other.id, ['kept']);
+            await putObject('gone');
+            await putObject('kept');
+
+            const response = await postJson(
+                `/api/app/wishes/${wish.id}/remove`,
+                { done: false }
+            );
+
+            restoreConsole();
+            assert.equal(response.status, 204);
+            assert.equal(await hasObject('gone'), false);
+            assert.equal(await hasObject('kept'), true);
+        });
+
+        it('deletes the R2 objects of every wish when the list is cleaned, and keeps other users objects', async () => {
+            const { user, wish } = await seedWish();
+            const other = await createSecondWish(user.id);
+            const stranger = await seedWish(OTHER_TELEGRAM_ID);
+
+            await seedImages(user.id, wish.id, ['one']);
+            await seedImages(user.id, other.id, ['two']);
+            await seedImages(stranger.user.id, stranger.wish.id, ['three']);
+            await putObject('one');
+            await putObject('two');
+            await putObject('three');
+
+            const response = await postJson('/api/app/wishes/clean');
+
+            restoreConsole();
+            assert.equal(response.status, 200);
+            assert.equal(await hasObject('one'), false);
+            assert.equal(await hasObject('two'), false);
+            assert.equal(await hasObject('three'), true);
+        });
+
+        it('refuses to create the 501st active wish with 409 wishLimit and counts removed wishes out', async () => {
+            const { user } = await seedWish();
+
+            await harness.env.DB.prepare(
+                `WITH RECURSIVE filler(n) AS (
+                    SELECT 1 UNION ALL SELECT n + 1 FROM filler WHERE n < ?
+                 )
+                 INSERT INTO wishes (user_id, title, created_at, updated_at)
+                 SELECT ?, 'Filler ' || n, ?, ? FROM filler`
+            )
+                .bind(
+                    ACTIVE_WISH_LIMIT - 2,
+                    user.id,
+                    NOW.getTime(),
+                    NOW.getTime()
+                )
+                .run();
+
+            const accepted = await postJson('/api/app/wishes', {
+                title: 'Last one'
+            });
+            const refused = await postJson('/api/app/wishes', {
+                title: 'One too many'
+            });
+
+            assert.equal(accepted.status, 201);
+            assert.equal(refused.status, 409);
+            assert.deepEqual(await readError(refused), { code: 'wishLimit' });
+
+            const created = (await accepted.json()) as OwnWishDto;
+            const removal = await postJson(
+                `/api/app/wishes/${created.id}/remove`,
+                { done: false }
+            );
+            const retried = await postJson('/api/app/wishes', {
+                title: 'Fits again'
+            });
+
+            restoreConsole();
+            assert.equal(removal.status, 204);
+            assert.equal(retried.status, 201);
+        });
     });
 });

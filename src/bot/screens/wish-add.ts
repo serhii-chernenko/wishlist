@@ -14,10 +14,23 @@ import {
 } from '../services/wish-screen-context';
 import { screen as wishEditScreen } from './wish-edit';
 
+const rejectWishLimit = async (req: BotRequest) => {
+    updateSession(req, { pendingInput: null });
+    await req.send.text(req.LL.wishlist.add.limit(), removeReplyKeyboard());
+};
+
 const render = async (req: BotRequest) => {
     const { LL } = req;
+    const user = requireUser(req);
 
-    requireUser(req);
+    if (
+        await createWishScreenServices(req).wishes.isWishLimitReached(user.id)
+    ) {
+        await rejectWishLimit(req);
+
+        return;
+    }
+
     updateSession(req, { pendingInput: { kind: 'wishTitleNew' } });
     await req.send.text(
         LL.wishlist.add.description(String(TITLE_MAX_LENGTH)),
@@ -48,6 +61,13 @@ export const screen: ScreenModule<undefined> = {
         }
 
         const { wishes } = createWishScreenServices(req);
+
+        if (await wishes.isWishLimitReached(user.id)) {
+            await rejectWishLimit(req);
+
+            return;
+        }
+
         const wish = await wishes.create(user.id, parsed.value);
 
         if (wish === null) {

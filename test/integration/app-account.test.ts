@@ -371,7 +371,12 @@ describe('Mini App API account, share, feedback and info', () => {
             assert.equal(response.status, 204);
             assert.deepEqual(
                 (await readSessionState(GUEST_TELEGRAM_ID))?.pendingInput,
-                { kind: 'contact', authType: 'phone', via: 'app' }
+                {
+                    kind: 'contact',
+                    authType: 'phone',
+                    via: 'app',
+                    createdAt: NOW.getTime()
+                }
             );
             assert.equal(await countRows(harness, 'users'), 0);
 
@@ -382,7 +387,12 @@ describe('Mini App API account, share, feedback and info', () => {
 
             assert.deepEqual(
                 (await readSessionState(GUEST_TELEGRAM_ID))?.pendingInput,
-                { kind: 'contact', authType: 'both', via: 'app' }
+                {
+                    kind: 'contact',
+                    authType: 'both',
+                    via: 'app',
+                    createdAt: NOW.getTime()
+                }
             );
         });
 
