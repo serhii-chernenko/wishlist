@@ -11,7 +11,6 @@ import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { HERO_LOGO_ID_PREFIX } from './hero';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
 import { heartSymbolId } from './logo';
-import { WISH_DETAILS_LABEL } from './pending-copy';
 
 const WWW_PREFIX = /^www\./;
 const HEART_HREF = `#${heartSymbolId(HERO_LOGO_ID_PREFIX)}`;
@@ -107,7 +106,7 @@ export const WishCard = ({
                     </a>
                 ) : null}
                 <details class='wish-details'>
-                    <summary>{WISH_DETAILS_LABEL[language]}</summary>
+                    <summary>{LL.web.wish.details()}</summary>
                     {wish.description ? (
                         <p class='wish-text'>
                             <InlineContent

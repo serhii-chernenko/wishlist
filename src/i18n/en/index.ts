@@ -37,7 +37,8 @@ const en: Translation = {
         yes: '✅ Yes',
         no: '❌ No',
         more: 'Show more',
-        language: '🌐'
+        language: '🌐',
+        openApp: '📱 Open the app'
     },
     greeting: {
         general: `Hey there!\nHow often do you run into the problem of not knowing what to give someone important to you,\nor not being able to remember what you would like yourself when people ask - "<i>what should I give you?</i>"?\nI don't know about you, but I have this all the time...\nThere is a way out! And not through the window :D\nShare this bot with your family, friends and acquaintances to make life easier for them and for yourself)`,
@@ -81,6 +82,7 @@ const en: Translation = {
             points: '\n\n- how much you like the bot 😅\n- something is broken and needs fixing\n- ideas for improvement\n- you want to help translate the bot into other languages\n\nIf you need a reply, leave your contact details, for example your Telegram username, phone number or email, so I can write to you and help solve the problem.'
         },
         message: '#feedback from {0}\n\n{1}',
+        fromApp: '#feedback from the app by {0}\n\n{1}',
         success: 'Thanks for reaching out ☺️\nI will read it as soon as I can!',
         errors: {
             tooLong:
@@ -119,7 +121,8 @@ const en: Translation = {
             guest: '✅ Your details are now in the database!',
             username: '\n👤 People will be able to find you by username:\n@{0}',
             phone: '\n📱 People will be able to find you by phone number:\n{0}',
-            both: '\nPeople will be able to find you\n👤 By username: @{0}\n📱 And by phone number: {1}'
+            both: '\nPeople will be able to find you\n👤 By username: @{0}\n📱 And by phone number: {1}',
+            app: '✅ Got your number! Head back to the app, everything is already updated there.'
         }
     },
     wishlist: {
@@ -398,6 +401,8 @@ const en: Translation = {
             priority: 'Really wants this',
             price: 'Approximate price:',
             link: 'Open on {host}',
+            photo: 'Photo {index} of {total}',
+            details: 'More details',
             created: 'Added {date}',
             updated: 'Added {created}, updated {updated}'
         },
@@ -406,7 +411,8 @@ const en: Translation = {
         footer: {
             cta: 'Create your own wish list',
             support: 'Support the author',
-            openSource: 'Open source on GitHub'
+            openSource: 'Open source on GitHub',
+            openInApp: 'Open in Telegram and pick a gift'
         },
         language: {
             label: 'Language'
@@ -498,7 +504,640 @@ const en: Translation = {
     commands: {
         start: 'Main menu',
         lang: 'Change the bot language',
-        releases: 'What is new in the bot'
+        releases: 'What is new in the bot',
+        app: 'Open the app'
+    },
+    appEntry: {
+        text: '📱 The Wish list app opens right inside Telegram. It does everything the chat does: wishes with photos, finding friends’ lists and gifts.'
+    },
+    app: {
+        common: {
+            appName: 'Wish list',
+            loading: 'Loading…',
+            retry: 'Try again',
+            cancel: 'Cancel',
+            save: 'Save',
+            saving: 'Saving…',
+            send: 'Send',
+            sending: 'Sending…',
+            remove: 'Remove',
+            close: 'Close',
+            back: 'Back',
+            done: 'Done',
+            confirm: 'Confirm',
+            yes: 'Yes',
+            no: 'No',
+            open: 'Open',
+            copy: 'Copy',
+            copied: 'Copied',
+            showMore: 'Show more',
+            moreActions: 'More actions',
+            optional: 'Optional',
+            counter: '{count} of {max}',
+            charactersLeft: '{count} {{count:character|characters}} left',
+            limitReached: 'Character limit reached',
+            notSet: 'Not set',
+            on: 'On',
+            off: 'Off',
+            newBadge: 'New'
+        },
+        a11y: {
+            priority: 'Really want this',
+            priorityThird: 'Really wants this',
+            hidden: 'Hidden wish, only you can see it',
+            photo: 'Photo {index} of {total}: {title}',
+            photoPlaceholder: 'No photo',
+            menu: 'Menu',
+            closeToast: 'Close the message',
+            mainNavigation: 'Main navigation',
+            externalLink: 'Opens in the browser'
+        },
+        toasts: {
+            saved: 'Saved',
+            removed: 'Removed',
+            copied: 'Copied',
+            undoUnavailable: 'This action cannot be undone'
+        },
+        errors: {
+            generic: 'Something went wrong. Please try again.',
+            network:
+                'Could not connect. Check your internet connection and try again.',
+            unauthorized: 'Your session has expired. Open the app again.',
+            forbidden: 'This action is not allowed.',
+            previewAccessDenied:
+                'This test version is available to the author only.',
+            registrationRequired:
+                'First choose how others can find you, and everything will work.',
+            tokenInvalid:
+                'Access to this list is no longer valid. Find the person again.',
+            tokenExpired:
+                'Access to this list has expired. Find the person again.',
+            notFound: 'This wish no longer exists.',
+            listUnavailable: 'This wish list is not available right now.',
+            shareGone: 'This wish list is no longer shared.',
+            conflict: 'The data has changed. Refresh the screen and try again.',
+            shareEmpty:
+                'Nothing to share yet: add at least one wish that others can see.',
+            notShared: 'You are not sharing your wish list right now.',
+            imagesFull: 'A wish can have up to 9 photos.',
+            imageChanged:
+                'The photos have changed. Refresh the screen and try again.',
+            ownWish: 'You cannot give your own wish.',
+            writeAccessRequired:
+                'Allow the bot to message you so it can save photos.',
+            payloadTooLarge: 'The file is too large.',
+            unsupportedMedia:
+                'This format is not supported. Pick a JPEG, PNG or WebP photo.',
+            validation: 'Check the highlighted fields.',
+            rateLimited:
+                'Too many actions in a row. Try again in {seconds} {{seconds:second|seconds}}.',
+            upstream: 'Telegram is not responding right now. Try again later.',
+            notDelivered: 'Could not send your feedback. Try again later.',
+            disabled: 'The app is temporarily unavailable.',
+            internal: 'Something broke on our side. Please try again.',
+            notImplemented: 'This feature is still in progress.'
+        },
+        fieldErrors: {
+            required: 'This field is required.',
+            empty: 'This field cannot be empty.',
+            tooLong: 'Too many characters: {max} at most.',
+            tooShort: 'Not enough details yet: add a little more.',
+            containsLink:
+                'The title cannot contain a link. Put it in the Link field.',
+            invalid: 'This value is not valid.',
+            usernameRequired:
+                'You have no Telegram username. Add one in Telegram settings and come back.',
+            usernameUnavailable:
+                'Your username can be shown only when people can find you by it.'
+        },
+        outside: {
+            title: 'Open in Telegram',
+            text: 'This app works inside Telegram. Open it from the bot to see your wish list.',
+            cta: 'Open in Telegram'
+        },
+        expired: {
+            title: 'Session expired',
+            text: 'The app has been open for too long. Close it and open it again.',
+            cta: 'Close the app'
+        },
+        unavailable: {
+            title: 'The app is temporarily unavailable',
+            text: 'We are already on it. Meanwhile, you can do everything in the chat with the bot.',
+            cta: 'Open the bot'
+        },
+        previewOnly: {
+            title: 'Test version',
+            text: 'This version of the app is open to the author only. Please use the main bot.',
+            cta: 'Open the bot'
+        },
+        unsupported: {
+            title: 'Telegram needs an update',
+            text: 'Your Telegram version does not support this app. Update Telegram or use the bot in the chat.',
+            cta: 'Open the bot'
+        },
+        bootError: {
+            title: 'The app could not start',
+            text: 'Try opening it again. If that does not help, the bot in the chat works as usual.',
+            cta: 'Try again'
+        },
+        offline: {
+            text: 'No connection. Showing the last loaded data.',
+            cta: 'Try again'
+        },
+        nav: {
+            home: 'Home',
+            wishes: 'My wishes',
+            gives: 'Gifts to give',
+            find: 'Find a list',
+            share: 'Share',
+            settings: 'Settings',
+            visibility: 'Visibility',
+            payments: 'Payment details',
+            language: 'Language',
+            feedback: 'Feedback',
+            stats: 'Statistics',
+            donate: 'Support the author',
+            releases: 'What’s new',
+            about: 'About'
+        },
+        home: {
+            title: 'Wish list',
+            heroTitle: 'Your wish list',
+            wishesCount: '{count} {{count:wish|wishes}}',
+            givesCount: '{count} {{count:gift|gifts}} planned',
+            addWish: 'Add a wish',
+            tiles: {
+                wishes: {
+                    title: 'My wishes',
+                    text: 'Add and edit your wishes'
+                },
+                gives: {
+                    title: 'Gifts to give',
+                    text: 'Gifts you picked for others'
+                },
+                find: {
+                    title: 'Find a list',
+                    text: 'By username or phone number'
+                },
+                share: {
+                    title: 'Share',
+                    text: 'A public page for your list'
+                }
+            },
+            groups: {
+                settings: 'Settings',
+                about: 'About the project'
+            },
+            guest: {
+                title: 'Welcome to Wish list',
+                lead: 'Write down your wishes, share a link, and the people close to you pick the gift you really need.',
+                stepsTitle: 'How it works',
+                steps: {
+                    create: {
+                        title: 'Make your list',
+                        text: 'Add wishes with a title, a description, up to 9 photos, a price and a shop link.'
+                    },
+                    share: {
+                        title: 'Share the link',
+                        text: 'Send friends a link to your page or let them find you by username or phone number.'
+                    },
+                    give: {
+                        title: 'Friends pick a gift',
+                        text: 'Other givers see that a wish is already taken, but you don’t, so the surprise stays a surprise.'
+                    }
+                },
+                cta: 'Get started',
+                note: 'To create your list, choose how others can find you. It takes a minute.'
+            }
+        },
+        wishes: {
+            title: 'My wishes',
+            count: '{count} {{count:wish|wishes}}',
+            add: 'Add a wish',
+            empty: {
+                title: 'Nothing here yet',
+                text: 'Add your first wish and it will show up here.',
+                cta: 'Add a wish'
+            },
+            filteredEmpty: {
+                title: 'Nothing found',
+                text: 'No wishes match this filter.',
+                cta: 'Reset the filter'
+            },
+            hiddenBadge: 'Only you see this',
+            priorityToggle: 'Really want this',
+            hiddenToggle: 'Hide from others',
+            photoCount: 'Photos: {count}',
+            edit: 'Edit',
+            menu: {
+                share: 'Share the list',
+                clean: 'Clear the list'
+            },
+            clean: {
+                title: 'Clear your wish list?',
+                text: 'All wishes will be removed and will disappear from other people’s gift lists. This cannot be undone.',
+                confirm: 'Clear',
+                success: 'Your wish list is cleared',
+                empty: 'Your wish list is already empty'
+            },
+            toasts: {
+                priorityOn: 'Marked as a top wish',
+                priorityOff: 'No longer a top wish',
+                hidden: 'Now only you can see this wish',
+                shown: 'Now others can see this wish'
+            }
+        },
+        filters: {
+            title: 'Filter by price',
+            all: 'All',
+            upTo: 'Up to {amount}',
+            from: 'From {amount}',
+            range: 'From {from} to {to}',
+            reset: 'Reset the filter',
+            applied: 'Filter: {label}'
+        },
+        editor: {
+            createTitle: 'New wish',
+            editTitle: 'Edit wish',
+            title: {
+                label: 'Title',
+                hint: 'In short, what exactly you want.',
+                placeholder: 'For example, the board game Carcassonne'
+            },
+            description: {
+                label: 'Description',
+                hint: 'Size, colour, model: anything that helps get it right.',
+                placeholder: 'Details worth knowing'
+            },
+            price: {
+                label: 'Approximate price',
+                hint: 'Just a number, in {currency}.',
+                placeholder: '1500'
+            },
+            link: {
+                label: 'Link',
+                hint: 'A shop link that starts with https://',
+                placeholder: 'https://',
+                host: 'Opens on {host}'
+            },
+            priority: {
+                label: 'Really want this',
+                hint: 'Top wishes get a heart and come first.'
+            },
+            hidden: {
+                label: 'Hide from others',
+                hint: 'Only you can see a hidden wish.'
+            },
+            errors: {
+                titleEmpty: 'Give your wish a title.',
+                titleTooLong:
+                    'The title is too long: {max} characters at most.',
+                titleContainsLink:
+                    'The title cannot contain a link. Put it in the Link field.',
+                descriptionTooLong:
+                    'The description is too long: {max} characters at most.',
+                priceInvalid: 'Enter the price as a number, for example 1500.',
+                linkInvalid: 'The link must start with http:// or https://.'
+            },
+            create: 'Add the wish',
+            save: 'Save',
+            created: 'Wish added',
+            saved: 'Changes saved',
+            createdAt: 'Added {date}',
+            updatedAt: 'Updated {date}',
+            remove: {
+                action: 'Remove the wish',
+                title: 'Did your wish come true?',
+                text: 'This is just for statistics: the wish will be removed either way.',
+                done: 'Yes, it did',
+                notDone: 'Just remove it',
+                success: 'Wish removed'
+            },
+            discard: {
+                title: 'Discard changes?',
+                text: 'Unsaved changes will be lost.',
+                confirm: 'Discard',
+                keep: 'Keep editing'
+            }
+        },
+        photos: {
+            title: 'Photos',
+            hint: 'Up to {max} photos. The first one becomes the cover.',
+            count: '{count} of {max}',
+            add: 'Add photos',
+            remove: 'Remove the photo',
+            removeAll: 'Remove all photos',
+            removeAllConfirm: {
+                title: 'Remove all photos?',
+                text: 'All photos of this wish will be removed.',
+                confirm: 'Remove all'
+            },
+            uploading: 'Uploading photos…',
+            progress: '{done} of {total} uploaded',
+            uploaded: 'Photo added',
+            duplicate: 'This photo is already there',
+            failed: 'Could not upload the photo',
+            full: 'You cannot add more than {max} photos',
+            tooLarge: 'The photo is too large',
+            unsupported: 'This format is not supported',
+            queued: 'Photos will upload after you save',
+            removed: 'Photo removed',
+            chatFallback: {
+                action: 'Add photos in the chat',
+                hint: 'If photos don’t upload here, send them to the bot in the chat.',
+                sent: 'The bot is waiting for photos in the chat'
+            },
+            writeAccess: {
+                title: 'Permission needed',
+                text: 'To save photos, the bot sends them to you in the chat. Allow the bot to message you.',
+                allow: 'Allow'
+            }
+        },
+        gives: {
+            title: 'Gifts to give',
+            count: '{count} {{count:gift|gifts}}',
+            empty: {
+                title: 'The list is empty',
+                text: 'Find a friend’s wish list and pick something to give.',
+                cta: 'Find a list'
+            },
+            owner: 'For {owner}',
+            others: 'Others who also want to give it: {count}',
+            open: 'Open',
+            remove: 'Don’t give',
+            removed: 'Removed from your gift list',
+            clean: {
+                action: 'Clear the list',
+                title: 'Clear your gift list?',
+                text: 'All the wishes you picked will disappear from this list.',
+                confirm: 'Clear',
+                success: 'The list is cleared'
+            }
+        },
+        find: {
+            title: 'Find a wish list',
+            label: 'Username or phone number',
+            placeholder: '@username or +380…',
+            hint: 'You can find someone who uses the bot and allows others to find them.',
+            submit: 'Find',
+            searching: 'Searching…',
+            errors: {
+                empty: 'Enter a username or a phone number.',
+                notFound:
+                    'Nobody found. Check the username or the phone number.',
+                self: 'That’s your own list 😉 It’s in My wishes.',
+                tooLong: 'The query is too long: {max} characters at most.'
+            },
+            reasons: {
+                title: 'Why someone may not show up',
+                notUser: 'The person has not used the bot yet.',
+                phoneHidden:
+                    'The person has not shared a phone number with the bot. Try their username instead.'
+            }
+        },
+        third: {
+            title: 'Wish list',
+            lead: 'Wish list of {label}',
+            count: '{count} {{count:wish|wishes}}',
+            empty: 'This person has not filled in a wish list yet.',
+            filteredEmpty: 'No wishes match this filter.',
+            priority: 'Really wants this',
+            openLink: 'Open on {host}',
+            givers: {
+                you: 'You want to give it',
+                somebodyAndYou:
+                    'You and {count} more {{count:person|people}} want to give it',
+                somebody: 'Already picked by {count} {{count:person|people}}'
+            },
+            give: 'Give',
+            take: 'Don’t give',
+            given: 'Added to your gift list',
+            taken: 'Removed from your gift list',
+            viewOnly:
+                'You can only view this list. To pick a gift, find the person by username or phone number.',
+            searchAgain: 'Find again',
+            payments: {
+                title: 'You can give money',
+                text: 'If you can’t buy a specific gift, you can send money to these details so the person can buy it themselves.'
+            }
+        },
+        share: {
+            title: 'Share your list',
+            empty: {
+                title: 'Nothing to share yet',
+                text: 'The page shows only wishes that others can see. Add at least one.',
+                cta: 'Add a wish'
+            },
+            consent: {
+                title: 'Before you share',
+                lead: 'The bot will create a public page of your wish list on {host}. It will show:',
+                name: 'the name from your Telegram: {name}',
+                username: 'your @username, only if you turn it on yourself',
+                wishes: 'all wishes except hidden ones',
+                payments: 'your payment details, if you added them',
+                public: 'Anyone with the link can open the page, and it may appear in search engine results.',
+                private:
+                    'Your phone number and your gift list are never shown there.',
+                stop: 'You can stop sharing at any time.'
+            },
+            publish: 'Share',
+            published: 'Your page is ready',
+            link: {
+                title: 'Your link',
+                copy: 'Copy',
+                copied: 'Link copied',
+                send: 'Send to friends',
+                open: 'Open the page'
+            },
+            sendText: 'My wish list ❤️',
+            autoUpdate:
+                'The page updates itself after every change to your list.',
+            pageEmpty:
+                'The page is empty right now: it has no visible wishes. They will appear as soon as you add them.',
+            username: {
+                label: 'Show my @username',
+                hint: 'Friends will be able to message you on Telegram.',
+                shown: 'Your @username is now on the page',
+                hidden: 'Your @username is no longer on the page'
+            },
+            rotate: {
+                action: 'New link',
+                title: 'Create a new link?',
+                text: 'The old link stops working right away. You will need to send the new one to your friends again.',
+                confirm: 'Create',
+                success: 'Your new link is ready, the old one no longer works'
+            },
+            stop: {
+                action: 'Stop sharing',
+                title: 'Stop sharing?',
+                text: 'The page will stop opening and the saved name will be deleted. If you share again, the same link will work.',
+                confirm: 'Stop',
+                success: 'You are no longer sharing your wish list'
+            }
+        },
+        payments: {
+            title: 'Payment details',
+            lead: 'If someone wants to give you something from your list but can’t buy it, they can send money to these details instead.',
+            label: 'Payment details',
+            hint: 'A jar, a card number, PayPal or a link to a tipping service. Add only what you are happy for others to see.',
+            placeholder: 'For example, a link to your jar',
+            preview: 'This is how others will see them',
+            empty: 'No payment details yet.',
+            save: 'Save',
+            saved: 'Payment details saved',
+            errors: {
+                tooShort: 'Not enough details yet: add a little more.',
+                tooLong: 'Too many characters: {max} at most.'
+            },
+            remove: {
+                action: 'Remove payment details',
+                title: 'Remove your payment details?',
+                text: 'Others will no longer see them on your list.',
+                confirm: 'Remove',
+                success: 'Payment details removed'
+            }
+        },
+        visibility: {
+            title: 'Visibility',
+            guestTitle: 'Sign up',
+            lead: 'How would you like others to find you?',
+            later: 'You can change this at any time.',
+            current: 'Right now people can find you',
+            currentNone: 'Right now nobody can find you.',
+            options: {
+                username: {
+                    title: 'By username only',
+                    hint: 'If you change your username in Telegram, it updates here by itself.'
+                },
+                phone: {
+                    title: 'By phone number only',
+                    hint: 'Nobody sees your number: it is used only for search.'
+                },
+                both: {
+                    title: 'By username and phone number',
+                    hint: 'People can find you either way.'
+                }
+            },
+            values: {
+                username: 'By username',
+                phone: 'By phone number',
+                both: 'By username and phone number'
+            },
+            usernameMissing:
+                'You have no Telegram username. Add one in Telegram settings so people can find you by it.',
+            yourUsername: 'Your username: @{username}',
+            yourPhone: 'Your number: {phone}',
+            save: 'Save',
+            shareNumber: 'Share my number',
+            phoneHint:
+                'Telegram will ask you to confirm that you share your number with the bot. No need to type it.',
+            waiting: 'Waiting for your number…',
+            cancelled: 'The number was not sent',
+            timeout: 'Your number never arrived. Please try again.',
+            success: {
+                guest: 'Done! People can find you now',
+                user: 'Visibility updated'
+            }
+        },
+        language: {
+            title: 'Language',
+            lead: 'Choose the app language. The bot in the chat will use it too.',
+            names: {
+                uk: 'Ukrainian',
+                en: 'English',
+                pl: 'Polish'
+            },
+            native: {
+                uk: 'Українська',
+                en: 'English',
+                pl: 'Polski'
+            },
+            auto: 'Auto',
+            autoHint: 'Same as Telegram: {language}',
+            saved: 'Language changed'
+        },
+        feedback: {
+            title: 'Feedback',
+            lead: 'Say whatever you think: what you like, what broke, what to improve, or offer help with translations.',
+            contactHint:
+                'If you’d like a reply, leave a contact: a username, a phone number or an email.',
+            label: 'Message',
+            placeholder: 'Your feedback',
+            send: 'Send',
+            errors: {
+                empty: 'Write at least a few words.',
+                tooLong: 'The feedback is too long: {max} characters at most.'
+            },
+            success: {
+                title: 'Thank you for the feedback!',
+                text: 'I will read it as soon as I can.',
+                another: 'Write more'
+            }
+        },
+        stats: {
+            title: 'Statistics',
+            users: 'Active users',
+            wishes: 'Wishes created of all time',
+            done: 'Wishes come true of all time'
+        },
+        donate: {
+            title: 'Support the author',
+            lead: 'The bot will stay free for as long as possible so that we can keep giving each other gifts. If you’d like to support the author, pick a service you like.',
+            note: 'Most donations go to fundraisers for the Armed Forces of Ukraine. The fundraisers and reports are in the author’s Telegram channel.',
+            services: 'Services',
+            channel: 'The author’s Telegram channel',
+            thanks: 'Thank you so much ❤️'
+        },
+        releases: {
+            title: 'What’s new',
+            version: 'Version {version}',
+            date: 'Released {date}',
+            empty: 'No release notes yet.',
+            showMore: 'Earlier versions'
+        },
+        about: {
+            title: 'About',
+            lead: 'Wish list helps you collect wishes and pick the gifts people really need.',
+            privacy: {
+                title: 'Privacy',
+                storage:
+                    'Your data is stored on Cloudflare with strong protection. The bot keeps only your username and, if you allow it, your phone number.',
+                phone: 'Your phone number is never shown to anyone: it is used only to find your list.',
+                name: 'Your Telegram name appears on the public page only after you agree, and disappears as soon as you stop sharing.',
+                photos: 'Wish photos are visible only to the people you show your list to.'
+            },
+            openSource: {
+                title: 'Open source',
+                text: 'The code is open under the AGPL-3.0 licence: anyone can check how the app handles data or join the development.'
+            },
+            languages: {
+                title: 'Languages',
+                text: 'The app and the bot speak English, Ukrainian and Polish. If you’d like to help translate into another language, say so in your feedback.'
+            },
+            links: {
+                title: 'Links',
+                github: 'Code on GitHub',
+                princess: 'Princess of the day, another bot by the author',
+                youtube: 'The author’s YouTube channel',
+                telegram: 'The author’s Telegram channel',
+                x: 'The author on X'
+            },
+            version: 'Version {version}'
+        },
+        settings: {
+            title: 'Settings',
+            groups: {
+                profile: 'Profile',
+                app: 'App'
+            },
+            visibility: 'Visibility',
+            payments: 'Payment details',
+            language: 'Language',
+            languageAuto: 'Auto: {language}',
+            paymentsSet: 'Added',
+            paymentsEmpty: 'Not set',
+            visibilityNone: 'Not set'
+        }
     }
 };
 

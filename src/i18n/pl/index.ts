@@ -37,7 +37,8 @@ const pl: Translation = {
         yes: '✅ Tak',
         no: '❌ Nie',
         more: 'Pokaż więcej',
-        language: '🌐'
+        language: '🌐',
+        openApp: '📱 Otwórz aplikację'
     },
     greeting: {
         general:
@@ -82,6 +83,7 @@ const pl: Translation = {
             points: '\n\n- jak bardzo podoba ci się bot 😅\n- coś się zepsuło i trzeba to naprawić\n- propozycje usprawnień\n- chcesz pomóc w tłumaczeniu na inne języki\n\nJeśli potrzebujesz odpowiedzi, zostaw dane kontaktowe, na przykład nazwę użytkownika w Telegramie, numer telefonu albo adres e-mail, żebym mógł do ciebie napisać i pomóc rozwiązać problem.'
         },
         message: '#opinia od {0}\n\n{1}',
+        fromApp: '#opinia z aplikacji od {0}\n\n{1}',
         success: 'Dzięki za wiadomość ☺️\nPrzeczytam jak najszybciej!',
         errors: {
             tooLong:
@@ -123,7 +125,8 @@ const pl: Translation = {
             username:
                 '\n👤 Będzie można cię znaleźć po nazwie użytkownika:\n@{0}',
             phone: '\n📱 Będzie można cię znaleźć po numerze telefonu:\n{0}',
-            both: '\nBędzie można cię znaleźć\n👤 Po nazwie użytkownika: @{0}\n📱 I po numerze telefonu: {1}'
+            both: '\nBędzie można cię znaleźć\n👤 Po nazwie użytkownika: @{0}\n📱 I po numerze telefonu: {1}',
+            app: '✅ Mamy twój numer! Wróć do aplikacji, wszystko jest już zaktualizowane.'
         }
     },
     wishlist: {
@@ -407,6 +410,8 @@ const pl: Translation = {
             priority: 'Bardzo chce',
             price: 'Orientacyjna cena:',
             link: 'Otwórz na {host}',
+            photo: 'Zdjęcie {index} z {total}',
+            details: 'Szczegóły',
             created: 'Dodano {date}',
             updated: 'Dodano {created}, zaktualizowano {updated}'
         },
@@ -415,7 +420,8 @@ const pl: Translation = {
         footer: {
             cta: 'Utwórz własną listę życzeń',
             support: 'Wesprzyj autora',
-            openSource: 'Otwarty kod na GitHubie'
+            openSource: 'Otwarty kod na GitHubie',
+            openInApp: 'Otwórz w Telegramie i wybierz prezent'
         },
         language: {
             label: 'Język'
@@ -507,7 +513,644 @@ const pl: Translation = {
     commands: {
         start: 'Menu główne',
         lang: 'Zmień język bota',
-        releases: 'Co nowego w bocie'
+        releases: 'Co nowego w bocie',
+        app: 'Otwórz aplikację'
+    },
+    appEntry: {
+        text: '📱 Aplikacja Listy życzeń otwiera się bezpośrednio w Telegramie. Potrafi to samo co czat: życzenia ze zdjęciami, szukanie list znajomych i prezenty.'
+    },
+    app: {
+        common: {
+            appName: 'Lista życzeń',
+            loading: 'Wczytywanie…',
+            retry: 'Spróbuj ponownie',
+            cancel: 'Anuluj',
+            save: 'Zapisz',
+            saving: 'Zapisuję…',
+            send: 'Wyślij',
+            sending: 'Wysyłam…',
+            remove: 'Usuń',
+            close: 'Zamknij',
+            back: 'Wstecz',
+            done: 'Gotowe',
+            confirm: 'Potwierdź',
+            yes: 'Tak',
+            no: 'Nie',
+            open: 'Otwórz',
+            copy: 'Kopiuj',
+            copied: 'Skopiowano',
+            showMore: 'Pokaż więcej',
+            moreActions: 'Więcej działań',
+            optional: 'Opcjonalnie',
+            counter: '{count} z {max}',
+            charactersLeft:
+                'Zostało {count} {{count:|znak||znaki|znaków|znaku}}',
+            limitReached: 'Osiągnięto limit znaków',
+            notSet: 'Nie podano',
+            on: 'Włączone',
+            off: 'Wyłączone',
+            newBadge: 'Nowe'
+        },
+        a11y: {
+            priority: 'Bardzo chcę',
+            priorityThird: 'Bardzo chce',
+            hidden: 'Ukryte życzenie, widzisz je tylko ty',
+            photo: 'Zdjęcie {index} z {total}: {title}',
+            photoPlaceholder: 'Brak zdjęcia',
+            menu: 'Menu',
+            closeToast: 'Zamknij komunikat',
+            mainNavigation: 'Główna nawigacja',
+            externalLink: 'Otworzy się w przeglądarce'
+        },
+        toasts: {
+            saved: 'Zapisano',
+            removed: 'Usunięto',
+            copied: 'Skopiowano',
+            undoUnavailable: 'Tej czynności nie można cofnąć'
+        },
+        errors: {
+            generic: 'Coś poszło nie tak. Spróbuj ponownie.',
+            network:
+                'Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.',
+            unauthorized: 'Sesja wygasła. Otwórz aplikację jeszcze raz.',
+            forbidden: 'Tej czynności nie można wykonać.',
+            previewAccessDenied:
+                'Ta wersja testowa jest dostępna tylko dla autora.',
+            registrationRequired:
+                'Najpierw wybierz, jak inni mają cię znajdować, a wszystko zadziała.',
+            tokenInvalid:
+                'Dostęp do tej listy jest już nieważny. Znajdź tę osobę ponownie.',
+            tokenExpired:
+                'Dostęp do tej listy wygasł. Znajdź tę osobę ponownie.',
+            notFound: 'To życzenie już nie istnieje.',
+            listUnavailable: 'Ta lista życzeń jest teraz niedostępna.',
+            shareGone: 'Ta lista życzeń nie jest już udostępniana.',
+            conflict: 'Dane się zmieniły. Odśwież ekran i spróbuj ponownie.',
+            shareEmpty:
+                'Na razie nie ma czego udostępnić: dodaj choć jedno życzenie widoczne dla innych.',
+            notShared: 'Obecnie nie udostępniasz swojej listy życzeń.',
+            imagesFull: 'Do jednego życzenia można dodać najwyżej 9 zdjęć.',
+            imageChanged:
+                'Zdjęcia już się zmieniły. Odśwież ekran i spróbuj ponownie.',
+            ownWish: 'Nie można podarować własnego życzenia.',
+            writeAccessRequired:
+                'Pozwól botowi pisać do ciebie, aby mógł zapisywać zdjęcia.',
+            payloadTooLarge: 'Plik jest za duży.',
+            unsupportedMedia:
+                'Ten format nie jest obsługiwany. Wybierz zdjęcie JPEG, PNG lub WebP.',
+            validation: 'Sprawdź zaznaczone pola.',
+            rateLimited:
+                'Za dużo działań naraz. Spróbuj ponownie za {seconds} {{seconds:|sekundę||sekundy|sekund|sekundy}}.',
+            upstream: 'Telegram teraz nie odpowiada. Spróbuj za chwilę.',
+            notDelivered: 'Nie udało się wysłać opinii. Spróbuj za chwilę.',
+            disabled: 'Aplikacja jest chwilowo niedostępna.',
+            internal: 'Coś zepsuło się po naszej stronie. Spróbuj ponownie.',
+            notImplemented: 'Ta funkcja jest jeszcze w przygotowaniu.'
+        },
+        fieldErrors: {
+            required: 'To pole jest wymagane.',
+            empty: 'To pole nie może być puste.',
+            tooLong: 'Za dużo znaków: maksymalnie {max}.',
+            tooShort: 'Za mało informacji: dodaj trochę więcej szczegółów.',
+            containsLink:
+                'Nazwa nie może zawierać linku. Dodaj go w polu „Link”.',
+            invalid: 'Nieprawidłowa wartość.',
+            usernameRequired:
+                'Nie masz nazwy użytkownika w Telegramie. Dodaj ją w ustawieniach Telegrama i wróć.',
+            usernameUnavailable:
+                'Nazwę użytkownika można pokazać tylko wtedy, gdy inni mogą cię po niej znaleźć.'
+        },
+        outside: {
+            title: 'Otwórz w Telegramie',
+            text: 'Ta aplikacja działa wewnątrz Telegrama. Otwórz ją przez bota, aby zobaczyć swoją listę życzeń.',
+            cta: 'Otwórz w Telegramie'
+        },
+        expired: {
+            title: 'Sesja wygasła',
+            text: 'Aplikacja była otwarta zbyt długo. Zamknij ją i otwórz ponownie.',
+            cta: 'Zamknij aplikację'
+        },
+        unavailable: {
+            title: 'Aplikacja jest chwilowo niedostępna',
+            text: 'Już nad tym pracujemy. Tymczasem wszystko możesz zrobić w czacie z botem.',
+            cta: 'Otwórz bota'
+        },
+        previewOnly: {
+            title: 'Wersja testowa',
+            text: 'Ta wersja aplikacji jest dostępna tylko dla autora. Skorzystaj z głównego bota.',
+            cta: 'Otwórz bota'
+        },
+        unsupported: {
+            title: 'Zaktualizuj Telegrama',
+            text: 'Twoja wersja Telegrama nie obsługuje tej aplikacji. Zaktualizuj Telegrama albo korzystaj z bota w czacie.',
+            cta: 'Otwórz bota'
+        },
+        bootError: {
+            title: 'Nie udało się uruchomić aplikacji',
+            text: 'Spróbuj otworzyć ją ponownie. Jeśli to nie pomoże, bot w czacie działa jak zwykle.',
+            cta: 'Spróbuj ponownie'
+        },
+        offline: {
+            text: 'Brak połączenia. Widzisz ostatnio wczytane dane.',
+            cta: 'Spróbuj ponownie'
+        },
+        nav: {
+            home: 'Start',
+            wishes: 'Moje życzenia',
+            gives: 'Chcę podarować',
+            find: 'Znajdź listę',
+            share: 'Udostępnij',
+            settings: 'Ustawienia',
+            visibility: 'Widoczność',
+            payments: 'Dane do przelewu',
+            language: 'Język',
+            feedback: 'Opinia',
+            stats: 'Statystyki',
+            donate: 'Wesprzyj autora',
+            releases: 'Co nowego',
+            about: 'O aplikacji'
+        },
+        home: {
+            title: 'Lista życzeń',
+            heroTitle: 'Twoja lista życzeń',
+            wishesCount:
+                '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
+            givesCount:
+                '{count} {{count:|prezent||prezenty|prezentów|prezentu}} w planach',
+            addWish: 'Dodaj życzenie',
+            tiles: {
+                wishes: {
+                    title: 'Moje życzenia',
+                    text: 'Dodawaj i edytuj swoje życzenia'
+                },
+                gives: {
+                    title: 'Chcę podarować',
+                    text: 'Prezenty, które wybierasz dla innych'
+                },
+                find: {
+                    title: 'Znajdź listę',
+                    text: 'Po nazwie użytkownika lub numerze telefonu'
+                },
+                share: {
+                    title: 'Udostępnij',
+                    text: 'Publiczna strona twojej listy'
+                }
+            },
+            groups: {
+                settings: 'Ustawienia',
+                about: 'O projekcie'
+            },
+            guest: {
+                title: 'Witaj w Liście życzeń',
+                lead: 'Zapisuj życzenia, udostępniaj link, a bliscy wybiorą prezent, którego naprawdę potrzebujesz.',
+                stepsTitle: 'Jak to działa',
+                steps: {
+                    create: {
+                        title: 'Stwórz listę',
+                        text: 'Dodaj życzenia: nazwę, opis, do 9 zdjęć, cenę i link do sklepu.'
+                    },
+                    share: {
+                        title: 'Udostępnij link',
+                        text: 'Wyślij znajomym link do swojej strony albo pozwól znajdować się po nazwie użytkownika lub numerze.'
+                    },
+                    give: {
+                        title: 'Znajomi wybierają prezent',
+                        text: 'Inni darczyńcy widzą, że życzenie jest już wybrane, a ty nie, więc niespodzianka pozostaje niespodzianką.'
+                    }
+                },
+                cta: 'Zaczynamy',
+                note: 'Aby stworzyć listę, wybierz, jak inni mają cię znajdować. To zajmie minutę.'
+            }
+        },
+        wishes: {
+            title: 'Moje życzenia',
+            count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
+            add: 'Dodaj życzenie',
+            empty: {
+                title: 'Na razie pusto',
+                text: 'Dodaj pierwsze życzenie, a pojawi się tutaj.',
+                cta: 'Dodaj życzenie'
+            },
+            filteredEmpty: {
+                title: 'Nic nie znaleziono',
+                text: 'Żadne życzenie nie pasuje do tego filtra.',
+                cta: 'Wyczyść filtr'
+            },
+            hiddenBadge: 'Widzisz tylko ty',
+            priorityToggle: 'Bardzo chcę',
+            hiddenToggle: 'Ukryj przed innymi',
+            photoCount: 'Zdjęcia: {count}',
+            edit: 'Edytuj',
+            menu: {
+                share: 'Udostępnij listę',
+                clean: 'Wyczyść listę'
+            },
+            clean: {
+                title: 'Wyczyścić listę życzeń?',
+                text: 'Wszystkie życzenia zostaną usunięte i znikną z list „Chcę podarować” innych osób. Tego nie można cofnąć.',
+                confirm: 'Wyczyść',
+                success: 'Lista życzeń wyczyszczona',
+                empty: 'Lista życzeń jest już pusta'
+            },
+            toasts: {
+                priorityOn: 'Oznaczono jako bardzo chciane',
+                priorityOff: 'Usunięto oznaczenie „Bardzo chcę”',
+                hidden: 'Teraz to życzenie widzisz tylko ty',
+                shown: 'Teraz to życzenie widzą inni'
+            }
+        },
+        filters: {
+            title: 'Filtr według ceny',
+            all: 'Wszystkie',
+            upTo: 'Do {amount}',
+            from: 'Od {amount}',
+            range: 'Od {from} do {to}',
+            reset: 'Wyczyść filtr',
+            applied: 'Filtr: {label}'
+        },
+        editor: {
+            createTitle: 'Nowe życzenie',
+            editTitle: 'Edycja życzenia',
+            title: {
+                label: 'Nazwa',
+                hint: 'Krótko, czego dokładnie chcesz.',
+                placeholder: 'Na przykład gra planszowa Carcassonne'
+            },
+            description: {
+                label: 'Opis',
+                hint: 'Rozmiar, kolor, model: wszystko, co pomoże się nie pomylić.',
+                placeholder: 'Szczegóły, które warto znać'
+            },
+            price: {
+                label: 'Przybliżona cena',
+                hint: 'Tylko liczba, w walucie {currency}.',
+                placeholder: '1500'
+            },
+            link: {
+                label: 'Link',
+                hint: 'Link do sklepu zaczynający się od https://',
+                placeholder: 'https://',
+                host: 'Otworzy się na {host}'
+            },
+            priority: {
+                label: 'Bardzo chcę',
+                hint: 'Takie życzenia dostają serduszko i są na początku listy.'
+            },
+            hidden: {
+                label: 'Ukryj przed innymi',
+                hint: 'Ukryte życzenie widzisz tylko ty.'
+            },
+            errors: {
+                titleEmpty: 'Podaj nazwę życzenia.',
+                titleTooLong: 'Nazwa jest za długa: maksymalnie {max} znaków.',
+                titleContainsLink:
+                    'Nazwa nie może zawierać linku. Dodaj go w polu „Link”.',
+                descriptionTooLong:
+                    'Opis jest za długi: maksymalnie {max} znaków.',
+                priceInvalid: 'Podaj cenę jako liczbę, na przykład 1500.',
+                linkInvalid: 'Link musi zaczynać się od http:// lub https://.'
+            },
+            create: 'Dodaj życzenie',
+            save: 'Zapisz',
+            created: 'Dodano życzenie',
+            saved: 'Zapisano zmiany',
+            createdAt: 'Dodano {date}',
+            updatedAt: 'Zaktualizowano {date}',
+            remove: {
+                action: 'Usuń życzenie',
+                title: 'Czy życzenie się spełniło?',
+                text: 'To tylko do statystyk: życzenie i tak zostanie usunięte.',
+                done: 'Tak, spełniło się',
+                notDone: 'Po prostu usuń',
+                success: 'Usunięto życzenie'
+            },
+            discard: {
+                title: 'Odrzucić zmiany?',
+                text: 'Niezapisane zmiany zostaną utracone.',
+                confirm: 'Odrzuć zmiany',
+                keep: 'Edytuj dalej'
+            }
+        },
+        photos: {
+            title: 'Zdjęcia',
+            hint: 'Do {max} zdjęć. Pierwsze będzie okładką.',
+            count: '{count} z {max}',
+            add: 'Dodaj zdjęcia',
+            remove: 'Usuń zdjęcie',
+            removeAll: 'Usuń wszystkie zdjęcia',
+            removeAllConfirm: {
+                title: 'Usunąć wszystkie zdjęcia?',
+                text: 'Wszystkie zdjęcia tego życzenia zostaną usunięte.',
+                confirm: 'Usuń wszystkie'
+            },
+            uploading: 'Przesyłam zdjęcia…',
+            progress: 'Przesłano {done} z {total}',
+            uploaded: 'Dodano zdjęcie',
+            duplicate: 'To zdjęcie już jest',
+            failed: 'Nie udało się przesłać zdjęcia',
+            full: 'Nie można dodać więcej niż {max} zdjęć',
+            tooLarge: 'Zdjęcie jest za duże',
+            unsupported: 'Ten format nie jest obsługiwany',
+            queued: 'Zdjęcia prześlą się po zapisaniu',
+            removed: 'Usunięto zdjęcie',
+            chatFallback: {
+                action: 'Dodaj zdjęcia w czacie',
+                hint: 'Jeśli zdjęcia nie dodają się tutaj, wyślij je botowi w czacie.',
+                sent: 'Bot czeka na zdjęcia w czacie'
+            },
+            writeAccess: {
+                title: 'Potrzebna zgoda',
+                text: 'Aby zapisać zdjęcia, bot wysyła je do ciebie w czacie. Pozwól botowi pisać do ciebie.',
+                allow: 'Pozwól'
+            }
+        },
+        gives: {
+            title: 'Chcę podarować',
+            count: '{count} {{count:|prezent||prezenty|prezentów|prezentu}}',
+            empty: {
+                title: 'Lista jest pusta',
+                text: 'Znajdź listę życzeń znajomego i wybierz, co podarować.',
+                cta: 'Znajdź listę'
+            },
+            owner: 'Dla {owner}',
+            others: 'Podarować chcą też inni: {count}',
+            open: 'Otwórz',
+            remove: 'Nie podaruję',
+            removed: 'Usunięto z listy „Chcę podarować”',
+            clean: {
+                action: 'Wyczyść listę',
+                title: 'Wyczyścić listę „Chcę podarować”?',
+                text: 'Wszystkie wybrane życzenia znikną z tej listy.',
+                confirm: 'Wyczyść',
+                success: 'Lista wyczyszczona'
+            }
+        },
+        find: {
+            title: 'Znajdź listę życzeń',
+            label: 'Nazwa użytkownika lub numer telefonu',
+            placeholder: '@username lub +48…',
+            hint: 'Możesz znaleźć osobę, która korzysta z bota i pozwala się znajdować.',
+            submit: 'Znajdź',
+            searching: 'Szukam…',
+            errors: {
+                empty: 'Wpisz nazwę użytkownika lub numer telefonu.',
+                notFound:
+                    'Nie znaleziono nikogo. Sprawdź nazwę użytkownika lub numer.',
+                self: 'To przecież twoja lista 😉 Jest w sekcji Moje życzenia.',
+                tooLong: 'Zapytanie jest za długie: maksymalnie {max} znaków.'
+            },
+            reasons: {
+                title: 'Dlaczego ktoś może się nie wyświetlać',
+                notUser: 'Ta osoba jeszcze nie korzystała z bota.',
+                phoneHidden:
+                    'Ta osoba nie udostępniła botowi numeru telefonu. Spróbuj wyszukać po nazwie użytkownika.'
+            }
+        },
+        third: {
+            title: 'Lista życzeń',
+            lead: 'Lista życzeń: {label}',
+            count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
+            empty: 'Ta osoba jeszcze nie uzupełniła listy życzeń.',
+            filteredEmpty: 'Żadne życzenie nie pasuje do tego filtra.',
+            priority: 'Bardzo chce',
+            openLink: 'Otwórz na {host}',
+            givers: {
+                you: 'Chcesz to podarować',
+                somebodyAndYou:
+                    'Podarować chcesz ty i jeszcze {count} {{count:|osoba||osoby|osób|osoby}}',
+                somebody:
+                    'Już wybrane przez {count} {{count:|osobę||osoby|osób|osoby}}'
+            },
+            give: 'Podaruję',
+            take: 'Nie podaruję',
+            given: 'Dodano do listy „Chcę podarować”',
+            taken: 'Usunięto z listy „Chcę podarować”',
+            viewOnly:
+                'Tę listę możesz tylko przeglądać. Aby wybrać prezent, znajdź tę osobę po nazwie użytkownika lub numerze.',
+            searchAgain: 'Znajdź ponownie',
+            payments: {
+                title: 'Można podarować pieniądze',
+                text: 'Jeśli nie da się kupić konkretnego prezentu, możesz przelać pieniądze na te dane, a ta osoba kupi go sama.'
+            }
+        },
+        share: {
+            title: 'Udostępnij listę',
+            empty: {
+                title: 'Na razie nie ma czego udostępnić',
+                text: 'Na stronie widać tylko życzenia, które widzą inni. Dodaj choć jedno takie.',
+                cta: 'Dodaj życzenie'
+            },
+            consent: {
+                title: 'Zanim udostępnisz',
+                lead: 'Bot utworzy publiczną stronę twojej listy życzeń na {host}. Będzie na niej:',
+                name: 'imię z twojego Telegrama: {name}',
+                username:
+                    'twoja @nazwa_użytkownika, tylko jeśli sam(a) ją włączysz',
+                wishes: 'wszystkie życzenia poza ukrytymi',
+                payments: 'twoje dane do przelewu, jeśli je podano',
+                public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
+                private:
+                    'Numer telefonu i lista „Chcę podarować” nigdy tam nie są pokazywane.',
+                stop: 'Udostępnianie możesz zakończyć w każdej chwili.'
+            },
+            publish: 'Udostępnij',
+            published: 'Strona jest gotowa',
+            link: {
+                title: 'Twój link',
+                copy: 'Kopiuj',
+                copied: 'Skopiowano link',
+                send: 'Wyślij znajomym',
+                open: 'Otwórz stronę'
+            },
+            sendText: 'Moja lista życzeń ❤️',
+            autoUpdate:
+                'Strona aktualizuje się sama po każdej zmianie na liście.',
+            pageEmpty:
+                'Strona jest teraz pusta: nie ma na niej widocznych życzeń. Pojawią się, gdy tylko je dodasz.',
+            username: {
+                label: 'Pokazuj moją @nazwę_użytkownika',
+                hint: 'Znajomi będą mogli napisać do ciebie w Telegramie.',
+                shown: 'Twoja @nazwa_użytkownika jest teraz na stronie',
+                hidden: 'Twojej @nazwy_użytkownika nie ma już na stronie'
+            },
+            rotate: {
+                action: 'Nowy link',
+                title: 'Utworzyć nowy link?',
+                text: 'Stary link od razu przestanie działać. Nowy trzeba będzie wysłać znajomym jeszcze raz.',
+                confirm: 'Utwórz',
+                success: 'Nowy link jest gotowy, stary już nie działa'
+            },
+            stop: {
+                action: 'Zakończ udostępnianie',
+                title: 'Zakończyć udostępnianie?',
+                text: 'Strona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli udostępnisz ją ponownie, zadziała ten sam link.',
+                confirm: 'Zakończ',
+                success: 'Nie udostępniasz już swojej listy życzeń'
+            }
+        },
+        payments: {
+            title: 'Dane do przelewu',
+            lead: 'Jeśli ktoś chce podarować ci coś z listy, ale nie może tego kupić, przeleje pieniądze na te dane.',
+            label: 'Dane do przelewu',
+            hint: 'Skarbonka, numer karty, PayPal albo link do serwisu napiwków. Podaj tylko to, co chcesz pokazać innym.',
+            placeholder: 'Na przykład link do skarbonki',
+            preview: 'Tak zobaczą je inni',
+            empty: 'Nie podano jeszcze danych do przelewu.',
+            save: 'Zapisz',
+            saved: 'Zapisano dane do przelewu',
+            errors: {
+                tooShort: 'Za mało informacji: dodaj trochę więcej szczegółów.',
+                tooLong: 'Za dużo znaków: maksymalnie {max}.'
+            },
+            remove: {
+                action: 'Usuń dane do przelewu',
+                title: 'Usunąć dane do przelewu?',
+                text: 'Inni nie zobaczą ich już na twojej liście.',
+                confirm: 'Usuń',
+                success: 'Usunięto dane do przelewu'
+            }
+        },
+        visibility: {
+            title: 'Widoczność',
+            guestTitle: 'Rejestracja',
+            lead: 'Jak inni mają cię znajdować?',
+            later: 'Wybór możesz zmienić w każdej chwili.',
+            current: 'Teraz można cię znaleźć',
+            currentNone: 'Teraz nikt nie może cię znaleźć.',
+            options: {
+                username: {
+                    title: 'Tylko po nazwie użytkownika',
+                    hint: 'Jeśli zmienisz nazwę użytkownika w Telegramie, zaktualizuje się tu sama.'
+                },
+                phone: {
+                    title: 'Tylko po numerze telefonu',
+                    hint: 'Nikt nie zobaczy twojego numeru: służy tylko do wyszukiwania.'
+                },
+                both: {
+                    title: 'Po nazwie użytkownika i numerze',
+                    hint: 'Można cię znaleźć na oba sposoby.'
+                }
+            },
+            values: {
+                username: 'Po nazwie użytkownika',
+                phone: 'Po numerze telefonu',
+                both: 'Po nazwie użytkownika i numerze'
+            },
+            usernameMissing:
+                'Nie masz nazwy użytkownika w Telegramie. Dodaj ją w ustawieniach Telegrama, aby inni mogli cię po niej znaleźć.',
+            yourUsername: 'Twoja nazwa użytkownika: @{username}',
+            yourPhone: 'Twój numer: {phone}',
+            save: 'Zapisz',
+            shareNumber: 'Udostępnij numer',
+            phoneHint:
+                'Telegram poprosi o potwierdzenie, że udostępniasz botowi swój numer. Nie trzeba go wpisywać.',
+            waiting: 'Czekam na numer…',
+            cancelled: 'Numer nie został wysłany',
+            timeout: 'Numer nie dotarł. Spróbuj ponownie.',
+            success: {
+                guest: 'Gotowe! Teraz można cię znaleźć',
+                user: 'Zaktualizowano widoczność'
+            }
+        },
+        language: {
+            title: 'Język',
+            lead: 'Wybierz język aplikacji. Bot w czacie też będzie go używać.',
+            names: {
+                uk: 'Ukraiński',
+                en: 'Angielski',
+                pl: 'Polski'
+            },
+            native: {
+                uk: 'Українська',
+                en: 'English',
+                pl: 'Polski'
+            },
+            auto: 'Automatycznie',
+            autoHint: 'Jak w Telegramie: {language}',
+            saved: 'Zmieniono język'
+        },
+        feedback: {
+            title: 'Opinia',
+            lead: 'Napisz wszystko, co myślisz: co ci się podoba, co się zepsuło, co poprawić, albo zaproponuj pomoc przy tłumaczeniu.',
+            contactHint:
+                'Jeśli czekasz na odpowiedź, zostaw kontakt: nazwę użytkownika, numer lub e-mail.',
+            label: 'Wiadomość',
+            placeholder: 'Twoja opinia',
+            send: 'Wyślij',
+            errors: {
+                empty: 'Napisz choć kilka słów.',
+                tooLong: 'Opinia jest za długa: maksymalnie {max} znaków.'
+            },
+            success: {
+                title: 'Dziękuję za opinię!',
+                text: 'Przeczytam ją najszybciej, jak się da.',
+                another: 'Napisz jeszcze'
+            }
+        },
+        stats: {
+            title: 'Statystyki',
+            users: 'Aktywni użytkownicy',
+            wishes: 'Utworzone życzenia od początku',
+            done: 'Spełnione życzenia od początku'
+        },
+        donate: {
+            title: 'Wesprzyj autora',
+            lead: 'Bot pozostanie darmowy tak długo, jak to możliwe, abyśmy mogli dawać sobie prezenty. Jeśli chcesz wesprzeć autora, wybierz wygodny serwis.',
+            note: 'Większość darowizn trafia na zbiórki dla Sił Zbrojnych Ukrainy. Zbiórki i raporty są na kanale autora w Telegramie.',
+            services: 'Serwisy',
+            channel: 'Kanał autora w Telegramie',
+            thanks: 'Serdecznie dziękuję ❤️'
+        },
+        releases: {
+            title: 'Co nowego',
+            version: 'Wersja {version}',
+            date: 'Z dnia {date}',
+            empty: 'Na razie nie ma informacji o aktualizacjach.',
+            showMore: 'Wcześniejsze wersje'
+        },
+        about: {
+            title: 'O aplikacji',
+            lead: 'Lista życzeń pomaga zbierać życzenia i wybierać prezenty, których ktoś naprawdę potrzebuje.',
+            privacy: {
+                title: 'Prywatność',
+                storage:
+                    'Dane są przechowywane w Cloudflare z solidną ochroną. Bot zapisuje tylko twoją nazwę użytkownika i, jeśli pozwolisz, numer telefonu.',
+                phone: 'Numer telefonu nigdy nie jest pokazywany innym: służy tylko do znalezienia twojej listy.',
+                name: 'Imię z Telegrama pojawia się na publicznej stronie dopiero po twojej zgodzie i znika, gdy tylko przestaniesz udostępniać.',
+                photos: 'Zdjęcia życzeń widzą tylko osoby, którym pokazujesz swoją listę.'
+            },
+            openSource: {
+                title: 'Otwarty kod',
+                text: 'Kod jest otwarty na licencji AGPL-3.0: każdy może sprawdzić, jak aplikacja obchodzi się z danymi, albo dołączyć do rozwoju.'
+            },
+            languages: {
+                title: 'Języki',
+                text: 'Aplikacja i bot mówią po polsku, angielsku i ukraińsku. Jeśli chcesz pomóc w tłumaczeniu na inny język, napisz w opinii.'
+            },
+            links: {
+                title: 'Linki',
+                github: 'Kod na GitHubie',
+                princess: 'Księżniczka dnia, kolejny bot autora',
+                youtube: 'Kanał autora na YouTube',
+                telegram: 'Kanał autora w Telegramie',
+                x: 'Autor na X'
+            },
+            version: 'Wersja {version}'
+        },
+        settings: {
+            title: 'Ustawienia',
+            groups: {
+                profile: 'Profil',
+                app: 'Aplikacja'
+            },
+            visibility: 'Widoczność',
+            payments: 'Dane do przelewu',
+            language: 'Język',
+            languageAuto: 'Automatycznie: {language}',
+            paymentsSet: 'Podano',
+            paymentsEmpty: 'Nie podano',
+            visibilityNone: 'Nie podano'
+        }
     }
 };
 

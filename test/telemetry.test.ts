@@ -2,7 +2,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    APP_API_TELEMETRY_PATH,
+    APP_IMAGE_TELEMETRY_PATH,
+    APP_TELEMETRY_PATH,
+    appApiCompletedEvent,
+    appAuthRejectedEvent,
+    appClientEvent,
+    appPhotoUploadedEvent,
+    appRateLimitedEvent,
+    appRateLimiterMissingEvent,
+    appSessionStartedEvent,
     emitHttpRequestTelemetry,
+    imageProxyServedEvent,
+    SHARE_IMAGE_TELEMETRY_PATH,
     emitSharePageServedTelemetry,
     emitTelemetryEvent,
     getCallbackDataCategory,
@@ -619,4 +631,275 @@ test('telemetry never leaks share public ids from paths or share events', async 
     assert.ok(
         shippedBodies.every(body => body.includes(SHARE_PAGE_TELEMETRY_PATH))
     );
+});
+
+test('Mini App paths collapse to id-free prefixes', () => {
+    const expectations: [string, string][] = [
+        ['/app', APP_TELEMETRY_PATH],
+        ['/app/', APP_TELEMETRY_PATH],
+        ['/api/app', APP_API_TELEMETRY_PATH],
+        ['/api/app/bootstrap', APP_API_TELEMETRY_PATH],
+        ['/api/app/wishes/987654/images/3', APP_API_TELEMETRY_PATH],
+        ['/api/app/lists/abc.def.ghi/wishes', APP_API_TELEMETRY_PATH],
+        ['/img/w/987654/0/0123456789abcdef', APP_IMAGE_TELEMETRY_PATH],
+        [
+            '/img/s/01k6g4z8q3m2n7p5r9s1t0v6wx/987654/0/0123456789abcdef',
+            SHARE_IMAGE_TELEMETRY_PATH
+        ],
+        ['/app/app.js', '/unknown'],
+        ['/apps', '/unknown'],
+        ['/api/application', '/unknown'],
+        ['/img/x/1', '/unknown']
+    ];
+
+    assert.deepEqual(
+        [
+            APP_TELEMETRY_PATH,
+            APP_API_TELEMETRY_PATH,
+            APP_IMAGE_TELEMETRY_PATH,
+            SHARE_IMAGE_TELEMETRY_PATH
+        ],
+        ['/app', '/api/app', '/img/w', '/img/s']
+    );
+
+    for (const [path, normalized] of expectations) {
+        assert.equal(normalizeTelemetryPath(path, null), normalized, path);
+    }
+});
+
+test('Mini App events carry closed labels only', () => {
+    assert.deepEqual(
+        toWishlistAttributes(
+            appApiCompletedEvent({
+                route: '/api/app/wishes/:id',
+                method: 'PATCH',
+                status: 422,
+                errorCode: 'validation',
+                elapsedMs: 12
+            }),
+            'production'
+        ),
+        {
+            eventName: 'app_api_completed',
+            path: '/api/app',
+            route: '/api/app/wishes/:id',
+            method: 'PATCH',
+            status: 422,
+            outcome: 'success',
+            errorCode: 'validation',
+            elapsedMs: 12,
+            botEnvironment: 'production'
+        }
+    );
+    assert.equal(
+        toWishlistAttributes(
+            appApiCompletedEvent({
+                route: '/api/app/wishes/987654',
+                method: 'GET',
+                status: 500,
+                errorCode: 'internal',
+                elapsedMs: 3
+            }),
+            'production'
+        ).route,
+        'invalid'
+    );
+    assert.equal(
+        toWishlistAttributes(
+            {
+                event: 'app_api_completed',
+                errorCode: 'user 987654' as 'internal'
+            },
+            'production'
+        ).errorCode,
+        'invalid'
+    );
+    assert.equal(
+        toWishlistAttributes(
+            { event: 'release_announcement_failed', errorCode: 403 },
+            'production'
+        ).errorCode,
+        403
+    );
+    assert.deepEqual(
+        toWishlistAttributes(
+            appSessionStartedEvent({
+                platform: 'ios',
+                startKind: 'wish',
+                isGuest: true,
+                locale: 'uk'
+            }),
+            'production'
+        ),
+        {
+            eventName: 'app_session_started',
+            path: '/api/app',
+            outcome: 'success',
+            platform: 'ios',
+            startKind: 'wish',
+            isGuest: true,
+            locale: 'uk',
+            botEnvironment: 'production'
+        }
+    );
+
+    for (const fields of [
+        appAuthRejectedEvent('previewAccessDenied'),
+        appRateLimitedEvent('sensitive'),
+        appRateLimiterMissingEvent('upload', 'missing'),
+        appPhotoUploadedEvent('writeAccessRequired'),
+        imageProxyServedEvent({
+            scope: 'share',
+            result: 'hit',
+            status: 200,
+            elapsedMs: 2
+        }),
+        appClientEvent({ kind: 'renderError', screen: 'wishEditor' })
+    ]) {
+        const attributes = toWishlistAttributes(fields, 'production');
+
+        assert.equal(JSON.stringify(attributes).includes('invalid'), false);
+    }
+
+    assert.equal(
+        toWishlistAttributes(
+            imageProxyServedEvent({
+                scope: 'app',
+                result: 'miss',
+                status: 200,
+                elapsedMs: 40
+            }),
+            'production'
+        ).path,
+        '/img/w'
+    );
+});
+
+test('bot_action_completed defaults to the bot channel and keeps app', () => {
+    assert.equal(
+        toWishlistAttributes(
+            { event: 'bot_action_completed', action: 'wish_created' },
+            'production'
+        ).channel,
+        'bot'
+    );
+    assert.equal(
+        toWishlistAttributes(
+            {
+                event: 'bot_action_completed',
+                action: 'wish_created',
+                channel: 'app'
+            },
+            'production'
+        ).channel,
+        'app'
+    );
+    assert.equal(
+        toWishlistAttributes(
+            { event: 'http_request_completed', status: 200 },
+            'production'
+        ).channel,
+        undefined
+    );
+});
+
+test('Mini App telemetry never leaks Telegram ids, initData or tokens', async () => {
+    const random = createSeededRandom(20261004);
+    const originalFetch = globalThis.fetch;
+    const shippedBodies: string[] = [];
+    const background: Promise<unknown>[] = [];
+    const platforms = [
+        'ios',
+        'android',
+        'tdesktop',
+        'weba',
+        'unknown'
+    ] as const;
+    const reasons = [
+        'missing',
+        'malformed',
+        'badHash',
+        'stale',
+        'future',
+        'previewAccessDenied',
+        'origin'
+    ] as const;
+
+    globalThis.fetch = async (_input, init) => {
+        shippedBodies.push(String(init?.body));
+        return new Response('{}', { status: 200 });
+    };
+
+    try {
+        const env = {
+            NEW_RELIC_LICENSE_KEY: 'test-license-key',
+            BOT_ENVIRONMENT: 'production'
+        } as WorkerBindings;
+        const context = {
+            waitUntil(promise: Promise<unknown>) {
+                background.push(promise);
+            },
+            passThroughOnException() {}
+        } as unknown as ExecutionContext;
+
+        for (let iteration = 0; iteration < 100; iteration += 1) {
+            const telegramId = '6' + randomDigits(random, 9);
+            const wishId = '9' + randomDigits(random, 7);
+            const ownerToken = `${Number(telegramId).toString(36)}.mfq0zk.${randomDigits(random, 43)}`;
+            const initData = `query_id=AA${randomDigits(random, 10)}&user=%7B%22id%22%3A${telegramId}%7D&auth_date=1790000000&hash=${randomDigits(random, 64)}`;
+            const path = pickRandom(random, [
+                `/api/app/wishes/${wishId}`,
+                `/api/app/lists/${ownerToken}/wishes/${wishId}/give`,
+                `/img/w/${wishId}/0/0123456789abcdef?e=1790003600&s=${ownerToken}`,
+                `/api/app/bootstrap?start=w_${wishId}&tgWebAppData=${encodeURIComponent(initData)}`
+            ]);
+
+            emitHttpRequestTelemetry(
+                new Request(`https://wishlist.test${path}`, {
+                    headers: { Authorization: `tma ${initData}` }
+                }),
+                new Response('{}', { status: 200 }),
+                env,
+                context,
+                Date.now()
+            );
+
+            for (const fields of [
+                appApiCompletedEvent({
+                    route: `/api/app/wishes/${wishId}`,
+                    method: 'GET',
+                    status: 404,
+                    errorCode: 'notFound',
+                    elapsedMs: 5
+                }),
+                appSessionStartedEvent({
+                    platform: pickRandom(random, platforms),
+                    startKind: 'wish',
+                    isGuest: false,
+                    locale: 'en'
+                }),
+                appAuthRejectedEvent(pickRandom(random, reasons)),
+                appRateLimitedEvent('api')
+            ]) {
+                emitTelemetryEvent(env, context, fields);
+            }
+
+            await Promise.all(background);
+
+            for (const body of shippedBodies.slice(-5)) {
+                for (const secret of [
+                    telegramId,
+                    wishId,
+                    ownerToken,
+                    initData
+                ]) {
+                    assert.equal(body.includes(secret), false, secret);
+                }
+            }
+        }
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+
+    assert.equal(shippedBodies.length, 500);
 });

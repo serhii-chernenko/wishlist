@@ -1,5 +1,12 @@
 import { Hono } from 'hono';
 
+import type { AppApiDependencies } from '../api/context';
+import { registerAppApiRoutes } from '../api/routes';
+import { registerAppShellRoutes } from '../web/app-shell/route';
+import {
+    registerImageProxyRoutes,
+    type ImageProxyRouteDependencies
+} from '../web/image-proxy/route';
 import {
     registerHomeRoutes,
     registerShareRoutes,
@@ -21,7 +28,9 @@ export type WorkerApp = Hono<{ Bindings: WorkerBindings }>;
 export const createApp = (
     telegramDependencies: TelegramRouteDependencies = {},
     adminDependencies: AdminRouteDependencies = {},
-    shareDependencies: ShareRouteDependencies = {}
+    shareDependencies: ShareRouteDependencies = {},
+    appApiDependencies: AppApiDependencies = {},
+    imageProxyDependencies: ImageProxyRouteDependencies = {}
 ) => {
     const app = new Hono<{ Bindings: WorkerBindings }>();
 
@@ -40,6 +49,9 @@ export const createApp = (
         }),
         ...adminDependencies
     });
+    registerAppShellRoutes(app);
+    registerAppApiRoutes(app, appApiDependencies);
+    registerImageProxyRoutes(app, imageProxyDependencies);
     registerHomeRoutes(app, shareDependencies);
     registerShareRoutes(app, shareDependencies);
     registerTelegramRoutes(app, telegramDependencies);

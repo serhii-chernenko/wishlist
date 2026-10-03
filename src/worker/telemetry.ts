@@ -2,6 +2,20 @@ import { createRequestLogger, type WideEvent } from 'evlog';
 import { createOTLPDrain } from 'evlog/otlp';
 import { initWorkersLogger } from 'evlog/workers';
 
+import {
+    API_ERROR_CODES,
+    APP_API_PREFIX,
+    APP_API_ROUTE_TEMPLATES,
+    APP_IMAGE_PATH_PREFIX,
+    SHARE_IMAGE_PATH_PREFIX,
+    type ApiErrorCode,
+    type AppPlatform,
+    type AuthRejectReason,
+    type ClientEventKind,
+    type ClientScreen,
+    type RateLimitBucket
+} from '../shared/app-api';
+import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
 import { getTelegramWebhookPath, type WorkerBindings } from './env';
 
 initWorkersLogger({
@@ -67,6 +81,46 @@ export type SharePageResult =
 
 export type ShareCacheOutcome = 'hit' | 'miss' | 'bypass';
 
+export type TelemetryChannel = 'bot' | 'app';
+
+export const APP_TELEMETRY_PATH = APP_SHELL_PATH;
+
+export const APP_API_TELEMETRY_PATH = APP_API_PREFIX;
+
+export const APP_IMAGE_TELEMETRY_PATH = APP_IMAGE_PATH_PREFIX;
+
+export const SHARE_IMAGE_TELEMETRY_PATH = SHARE_IMAGE_PATH_PREFIX;
+
+export const APP_API_UNMATCHED_ROUTE = `${APP_API_PREFIX}/*`;
+
+export type AppAuthRejectionReason =
+    | AuthRejectReason
+    | 'previewAccessDenied'
+    | 'origin';
+
+export type AppRateLimiterGap = 'missing' | 'error';
+
+export type AppPhotoUploadResult =
+    | 'appended'
+    | 'duplicate'
+    | 'full'
+    | 'tooLarge'
+    | 'unsupported'
+    | 'writeAccessRequired'
+    | 'telegramError'
+    | 'carrierKept';
+
+export type ImageProxyScope = 'app' | 'share';
+
+export type ImageProxyResult =
+    | 'hit'
+    | 'miss'
+    | 'notFound'
+    | 'forbidden'
+    | 'expired'
+    | 'upstreamError'
+    | 'rateLimited';
+
 export interface SharePageServedInput {
     method: string;
     result: SharePageResult;
@@ -77,7 +131,7 @@ export interface SharePageServedInput {
     visibleWishes?: number;
 }
 
-type TelemetryFields = {
+export type TelemetryFields = {
     event: string;
     method?: string;
     path?: string;
@@ -100,7 +154,7 @@ type TelemetryFields = {
     prunedAbandonedTelegramUpdates?: number;
     prunedSessions?: number;
     releaseVersion?: string;
-    errorCode?: number | null;
+    errorCode?: number | ApiErrorCode | null;
     delaySeconds?: number;
     attempts?: number;
     reason?: string;
@@ -123,6 +177,15 @@ type TelemetryFields = {
     usersWithPayments?: number;
     cacheOutcome?: ShareCacheOutcome;
     visibleWishes?: number;
+    channel?: TelemetryChannel;
+    route?: string;
+    bucket?: RateLimitBucket;
+    platform?: AppPlatform;
+    startKind?: StartKind;
+    isGuest?: boolean;
+    scope?: ImageProxyScope;
+    kind?: ClientEventKind;
+    screen?: ClientScreen;
 };
 
 const knownPaths = new Set([
@@ -152,8 +215,24 @@ const labelFieldNames = [
     'locale',
     'outcome',
     'idempotencyOutcome',
-    'cacheOutcome'
+    'cacheOutcome',
+    'channel',
+    'bucket',
+    'platform',
+    'startKind',
+    'scope',
+    'kind',
+    'screen'
 ] as const;
+
+const knownApiRoutes: ReadonlySet<string> = new Set([
+    ...APP_API_ROUTE_TEMPLATES,
+    APP_API_UNMATCHED_ROUTE
+]);
+
+const knownApiErrorCodes: ReadonlySet<string> = new Set(API_ERROR_CODES);
+
+const DEFAULT_ACTION_CHANNEL: TelemetryChannel = 'bot';
 
 const safeLabelPattern = /^[A-Za-z][A-Za-z_:.-]{0,63}$/;
 const invalidLabel = 'invalid';
@@ -234,6 +313,20 @@ export const normalizeTelemetryPath = (
 
     if (homePagePathPattern.test(path)) {
         return HOME_PAGE_TELEMETRY_PATH;
+    }
+
+    if (path === APP_TELEMETRY_PATH || path === `${APP_TELEMETRY_PATH}/`) {
+        return APP_TELEMETRY_PATH;
+    }
+
+    for (const prefix of [
+        APP_API_TELEMETRY_PATH,
+        APP_IMAGE_TELEMETRY_PATH,
+        SHARE_IMAGE_TELEMETRY_PATH
+    ]) {
+        if (path === prefix || path.startsWith(`${prefix}/`)) {
+            return prefix;
+        }
     }
 
     return knownPaths.has(path) ? path : '/unknown';
@@ -381,6 +474,22 @@ export const toWishlistAttributes = (
         }
     }
 
+    if (attributes.route !== undefined) {
+        attributes.route = knownApiRoutes.has(String(attributes.route))
+            ? attributes.route
+            : invalidLabel;
+    }
+
+    if (typeof attributes.errorCode === 'string') {
+        attributes.errorCode = knownApiErrorCodes.has(attributes.errorCode)
+            ? attributes.errorCode
+            : invalidLabel;
+    }
+
+    if (event === 'bot_action_completed' && attributes.channel === undefined) {
+        attributes.channel = DEFAULT_ACTION_CHANNEL;
+    }
+
     return {
         eventName: event,
         ...attributes,
@@ -454,4 +563,115 @@ export const emitHttpRequestTelemetry = (
         elapsedMs: Math.max(0, Date.now() - startedAt),
         outcome: response.status >= 500 ? 'error' : 'success'
     });
+};
+
+export const appApiCompletedEvent = (input: {
+    route: string;
+    method: string;
+    status: number;
+    errorCode: ApiErrorCode | null;
+    elapsedMs: number;
+}): TelemetryFields => {
+    return {
+        event: 'app_api_completed',
+        path: APP_API_TELEMETRY_PATH,
+        route: input.route,
+        method: input.method,
+        status: input.status,
+        outcome: input.status >= 500 ? 'error' : 'success',
+        errorCode: input.errorCode,
+        elapsedMs: input.elapsedMs
+    };
+};
+
+export const appSessionStartedEvent = (input: {
+    platform: AppPlatform;
+    startKind: StartKind;
+    isGuest: boolean;
+    locale: Exclude<TelemetryLocale, 'auto'>;
+}): TelemetryFields => {
+    return {
+        event: 'app_session_started',
+        path: APP_API_TELEMETRY_PATH,
+        outcome: 'success',
+        ...input
+    };
+};
+
+export const appAuthRejectedEvent = (
+    reason: AppAuthRejectionReason
+): TelemetryFields => {
+    return {
+        event: 'app_auth_rejected',
+        path: APP_API_TELEMETRY_PATH,
+        outcome: 'rejected',
+        reason
+    };
+};
+
+export const appRateLimitedEvent = (
+    bucket: RateLimitBucket
+): TelemetryFields => {
+    return {
+        event: 'app_rate_limited',
+        path: APP_API_TELEMETRY_PATH,
+        outcome: 'rejected',
+        bucket
+    };
+};
+
+export const appRateLimiterMissingEvent = (
+    bucket: RateLimitBucket,
+    result: AppRateLimiterGap
+): TelemetryFields => {
+    return {
+        event: 'app_rate_limiter_missing',
+        path: APP_API_TELEMETRY_PATH,
+        outcome: 'allowed',
+        bucket,
+        result
+    };
+};
+
+export const appPhotoUploadedEvent = (
+    result: AppPhotoUploadResult
+): TelemetryFields => {
+    return {
+        event: 'app_photo_uploaded',
+        path: APP_API_TELEMETRY_PATH,
+        outcome:
+            result === 'appended' || result === 'duplicate'
+                ? 'success'
+                : 'rejected',
+        result
+    };
+};
+
+export const imageProxyServedEvent = (input: {
+    scope: ImageProxyScope;
+    result: ImageProxyResult;
+    status: number;
+    elapsedMs: number;
+}): TelemetryFields => {
+    return {
+        event: 'image_proxy_served',
+        path:
+            input.scope === 'app'
+                ? APP_IMAGE_TELEMETRY_PATH
+                : SHARE_IMAGE_TELEMETRY_PATH,
+        outcome: input.status >= 500 ? 'error' : 'success',
+        ...input
+    };
+};
+
+export const appClientEvent = (input: {
+    kind: ClientEventKind;
+    screen: ClientScreen;
+}): TelemetryFields => {
+    return {
+        event: 'app_client_event',
+        path: APP_API_TELEMETRY_PATH,
+        outcome: 'success',
+        ...input
+    };
 };
