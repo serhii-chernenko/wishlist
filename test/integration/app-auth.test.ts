@@ -487,7 +487,7 @@ describe('Mini App API auth and bootstrap', () => {
         ]);
     });
 
-    it('requires registration on user routes and answers 501 from stubs', async () => {
+    it('requires registration on user routes and serves implemented handlers', async () => {
         const guestOnUserRoute = await request('/wishes', {
             initData: signedFor()
         });
@@ -497,17 +497,15 @@ describe('Mini App API auth and bootstrap', () => {
             code: 'registrationRequired'
         });
 
-        const stub = await request('/me', { initData: signedFor() });
+        const guestMe = await request('/me', { initData: signedFor() });
 
-        assert.equal(stub.status, API_ERROR_STATUS.notImplemented);
-        assert.deepEqual(await readError(stub), { code: 'notImplemented' });
+        assert.equal(guestMe.status, 200);
 
         await createUser();
 
-        const userStub = await request('/wishes', { initData: signedFor() });
+        const userWishes = await request('/wishes', { initData: signedFor() });
 
-        assert.equal(userStub.status, 501);
-        assert.deepEqual(await readError(userStub), { code: 'notImplemented' });
+        assert.equal(userWishes.status, 200);
 
         const unknown = await request('/nope', { initData: signedFor() });
 
