@@ -1155,7 +1155,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(
                 String(
                     webhook.callsOf('answerCallbackQuery')[0]?.payload.text
-                ).includes('успішно додано')
+                ).includes('Заброньовано!')
             );
             assert.deepEqual(webhook.callsOf('sendMessage'), []);
             assert.ok(
@@ -1171,7 +1171,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(
                 String(
                     webhook.callsOf('answerCallbackQuery')[0]?.payload.text
-                ).includes('вже додано')
+                ).includes('Уже заброньовано')
             );
 
             webhook.clearApiCalls();

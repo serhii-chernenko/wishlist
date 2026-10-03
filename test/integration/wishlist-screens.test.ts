@@ -1843,7 +1843,7 @@ describe('wishlist screens on D1', () => {
                 return event.kind === 'wish';
             }) as Extract<SentEvent, { kind: 'wish' }>;
 
-            assert.ok(listed.item.html.includes('Вже хочуть подарувати: 1'));
+            assert.ok(listed.item.html.includes('Забронювали: 1'));
             assert.deepEqual(callbackDataOf(listed.keyboard), [
                 `t:g:${wish.id}`
             ]);
@@ -1859,7 +1859,7 @@ describe('wishlist screens on D1', () => {
             );
             assert.ok(
                 (give.events[0] as { text: string }).text.includes(
-                    'успішно додано'
+                    'Заброньовано!'
                 )
             );
             assert.deepEqual(
@@ -1877,7 +1877,7 @@ describe('wishlist screens on D1', () => {
             await dispatch(again.request, `t:g:${wish.id}`);
             assert.ok(
                 (again.events[0] as { text: string }).text.includes(
-                    'вже додано'
+                    'Уже заброньовано'
                 )
             );
 
@@ -1888,7 +1888,7 @@ describe('wishlist screens on D1', () => {
             await dispatch(take.request, `t:t:${wish.id}`);
             assert.ok(
                 (take.events[0] as { text: string }).text.includes(
-                    'видалено зі списку'
+                    'Бронь скасовано'
                 )
             );
             assert.deepEqual(
@@ -1987,9 +1987,7 @@ describe('wishlist screens on D1', () => {
             }) as Array<Extract<SentEvent, { kind: 'wish' }>>;
 
             assert.equal(wishes.length, 2);
-            assert.ok(
-                wishes[0]?.item.html.includes('Також хочуть подарувати: 1')
-            );
+            assert.ok(wishes[0]?.item.html.includes('Також забронювали: 1'));
             assert.ok(wishes[0]?.item.html.includes('<b>@Alice</b>'));
             assert.ok(!wishes[1]?.item.html.includes('380501112233'));
             assert.equal(wishes[1]?.item.html.includes('hidden-name'), false);
@@ -2079,7 +2077,9 @@ describe('wishlist screens on D1', () => {
                 )?.c,
                 0
             );
-            assert.ok(lastText(confirm.events).html.includes('жодного запису'));
+            assert.ok(
+                lastText(confirm.events).html.includes('поки що нічого немає')
+            );
         });
     });
 });

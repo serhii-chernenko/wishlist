@@ -1367,7 +1367,7 @@ describe('share page routes', () => {
         assert.match(
             body,
             new RegExp(
-                `href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${publicId}"[^>]*>Open in Telegram and pick a gift</a>`
+                `href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${publicId}"[^>]*>Open in Telegram and reserve a wish</a>`
             )
         );
     });

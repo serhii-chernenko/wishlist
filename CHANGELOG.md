@@ -23,15 +23,15 @@
 - [added] «Поділитися» тепер створює власну сторінку твого листа бажань на https://wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.
     - en: "Share" now creates your own wish list page on https://wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates itself after every change, it has a language switcher, and you can stop sharing at any time. Old telegra.ph pages stay but no longer update.
     - pl: „Udostępnij” tworzy teraz własną stronę twojej listy życzeń na https://wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane.
-- [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і позначати подарунки. Чат-бот працює як раніше, а дані спільні.
-    - en: Wishlist now has an app right inside Telegram: open it with the "Open the app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and mark gifts. The chat bot works as before, and both use the same data.
-    - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i zaznaczać prezenty. Bot w czacie działa jak dotąd, a dane są wspólne.
+- [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і бронювати бажання. Чат-бот працює як раніше, а дані спільні.
+    - en: Wishlist now has an app right inside Telegram: open it with the "Open the app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.
+    - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne.
 - [added] Фото бажань тепер видно й на публічній сторінці листа бажань.
     - en: Wish photos now appear on the public wish list page too.
     - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń.
-- [added] Зі сторінки листа бажань можна одразу відкрити його в Телеграмі й позначити, що хочеш подарувати.
-    - en: From a wish list page you can open the list in Telegram right away and mark what you want to give.
-    - pl: Ze strony listy życzeń możesz od razu otworzyć ją w Telegramie i zaznaczyć, co chcesz podarować.
+- [added] Зі сторінки листа бажань можна одразу відкрити його в Телеграмі й забронювати бажання.
+    - en: From a wish list page you can open the list in Telegram right away and reserve a wish.
+    - pl: Ze strony listy życzeń możesz od razu otworzyć ją w Telegramie i zarezerwować życzenie.
 - [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
     - en: You can now support the author via Monobank, Ko-fi, PayPal or Revolut.
     - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.
@@ -47,12 +47,12 @@
 - [fixed] Кнопка «Очистити» знову працює, і тепер перед очищенням бот перепитує, чи ти впевнений(-а).
     - en: The "Clean" button works again, and the bot now asks you to confirm before cleaning.
     - pl: Przycisk „Wyczyść” znowu działa, a bot pyta teraz o potwierdzenie przed czyszczeniem.
-- [fixed] У списку «Хочу подарувати» тепер видаляється саме те бажання, яке ти обираєш, а після скасування вибору бот показує правильне повідомлення.
-    - en: In the "I want to give" list the wish you pick is the one that gets removed, and after you cancel a pick the bot shows the right message.
-    - pl: Na liście „Chcę podarować” usuwane jest dokładnie to życzenie, które wybierzesz, a po anulowaniu wyboru bot pokazuje właściwy komunikat.
-- [fixed] У чужому листі бажань знову видно, скільки ще людей хочуть подарувати те саме.
-    - en: In someone else's wish list you can see again how many other people want to give the same thing.
-    - pl: Na cudzej liście życzeń znów widać, ile jeszcze osób chce podarować to samo.
+- [fixed] У списку «Хочу подарувати» бронь тепер скасовується саме для того бажання, яке ти обираєш, а після скасування бот показує правильне повідомлення.
+    - en: In the "I want to give" list the reservation is now cancelled for exactly the wish you pick, and after cancelling it the bot shows the right message.
+    - pl: Na liście „Chcę podarować” rezerwacja jest teraz anulowana dokładnie dla tego życzenia, które wybierzesz, a po jej anulowaniu bot pokazuje właściwy komunikat.
+- [fixed] У чужому листі бажань знову видно, скільки ще людей забронювали те саме.
+    - en: In someone else's wish list you can see again how many other people have reserved the same thing.
+    - pl: Na cudzej liście życzeń znów widać, ile jeszcze osób zarezerwowało to samo.
 - [fixed] Назви та описи бажань більше не ламають оформлення повідомлень, а дати показуються за київським часом.
     - en: Wish titles and descriptions no longer break message formatting, and dates are shown in Kyiv time.
     - pl: Tytuły i opisy życzeń nie psują już formatowania wiadomości, a daty są pokazywane według czasu kijowskiego.

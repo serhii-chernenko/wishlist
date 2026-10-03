@@ -247,20 +247,20 @@ const pl: Translation = {
     },
     giveList: {
         title: '🎁 Chcę podarować',
-        empty: 'Na twojej liście <b>Chcę podarować</b> nie ma jeszcze żadnego wpisu!\n🔎 Znajdź listę życzeń innej osoby, żeby wybrać prezent.',
+        empty: 'Twoja lista <b>Chcę podarować</b> jest na razie pusta. Pojawią się tu życzenia, które zarezerwujesz.\n🔎 Znajdź listę życzeń innej osoby, żeby zarezerwować życzenie.',
         filled: {
-            before: '<b>Oto twoja lista tego, co chcesz podarować:</b>',
-            after: '❓<b>Co chcesz zrobić?</b>\n\n❌ Usunąć istniejące życzenie z listy.\n🧹 Wyczyścić listę <b>Chcę podarować</b>'
+            before: '<b>Oto życzenia, które rezerwujesz dla innych:</b>',
+            after: '❓<b>Co chcesz zrobić?</b>\n\n❌ Anulować rezerwację życzenia.\n🧹 Wyczyścić listę <b>Chcę podarować</b>'
         },
-        givers: '\n\n👥 <i>Podarować to chcą też: {0}</i>',
+        givers: '\n\n👥 <i>Zarezerwowane także przez: {0}</i>',
         owner: '\n\n👤 Dla użytkownika: <b>{0}</b>',
         success: {
-            remove: '✅ Życzenie zostało usunięte z listy <b>Chcę podarować</b>!',
-            clean: '✅ Wszystkie życzenia zostały usunięte z listy <b>Chcę podarować</b>!'
+            remove: '✅ Rezerwacja anulowana, życzenie usunięto z listy <b>Chcę podarować</b>!',
+            clean: '✅ Wszystkie rezerwacje anulowane, lista <b>Chcę podarować</b> jest pusta!'
         },
         clean: {
             confirm:
-                '❓<b>Na pewno wyczyścić listę Chcę podarować?</b>\n\nWszystkie wybrane życzenia znikną z tej listy.'
+                '❓<b>Na pewno wyczyścić listę Chcę podarować?</b>\n\nWszystkie twoje rezerwacje zostaną anulowane, a życzenia znikną z tej listy.'
         }
     },
     findList: {
@@ -274,21 +274,21 @@ const pl: Translation = {
             before: 'Oto lista życzeń <b>{0}</b>:',
             payments:
                 'Jeśli nie możesz podarować konkretnego prezentu, użytkownik podał swoje dane płatnicze, za pomocą których możesz przesłać pieniądze, żeby ta osoba mogła kupić prezent samodzielnie:\n\n{0}',
-            after: '❓<b>Co chcesz zrobić?</b>\n\n🎁 Wybrać życzenie na prezent\n❌ Nie podarować wybranego życzenia'
+            after: '❓<b>Co chcesz zrobić?</b>\n\n🎁 Zarezerwować życzenie\n❌ Anulować rezerwację życzenia'
         },
         givers: {
-            you: '\n\n👥 <i>Chcesz to podarować</i>',
+            you: '\n\n👥 <i>Zarezerwowane przez ciebie</i>',
             somebodyAndYou:
-                '\n\n👥 <i>Już chcą to podarować - ty i jeszcze: {0}</i>',
-            somebody: '\n\n👥 <i>Już chcą to podarować: {0}</i>'
+                '\n\n👥 <i>Zarezerwowane przez ciebie i jeszcze: {0}</i>',
+            somebody: '\n\n👥 <i>Zarezerwowane przez innych: {0}</i>'
         },
         actions: {
-            give: '🎁 Podaruję',
-            take: '❌ Nie podaruję'
+            give: '🎁 Zarezerwuj',
+            take: '❌ Anuluj rezerwację'
         },
         errors: {
-            give: '❌ To życzenie jest już na liście <b>Chcę podarować</b>!',
-            take: '❌ Tego życzenia nie ma na liście <b>Chcę podarować</b>!',
+            give: '❌ To życzenie jest już przez ciebie zarezerwowane!',
+            take: '❌ Tego życzenia nie ma wśród twoich rezerwacji!',
             notFound: '❌ Nie znaleziono osoby, spróbuj jeszcze raz!',
             foundYourself:
                 '❌ Ach ty chytra szelmo, siebie szukać nie wolno! 😘',
@@ -296,8 +296,8 @@ const pl: Translation = {
                 '❌ To zapytanie jest za długie! Maksymalnie {0} znaków, spróbuj jeszcze raz.'
         },
         success: {
-            give: '✅ Życzenie zostało dodane do listy <b>Chcę podarować</b>!',
-            take: '✅ Życzenie zostało usunięte z listy <b>Chcę podarować</b>!'
+            give: '✅ Zarezerwowano! Życzenie trafiło na listę <b>Chcę podarować</b>.',
+            take: '✅ Rezerwacja anulowana, życzenie usunięto z listy <b>Chcę podarować</b>.'
         }
     },
     donate: {
@@ -424,7 +424,7 @@ const pl: Translation = {
             cta: 'Utwórz własną listę życzeń',
             support: 'Wesprzyj autora',
             openSource: 'Otwarty kod na GitHubie',
-            openInApp: 'Otwórz w Telegramie i wybierz prezent'
+            openInApp: 'Otwórz w Telegramie i zarezerwuj życzenie'
         },
         language: {
             label: 'Język'
@@ -464,8 +464,8 @@ const pl: Translation = {
                     text: 'Bot utworzy publiczną stronę Twojej listy. Wyślij link znajomym albo pozwól im znaleźć Cię w bocie po nazwie użytkownika lub numerze telefonu.'
                 },
                 give: {
-                    title: 'Znajomi wybierają prezent',
-                    text: 'Klikają „Podaruję” i życzenie trafia na ich listę „Chcę podarować”. Inni darczyńcy widzą, że jest już wybrane, a Ty nie, więc niespodzianka pozostaje niespodzianką.'
+                    title: 'Znajomi rezerwują życzenie',
+                    text: 'Klikają „Zarezerwuj” i życzenie trafia na ich listę „Chcę podarować”. Inni znajomi widzą, że jest już zarezerwowane, a Ty nie, więc niespodzianka pozostaje niespodzianką.'
                 }
             },
             features: {
@@ -520,7 +520,7 @@ const pl: Translation = {
         app: 'Otwórz aplikację'
     },
     appEntry: {
-        text: '📱 Aplikacja „Lista życzeń” otwiera się bezpośrednio w Telegramie. Zrobisz w niej to samo co w czacie: dodasz życzenia ze zdjęciami, znajdziesz listy znajomych i wybierzesz prezenty.'
+        text: '📱 Aplikacja „Lista życzeń” otwiera się bezpośrednio w Telegramie. Zrobisz w niej to samo co w czacie: dodasz życzenia ze zdjęciami, znajdziesz listy znajomych i zarezerwujesz życzenia.'
     },
     app: {
         common: {
@@ -597,7 +597,7 @@ const pl: Translation = {
                 'Lista życzeń jest pełna: może zawierać do 500 życzeń. Najpierw usuń kilka z nich.',
             imageChanged:
                 'Zdjęcia już się zmieniły. Odśwież ekran i spróbuj ponownie.',
-            ownWish: 'Nie można podarować własnego życzenia.',
+            ownWish: 'Nie można zarezerwować własnego życzenia.',
             writeAccessRequired:
                 'Pozwól botowi pisać do ciebie, aby mógł zapisywać zdjęcia.',
             payloadTooLarge: 'Plik jest za duży. Wybierz mniejszy.',
@@ -690,7 +690,7 @@ const pl: Translation = {
                 },
                 gives: {
                     title: 'Chcę podarować',
-                    text: 'Prezenty, które wybierasz dla innych'
+                    text: 'Życzenia, które rezerwujesz dla innych'
                 },
                 find: {
                     title: 'Znajdź listę',
@@ -719,8 +719,8 @@ const pl: Translation = {
                         text: 'Wyślij znajomym link do swojej strony albo pozwól znajdować się po nazwie użytkownika lub numerze.'
                     },
                     give: {
-                        title: 'Znajomi wybierają prezent',
-                        text: 'Znajomi widzą, które życzenia są już wybrane. Ty nie, więc niespodzianka zostaje niespodzianką.'
+                        title: 'Znajomi rezerwują życzenie',
+                        text: 'Znajomi widzą, które życzenia są już zarezerwowane. Ty nie, więc niespodzianka zostaje niespodzianką.'
                     }
                 },
                 cta: 'Zaczynamy',
@@ -877,18 +877,18 @@ const pl: Translation = {
             count: '{count} {{count:|prezent||prezenty|prezentów|prezentu}}',
             empty: {
                 title: 'Lista jest pusta',
-                text: 'Znajdź listę życzeń znajomego i wybierz, co podarować.',
+                text: 'Pojawią się tu życzenia, które zarezerwujesz. Znajdź listę życzeń znajomego i wybierz, co podarować.',
                 cta: 'Znajdź listę'
             },
             owner: 'Dla {owner}',
-            others: 'Podarować chcą też inni: {count}',
+            others: 'Zarezerwowane także przez: {count}',
             open: 'Otwórz',
-            remove: 'Nie podaruję',
-            removed: 'Usunięto z listy „Chcę podarować”',
+            remove: 'Anuluj rezerwację',
+            removed: 'Rezerwacja anulowana',
             clean: {
                 action: 'Wyczyść listę',
                 title: 'Wyczyścić listę „Chcę podarować”?',
-                text: 'Wszystkie wybrane życzenia znikną z tej listy.',
+                text: 'Wszystkie twoje rezerwacje zostaną anulowane, a życzenia znikną z tej listy.',
                 confirm: 'Wyczyść',
                 success: 'Lista wyczyszczona'
             }
@@ -923,18 +923,18 @@ const pl: Translation = {
             priority: 'Bardzo chce',
             openLink: 'Otwórz na {host}',
             givers: {
-                you: 'Chcesz to podarować',
+                you: 'Zarezerwowane przez ciebie',
                 somebodyAndYou:
-                    'Podarować chcesz ty i jeszcze {count} {{count:|osoba||osoby|osób|osoby}}',
+                    'Zarezerwowane przez ciebie i jeszcze {count} {{count:|osobę||osoby|osób|osoby}}',
                 somebody:
-                    'Już wybrane przez {count} {{count:|osobę||osoby|osób|osoby}}'
+                    'Zarezerwowane przez {count} {{count:|osobę||osoby|osób|osoby}}'
             },
-            give: 'Podaruję',
-            take: 'Nie podaruję',
-            given: 'Dodano do listy „Chcę podarować”',
-            taken: 'Usunięto z listy „Chcę podarować”',
+            give: 'Zarezerwuj',
+            take: 'Anuluj rezerwację',
+            given: 'Zarezerwowano',
+            taken: 'Rezerwacja anulowana',
             viewOnly:
-                'Tę listę możesz tylko przeglądać. Aby wybrać prezent, znajdź tę osobę po nazwie użytkownika lub numerze.',
+                'Tę listę możesz tylko przeglądać. Aby zarezerwować życzenie, znajdź tę osobę po nazwie użytkownika lub numerze.',
             searchAgain: 'Znajdź ponownie',
             payments: {
                 title: 'Można podarować pieniądze',
@@ -971,7 +971,7 @@ const pl: Translation = {
                 appTitle: 'Link do Telegrama',
                 openApp: 'Otwórz w Telegramie',
                 appHint:
-                    'Otwiera twoją listę bezpośrednio w Telegramie, gdzie znajomi od razu wybiorą prezent.',
+                    'Otwiera twoją listę bezpośrednio w Telegramie, gdzie znajomi od razu zarezerwują życzenie.',
                 webTitle: 'Strona w przeglądarce',
                 webHint: 'Dla osób, które nie korzystają z Telegrama.'
             },

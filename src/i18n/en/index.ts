@@ -241,20 +241,20 @@ const en: Translation = {
     },
     giveList: {
         title: '🎁 I want to give',
-        empty: `There are no wishes in your <b>I want to give</b> list yet!\n🔎 Find another person's wish list to pick a gift.`,
+        empty: `Your <b>I want to give</b> list is empty for now. Wishes you reserve will appear here.\n🔎 Find another person's wish list to reserve a wish.`,
         filled: {
-            before: '<b>Here is the list of what you want to give:</b>',
-            after: '❓<b>What would you like to do?</b>\n\n❌ Remove an existing wish from the list.\n🧹 Clean the <b>I want to give</b> list'
+            before: '<b>Here are the wishes you have reserved for others:</b>',
+            after: '❓<b>What would you like to do?</b>\n\n❌ Cancel the reservation of a wish.\n🧹 Clean the <b>I want to give</b> list'
         },
-        givers: '\n\n👥 <i>Others who want to give this too: {0}</i>',
+        givers: '\n\n👥 <i>Also reserved by: {0}</i>',
         owner: '\n\n👤 For user: <b>{0}</b>',
         success: {
-            remove: '✅ The wish was removed from your <b>I want to give</b> list!',
-            clean: '✅ All wishes were removed from your <b>I want to give</b> list!'
+            remove: '✅ Reservation cancelled, the wish was removed from your <b>I want to give</b> list!',
+            clean: '✅ All reservations cancelled, your <b>I want to give</b> list is clean!'
         },
         clean: {
             confirm:
-                '❓<b>Really clean the I want to give list?</b>\n\nAll the picked wishes will disappear from this list.'
+                '❓<b>Really clean the I want to give list?</b>\n\nAll your reservations will be cancelled and the wishes will disappear from this list.'
         }
     },
     findList: {
@@ -267,29 +267,28 @@ const en: Translation = {
         filled: {
             before: 'Here is the wish list of <b>{0}</b>:',
             payments: `If you can't give a specific gift, the user has shared payment details you can send money to, so they can buy the gift themselves:\n\n{0}`,
-            after: `❓<b>What would you like to do?</b>\n\n🎁 Pick a wish to give\n❌ Don't give the picked wish`
+            after: `❓<b>What would you like to do?</b>\n\n🎁 Reserve a wish\n❌ Cancel the reservation of a wish`
         },
         givers: {
-            you: '\n\n👥 <i>You want to give this</i>',
-            somebodyAndYou:
-                '\n\n👥 <i>Already want to give this - you and also: {0}</i>',
-            somebody: '\n\n👥 <i>Already want to give this: {0}</i>'
+            you: '\n\n👥 <i>Reserved by you</i>',
+            somebodyAndYou: '\n\n👥 <i>Reserved by you and {0} more</i>',
+            somebody: '\n\n👥 <i>Reserved by others: {0}</i>'
         },
         actions: {
-            give: '🎁 Give',
-            take: `❌ Don't give`
+            give: '🎁 Reserve',
+            take: '❌ Cancel reservation'
         },
         errors: {
-            give: '❌ This wish is already in your <b>I want to give</b> list!',
-            take: '❌ This wish is not in your <b>I want to give</b> list!',
+            give: '❌ Already reserved by you!',
+            take: '❌ You have not reserved this wish!',
             notFound: '❌ Person not found, please try again!',
             foundYourself: `❌ Nice try, sneaky, but you can't search for yourself! 😘`,
             tooLong:
                 '❌ That search is too long! The maximum is {0} characters, please try again.'
         },
         success: {
-            give: '✅ The wish was added to your <b>I want to give</b> list!',
-            take: '✅ The wish was removed from your <b>I want to give</b> list!'
+            give: '✅ Reserved! The wish was added to your <b>I want to give</b> list.',
+            take: '✅ Reservation cancelled, the wish was removed from your <b>I want to give</b> list.'
         }
     },
     donate: {
@@ -415,7 +414,7 @@ const en: Translation = {
             cta: 'Create your own wish list',
             support: 'Support the author',
             openSource: 'Open source on GitHub',
-            openInApp: 'Open in Telegram and pick a gift'
+            openInApp: 'Open in Telegram and reserve a wish'
         },
         language: {
             label: 'Language'
@@ -455,8 +454,8 @@ const en: Translation = {
                     text: 'The bot makes a public page of your list. Send the link to friends, or let them find you in the bot by username or phone number.'
                 },
                 give: {
-                    title: 'Friends pick a gift',
-                    text: 'They tap “Give” and the wish lands in their “I want to give” list. Other givers see that it is taken, you do not, so the surprise stays a surprise.'
+                    title: 'Friends reserve a wish',
+                    text: 'They tap “Reserve” and the wish lands in their “I want to give” list. Other friends see that it is already reserved, you do not, so the surprise stays a surprise.'
                 }
             },
             features: {
@@ -511,7 +510,7 @@ const en: Translation = {
         app: 'Open the app'
     },
     appEntry: {
-        text: '📱 The Wish list app opens right inside Telegram. It does everything the chat does: add wishes with photos, find friends’ lists and pick gifts.'
+        text: '📱 The Wish list app opens right inside Telegram. It does everything the chat does: add wishes with photos, find friends’ lists and reserve wishes.'
     },
     app: {
         common: {
@@ -587,7 +586,7 @@ const en: Translation = {
                 'Your wish list is full: it can hold up to 500 wishes. Remove some first.',
             imageChanged:
                 'The photos have changed. Refresh the screen and try again.',
-            ownWish: 'You cannot give your own wish.',
+            ownWish: 'You cannot reserve your own wish.',
             writeAccessRequired:
                 'Allow the bot to message you so it can save photos.',
             payloadTooLarge: 'The file is too large. Pick a smaller one.',
@@ -678,7 +677,7 @@ const en: Translation = {
                 },
                 gives: {
                     title: 'I want to give',
-                    text: 'Wishes you plan to give'
+                    text: 'Wishes you have reserved for others'
                 },
                 find: {
                     title: 'Find a list',
@@ -707,8 +706,8 @@ const en: Translation = {
                         text: 'Send friends a link to your page or let them find you by username or phone number.'
                     },
                     give: {
-                        title: 'Friends pick a gift',
-                        text: 'Friends see which wishes are already picked. You don’t, so the surprise stays a surprise.'
+                        title: 'Friends reserve a wish',
+                        text: 'Friends see which wishes are already reserved. You don’t, so the surprise stays a surprise.'
                     }
                 },
                 cta: 'Get started',
@@ -866,18 +865,18 @@ const en: Translation = {
             count: '{count} {{count:gift|gifts}}',
             empty: {
                 title: 'The list is empty',
-                text: 'Find a friend’s wish list and pick something to give.',
+                text: 'Wishes you reserve will appear here. Find a friend’s wish list and pick something to give.',
                 cta: 'Find a list'
             },
             owner: 'For {owner}',
-            others: 'Others who also want to give it: {count}',
+            others: 'Also reserved by: {count}',
             open: 'Open',
-            remove: 'Don’t give',
-            removed: 'Removed from “I want to give”',
+            remove: 'Cancel reservation',
+            removed: 'Reservation cancelled',
             clean: {
                 action: 'Clear the list',
                 title: 'Clear your “I want to give” list?',
-                text: 'All the wishes you picked will disappear from this list.',
+                text: 'All your reservations will be cancelled and the wishes will disappear from this list.',
                 confirm: 'Clear',
                 success: 'The list is cleared'
             }
@@ -912,17 +911,17 @@ const en: Translation = {
             priority: 'Really wants this',
             openLink: 'Open on {host}',
             givers: {
-                you: 'You want to give it',
+                you: 'Reserved by you',
                 somebodyAndYou:
-                    'You and {count} more {{count:person|people}} want to give it',
-                somebody: 'Already picked by {count} {{count:person|people}}'
+                    'Reserved by you and {count} more {{count:person|people}}',
+                somebody: 'Reserved by {count} {{count:person|people}}'
             },
-            give: 'Give',
-            take: 'Don’t give',
-            given: 'Added to “I want to give”',
-            taken: 'Removed from “I want to give”',
+            give: 'Reserve',
+            take: 'Cancel reservation',
+            given: 'Reserved',
+            taken: 'Reservation cancelled',
             viewOnly:
-                'You can only view this list. To pick a gift, find the person by username or phone number.',
+                'You can only view this list. To reserve a wish, find the person by username or phone number.',
             searchAgain: 'Find again',
             payments: {
                 title: 'You can give money',
@@ -959,7 +958,7 @@ const en: Translation = {
                 appTitle: 'Link for Telegram',
                 openApp: 'Open in Telegram',
                 appHint:
-                    'Opens your list right in Telegram, where friends can pick a gift straight away.',
+                    'Opens your list right in Telegram, where friends can reserve a wish straight away.',
                 webTitle: 'Page in the browser',
                 webHint: 'For people who don’t use Telegram.'
             },

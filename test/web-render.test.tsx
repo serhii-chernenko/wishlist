@@ -398,7 +398,7 @@ test('a non-empty list puts the Telegram app button with the share start paramet
         html.indexOf('<header class="hero">'),
         html.indexOf('</header>')
     );
-    const label = 'Open in Telegram and pick a gift';
+    const label = 'Open in Telegram and reserve a wish';
 
     assert.match(
         hero,
