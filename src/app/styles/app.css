@@ -922,7 +922,7 @@
     }
 
     .choice-group-list .choice-card + .choice-card {
-        border-top: 2px dashed var(--ink);
+        border-top: 1px solid color-mix(in srgb, var(--ink) 18%, var(--tag));
     }
 
     .choice-group-list .choice-card:has(input:focus-visible) {
@@ -1100,7 +1100,7 @@
         font-weight: 600;
         word-break: break-all;
         background: var(--paper);
-        border: 2px dashed var(--ink);
+        border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, var(--tag));
         border-radius: 10px;
     }
 
@@ -1123,7 +1123,7 @@
         margin-top: 1rem;
         padding: 0.75rem 1rem;
         background: var(--tag);
-        border: 2px dashed var(--ink);
+        border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, var(--tag));
         border-radius: 12px;
     }
 
@@ -1381,7 +1381,7 @@
         top: 2rem;
         bottom: 2rem;
         left: 2.125rem;
-        border-left: 2.5px dashed var(--ink);
+        border-left: 2px dashed color-mix(in srgb, var(--ink) 18%, var(--tag));
     }
 
     .step {
@@ -1666,6 +1666,15 @@
 
     .release-items > li {
         white-space: pre-line;
+    }
+
+    .release-link {
+        font-weight: 600;
+        color: var(--heart-ink);
+        text-decoration: underline;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 3px;
+        overflow-wrap: anywhere;
     }
 
     .field-mark {
