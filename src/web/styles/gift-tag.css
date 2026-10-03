@@ -1,22 +1,63 @@
 @layer components {
     :root {
+        --border-thin: 2px;
+        --border-regular: 2.5px;
+        --border-thick: 3px;
+        --radius-pill: 999px;
+        --radius-round: 50%;
+        --radius-hero: 22px;
+        --radius-card: 14px;
+        --radius-card-inner: calc(var(--radius-card) - var(--border-regular));
+        --radius-tile: 12px;
+        --radius-control: 10px;
+        --radius-small: 8px;
+        --focus-offset: 2px;
+        --focus-offset-inset: -5px;
+        --underline-thickness: 1.5px;
+        --underline-offset: 3px;
+        --motion-press: 80ms ease-out;
+        --tap-size: 2.75rem;
+        --measure: 65ch;
+        --page-width: 36rem;
+        --wish-grid-gap: 1.5rem 0.75rem;
+        --z-raised: 1;
+    }
+
+    :root,
+    [data-theme] {
+        --photo-placeholder-heart: color-mix(
+            in srgb,
+            var(--ink) 9%,
+            var(--paper)
+        );
+        --shadow-hard-sm: 2px 2px 0 var(--ink);
+        --shadow-hard: 3px 3px 0 var(--ink);
+        --shadow-hard-lg: 5px 5px 0 var(--ink);
+        --shadow-focus: 0 0 0 2px var(--heart);
+        --focus-outline: 3px solid var(--ink);
+    }
+
+    :root {
         --photo-placeholder-bg: #ece6f1;
         --photo-placeholder-fill: #d9d1e1;
         --photo-placeholder-line: #c6bcd2;
+        --photo-placeholder-bg-dark: #2a2131;
+        --photo-placeholder-fill-dark: #3d3248;
+        --photo-placeholder-line-dark: #51445e;
     }
 
     @media (prefers-color-scheme: dark) {
         :root:not([data-theme]) {
-            --photo-placeholder-bg: #2a2131;
-            --photo-placeholder-fill: #3d3248;
-            --photo-placeholder-line: #51445e;
+            --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
+            --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
+            --photo-placeholder-line: var(--photo-placeholder-line-dark);
         }
     }
 
     [data-theme='wishlist-dark'] {
-        --photo-placeholder-bg: #2a2131;
-        --photo-placeholder-fill: #3d3248;
-        --photo-placeholder-line: #51445e;
+        --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
+        --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
+        --photo-placeholder-line: var(--photo-placeholder-line-dark);
     }
 
     .sr-only {
@@ -39,9 +80,9 @@
         margin-top: 2rem;
         padding: 1.25rem 1.5rem 1.5rem;
         background: var(--tag);
-        border: 3px solid var(--ink);
-        border-radius: 22px;
-        box-shadow: 5px 5px 0 var(--ink);
+        border: var(--border-thick) solid var(--ink);
+        border-radius: var(--radius-hero);
+        box-shadow: var(--shadow-hard-lg);
         transform: rotate(-1.5deg);
     }
 
@@ -53,8 +94,8 @@
         width: 1.5rem;
         height: 1.5rem;
         background: var(--paper);
-        border: 3px solid var(--ink);
-        border-radius: 50%;
+        border: var(--border-thick) solid var(--ink);
+        border-radius: var(--radius-round);
     }
 
     .hero-string {
@@ -99,7 +140,7 @@
     }
 
     .hero-meta {
-        max-width: 65ch;
+        max-width: var(--measure);
         font-weight: 500;
     }
 
@@ -114,16 +155,16 @@
         padding: 2.5rem 1.25rem 1.25rem;
         background: var(--box);
         color: var(--on-box);
-        border: 2.5px solid var(--ink);
-        border-radius: 14px;
-        box-shadow: 3px 3px 0 var(--ink);
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-hard);
     }
 
     .envelope-flap {
         position: absolute;
         inset: 0 0 auto;
         height: 1.75rem;
-        border-radius: 11.5px 11.5px 0 0;
+        border-radius: var(--radius-card-inner) var(--radius-card-inner) 0 0;
         overflow: hidden;
     }
 
@@ -140,8 +181,8 @@
     }
 
     .envelope-flap::after {
-        top: -2.5px;
-        bottom: 2.5px;
+        top: calc(var(--border-regular) * -1);
+        bottom: var(--border-regular);
         background: var(--box);
     }
 
@@ -152,27 +193,27 @@
     }
 
     .envelope-text {
-        max-width: 65ch;
+        max-width: var(--measure);
         margin-top: 0.375rem;
     }
 
     .envelope-link {
         color: inherit;
         text-decoration: underline;
-        text-decoration-thickness: 1.5px;
-        text-underline-offset: 3px;
+        text-decoration-thickness: var(--underline-thickness);
+        text-underline-offset: var(--underline-offset);
     }
 
     .note {
         --notch: 1.25rem;
         position: relative;
-        filter: drop-shadow(3px 3px 0 var(--ink));
+        filter: drop-shadow(var(--shadow-hard));
     }
 
     .note-tag {
-        padding: 2.5px;
+        padding: var(--border-regular);
         background: var(--ink);
-        border-radius: 14px;
+        border-radius: var(--radius-card);
         clip-path: polygon(
             0 0,
             calc(100% - var(--notch)) 0,
@@ -188,7 +229,7 @@
         justify-items: start;
         padding: 1.25rem;
         background: var(--tag);
-        border-radius: 11.5px;
+        border-radius: var(--radius-card-inner);
         clip-path: polygon(
             0 0,
             calc(100% - var(--notch) + 1.5px) 0,
@@ -200,7 +241,7 @@
 
     .wish {
         --notch: 1rem;
-        --card-border: 2px;
+        --card-border: var(--border-thin);
         position: relative;
         min-width: 0;
         container-type: inline-size;
@@ -216,7 +257,7 @@
         overflow: hidden;
         background: var(--tag);
         border: var(--card-border) solid var(--ink);
-        border-radius: 12px;
+        border-radius: var(--radius-tile);
         clip-path: polygon(
             0 0,
             calc(100% - var(--notch)) 0,
@@ -296,7 +337,7 @@
         width: 4rem;
         height: 3.2rem;
         margin: auto;
-        background: color-mix(in srgb, var(--ink) 9%, var(--paper));
+        background: var(--photo-placeholder-heart);
         clip-path: path(
             'M32 50.2C3.7 34.2 0 9.5 16 3.4 24.6 0 30.8 5.2 32 12 33.2 5.2 39.4 0 48 3.4 64 9.5 60.3 34.2 32 50.2Z'
         );
@@ -315,12 +356,12 @@
         color: var(--text);
         background: var(--tag);
         border: var(--card-border) solid var(--ink);
-        border-radius: 999px;
+        border-radius: var(--radius-pill);
     }
 
     .wish-heart {
         position: absolute;
-        z-index: 1;
+        z-index: var(--z-raised);
         top: -1rem;
         left: -0.875rem;
         width: 2.75rem;
@@ -372,7 +413,7 @@
         font-weight: 700;
         line-height: 1.5;
         border: var(--card-border) solid var(--ink);
-        border-radius: 999px;
+        border-radius: var(--radius-pill);
     }
 
     .price::before {
@@ -384,7 +425,7 @@
         height: 0.625rem;
         background: var(--paper);
         border: var(--card-border) solid var(--ink);
-        border-radius: 50%;
+        border-radius: var(--radius-round);
         transform: translate(-50%, -50%);
     }
 
@@ -397,7 +438,7 @@
         display: inline-flex;
         align-self: flex-start;
         align-items: center;
-        min-height: 2.75rem;
+        min-height: var(--tap-size);
         max-width: 100%;
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem;
@@ -407,13 +448,13 @@
         text-wrap: balance;
         color: var(--on-button);
         background: var(--button);
-        border-radius: 8px;
+        border-radius: var(--radius-small);
         text-decoration: none;
     }
 
     .wish-link:hover {
         text-decoration: underline;
-        text-underline-offset: 3px;
+        text-underline-offset: var(--underline-offset);
     }
 
     .wish-details {
@@ -425,7 +466,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        min-height: 2.75rem;
+        min-height: var(--tap-size);
         font-size: 0.875rem;
         font-weight: 600;
         color: var(--heart-ink);
@@ -441,8 +482,8 @@
         content: '';
         width: 0.4375rem;
         height: 0.4375rem;
-        border-right: 2px solid currentColor;
-        border-bottom: 2px solid currentColor;
+        border-right: var(--border-thin) solid currentColor;
+        border-bottom: var(--border-thin) solid currentColor;
         transform: translateY(-2px) rotate(45deg);
     }
 
@@ -452,7 +493,7 @@
 
     .wish-details summary:hover {
         text-decoration: underline;
-        text-underline-offset: 3px;
+        text-underline-offset: var(--underline-offset);
     }
 
     @container (max-width: 15rem) {
@@ -485,13 +526,13 @@
         line-height: 1.25;
         color: var(--on-heart);
         background: var(--heart);
-        border: 2.5px solid var(--ink);
-        border-radius: 10px;
-        box-shadow: 3px 3px 0 var(--ink);
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-control);
+        box-shadow: var(--shadow-hard);
         text-decoration: none;
         transition:
-            transform 80ms ease-out,
-            box-shadow 80ms ease-out;
+            transform var(--motion-press),
+            box-shadow var(--motion-press);
     }
 
     .cta-text {
@@ -502,13 +543,11 @@
         flex: none;
         width: 1.75rem;
         height: 1.75rem;
-        color: #000000;
+        color: var(--on-heart);
     }
 
     .cta:focus-visible {
-        box-shadow:
-            0 0 0 2px var(--heart),
-            3px 3px 0 var(--ink);
+        box-shadow: var(--shadow-focus), var(--shadow-hard);
     }
 
     .envelope-link:focus-visible {
@@ -528,8 +567,8 @@
         font-size: 0.9375rem;
         font-weight: 500;
         color: var(--text);
-        border: 2px solid var(--ink);
-        border-radius: 999px;
+        border: var(--border-thin) solid var(--ink);
+        border-radius: var(--radius-pill);
         text-decoration: none;
     }
 

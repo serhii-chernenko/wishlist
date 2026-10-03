@@ -18,13 +18,28 @@ const GIFT_TAG_SOURCE = readSource('../src/web/styles/gift-tag.css');
 const APP_SOURCE = readSource('../src/app/styles/app.css');
 const MAX_PLACEHOLDER_BYTES = 8 * 1024;
 
-const readTokens = (block: string) => {
+const PLACEHOLDER_ROLES = ['bg', 'fill', 'line'] as const;
+
+const readPalette = (suffix: string) => {
+    return Object.fromEntries(
+        Array.from(
+            GIFT_TAG_SOURCE.matchAll(
+                new RegExp(
+                    `--photo-placeholder-(bg|fill|line)${suffix}: (#[0-9a-f]{6})`,
+                    'g'
+                )
+            )
+        ).map(([, name, value]) => [name, value])
+    );
+};
+
+const readDarkAliases = (block: string) => {
     return Object.fromEntries(
         Array.from(
             block.matchAll(
-                /--photo-placeholder-(bg|fill|line): (#[0-9a-f]{6})/g
+                /--photo-placeholder-(bg|fill|line): var\(--photo-placeholder-(?:bg|fill|line)-dark\);/g
             )
-        ).map(([, name, value]) => [name, value])
+        ).map(([, name]) => [name, true])
     );
 };
 
@@ -67,7 +82,6 @@ test('the logo silhouette is centered and covers 40% of the shorter side', () =>
 });
 
 test('the stylesheet tokens match the palettes used by the image', () => {
-    const lightBlock = /:root \{([^}]*)\}/.exec(GIFT_TAG_SOURCE)?.[1] ?? '';
     const darkBlock =
         /\[data-theme='wishlist-dark'\] \{([^}]*)\}/.exec(
             GIFT_TAG_SOURCE
@@ -86,10 +100,14 @@ test('the stylesheet tokens match the palettes used by the image', () => {
         fill: PLACEHOLDER_DARK.fill,
         line: PLACEHOLDER_DARK.line
     };
+    const everyRole = Object.fromEntries(
+        PLACEHOLDER_ROLES.map(role => [role, true])
+    );
 
-    assert.deepEqual(readTokens(lightBlock), expectedLight);
-    assert.deepEqual(readTokens(darkBlock), expectedDark);
-    assert.deepEqual(readTokens(mediaBlock), expectedDark);
+    assert.deepEqual(readPalette(''), expectedLight);
+    assert.deepEqual(readPalette('-dark'), expectedDark);
+    assert.deepEqual(readDarkAliases(darkBlock), everyRole);
+    assert.deepEqual(readDarkAliases(mediaBlock), everyRole);
 });
 
 test('broken photos never show their alt text on the share cards or in the app tiles', () => {

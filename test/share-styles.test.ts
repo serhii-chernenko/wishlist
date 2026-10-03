@@ -199,8 +199,9 @@ test('the shared partials are imported and own the font faces and tag primitives
 test('the focus ring outline stands out from every surface it sits on', () => {
     assert.match(
         STYLESHEET_SOURCE,
-        /:focus-visible \{\s*outline: 3px solid var\(--ink\);/
+        /:focus-visible \{\s*outline: var\(--focus-outline\);/
     );
+    assert.match(GIFT_TAG_SOURCE, /--focus-outline: 3px solid var\(--ink\);/);
     assert.match(
         GIFT_TAG_SOURCE,
         /\.envelope-link:focus-visible \{\s*outline-color: var\(--on-box\);/

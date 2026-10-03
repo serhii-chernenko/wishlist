@@ -12,6 +12,10 @@ const SHARE_SOURCE = readFileSync(
     new URL('../src/web/styles/share.css', import.meta.url),
     'utf8'
 );
+const GIFT_TAG_SOURCE = readFileSync(
+    new URL('../src/web/styles/gift-tag.css', import.meta.url),
+    'utf8'
+);
 const COMMITTED_STYLESHEET = readFileSync(
     new URL('../public/app/app.css', import.meta.url),
     'utf8'
@@ -240,8 +244,9 @@ test('the focus ring and outlines stand out from every surface', () => {
 
     assert.match(
         APP_SOURCE,
-        /:focus-visible \{\s*outline: 3px solid var\(--ink\);/
+        /:focus-visible \{\s*outline: var\(--focus-outline\);/
     );
+    assert.match(GIFT_TAG_SOURCE, /--focus-outline: 3px solid var\(--ink\);/);
 });
 
 test('safe areas, reduced motion and the compact grid are in the source', () => {
