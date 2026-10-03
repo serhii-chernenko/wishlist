@@ -8,17 +8,14 @@
     - en: The bot has moved to a new cloud infrastructure, so it is faster and more reliable. All wish lists and "I want to give" lists are safe.
     - pl: Bot przeniósł się do nowej infrastruktury w chmurze, więc działa szybciej i stabilniej. Wszystkie listy życzeń i listy „Chcę podarować” zostały zachowane.
 - [added] Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
-
-    🇺🇸 The bot now speaks English, Ukrainian and Polish: change the language with the 🌐 button or /lang.
-    🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku: zmień język przyciskiem 🌐 lub poleceniem /lang.
+  🇺🇸 The bot now speaks English, Ukrainian and Polish: change the language with the 🌐 button or /lang.
+  🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku: zmień język przyciskiem 🌐 lub poleceniem /lang.
     - en: The bot now speaks English, Ukrainian and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
-
-    🇺🇦 Бот тепер розмовляє українською, англійською та польською: мову можна змінити кнопкою 🌐 або командою /lang.
-    🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku: zmień język przyciskiem 🌐 lub poleceniem /lang.
+      🇺🇦 Бот тепер розмовляє українською, англійською та польською: мову можна змінити кнопкою 🌐 або командою /lang.
+      🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku: zmień język przyciskiem 🌐 lub poleceniem /lang.
     - pl: Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.
-
-    🇺🇸 The bot now speaks English, Ukrainian and Polish: change the language with the 🌐 button or /lang.
-    🇺🇦 Бот тепер розмовляє українською, англійською та польською: мову можна змінити кнопкою 🌐 або командою /lang.
+      🇺🇸 The bot now speaks English, Ukrainian and Polish: change the language with the 🌐 button or /lang.
+      🇺🇦 Бот тепер розмовляє українською, англійською та польською: мову можна змінити кнопкою 🌐 або командою /lang.
 
 - [added] Довгі списки бажань тепер розбиті на сторінки: кнопка «Показати ще» підвантажує наступні бажання.
     - en: Long wish lists are now split into pages: the "Show more" button loads the next wishes.

@@ -175,7 +175,7 @@ export const parseChangelog = (changelog: string) => {
         const previous = currentItem.translations[currentItem.target] ?? '';
 
         currentItem.translations[currentItem.target] =
-            `${previous}\n${line.replace(/^ {1,4}/, '')}`;
+            `${previous}\n${line.replace(/^ {1,6}/, '')}`;
     }
 
     flushRelease();
