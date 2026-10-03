@@ -166,7 +166,7 @@ test('every 2.0.0 changelog item is translated into English and Polish', () => {
     const release = releases.find(entry => entry.version === '2.0.0');
     const items = Object.values(release?.groups ?? {}).flat();
 
-    assert.equal(items.length, 12);
+    assert.equal(items.length, 15);
     assert.ok(items.every(item => item.uk && item.en && item.pl));
 });
 

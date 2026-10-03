@@ -1223,6 +1223,369 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Mini App",
+            "description": "Telegram Mini App (/app, /api/app, /img) in the production Wishlist service. Events carry closed labels only: no initData, Telegram ids, wish ids, public ids, queries or text.",
+            "widgets": [
+                {
+                    "title": "Sessions (7d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Sessions' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API 5xx (7d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS '5xx' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' AND status >= 500 SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Rate limited (7d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Rate limited' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_rate_limited' SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Sessions per day by platform",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET platform TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Start kinds",
+                    "layout": {
+                        "column": 7,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET startKind SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API requests by route and status",
+                    "layout": {
+                        "column": 1,
+                        "row": 8,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Requests' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' FACET route, status SINCE 1 day ago LIMIT 50"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API latency p50 / p95 by route (ms)",
+                    "layout": {
+                        "column": 7,
+                        "row": 8,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentile(elapsedMs, 50, 95) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' FACET route SINCE 1 day ago LIMIT 50"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "API 5xx per day by route",
+                    "layout": {
+                        "column": 1,
+                        "row": 13,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_api_completed' AND status >= 500 FACET route TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Auth rejections by reason",
+                    "layout": {
+                        "column": 7,
+                        "row": 13,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_auth_rejected' FACET reason SINCE 7 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Rate limited by bucket",
+                    "layout": {
+                        "column": 1,
+                        "row": 17,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_rate_limited' FACET bucket SINCE 7 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Rate limiter missing by bucket",
+                    "layout": {
+                        "column": 7,
+                        "row": 17,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_rate_limiter_missing' FACET bucket, result SINCE 7 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Actions by channel and action",
+                    "layout": {
+                        "column": 1,
+                        "row": 21,
+                        "width": 12,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Actions' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' FACET channel, action SINCE 7 days ago LIMIT 50"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Photo uploads by result",
+                    "layout": {
+                        "column": 1,
+                        "row": 26,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_photo_uploaded' FACET result SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Image proxy hit ratio by scope",
+                    "layout": {
+                        "column": 7,
+                        "row": 26,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE result = 'hit') AS 'Hit ratio' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'image_proxy_served' FACET scope SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Image proxy latency p50 / p95 by scope (ms)",
+                    "layout": {
+                        "column": 1,
+                        "row": 30,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentile(elapsedMs, 50, 95) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'image_proxy_served' FACET scope TIMESERIES SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Image proxy results per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 30,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'image_proxy_served' FACET result TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Client events by kind",
+                    "layout": {
+                        "column": 1,
+                        "row": 34,
+                        "width": 12,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' FACET kind, screen SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     ],
     "variables": []

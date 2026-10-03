@@ -68,6 +68,18 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 - Point the preview bot webhook at a branch preview with `pnpm preview:point` (it wraps `pnpm telegram:webhook:set:preview`) and restore it with `pnpm preview:reset`; see `docs/OPERATIONS.md`.
 - Previews run with `BOT_ENVIRONMENT="preview"`: no cron and no release broadcast.
 
+## Mini App
+
+- `src/app/logic/**` stays DOM-free and JSX-free: no `window`, `document` or `Telegram` references. It is the only client code that tests import.
+- `src/app/**` and `src/shared/**` never import `src/db`, `src/worker`, `src/api`, `telegraf`, `effect` or `drizzle-orm` (`test/app-boundaries.test.ts`).
+- No `style` props in app JSX. The CSP has no inline styles (`style-src 'self'`).
+- Never add an `index.html` under `public/app`; the Worker serves the shell at `/app`.
+- Never log initData, the `Authorization` header, owner tokens, signed image URLs or Telegram file URLs (`api.telegram.org/file/bot...`), and never return them to clients.
+- Telemetry attributes use closed labels only; never put wish ids, public ids, search queries or text in them.
+- Regenerate `public/app/*` and `public/styles/share.css` with `pnpm run app:build` and `pnpm run css:build` only; never edit them by hand.
+- Business rules stay in `src/bot/services` and `src/bot/input`; the API and the bot call the same code. A new feature needs both a bot change and an app change.
+- `.gitignore` is an allowlist: a new top-level source directory must be added there.
+
 ## Releases
 
 - `CHANGELOG.md` is the human-owned release history.

@@ -25,7 +25,7 @@ The step-by-step cutover, rollback and Workers Builds setup are in
 | Announcements     | None                                               | Cloudflare Queues, one job per registered non-blocked user, delivery held until after the go-live merge                          |
 | Deployment        | GitHub Actions to Ansible to the VPS               | GitHub Actions only validate and publish GitHub Releases; Workers Builds deploys production and creates previews                 |
 | Environments      | One production bot                                 | Production (`wishlist`, D1 `wishlist-production`), Worker Previews (D1 `wishlist-preview`, bot `@InevixTestBot`)                 |
-| Observability     | Console output                                     | evlog wide events to New Relic (`Log_wishlist` partition, one `Wishlist Bot` dashboard with four pages); Workers Logs everywhere |
+| Observability     | Console output                                     | evlog wide events to New Relic (`Log_wishlist` partition, one `Wishlist Bot` dashboard with five pages); Workers Logs everywhere |
 
 Decisions:
 
@@ -72,17 +72,18 @@ Decisions:
 ### Telegram Mini App (in 2.0.0)
 
 - [x] Plan approved (architecture, API, auth, photos, design system): [docs/plans/mini-app.md](./docs/plans/mini-app.md)
-- [ ] Auth: initData validation, per-user rate limiting
-- [ ] JSON API under /api/app for every bot feature
-- [ ] Photo proxy (token-safe getFile, R2 durable cache) for the app and share pages
-- [ ] Compact card grid for share pages and the app
-- [ ] Photo upload from the app
-- [ ] App UI: Tailwind + daisyUI with the gift-tag design system, Telegram theme, BackButton/MainButton, haptics
-- [ ] Screens: own list, wish editor, give list, search, other lists, share settings, payments, visibility, language, feedback, stats, donate
-- [ ] Bot entry points: "Open app" buttons, Main Mini App in BotFather, startapp deep links
+- [x] Auth: initData validation, per-user rate limiting (2026-10-03)
+- [x] JSON API under /api/app for every bot feature (2026-10-03)
+- [x] Photo proxy (token-safe getFile, R2 durable cache) for the app and share pages (2026-10-03)
+- [x] Compact card grid for share pages and the app (2026-10-03)
+- [x] Photo upload from the app (2026-10-03)
+- [x] App UI: Tailwind + daisyUI with the gift-tag design system, Telegram theme, BackButton/MainButton, haptics (2026-10-03)
+- [x] Screens: own list, wish editor, give list, search, other lists, share settings, payments, visibility, language, feedback, stats, donate (2026-10-03)
+- [x] Bot entry points: "Open app" buttons, `/app` command, startapp deep links, preview menu button (2026-10-03)
+- [ ] BotFather: Main Mini App for the preview bot and for production
 - [ ] Tests, review, security audit
 - [ ] Preview test on @InevixTestBot, production rollout
-- [ ] Docs and 2.0.0 changelog
+- [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
 ### Cutover
 
@@ -106,13 +107,14 @@ Decisions:
 Deferred security and robustness items (details in [docs/OPERATIONS.md](./docs/OPERATIONS.md#16-follow-ups)). None blocks the cutover.
 
 - [ ] M1. Separate admin secret for `/admin/release-broadcast` (princess parity).
-- [ ] M3. Per-user rate limiting.
+- [ ] M3. Per-user rate limiting for the bot webhook (done for the Mini App API).
 - [ ] Rate limiting for the public share routes.
 - [ ] Drop `users.telegraph_access_token` in 2.1 (deploy code without the column first, then migrate).
-- [ ] Share page images: an image proxy or R2 copies.
+- [ ] R2 orphan cleanup: photos removed from wishes stay in R2 (harmless, authorization-gated).
+- [ ] S2 and S3 device verification of `requestContact` and the photo file input.
 - [ ] Per-list OG images for share pages.
 - [ ] L1. Deferred low-severity audit item.
-- [ ] L2. Check traces and logs for the bot token in outgoing URLs.
+- [ ] L2. Check traces and logs for the bot token in outgoing URLs, including `getFile` downloads.
 - [ ] L4 to L9. Deferred low-severity audit items.
 - [ ] Guests lose an explicit language choice when their session row is pruned after 90 days.
 - [ ] Optionally raise the production webhook `max_connections` after a stable day.

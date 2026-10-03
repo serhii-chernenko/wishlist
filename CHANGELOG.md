@@ -16,6 +16,15 @@
 - [added] «Поділитися» тепер створює власну сторінку твого листа бажань на wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.
     - en: "Share" now creates your own wish list page on wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates itself after every change, it has a language switcher, and you can stop sharing at any time. Old telegra.ph pages stay but no longer update.
     - pl: „Udostępnij” tworzy teraz własną stronę twojej listy życzeń na wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane.
+- [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і позначати подарунки. Чат-бот працює як раніше, а дані спільні.
+    - en: Wishlist now has an app right inside Telegram: open it with the "Open the app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and mark gifts. The chat bot works as before, and both use the same data.
+    - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i zaznaczać prezenty. Bot w czacie działa jak dotąd, a dane są wspólne.
+- [added] Фото бажань тепер видно й на публічній сторінці листа бажань.
+    - en: Wish photos now appear on the public wish list page too.
+    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń.
+- [added] Зі сторінки листа бажань можна одразу відкрити його в Телеграмі й позначити, що хочеш подарувати.
+    - en: From a wish list page you can open the list in Telegram right away and mark what you want to give.
+    - pl: Ze strony listy życzeń możesz od razu otworzyć ją w Telegramie i zaznaczyć, co chcesz podarować.
 - [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
     - en: You can now support the author via Monobank, Ko-fi, PayPal or Revolut.
     - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.
