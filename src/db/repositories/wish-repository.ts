@@ -15,13 +15,33 @@ import {
 } from 'drizzle-orm';
 
 import type { AppDb } from '../client';
-import { gives, maximumWishImages, users, wishes } from '../schema';
+import {
+    gives,
+    maximumWishImages,
+    users,
+    wishes,
+    wishlistShares
+} from '../schema';
 import { createTryDb } from './try-db';
 
 export type WishRecord = typeof wishes.$inferSelect;
 export type WishFieldsPatch = Partial<
     Pick<WishRecord, 'title' | 'description' | 'link' | 'price'>
 >;
+
+export interface NewWishFields {
+    title: string;
+    description?: string | null;
+    link?: string | null;
+    price?: number;
+    priority?: boolean;
+    hidden?: boolean;
+}
+
+export interface WishFlags {
+    priority?: boolean;
+    hidden?: boolean;
+}
 
 export interface WishListOptions {
     filter: number | null;
@@ -92,6 +112,14 @@ const ownedAndActive = (wishId: number, userId: number) => {
     );
 };
 
+const imageSlotPath = (index: number) => {
+    return `$[${index}]`;
+};
+
+const isImageIndex = (index: number) => {
+    return Number.isSafeInteger(index) && index >= 0;
+};
+
 export const createWishRepository = (db: AppDb) => {
     return {
         create(userId: number, title: string, now: Date) {
@@ -101,6 +129,32 @@ export const createWishRepository = (db: AppDb) => {
                     .values({
                         userId,
                         title,
+                        createdAt: now,
+                        updatedAt: now
+                    })
+                    .returning();
+
+                return created ?? null;
+            });
+        },
+        createWithFields(userId: number, fields: NewWishFields, now: Date) {
+            return tryDb(async () => {
+                const [created] = await db
+                    .insert(wishes)
+                    .values({
+                        userId,
+                        title: fields.title,
+                        description: fields.description ?? null,
+                        link: fields.link ?? null,
+                        ...(fields.price === undefined
+                            ? {}
+                            : { price: fields.price }),
+                        ...(fields.priority === undefined
+                            ? {}
+                            : { priority: fields.priority }),
+                        ...(fields.hidden === undefined
+                            ? {}
+                            : { hidden: fields.hidden }),
                         createdAt: now,
                         updatedAt: now
                     })
@@ -265,6 +319,111 @@ export const createWishRepository = (db: AppDb) => {
                     .returning({ id: wishes.id });
 
                 return updated.length > 0;
+            });
+        },
+        setFlags(wishId: number, userId: number, flags: WishFlags, now: Date) {
+            return tryDb(async () => {
+                const changes: WishFlags = {
+                    ...(flags.priority === undefined
+                        ? {}
+                        : { priority: flags.priority }),
+                    ...(flags.hidden === undefined
+                        ? {}
+                        : { hidden: flags.hidden })
+                };
+
+                if (Object.keys(changes).length === 0) {
+                    const [current] = await db
+                        .select()
+                        .from(wishes)
+                        .where(ownedAndActive(wishId, userId))
+                        .limit(1);
+
+                    return current ?? null;
+                }
+
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ ...changes, updatedAt: now })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        removeImageAt(
+            wishId: number,
+            userId: number,
+            index: number,
+            expectedJson: string,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [updated] = await db
+                    .update(wishes)
+                    .set({
+                        images: sql`json_remove(${wishes.images}, ${imageSlotPath(index)})`,
+                        updatedAt: now
+                    })
+                    .where(
+                        and(
+                            ownedAndActive(wishId, userId),
+                            eq(wishes.images, expectedJson),
+                            sql`json_array_length(${wishes.images}) > ${index}`
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        findImageFileId(wishId: number, index: number) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [row] = await db
+                    .select({
+                        fileId: sql<
+                            string | null
+                        >`json_extract(${wishes.images}, ${imageSlotPath(index)})`
+                    })
+                    .from(wishes)
+                    .where(
+                        and(eq(wishes.id, wishId), eq(wishes.removed, false))
+                    )
+                    .limit(1);
+
+                return typeof row?.fileId === 'string' && row.fileId !== ''
+                    ? row.fileId
+                    : null;
+            });
+        },
+        findSharedWishImages(publicId: string, wishId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ images: wishes.images })
+                    .from(wishlistShares)
+                    .innerJoin(users, eq(users.id, wishlistShares.userId))
+                    .innerJoin(wishes, eq(wishes.userId, wishlistShares.userId))
+                    .where(
+                        and(
+                            eq(wishlistShares.publicId, publicId),
+                            isNull(wishlistShares.revokedAt),
+                            isNull(users.blockedAt),
+                            eq(wishes.id, wishId),
+                            eq(wishes.hidden, false),
+                            eq(wishes.removed, false)
+                        )
+                    )
+                    .limit(1);
+
+                return row?.images ?? null;
             });
         },
         appendImage(wishId: number, userId: number, fileId: string, now: Date) {

@@ -3,9 +3,14 @@ import type {
     UserRecord,
     WishFieldsPatch
 } from '../../db/repositories';
+import type {
+    NewWishFields,
+    WishFlags
+} from '../../db/repositories/wish-repository';
 import { WISHES_PAGE_SIZE } from '../content/pagination';
 import { toWishFilter } from '../content/filters';
 import type { WishFilter } from '../runtime/types';
+import { parseWishImages } from '../input/wish-images';
 import { runRepository } from './run-repository';
 
 type WishRepositories = Pick<Repositories, 'wishes' | 'users' | 'gives'>;
@@ -52,6 +57,11 @@ export const createWishService = (
                 repositories.wishes.create(userId, title, clock())
             );
         },
+        createWithFields(userId: number, fields: NewWishFields) {
+            return runRepository(
+                repositories.wishes.createWithFields(userId, fields, clock())
+            );
+        },
         updateFields(wishId: number, userId: number, patch: WishFieldsPatch) {
             return runRepository(
                 repositories.wishes.updateFields(wishId, userId, patch, clock())
@@ -66,6 +76,39 @@ export const createWishService = (
             return runRepository(
                 repositories.wishes.toggleHidden(wishId, userId, clock())
             );
+        },
+        setFlags(wishId: number, userId: number, flags: WishFlags) {
+            return runRepository(
+                repositories.wishes.setFlags(wishId, userId, flags, clock())
+            );
+        },
+        removeImageAt(
+            wishId: number,
+            userId: number,
+            index: number,
+            expectedJson: string
+        ) {
+            return runRepository(
+                repositories.wishes.removeImageAt(
+                    wishId,
+                    userId,
+                    index,
+                    expectedJson,
+                    clock()
+                )
+            );
+        },
+        findImageFileId(wishId: number, index: number) {
+            return runRepository(
+                repositories.wishes.findImageFileId(wishId, index)
+            );
+        },
+        async findSharedWishImages(publicId: string, wishId: number) {
+            const images = await runRepository(
+                repositories.wishes.findSharedWishImages(publicId, wishId)
+            );
+
+            return images === null ? null : parseWishImages(images);
         },
         async appendImage(
             wishId: number,

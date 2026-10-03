@@ -66,6 +66,26 @@ export const createShareService = (
         return runRepository(repositories.shares.findActiveByUserId(userId));
     };
 
+    const applyShowUsername = async (
+        user: Pick<UserRecord, 'id' | 'username' | 'usernameSearchable'>,
+        current: ShareRecord,
+        show: boolean
+    ): Promise<ShareUsernameOutcome | null> => {
+        if (show && !canShowPublicUsername(user)) {
+            return { share: current, changed: false };
+        }
+
+        if (current.showUsername === show) {
+            return { share: current, changed: false };
+        }
+
+        const share = await runRepository(
+            repositories.shares.setShowUsername(user.id, show, clock())
+        );
+
+        return share === null ? null : { share, changed: true };
+    };
+
     return {
         hasShareableWishes,
         getShare,
@@ -109,6 +129,18 @@ export const createShareService = (
         rotate(userId: number) {
             return runRepository(repositories.shares.rotate(userId, clock()));
         },
+        async setShowUsername(
+            user: Pick<UserRecord, 'id' | 'username' | 'usernameSearchable'>,
+            show: boolean
+        ): Promise<ShareUsernameOutcome | null> {
+            const current = await getShare(user.id);
+
+            if (current === null) {
+                return null;
+            }
+
+            return applyShowUsername(user, current, show);
+        },
         async toggleUsername(
             user: Pick<UserRecord, 'id' | 'username' | 'usernameSearchable'>
         ): Promise<ShareUsernameOutcome | null> {
@@ -118,17 +150,7 @@ export const createShareService = (
                 return null;
             }
 
-            const next = !current.showUsername;
-
-            if (next && !canShowPublicUsername(user)) {
-                return { share: current, changed: false };
-            }
-
-            const share = await runRepository(
-                repositories.shares.setShowUsername(user.id, next, clock())
-            );
-
-            return share === null ? null : { share, changed: true };
+            return applyShowUsername(user, current, !current.showUsername);
         }
     };
 };

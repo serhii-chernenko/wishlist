@@ -43,6 +43,11 @@ const expectedMethods: Record<string, string[]> = {
         'updateFields',
         'togglePriority',
         'toggleHidden',
+        'createWithFields',
+        'setFlags',
+        'removeImageAt',
+        'findImageFileId',
+        'findSharedWishImages',
         'appendImage',
         'clearImages',
         'softRemove',
@@ -56,6 +61,9 @@ const expectedMethods: Record<string, string[]> = {
         'markMediaGroup',
         'readMediaGroupMarker',
         'clearMediaGroup',
+        'clearWishReferences',
+        'setPendingContact',
+        'clearPendingContact',
         'pruneUpdatedBefore'
     ],
     telegramUpdates: [

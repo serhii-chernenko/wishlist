@@ -8,6 +8,7 @@ import {
     singleColumnKeyboard
 } from '../content/keyboards';
 import { PAYMENTS_MAX_LENGTH, truncateWithMark } from '../input/limits';
+import { isValidPayments } from '../input/payments';
 import { deriveRequest } from '../runtime/context';
 import type {
     BotRequest,
@@ -15,17 +16,9 @@ import type {
     PendingInput,
     ScreenModule
 } from '../runtime/types';
-import { countMeaningfulCharacters, escapeHtml } from '../utils/strings';
+import { escapeHtml } from '../utils/strings';
 import { getMessageText } from '../utils/telegram';
 import { screen as homeScreen } from './home';
-
-export const PAYMENTS_MIN_MEANINGFUL_CHARACTERS = 5;
-
-export const isValidPayments = (text: string) => {
-    return (
-        countMeaningfulCharacters(text) >= PAYMENTS_MIN_MEANINGFUL_CHARACTERS
-    );
-};
 
 const render = async (req: BotRequest) => {
     const { LL, user } = req;

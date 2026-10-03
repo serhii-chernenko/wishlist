@@ -84,7 +84,11 @@ const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
                 : INVALID;
         case 'contact':
             return value.authType === 'phone' || value.authType === 'both'
-                ? decoded({ kind: 'contact', authType: value.authType })
+                ? decoded({
+                      kind: 'contact',
+                      authType: value.authType,
+                      ...(value.via === 'app' ? { via: 'app' as const } : {})
+                  })
                 : INVALID;
         default:
             return INVALID;

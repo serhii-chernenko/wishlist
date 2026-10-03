@@ -6,6 +6,7 @@ import type { Context } from 'telegraf';
 import type { Message, User } from 'telegraf/types';
 
 import { getMessages } from '../src/bot/content/messages';
+import { isValidPayments } from '../src/bot/input/payments';
 import {
     createBotRequest,
     createSessionHolder
@@ -23,8 +24,7 @@ import {
     renderAuthDescription,
     screen as authScreen
 } from '../src/bot/screens/auth';
-import { renderAdminFeedback } from '../src/bot/screens/feedback';
-import { isValidPayments } from '../src/bot/screens/payments';
+import { renderAdminFeedback } from '../src/bot/services/feedback-service';
 import {
     createUserService,
     getVisibilityType,

@@ -1,37 +1,16 @@
-import type { Message, User } from 'telegraf/types';
+import type { Message } from 'telegraf/types';
 
-import { getAdminMessages } from '../content/messages';
 import { homeKeyboard } from '../content/keyboards';
 import { FEEDBACK_MAX_LENGTH } from '../input/limits';
-import { sendWithRetry } from '../runtime/send';
 import type {
     BotRequest,
     CallbackTable,
     PendingInput,
     ScreenModule
 } from '../runtime/types';
-import { getErrorType } from '../errors';
-import { escapeHtml } from '../utils/strings';
-import {
-    isTelegramBadRequest,
-    isTelegramForbidden
-} from '../utils/telegram-errors';
-import { formatUserName, getMessageText } from '../utils/telegram';
+import { deliver } from '../services/feedback-service';
+import { getMessageText } from '../utils/telegram';
 import { screen as homeScreen } from './home';
-
-export const formatFeedbackAuthor = (actor: User) => {
-    const name = formatUserName(actor, 'name');
-    const nick = actor.username ? `@${actor.username}` : null;
-
-    return nick && nick !== name ? `${name} ${nick}` : name;
-};
-
-export const renderAdminFeedback = (actor: User, text: string) => {
-    return getAdminMessages().feedback.message(
-        escapeHtml(formatFeedbackAuthor(actor)),
-        escapeHtml(text)
-    );
-};
 
 const render = async (req: BotRequest) => {
     const { LL } = req;
@@ -41,41 +20,6 @@ const render = async (req: BotRequest) => {
         LL.feedback.description.title() + LL.feedback.description.points(),
         homeKeyboard(LL)
     );
-};
-
-const deliverToAdmin = async (req: BotRequest, html: string) => {
-    const adminId = req.env.ADMIN_ID?.trim();
-
-    if (!adminId) {
-        console.warn(
-            JSON.stringify({
-                event: 'feedback_admin_missing',
-                outcome: 'skipped'
-            })
-        );
-        return true;
-    }
-
-    try {
-        await sendWithRetry(() => {
-            return req.ctx.telegram.sendMessage(adminId, html, {
-                parse_mode: 'HTML'
-            });
-        });
-    } catch (error) {
-        if (!isTelegramForbidden(error) && !isTelegramBadRequest(error)) {
-            throw error;
-        }
-
-        req.telemetry.internalFailure({
-            event: 'feedback_delivery_failed',
-            errorType: getErrorType(error)
-        });
-
-        return false;
-    }
-
-    return true;
 };
 
 const onInput = async (
@@ -98,14 +42,21 @@ const onInput = async (
         return;
     }
 
-    const delivered = await deliverToAdmin(
-        req,
-        renderAdminFeedback(req.actor, text)
+    const delivery = await deliver(
+        req.ctx.telegram,
+        req.env.ADMIN_ID,
+        req.actor,
+        text,
+        'bot'
     );
 
     req.setSession({ ...req.session, pendingInput: null });
 
-    if (!delivered) {
+    if (delivery.status === 'notDelivered') {
+        req.telemetry.internalFailure({
+            event: 'feedback_delivery_failed',
+            errorType: delivery.errorType
+        });
         await req.send.text(req.LL.errors.unknown());
         await homeScreen.render(req, undefined);
         return;

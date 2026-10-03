@@ -168,3 +168,68 @@ test('state is saved only when it changed', async () => {
         isSameSessionState(initial, { v: 1, pendingInput: null, find: null })
     );
 });
+
+test('the app contact intent keeps its via marker through a round trip', () => {
+    const state: SessionState = {
+        v: 1,
+        pendingInput: { kind: 'contact', authType: 'phone', via: 'app' },
+        find: null
+    };
+
+    assert.equal(
+        encodeSessionState(state),
+        '{"v":1,"pendingInput":{"kind":"contact","authType":"phone","via":"app"},"find":null}'
+    );
+    assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
+});
+
+test('contact inputs saved before the via marker still decode without it', () => {
+    const decoded = decodeSessionState(
+        '{"v":1,"pendingInput":{"kind":"contact","authType":"both"},"find":null}'
+    );
+
+    assert.deepEqual(decoded.pendingInput, {
+        kind: 'contact',
+        authType: 'both'
+    });
+    assert.equal(
+        encodeSessionState(decoded),
+        '{"v":1,"pendingInput":{"kind":"contact","authType":"both"},"find":null}'
+    );
+});
+
+test('unknown via markers are dropped instead of resetting the session', () => {
+    for (const via of ['"web"', '1', 'null', '{"x":1}', '"APP"']) {
+        const decoded = decodeSessionState(
+            `{"v":1,"pendingInput":{"kind":"contact","authType":"phone","via":${via}},"find":{"targetUserId":7,"query":"q","filter":null}}`
+        );
+
+        assert.deepEqual(
+            decoded.pendingInput,
+            { kind: 'contact', authType: 'phone' },
+            via
+        );
+        assert.deepEqual(decoded.find, {
+            targetUserId: 7,
+            query: 'q',
+            filter: null
+        });
+    }
+});
+
+test('via is ignored on pending inputs other than contact', () => {
+    const decoded = decodeSessionState(
+        '{"v":1,"pendingInput":{"kind":"feedback","via":"app"},"find":null}'
+    );
+
+    assert.deepEqual(decoded.pendingInput, { kind: 'feedback' });
+});
+
+test('an invalid auth type still resets the session even with via', () => {
+    assert.deepEqual(
+        decodeSessionState(
+            '{"v":1,"pendingInput":{"kind":"contact","authType":"username","via":"app"},"find":null}'
+        ),
+        DEFAULT_STATE
+    );
+});
