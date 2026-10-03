@@ -1,5 +1,4 @@
 import { useState } from 'hono/jsx/dom';
-import { Globe, Languages } from 'lucide';
 
 import type { AppLanguageChoice } from '../../shared/app-api';
 import { resolveSystemLocale } from '../i18n/system-texts';
@@ -11,6 +10,13 @@ import { haptics } from '../telegram/haptics';
 import { getLaunchContext } from '../telegram/sdk';
 import { ChoiceCards, type ChoiceOption } from '../ui/choice-cards';
 import { ScreenLayout } from '../ui/screen';
+
+const LANGUAGE_GLYPHS: Record<AppLanguageChoice, string> = {
+    uk: '🇺🇦',
+    en: '🇺🇸',
+    pl: '🇵🇱',
+    auto: '🎲'
+};
 
 export const LanguageScreen = (_props: ScreenProps<'language'>) => {
     const LL = useLL();
@@ -28,7 +34,7 @@ export const LanguageScreen = (_props: ScreenProps<'language'>) => {
             return choice === 'auto'
                 ? {
                       value: choice,
-                      icon: Globe,
+                      glyph: LANGUAGE_GLYPHS.auto,
                       title: LL.language.auto(),
                       hint: LL.language.autoHint({
                           language: LL.language.names[telegramLocale]()
@@ -36,7 +42,7 @@ export const LanguageScreen = (_props: ScreenProps<'language'>) => {
                   }
                 : {
                       value: choice,
-                      icon: Languages,
+                      glyph: LANGUAGE_GLYPHS[choice],
                       title: LL.language.native[choice]()
                   };
         }

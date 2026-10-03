@@ -5,6 +5,7 @@ export interface ChoiceOption<Value extends string> {
     value: Value;
     title: string;
     icon?: IconNode;
+    glyph?: string;
     hint?: string;
     disabled?: boolean;
 }
@@ -60,9 +61,13 @@ export const ChoiceCards = <Value extends string>({
                                 : 'choice-card'
                         }
                     >
-                        {option.icon === undefined ? null : (
+                        {option.icon !== undefined ? (
                             <Icon icon={option.icon} class='row-icon' />
-                        )}
+                        ) : option.glyph !== undefined ? (
+                            <span class='row-icon row-glyph' aria-hidden='true'>
+                                {option.glyph}
+                            </span>
+                        ) : null}
                         <span class='choice-body'>
                             <span class='choice-title'>{option.title}</span>
                             {option.hint === undefined ? null : (
