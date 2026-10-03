@@ -508,7 +508,7 @@ const en: Translation = {
         app: 'Open the app'
     },
     appEntry: {
-        text: '📱 The Wish list app opens right inside Telegram. It does everything the chat does: wishes with photos, finding friends’ lists and gifts.'
+        text: '📱 The Wish list app opens right inside Telegram. It does everything the chat does: add wishes with photos, find friends’ lists and pick gifts.'
     },
     app: {
         common: {
@@ -559,7 +559,7 @@ const en: Translation = {
             undoUnavailable: 'This action cannot be undone'
         },
         errors: {
-            generic: 'Something went wrong. Please try again.',
+            generic: 'Something went wrong. Try again.',
             network:
                 'Could not connect. Check your internet connection and try again.',
             unauthorized: 'Your session has expired. Open the app again.',
@@ -567,9 +567,9 @@ const en: Translation = {
             previewAccessDenied:
                 'This test version is available to the author only.',
             registrationRequired:
-                'First choose how others can find you, and everything will work.',
+                'Choose how others can find you first, then try again.',
             tokenInvalid:
-                'Access to this list is no longer valid. Find the person again.',
+                'You no longer have access to this list. Find the person again.',
             tokenExpired:
                 'Access to this list has expired. Find the person again.',
             notFound: 'This wish no longer exists.',
@@ -585,17 +585,17 @@ const en: Translation = {
             ownWish: 'You cannot give your own wish.',
             writeAccessRequired:
                 'Allow the bot to message you so it can save photos.',
-            payloadTooLarge: 'The file is too large.',
+            payloadTooLarge: 'The file is too large. Pick a smaller one.',
             unsupportedMedia:
                 'This format is not supported. Pick a JPEG, PNG or WebP photo.',
-            validation: 'Check the highlighted fields.',
+            validation: 'Fix the highlighted fields.',
             rateLimited:
                 'Too many actions in a row. Try again in {seconds} {{seconds:second|seconds}}.',
             upstream: 'Telegram is not responding right now. Try again later.',
             notDelivered: 'Could not send your feedback. Try again later.',
             disabled: 'The app is temporarily unavailable.',
-            internal: 'Something broke on our side. Please try again.',
-            notImplemented: 'This feature is still in progress.'
+            internal: 'Something broke on our side. Try again.',
+            notImplemented: 'This feature is not ready yet.'
         },
         fieldErrors: {
             required: 'This field is required.',
@@ -647,7 +647,7 @@ const en: Translation = {
         nav: {
             home: 'Home',
             wishes: 'My wishes',
-            gives: 'Gifts to give',
+            gives: 'I want to give',
             find: 'Find a list',
             share: 'Share',
             settings: 'Settings',
@@ -672,8 +672,8 @@ const en: Translation = {
                     text: 'Add and edit your wishes'
                 },
                 gives: {
-                    title: 'Gifts to give',
-                    text: 'Gifts you picked for others'
+                    title: 'I want to give',
+                    text: 'Wishes you plan to give'
                 },
                 find: {
                     title: 'Find a list',
@@ -703,7 +703,7 @@ const en: Translation = {
                     },
                     give: {
                         title: 'Friends pick a gift',
-                        text: 'Other givers see that a wish is already taken, but you don’t, so the surprise stays a surprise.'
+                        text: 'Friends see which wishes are already picked. You don’t, so the surprise stays a surprise.'
                     }
                 },
                 cta: 'Get started',
@@ -735,14 +735,14 @@ const en: Translation = {
             },
             clean: {
                 title: 'Clear your wish list?',
-                text: 'All wishes will be removed and will disappear from other people’s gift lists. This cannot be undone.',
+                text: 'All wishes will be removed and will disappear from other people’s “I want to give” lists. This cannot be undone.',
                 confirm: 'Clear',
                 success: 'Your wish list is cleared',
                 empty: 'Your wish list is already empty'
             },
             toasts: {
-                priorityOn: 'Marked as a top wish',
-                priorityOff: 'No longer a top wish',
+                priorityOn: 'Marked “Really want this”',
+                priorityOff: '“Really want this” removed',
                 hidden: 'Now only you can see this wish',
                 shown: 'Now others can see this wish'
             }
@@ -770,7 +770,7 @@ const en: Translation = {
                 placeholder: 'Details worth knowing'
             },
             price: {
-                label: 'Approximate price',
+                label: 'Estimated price',
                 hint: 'Just a number, in {currency}.',
                 placeholder: '1500'
             },
@@ -782,7 +782,7 @@ const en: Translation = {
             },
             priority: {
                 label: 'Really want this',
-                hint: 'Top wishes get a heart and come first.'
+                hint: 'These wishes get a heart and come first.'
             },
             hidden: {
                 label: 'Hide from others',
@@ -854,7 +854,7 @@ const en: Translation = {
             }
         },
         gives: {
-            title: 'Gifts to give',
+            title: 'I want to give',
             count: '{count} {{count:gift|gifts}}',
             empty: {
                 title: 'The list is empty',
@@ -865,10 +865,10 @@ const en: Translation = {
             others: 'Others who also want to give it: {count}',
             open: 'Open',
             remove: 'Don’t give',
-            removed: 'Removed from your gift list',
+            removed: 'Removed from “I want to give”',
             clean: {
                 action: 'Clear the list',
-                title: 'Clear your gift list?',
+                title: 'Clear your “I want to give” list?',
                 text: 'All the wishes you picked will disappear from this list.',
                 confirm: 'Clear',
                 success: 'The list is cleared'
@@ -911,8 +911,8 @@ const en: Translation = {
             },
             give: 'Give',
             take: 'Don’t give',
-            given: 'Added to your gift list',
-            taken: 'Removed from your gift list',
+            given: 'Added to “I want to give”',
+            taken: 'Removed from “I want to give”',
             viewOnly:
                 'You can only view this list. To pick a gift, find the person by username or phone number.',
             searchAgain: 'Find again',
@@ -937,11 +937,11 @@ const en: Translation = {
                 payments: 'your payment details, if you added them',
                 public: 'Anyone with the link can open the page, and it may appear in search engine results.',
                 private:
-                    'Your phone number and your gift list are never shown there.',
+                    'Your phone number and your “I want to give” list are never shown there.',
                 stop: 'You can stop sharing at any time.'
             },
             publish: 'Share',
-            published: 'Your page is ready',
+            published: 'You are now sharing your wish list',
             link: {
                 title: 'Your link',
                 copy: 'Copy',
@@ -1033,7 +1033,7 @@ const en: Translation = {
                 'Telegram will ask you to confirm that you share your number with the bot. No need to type it.',
             waiting: 'Waiting for your number…',
             cancelled: 'The number was not sent',
-            timeout: 'Your number never arrived. Please try again.',
+            timeout: 'Your number did not arrive. Try again.',
             success: {
                 guest: 'Done! People can find you now',
                 user: 'Visibility updated'
@@ -1077,8 +1077,8 @@ const en: Translation = {
         stats: {
             title: 'Statistics',
             users: 'Active users',
-            wishes: 'Wishes created of all time',
-            done: 'Wishes come true of all time'
+            wishes: 'Wishes created all time',
+            done: 'Wishes fulfilled all time'
         },
         donate: {
             title: 'Support the author',
@@ -1112,7 +1112,7 @@ const en: Translation = {
             },
             languages: {
                 title: 'Languages',
-                text: 'The app and the bot speak English, Ukrainian and Polish. If you’d like to help translate into another language, say so in your feedback.'
+                text: 'The app and the bot work in English, Ukrainian and Polish. If you’d like to help translate into another language, say so in your feedback.'
             },
             links: {
                 title: 'Links',

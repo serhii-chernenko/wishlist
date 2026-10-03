@@ -517,7 +517,7 @@ const pl: Translation = {
         app: 'Otwórz aplikację'
     },
     appEntry: {
-        text: '📱 Aplikacja Listy życzeń otwiera się bezpośrednio w Telegramie. Potrafi to samo co czat: życzenia ze zdjęciami, szukanie list znajomych i prezenty.'
+        text: '📱 Aplikacja „Lista życzeń” otwiera się bezpośrednio w Telegramie. Zrobisz w niej to samo co w czacie: dodasz życzenia ze zdjęciami, znajdziesz listy znajomych i wybierzesz prezenty.'
     },
     app: {
         common: {
@@ -577,7 +577,7 @@ const pl: Translation = {
             previewAccessDenied:
                 'Ta wersja testowa jest dostępna tylko dla autora.',
             registrationRequired:
-                'Najpierw wybierz, jak inni mają cię znajdować, a wszystko zadziała.',
+                'Najpierw wybierz, jak inni mają cię znajdować, a potem spróbuj ponownie.',
             tokenInvalid:
                 'Dostęp do tej listy jest już nieważny. Znajdź tę osobę ponownie.',
             tokenExpired:
@@ -595,12 +595,12 @@ const pl: Translation = {
             ownWish: 'Nie można podarować własnego życzenia.',
             writeAccessRequired:
                 'Pozwól botowi pisać do ciebie, aby mógł zapisywać zdjęcia.',
-            payloadTooLarge: 'Plik jest za duży.',
+            payloadTooLarge: 'Plik jest za duży. Wybierz mniejszy.',
             unsupportedMedia:
                 'Ten format nie jest obsługiwany. Wybierz zdjęcie JPEG, PNG lub WebP.',
-            validation: 'Sprawdź zaznaczone pola.',
+            validation: 'Popraw zaznaczone pola.',
             rateLimited:
-                'Za dużo działań naraz. Spróbuj ponownie za {seconds} {{seconds:|sekundę||sekundy|sekund|sekundy}}.',
+                'Za dużo działań w krótkim czasie. Spróbuj ponownie za {seconds} {{seconds:|sekundę||sekundy|sekund|sekundy}}.',
             upstream: 'Telegram teraz nie odpowiada. Spróbuj za chwilę.',
             notDelivered: 'Nie udało się wysłać opinii. Spróbuj za chwilę.',
             disabled: 'Aplikacja jest chwilowo niedostępna.',
@@ -662,7 +662,7 @@ const pl: Translation = {
             share: 'Udostępnij',
             settings: 'Ustawienia',
             visibility: 'Widoczność',
-            payments: 'Dane do przelewu',
+            payments: 'Dane płatnicze',
             language: 'Język',
             feedback: 'Opinia',
             stats: 'Statystyki',
@@ -715,7 +715,7 @@ const pl: Translation = {
                     },
                     give: {
                         title: 'Znajomi wybierają prezent',
-                        text: 'Inni darczyńcy widzą, że życzenie jest już wybrane, a ty nie, więc niespodzianka pozostaje niespodzianką.'
+                        text: 'Znajomi widzą, które życzenia są już wybrane. Ty nie, więc niespodzianka zostaje niespodzianką.'
                     }
                 },
                 cta: 'Zaczynamy',
@@ -753,8 +753,8 @@ const pl: Translation = {
                 empty: 'Lista życzeń jest już pusta'
             },
             toasts: {
-                priorityOn: 'Oznaczono jako bardzo chciane',
-                priorityOff: 'Usunięto oznaczenie „Bardzo chcę”',
+                priorityOn: 'Oznaczono „Bardzo chcę”',
+                priorityOff: 'Zdjęto oznaczenie „Bardzo chcę”',
                 hidden: 'Teraz to życzenie widzisz tylko ty',
                 shown: 'Teraz to życzenie widzą inni'
             }
@@ -782,7 +782,7 @@ const pl: Translation = {
                 placeholder: 'Szczegóły, które warto znać'
             },
             price: {
-                label: 'Przybliżona cena',
+                label: 'Orientacyjna cena',
                 hint: 'Tylko liczba, w walucie {currency}.',
                 placeholder: '1500'
             },
@@ -900,7 +900,7 @@ const pl: Translation = {
                 tooLong: 'Zapytanie jest za długie: maksymalnie {max} znaków.'
             },
             reasons: {
-                title: 'Dlaczego ktoś może się nie wyświetlać',
+                title: 'Dlaczego kogoś może nie być w wynikach',
                 notUser: 'Ta osoba jeszcze nie korzystała z bota.',
                 phoneHidden:
                     'Ta osoba nie udostępniła botowi numeru telefonu. Spróbuj wyszukać po nazwie użytkownika.'
@@ -944,17 +944,16 @@ const pl: Translation = {
                 title: 'Zanim udostępnisz',
                 lead: 'Bot utworzy publiczną stronę twojej listy życzeń na {host}. Będzie na niej:',
                 name: 'imię z twojego Telegrama: {name}',
-                username:
-                    'twoja @nazwa_użytkownika, tylko jeśli sam(a) ją włączysz',
+                username: 'twój @username, tylko jeśli go włączysz',
                 wishes: 'wszystkie życzenia poza ukrytymi',
-                payments: 'twoje dane do przelewu, jeśli je podano',
+                payments: 'twoje dane płatnicze, jeśli są dodane',
                 public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
                 private:
                     'Numer telefonu i lista „Chcę podarować” nigdy tam nie są pokazywane.',
                 stop: 'Udostępnianie możesz zakończyć w każdej chwili.'
             },
             publish: 'Udostępnij',
-            published: 'Strona jest gotowa',
+            published: 'Teraz udostępniasz swoją listę życzeń',
             link: {
                 title: 'Twój link',
                 copy: 'Kopiuj',
@@ -968,10 +967,10 @@ const pl: Translation = {
             pageEmpty:
                 'Strona jest teraz pusta: nie ma na niej widocznych życzeń. Pojawią się, gdy tylko je dodasz.',
             username: {
-                label: 'Pokazuj moją @nazwę_użytkownika',
+                label: 'Pokazuj mój @username',
                 hint: 'Znajomi będą mogli napisać do ciebie w Telegramie.',
-                shown: 'Twoja @nazwa_użytkownika jest teraz na stronie',
-                hidden: 'Twojej @nazwy_użytkownika nie ma już na stronie'
+                shown: 'Twój @username jest teraz na stronie',
+                hidden: 'Twojego @username nie ma już na stronie'
             },
             rotate: {
                 action: 'Nowy link',
@@ -989,25 +988,25 @@ const pl: Translation = {
             }
         },
         payments: {
-            title: 'Dane do przelewu',
+            title: 'Dane płatnicze',
             lead: 'Jeśli ktoś chce podarować ci coś z listy, ale nie może tego kupić, przeleje pieniądze na te dane.',
-            label: 'Dane do przelewu',
+            label: 'Dane płatnicze',
             hint: 'Skarbonka, numer karty, PayPal albo link do serwisu napiwków. Podaj tylko to, co chcesz pokazać innym.',
             placeholder: 'Na przykład link do skarbonki',
             preview: 'Tak zobaczą je inni',
-            empty: 'Nie podano jeszcze danych do przelewu.',
+            empty: 'Nie podano jeszcze danych płatniczych.',
             save: 'Zapisz',
-            saved: 'Zapisano dane do przelewu',
+            saved: 'Zapisano dane płatnicze',
             errors: {
                 tooShort: 'Za mało informacji: dodaj trochę więcej szczegółów.',
                 tooLong: 'Za dużo znaków: maksymalnie {max}.'
             },
             remove: {
-                action: 'Usuń dane do przelewu',
-                title: 'Usunąć dane do przelewu?',
+                action: 'Usuń dane płatnicze',
+                title: 'Usunąć dane płatnicze?',
                 text: 'Inni nie zobaczą ich już na twojej liście.',
                 confirm: 'Usuń',
-                success: 'Usunięto dane do przelewu'
+                success: 'Usunięto dane płatnicze'
             }
         },
         visibility: {
@@ -1090,8 +1089,8 @@ const pl: Translation = {
         stats: {
             title: 'Statystyki',
             users: 'Aktywni użytkownicy',
-            wishes: 'Utworzone życzenia od początku',
-            done: 'Spełnione życzenia od początku'
+            wishes: 'Utworzono życzeń łącznie',
+            done: 'Spełniono życzeń łącznie'
         },
         donate: {
             title: 'Wesprzyj autora',
@@ -1104,7 +1103,7 @@ const pl: Translation = {
         releases: {
             title: 'Co nowego',
             version: 'Wersja {version}',
-            date: 'Z dnia {date}',
+            date: 'Wydano {date}',
             empty: 'Na razie nie ma informacji o aktualizacjach.',
             showMore: 'Wcześniejsze wersje'
         },
@@ -1125,7 +1124,7 @@ const pl: Translation = {
             },
             languages: {
                 title: 'Języki',
-                text: 'Aplikacja i bot mówią po polsku, angielsku i ukraińsku. Jeśli chcesz pomóc w tłumaczeniu na inny język, napisz w opinii.'
+                text: 'Aplikacja i bot działają po polsku, angielsku i ukraińsku. Jeśli chcesz pomóc w tłumaczeniu na inny język, napisz w opinii.'
             },
             links: {
                 title: 'Linki',
@@ -1144,12 +1143,12 @@ const pl: Translation = {
                 app: 'Aplikacja'
             },
             visibility: 'Widoczność',
-            payments: 'Dane do przelewu',
+            payments: 'Dane płatnicze',
             language: 'Język',
             languageAuto: 'Automatycznie: {language}',
-            paymentsSet: 'Podano',
-            paymentsEmpty: 'Nie podano',
-            visibilityNone: 'Nie podano'
+            paymentsSet: 'Dodane',
+            paymentsEmpty: 'Nie dodano',
+            visibilityNone: 'Nie ustawiono'
         }
     }
 };
