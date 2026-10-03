@@ -829,6 +829,98 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(given.status, 200);
         });
 
+        it('previews the visible wishes with share image urls and no givers', async () => {
+            const viewer = await registerUser(VIEWER);
+
+            const owner = await registerUser(OWNER_A);
+            const plain = await addWish(owner.id, 'Plain');
+            const photo = await addWish(owner.id, 'Photo', { priority: true });
+            const hidden = await addWish(owner.id, 'Hidden', { hidden: true });
+            const removed = await addWish(owner.id, 'Removed');
+
+            await run(
+                harness.repositories.wishes.softRemove(
+                    removed.id,
+                    owner.id,
+                    false,
+                    NOW
+                )
+            );
+            await run(
+                harness.repositories.wishes.appendImage(
+                    photo.id,
+                    owner.id,
+                    'file-id-1',
+                    NOW
+                )
+            );
+            await run(harness.repositories.gives.add(viewer.id, plain.id, NOW));
+
+            const share = await publish(owner.id, 'Alice Liddell');
+            const response = await call(
+                VIEWER,
+                'GET',
+                `/shared/${share.publicId}`
+            );
+            const { preview } = (await response.json()) as SharedListDto;
+
+            assert.ok(preview);
+            assert.equal(preview.total, 2);
+            assert.equal(preview.nextOffset, null);
+            assert.deepEqual(
+                preview.items.map(item => {
+                    return item.title;
+                }),
+                ['Photo', 'Plain']
+            );
+            assert.equal(
+                preview.items.some(item => {
+                    return item.id === hidden.id || 'givers' in item;
+                }),
+                false
+            );
+
+            const [image] = preview.items[0]?.images ?? [];
+
+            assert.ok(image);
+            assert.equal(
+                image.url,
+                `/img/s/${share.publicId}/${photo.id}/0/${image.hash}`
+            );
+        });
+
+        it('pages the preview with offset and keeps it when the owner is not findable', async () => {
+            await registerUser(VIEWER);
+
+            const owner = await registerUser(OWNER_A, {
+                usernameSearchable: false
+            });
+
+            for (let index = 0; index <= APP_PAGE_SIZE; index += 1) {
+                await addWish(owner.id, `Wish ${index}`);
+            }
+
+            const share = await publish(owner.id, 'Alice Liddell');
+            const path = `/shared/${share.publicId}`;
+            const first = (await (
+                await call(VIEWER, 'GET', path)
+            ).json()) as SharedListDto;
+            const second = (await (
+                await call(VIEWER, 'GET', `${path}?offset=${APP_PAGE_SIZE}`)
+            ).json()) as SharedListDto;
+
+            assert.equal(first.owner.token, null);
+            assert.equal(first.preview?.items.length, APP_PAGE_SIZE);
+            assert.equal(first.preview?.total, APP_PAGE_SIZE + 1);
+            assert.equal(second.preview?.items.length, 1);
+            assert.equal(first.preview?.nextOffset, APP_PAGE_SIZE);
+            assert.equal(second.preview?.nextOffset, null);
+            assert.equal(
+                (await call(VIEWER, 'GET', `${path}?offset=-1`)).status,
+                422
+            );
+        });
+
         it('adds the username only when the owner switched it on and is searchable', async () => {
             await registerUser(VIEWER);
 

@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 
 import { toWishFilter } from '../../bot/content/filters';
+import { parseWishImages } from '../../bot/input/wish-images';
 import { isAdminActor } from '../../bot/runtime/context';
 import {
     createGiveService,
@@ -13,8 +14,10 @@ import {
     APP_PAGE_SIZE,
     type OwnerWishListDto,
     type SharedListDto,
+    type SharedWishDto,
     type ThirdWishDto
 } from '../../shared/app-api';
+import { buildShareImagePath } from '../../web/image-proxy/share-photos';
 import { normalizeSharePublicId } from '../../web/share/public-id';
 import {
     getSigner,
@@ -25,14 +28,16 @@ import {
 import {
     mintWishImages,
     toOwnerDto,
+    toImageHash,
     toPageDto,
     toThirdWishDto,
+    toVisibleWishDto,
     type ImageMintingContext
 } from '../dto';
 import { ApiError } from '../errors';
 import { readIdParam, readOffset, readOptionalQueryInteger } from '../validate';
+import { emitAppAction } from '../telemetry';
 import {
-    emitAppAction,
     getImageMintingContext,
     getPublicOwnerUsername,
     loadGivers
@@ -110,6 +115,32 @@ const toShareLabel = (input: {
     return name === '' ? `@${username}` : `${name} (@${username})`;
 };
 
+const toSharedWishItems = (
+    context: ImageMintingContext,
+    publicId: string,
+    wishes: readonly WishRecord[]
+): Promise<SharedWishDto[]> => {
+    return Promise.all(
+        wishes.map(async wish => {
+            const hashes = await Promise.all(
+                parseWishImages(wish.images).map(fileId => {
+                    return toImageHash(context.crypto, fileId);
+                })
+            );
+
+            return toVisibleWishDto(
+                wish,
+                hashes.map((hash, index) => {
+                    return {
+                        hash,
+                        url: buildShareImagePath(publicId, wish.id, index, hash)
+                    };
+                })
+            );
+        })
+    );
+};
+
 export const openSharedList: ApiHandler = async c => {
     const viewer = requireUser(c);
     const publicId = normalizeSharePublicId(c.req.param('publicId') ?? '');
@@ -140,6 +171,19 @@ export const openSharedList: ApiHandler = async c => {
     const token = isOwnerAvailableTo(c, viewer, owner)
         ? await mintOwnerToken(c, viewer, owner)
         : null;
+    const offset = readOffset(c);
+    const page = await Effect.runPromise(
+        repos.wishes.listVisibleOf(owner.id, {
+            filter: null,
+            offset,
+            limit: APP_PAGE_SIZE
+        })
+    );
+    const items = await toSharedWishItems(
+        getImageMintingContext(c),
+        share.publicId,
+        page.items
+    );
     const body: SharedListDto = {
         owner: toOwnerDto({
             owner,
@@ -150,7 +194,8 @@ export const openSharedList: ApiHandler = async c => {
                 owner
             }),
             source: 'share'
-        })
+        }),
+        preview: toPageDto(items, page.total, offset)
     };
 
     return c.json(body);

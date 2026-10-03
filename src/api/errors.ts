@@ -67,10 +67,6 @@ export const toApiErrorResponse = (error: unknown) => {
     return apiErrorResponse('internal');
 };
 
-export const notImplementedResponse = () => {
-    return apiErrorResponse('notImplemented');
-};
-
 export const readErrorCode = async (
     response: Response
 ): Promise<ApiErrorCode | null> => {

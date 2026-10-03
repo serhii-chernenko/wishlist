@@ -11,18 +11,10 @@ import type {
     ContactVisibilityType,
     LanguageResultDto
 } from '../../shared/app-api';
-import {
-    APP_API_TELEMETRY_PATH,
-    type TelemetryAction
-} from '../../worker/telemetry';
-import {
-    emitApiTelemetry,
-    requireUser,
-    type ApiContext,
-    type ApiHandler
-} from '../context';
+import { requireUser, type ApiContext, type ApiHandler } from '../context';
 import { getAppMessages, resolveRequestLocale, toMeDto } from '../dto';
 import { ApiError } from '../errors';
+import { emitAppAction } from '../telemetry';
 import { createBodyReader, readJsonBody, validationError } from '../validate';
 
 const LANGUAGE_CHOICES: readonly AppLanguageChoice[] = [
@@ -33,21 +25,6 @@ const LANGUAGE_CHOICES: readonly AppLanguageChoice[] = [
 ];
 
 const CONTACT_TYPES: readonly ContactVisibilityType[] = ['phone', 'both'];
-
-export const emitAppAction = (
-    c: ApiContext,
-    action: TelemetryAction,
-    result?: string
-) => {
-    emitApiTelemetry(c, {
-        event: 'bot_action_completed',
-        path: APP_API_TELEMETRY_PATH,
-        outcome: 'success',
-        channel: 'app',
-        action,
-        ...(result === undefined ? {} : { result })
-    });
-};
 
 export const loadSessionLanguage = async (
     c: ApiContext
@@ -108,7 +85,7 @@ export const setVisibility: ApiHandler = async c => {
     emitAppAction(
         c,
         result.created ? 'user_registered' : 'visibility_changed',
-        'username'
+        { result: 'username' }
     );
 
     return respondWithMe(c, result.user, sessionLanguage);
@@ -171,7 +148,7 @@ export const setLanguage: ApiHandler = async c => {
         messages: getAppMessages(locale)
     };
 
-    emitAppAction(c, 'language_changed', choice);
+    emitAppAction(c, 'language_changed', { result: choice });
 
     return c.json(body);
 };

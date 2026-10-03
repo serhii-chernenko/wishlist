@@ -9,7 +9,7 @@ import {
 } from '../context';
 import { ApiError } from '../errors';
 import { createBodyReader, readJsonBody } from '../validate';
-import { emitAppAction } from './me';
+import { emitAppAction } from '../telemetry';
 
 const reportDeliveryFailure = (c: ApiContext, errorType: string) => {
     emitApiTelemetry(c, {

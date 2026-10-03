@@ -6,7 +6,6 @@ import { Effect } from 'effect';
 import type { RateLimiterLike } from '../../src/api/rate-limit';
 import type { TelemetryFields } from '../../src/worker/telemetry';
 import {
-    API_ERROR_STATUS,
     APP_INIT_DATA_MAX_BYTES,
     type ApiErrorBody,
     type BootstrapDto

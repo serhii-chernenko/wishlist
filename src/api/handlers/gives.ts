@@ -14,11 +14,6 @@ import {
     type RemovedCountDto
 } from '../../shared/app-api';
 import {
-    APP_API_TELEMETRY_PATH,
-    type TelemetryAction
-} from '../../worker/telemetry';
-import {
-    emitApiTelemetry,
     getSigner,
     requireUser,
     type ApiContext,
@@ -31,24 +26,10 @@ import {
     type ImageMintingContext
 } from '../dto';
 import { ApiError } from '../errors';
+import { emitAppAction } from '../telemetry';
 import { readIdParam, readOffset } from '../validate';
 
 export type GiversLookup = ReadonlyMap<number, readonly number[]>;
-
-export const emitAppAction = (
-    c: ApiContext,
-    action: TelemetryAction,
-    result?: string
-) => {
-    emitApiTelemetry(c, {
-        event: 'bot_action_completed',
-        path: APP_API_TELEMETRY_PATH,
-        outcome: 'success',
-        channel: 'app',
-        action,
-        ...(result === undefined ? {} : { result })
-    });
-};
 
 export const getImageMintingContext = (c: ApiContext): ImageMintingContext => {
     return {

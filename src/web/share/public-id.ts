@@ -8,9 +8,6 @@ export const LANGUAGE_URL_SEGMENTS = {
     pl: 'pl'
 } as const satisfies Record<SharePageLanguage, string>;
 
-export type LanguageUrlSegment =
-    (typeof LANGUAGE_URL_SEGMENTS)[SharePageLanguage];
-
 export const LEGACY_UKRAINIAN_SEGMENT = 'uk';
 
 export const SHARE_PUBLIC_ID_PATTERN = /^[0-9a-hjkmnp-tv-z]{26}$/;

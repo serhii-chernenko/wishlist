@@ -5,7 +5,7 @@ import type { SearchInput, SearchResultDto } from '../../shared/app-api';
 import { requireUser, type ApiHandler } from '../context';
 import { toOwnerDto } from '../dto';
 import { createBodyReader, readJsonBody } from '../validate';
-import { emitAppAction } from './gives';
+import { emitAppAction } from '../telemetry';
 import { mintOwnerToken } from './lists';
 
 const countCodePoints = (value: string) => {
@@ -17,7 +17,7 @@ const respond = (
     result: SearchResultDto,
     telemetryResult: string
 ) => {
-    emitAppAction(c, 'wishlist_searched', telemetryResult);
+    emitAppAction(c, 'wishlist_searched', { result: telemetryResult });
 
     return c.json(result);
 };

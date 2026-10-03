@@ -19,9 +19,7 @@ import {
     type WishFilterDto,
     type WishListDto
 } from '../../shared/app-api';
-import type { TelemetryFields } from '../../worker/telemetry';
 import {
-    emitApiTelemetry,
     getSigner,
     requireUser,
     type ApiContext,
@@ -29,6 +27,7 @@ import {
 } from '../context';
 import { mintWishImages, toOwnWishDto, toPageDto } from '../dto';
 import { ApiError } from '../errors';
+import { emitAppAction } from '../telemetry';
 import {
     createBodyReader,
     readIdParam,
@@ -250,17 +249,6 @@ const getUpdatedFields = (input: WishInput): WishUpdateField[] => {
         });
 };
 
-const emitAppAction = (
-    c: ApiContext,
-    fields: Pick<TelemetryFields, 'action' | 'result' | 'field'>
-) => {
-    emitApiTelemetry(c, {
-        event: 'bot_action_completed',
-        channel: 'app',
-        ...fields
-    });
-};
-
 const toWishResponse = async (
     c: ApiContext,
     wish: WishRecord
@@ -340,8 +328,7 @@ export const setWishFilter: ApiHandler = async c => {
         throw new ApiError('internal');
     }
 
-    emitAppAction(c, {
-        action: 'wishlist_filtered',
+    emitAppAction(c, 'wishlist_filtered', {
         result: filter === null ? 'reset' : 'set'
     });
 
@@ -367,7 +354,7 @@ export const createWish: ApiHandler = async c => {
         throw new ApiError('internal');
     }
 
-    emitAppAction(c, { action: 'wish_created' });
+    emitAppAction(c, 'wish_created');
 
     return c.json(await toWishResponse(c, wish), CREATED);
 };
@@ -416,7 +403,7 @@ export const updateWish: ApiHandler = async c => {
     }
 
     for (const field of getUpdatedFields(input)) {
-        emitAppAction(c, { action: 'wish_updated', field });
+        emitAppAction(c, 'wish_updated', { field });
     }
 
     return c.json(await toWishResponse(c, wish));
@@ -435,8 +422,7 @@ export const removeWish: ApiHandler = async c => {
     }
 
     await clearSessionReferences(c, [wishId]);
-    emitAppAction(c, {
-        action: 'wish_removed',
+    emitAppAction(c, 'wish_removed', {
         result: done === true ? 'done' : 'dropped'
     });
 
@@ -449,7 +435,7 @@ export const cleanWishes: ApiHandler = async c => {
 
     if (removed > 0) {
         await clearSessionReferences(c, 'all');
-        emitAppAction(c, { action: 'wishlist_cleaned' });
+        emitAppAction(c, 'wishlist_cleaned');
     }
 
     const body: RemovedCountDto = { removed };

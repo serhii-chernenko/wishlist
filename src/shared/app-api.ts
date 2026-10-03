@@ -328,7 +328,12 @@ export type SearchResultDto =
     | { status: 'found'; owner: OwnerDto }
     | { status: 'notFound' | 'self' | 'tooLong' };
 
-export type SharedListDto = { owner: OwnerDto };
+export type SharedWishDto = Omit<ThirdWishDto, 'givers'>;
+
+export type SharedListDto = {
+    owner: OwnerDto;
+    preview: PageDto<SharedWishDto> | null;
+};
 
 export type OwnerWishListDto = PageDto<ThirdWishDto> & { owner: OwnerDto };
 
@@ -727,7 +732,11 @@ export interface AppApiEndpoints {
     removeGive: { query: null; body: null; response: NoContent };
     cleanGives: { query: null; body: null; response: RemovedCountDto };
     search: { query: null; body: SearchInput; response: SearchResultDto };
-    openSharedList: { query: null; body: null; response: SharedListDto };
+    openSharedList: {
+        query: OffsetQuery;
+        body: null;
+        response: SharedListDto;
+    };
     listOwnerWishes: {
         query: OwnerWishesQuery;
         body: null;

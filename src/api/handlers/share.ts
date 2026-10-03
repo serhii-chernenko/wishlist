@@ -11,7 +11,7 @@ import { requireUser } from '../context';
 import { toShareDto } from '../dto';
 import { ApiError } from '../errors';
 import { createBodyReader, readJsonBody, validationError } from '../validate';
-import { emitAppAction } from './me';
+import { emitAppAction } from '../telemetry';
 
 const SHARE_PAGE_FALLBACK_NAME = '—';
 
@@ -60,11 +60,9 @@ export const publishShare: ApiHandler = async c => {
         throw new ApiError('shareEmpty');
     }
 
-    emitAppAction(
-        c,
-        'wishlist_shared',
-        outcome.status === 'created' ? 'published' : 'existing'
-    );
+    emitAppAction(c, 'wishlist_shared', {
+        result: outcome.status === 'created' ? 'published' : 'existing'
+    });
 
     return respondWithShare(c, user);
 };
@@ -91,11 +89,9 @@ export const setShareUsername: ApiHandler = async c => {
     }
 
     if (outcome.changed) {
-        emitAppAction(
-            c,
-            'wishlist_share_username_toggled',
-            show ? 'on' : 'off'
-        );
+        emitAppAction(c, 'wishlist_share_username_toggled', {
+            result: show ? 'on' : 'off'
+        });
     }
 
     return respondWithShare(c, user);
@@ -109,7 +105,7 @@ export const rotateShare: ApiHandler = async c => {
         throw new ApiError('notShared');
     }
 
-    emitAppAction(c, 'wishlist_share_rotated', 'success');
+    emitAppAction(c, 'wishlist_share_rotated', { result: 'success' });
 
     return respondWithShare(c, user);
 };
@@ -119,7 +115,7 @@ export const stopShare: ApiHandler = async c => {
     const stopped = await getShareService(c).stop(user.id);
 
     if (stopped) {
-        emitAppAction(c, 'wishlist_share_stopped', 'success');
+        emitAppAction(c, 'wishlist_share_stopped', { result: 'success' });
     }
 
     return respondWithShare(c, user);
