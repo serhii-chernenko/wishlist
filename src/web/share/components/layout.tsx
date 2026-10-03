@@ -1,3 +1,4 @@
+import { getDataTheme, type WebTheme } from '../../theme';
 import type { Child } from 'hono/jsx';
 
 import { SHARE_PAGE_LANGUAGES, type SharePageLanguage } from '../public-id';
@@ -33,6 +34,7 @@ export interface PageLayoutProps {
     alternates?: PageAlternates;
     structuredData?: Readonly<Record<string, unknown>>;
     assetVersion: string;
+    theme?: WebTheme;
     children?: Child;
 }
 
@@ -181,7 +183,10 @@ const PageSocialMeta = ({
 
 export const PageLayout = (props: PageLayoutProps) => {
     return (
-        <html lang={props.language}>
+        <html
+            lang={props.language}
+            data-theme={getDataTheme(props.theme ?? 'system')}
+        >
             <PageHead
                 language={props.language}
                 title={props.title}

@@ -419,6 +419,12 @@ const en: Translation = {
         language: {
             label: 'Language'
         },
+        theme: {
+            label: 'Theme',
+            system: 'Match the system',
+            light: 'Light theme',
+            dark: 'Dark theme'
+        },
         notFound: {
             title: 'Page not found',
             description:
@@ -670,6 +676,7 @@ const en: Translation = {
             wishesCount: '{count} {{count:wish|wishes}}',
             givesCount: '{count} {{count:gift|gifts}} planned',
             addWish: 'Add a wish',
+            themeToggle: 'Theme: {current}. Change',
             tiles: {
                 wishes: {
                     title: 'My wishes',
@@ -1150,7 +1157,14 @@ const en: Translation = {
             languageAuto: 'Auto: {language}',
             paymentsSet: 'Added',
             paymentsEmpty: 'Not set',
-            visibilityNone: 'Not set'
+            visibilityNone: 'Not set',
+            theme: {
+                title: 'Theme',
+                system: 'Match Telegram',
+                systemHint: 'Light or dark, the same as Telegram right now.',
+                light: 'Light',
+                dark: 'Dark'
+            }
         }
     }
 };

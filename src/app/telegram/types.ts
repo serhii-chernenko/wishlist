@@ -91,6 +91,18 @@ export interface RequestContactResult {
     status: 'sent' | 'cancelled';
 }
 
+export interface WebAppCloudStorage {
+    setItem(
+        key: string,
+        value: string,
+        callback?: (error: string | null, stored?: boolean) => void
+    ): void;
+    getItem(
+        key: string,
+        callback: (error: string | null, value?: string) => void
+    ): void;
+}
+
 export interface WebApp {
     initData: string;
     initDataUnsafe: WebAppInitDataUnsafe;
@@ -108,6 +120,7 @@ export interface WebApp {
     BottomButton?: WebAppBottomButton;
     SettingsButton?: WebAppHeaderButton;
     HapticFeedback: WebAppHapticFeedback;
+    CloudStorage?: WebAppCloudStorage;
     isVersionAtLeast(version: string): boolean;
     setHeaderColor(color: string): void;
     setBackgroundColor(color: string): void;

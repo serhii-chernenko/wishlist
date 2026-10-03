@@ -1,3 +1,4 @@
+import type { WebTheme } from '../theme';
 import { getTranslator } from '../../bot/i18n';
 import { ErrorPage, getErrorPageTexts } from './components/error-page';
 import type { SharePageErrorKind } from './components/error-page';
@@ -104,6 +105,7 @@ export const renderHomePage = (model: HomePageModel) => {
             alternates={alternates}
             structuredData={buildHomeStructuredData(model, alternates)}
             assetVersion={model.assetVersion}
+            theme={model.theme ?? 'system'}
         >
             <HomePage model={model} />
         </PageLayout>
@@ -131,6 +133,7 @@ export const renderSharePage = (model: SharePageModel) => {
             indexable={model.indexable}
             alternates={buildAlternates(model)}
             assetVersion={model.assetVersion}
+            theme={model.theme ?? 'system'}
         >
             <SharePage model={model} />
         </PageLayout>
@@ -143,7 +146,9 @@ export const renderErrorPage = (
     language: SharePageLanguage,
     kind: SharePageErrorKind,
     botUrl: string,
-    assetVersion: string
+    assetVersion: string,
+    theme: WebTheme = 'system',
+    back = '/'
 ) => {
     const { title, description } = getErrorPageTexts(language, kind);
     const document = (
@@ -153,8 +158,15 @@ export const renderErrorPage = (
             description={description}
             indexable={false}
             assetVersion={assetVersion}
+            theme={theme}
         >
-            <ErrorPage language={language} kind={kind} botUrl={botUrl} />
+            <ErrorPage
+                language={language}
+                kind={kind}
+                botUrl={botUrl}
+                theme={theme}
+                back={back}
+            />
         </PageLayout>
     );
 

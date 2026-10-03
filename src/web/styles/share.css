@@ -17,23 +17,49 @@
     --heart-ink: #7a1040;
     --button: #000000;
     --on-button: #ffffff;
+    --paper-dark: #1a1220;
+    --tag-dark: #261b2e;
+    --ink-dark: #f1e3fb;
+    --text-dark: #fbf4ff;
+    --heart-dark: #f57aa6;
+    --on-heart-dark: #000000;
+    --box-dark: #2aabe2;
+    --on-box-dark: #000000;
+    --heart-ink-dark: #ffb3d0;
+    --button-dark: #f1e3fb;
+    --on-button-dark: #000000;
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme]) {
         color-scheme: dark;
-        --paper: #1a1220;
-        --tag: #261b2e;
-        --ink: #f1e3fb;
-        --text: #fbf4ff;
-        --heart: #f57aa6;
-        --on-heart: #000000;
-        --box: #2aabe2;
-        --on-box: #000000;
-        --heart-ink: #ffb3d0;
-        --button: #f1e3fb;
-        --on-button: #000000;
+        --paper: var(--paper-dark);
+        --tag: var(--tag-dark);
+        --ink: var(--ink-dark);
+        --text: var(--text-dark);
+        --heart: var(--heart-dark);
+        --on-heart: var(--on-heart-dark);
+        --box: var(--box-dark);
+        --on-box: var(--on-box-dark);
+        --heart-ink: var(--heart-ink-dark);
+        --button: var(--button-dark);
+        --on-button: var(--on-button-dark);
     }
+}
+
+[data-theme='wishlist-dark'] {
+    color-scheme: dark;
+    --paper: var(--paper-dark);
+    --tag: var(--tag-dark);
+    --ink: var(--ink-dark);
+    --text: var(--text-dark);
+    --heart: var(--heart-dark);
+    --on-heart: var(--on-heart-dark);
+    --box: var(--box-dark);
+    --on-box: var(--on-box-dark);
+    --heart-ink: var(--heart-ink-dark);
+    --button: var(--button-dark);
+    --on-button: var(--on-button-dark);
 }
 
 @layer base {
@@ -109,6 +135,48 @@
     .lang-switch [aria-current] {
         background: var(--button);
         color: var(--on-button);
+    }
+
+    .top-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .theme-switch ul {
+        display: inline-flex;
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-pill);
+        overflow: hidden;
+    }
+
+    .theme-switch a,
+    .theme-switch span {
+        display: inline-grid;
+        place-items: center;
+        min-width: 2.5rem;
+        min-height: 2.25rem;
+        color: var(--text);
+    }
+
+    .theme-switch li + li {
+        border-left: var(--border-regular) solid var(--ink);
+    }
+
+    .theme-switch a:focus-visible {
+        outline-offset: var(--focus-offset-inset);
+    }
+
+    .theme-switch [aria-current] {
+        background: var(--button);
+        color: var(--on-button);
+    }
+
+    .theme-icon {
+        width: 1.125rem;
+        height: 1.125rem;
     }
 
     .wishes {

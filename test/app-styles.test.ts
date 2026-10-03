@@ -23,8 +23,6 @@ const COMMITTED_STYLESHEET = readFileSync(
 
 const THEME_BLOCK_PATTERN = /@plugin 'daisyui\/theme' \{([^}]*)\}/g;
 const SHARE_LIGHT_PATTERN = /^:root \{([^}]*)\}/m;
-const SHARE_DARK_PATTERN =
-    /@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/;
 const BRIDGE_PATTERN = /^\[data-theme\] \{([^}]*)\}/m;
 
 const SHARE_TOKEN_BY_DAISY_COLOR = {
@@ -91,22 +89,32 @@ const readDaisyThemes = () => {
     );
 };
 
+const DARK_SUFFIX = '-dark';
+
+const splitShareTokens = (block: string) => {
+    const all = parseHexVariables(block, '');
+    const light = new Map<string, string>();
+    const dark = new Map<string, string>();
+
+    for (const [name, value] of all) {
+        if (name.endsWith(DARK_SUFFIX)) {
+            dark.set(name.slice(0, -DARK_SUFFIX.length), value);
+        } else {
+            light.set(name, value);
+        }
+    }
+
+    return { light, dark };
+};
+
 const readShareThemes = () => {
+    const { light, dark } = splitShareTokens(
+        SHARE_LIGHT_PATTERN.exec(SHARE_SOURCE)?.[1] ?? ''
+    );
+
     return new Map([
-        [
-            'wishlist',
-            parseHexVariables(
-                SHARE_LIGHT_PATTERN.exec(SHARE_SOURCE)?.[1] ?? '',
-                ''
-            )
-        ],
-        [
-            'wishlist-dark',
-            parseHexVariables(
-                SHARE_DARK_PATTERN.exec(SHARE_SOURCE)?.[1] ?? '',
-                ''
-            )
-        ]
+        ['wishlist', light],
+        ['wishlist-dark', dark]
     ]);
 };
 

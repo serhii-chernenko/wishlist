@@ -1400,6 +1400,24 @@ type RootTranslation = {
 			 */
 			label: string
 		}
+		theme: {
+			/**
+			 * Т​е​м​а
+			 */
+			label: string
+			/**
+			 * Я​к​ ​у​ ​с​и​с​т​е​м​і
+			 */
+			system: string
+			/**
+			 * С​в​і​т​л​а​ ​т​е​м​а
+			 */
+			light: string
+			/**
+			 * Т​е​м​н​а​ ​т​е​м​а
+			 */
+			dark: string
+		}
 		notFound: {
 			/**
 			 * С​т​о​р​і​н​к​у​ ​н​е​ ​з​н​а​й​д​е​н​о
@@ -2130,6 +2148,11 @@ type RootTranslation = {
 			 * Д​о​д​а​т​и​ ​б​а​ж​а​н​н​я
 			 */
 			addWish: string
+			/**
+			 * Т​е​м​а​:​ ​{​c​u​r​r​e​n​t​}​.​ ​З​м​і​н​и​т​и
+			 * @param {string} current
+			 */
+			themeToggle: RequiredParams<'current'>
 			tiles: {
 				wishes: {
 					/**
@@ -3590,6 +3613,28 @@ type RootTranslation = {
 			 * Н​е​ ​в​к​а​з​а​н​о
 			 */
 			visibilityNone: string
+			theme: {
+				/**
+				 * Т​е​м​а
+				 */
+				title: string
+				/**
+				 * Я​к​ ​у​ ​Т​е​л​е​г​р​а​м​і
+				 */
+				system: string
+				/**
+				 * С​в​і​т​л​а​ ​а​б​о​ ​т​е​м​н​а​,​ ​я​к​ ​з​а​р​а​з​ ​у​ ​Т​е​л​е​г​р​а​м​і​.
+				 */
+				systemHint: string
+				/**
+				 * С​в​і​т​л​а
+				 */
+				light: string
+				/**
+				 * Т​е​м​н​а
+				 */
+				dark: string
+			}
 		}
 	}
 }
@@ -4913,6 +4958,24 @@ export type TranslationFunctions = {
 			 */
 			label: () => LocalizedString
 		}
+		theme: {
+			/**
+			 * Тема
+			 */
+			label: () => LocalizedString
+			/**
+			 * Як у системі
+			 */
+			system: () => LocalizedString
+			/**
+			 * Світла тема
+			 */
+			light: () => LocalizedString
+			/**
+			 * Темна тема
+			 */
+			dark: () => LocalizedString
+		}
 		notFound: {
 			/**
 			 * Сторінку не знайдено
@@ -5630,6 +5693,10 @@ export type TranslationFunctions = {
 			 * Додати бажання
 			 */
 			addWish: () => LocalizedString
+			/**
+			 * Тема: {current}. Змінити
+			 */
+			themeToggle: (arg: { current: string }) => LocalizedString
 			tiles: {
 				wishes: {
 					/**
@@ -7050,6 +7117,28 @@ export type TranslationFunctions = {
 			 * Не вказано
 			 */
 			visibilityNone: () => LocalizedString
+			theme: {
+				/**
+				 * Тема
+				 */
+				title: () => LocalizedString
+				/**
+				 * Як у Телеграмі
+				 */
+				system: () => LocalizedString
+				/**
+				 * Світла або темна, як зараз у Телеграмі.
+				 */
+				systemHint: () => LocalizedString
+				/**
+				 * Світла
+				 */
+				light: () => LocalizedString
+				/**
+				 * Темна
+				 */
+				dark: () => LocalizedString
+			}
 		}
 	}
 }

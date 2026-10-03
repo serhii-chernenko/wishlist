@@ -758,6 +758,117 @@ describe('share page routes', () => {
         });
     });
 
+    it('keeps a separate page copy and ETag per chosen theme', async () => {
+        const { publicId } = await seedShare();
+        const system = await request(`/en/w/${publicId}`);
+        const dark = await request(`/en/w/${publicId}`, {
+            headers: { Cookie: 'theme=dark' }
+        });
+        const light = await request(`/en/w/${publicId}`, {
+            headers: { Cookie: 'other=1; theme=light' }
+        });
+        const bogus = await request(`/en/w/${publicId}`, {
+            headers: { Cookie: 'theme=sepia' }
+        });
+        const systemHtml = await system.text();
+        const darkHtml = await dark.text();
+
+        assert.doesNotMatch(systemHtml, /<html[^>]*data-theme/);
+        assert.match(darkHtml, /<html lang="en" data-theme="wishlist-dark">/);
+        assert.match(await light.text(), /data-theme="wishlist"/);
+        assert.equal(etagOf(bogus), etagOf(system));
+        assert.equal(new Set([system, dark, light].map(etagOf)).size, 3);
+        assert.equal(system.headers.get('Vary'), 'Cookie');
+        assert.equal(cache.putKeys.length, 3);
+
+        const reused = await request(`/en/w/${publicId}`, {
+            headers: { Cookie: 'theme=dark', 'If-None-Match': etagOf(dark) }
+        });
+        const crossTheme = await request(`/en/w/${publicId}`, {
+            headers: { 'If-None-Match': etagOf(dark) }
+        });
+
+        assert.equal(reused.status, 304);
+        assert.equal(crossTheme.status, 200);
+        assert.match(darkHtml, /<nav class="theme-switch" aria-label="Theme">/);
+        assert.match(
+            darkHtml,
+            /<span aria-current="true" aria-label="Dark theme"/
+        );
+        assert.match(
+            darkHtml,
+            new RegExp(
+                `href="/theme\\?set=system&amp;back=%2Fen%2Fw%2F${publicId}" rel="nofollow"`
+            )
+        );
+    });
+
+    it('sets or clears the theme cookie and sends the visitor back', async () => {
+        const dark = await request('/theme?set=dark&back=%2Fpl%2Fw%2Fabc');
+
+        assert.equal(dark.status, 303);
+        assert.equal(dark.headers.get('Location'), '/pl/w/abc');
+        assert.equal(
+            dark.headers.get('Set-Cookie'),
+            'theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; Secure'
+        );
+        assert.equal(dark.headers.get('Cache-Control'), 'private, no-store');
+
+        const system = await request('/theme?set=system&back=%2Fen');
+
+        assert.equal(system.headers.get('Location'), '/en');
+        assert.equal(
+            system.headers.get('Set-Cookie'),
+            'theme=; Max-Age=0; Path=/; SameSite=Lax; Secure'
+        );
+
+        const unknown = await request('/theme?set=neon&back=%2Fua');
+
+        assert.match(
+            unknown.headers.get('Set-Cookie') ?? '',
+            /^theme=; Max-Age=0/
+        );
+    });
+
+    it('never redirects the theme switch off-site', async () => {
+        for (const back of [
+            'https://evil.example/',
+            '//evil.example/x',
+            '/\\evil.example',
+            'javascript:alert(1)',
+            'ua',
+            '',
+            '/ua\n/x'
+        ]) {
+            const response = await request(
+                `/theme?set=light&back=${encodeURIComponent(back)}`
+            );
+
+            assert.equal(response.headers.get('Location'), '/', back);
+        }
+
+        const missing = await request('/theme?set=light');
+
+        assert.equal(missing.headers.get('Location'), '/');
+
+        const kept = await request(
+            `/theme?set=light&back=${encodeURIComponent('/ua/w/abc?x=1')}`
+        );
+
+        assert.equal(kept.headers.get('Location'), '/ua/w/abc?x=1');
+    });
+
+    it('renders error pages in the chosen theme with a switcher back to the same path', async () => {
+        const response = await request('/en/w/unknownid0000000000000000', {
+            headers: { Cookie: 'theme=dark' }
+        });
+        const html = await response.text();
+
+        assert.equal(response.status, 404);
+        assert.match(html, /data-theme="wishlist-dark"/);
+        assert.match(html, /back=%2Fen%2Fw%2Funknownid0000000000000000/);
+    });
+
     it('serves robots.txt per environment', async () => {
         const production = await request(`${CANONICAL_ORIGIN}/robots.txt`);
 
@@ -768,7 +879,7 @@ describe('share page routes', () => {
         );
         assert.equal(
             await production.text(),
-            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
+            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\nDisallow: /theme\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
         );
 
         for (const environment of ['preview', 'local']) {

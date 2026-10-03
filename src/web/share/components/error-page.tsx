@@ -2,6 +2,8 @@ import { getTranslator } from '../../../bot/i18n';
 import type { SharePageLanguage } from '../public-id';
 import { BotCallToAction } from './footer';
 import { HeroTag } from './hero';
+import { ThemeSwitcher } from './theme-switcher';
+import type { WebTheme } from '../../theme';
 
 export type SharePageErrorKind = 'notFound' | 'gone';
 
@@ -25,26 +27,35 @@ export const getErrorPageTexts = (
 export const ErrorPage = ({
     language,
     kind,
-    botUrl
+    botUrl,
+    theme,
+    back
 }: {
     language: SharePageLanguage;
     kind: SharePageErrorKind;
     botUrl: string;
+    theme: WebTheme;
+    back: string;
 }) => {
     const LL = getTranslator(language);
     const { title, description } = getErrorPageTexts(language, kind);
 
     return (
-        <main>
-            <HeroTag heading={<span class='hero-name'>{title}</span>}>
-                <p class='hero-meta'>{description}</p>
-            </HeroTag>
-            <p class='error-actions'>
-                <BotCallToAction
-                    botUrl={botUrl}
-                    label={LL.web.notFound.cta()}
-                />
-            </p>
-        </main>
+        <>
+            <div class='top-bar'>
+                <ThemeSwitcher language={language} theme={theme} back={back} />
+            </div>
+            <main>
+                <HeroTag heading={<span class='hero-name'>{title}</span>}>
+                    <p class='hero-meta'>{description}</p>
+                </HeroTag>
+                <p class='error-actions'>
+                    <BotCallToAction
+                        botUrl={botUrl}
+                        label={LL.web.notFound.cta()}
+                    />
+                </p>
+            </main>
+        </>
     );
 };

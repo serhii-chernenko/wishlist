@@ -44,6 +44,14 @@ import {
 } from './share/render';
 import { buildSitemap } from './share/sitemap';
 import type { SharePageModel, ShareWishView } from './share/view-model';
+import {
+    buildThemeCookie,
+    isWebTheme,
+    readThemeCookie,
+    themedFingerprint,
+    THEME_PATH,
+    toSafeBackPath
+} from './theme';
 
 export interface CacheLike {
     match(key: string): Promise<Response | undefined>;
@@ -202,7 +210,8 @@ const serveCachedHtml = async ({
             new Headers({
                 'Cache-Control': 'no-cache',
                 ETag: `"${fingerprint}"`,
-                'Content-Language': language
+                'Content-Language': language,
+                Vary: 'Cookie'
             })
         );
 
@@ -300,10 +309,10 @@ const servePage = async ({
     finish: FinishShareResponse;
 }) => {
     const deployId = getDeployId(c.env);
-    const fingerprint = await computeShareFingerprint(
-        deployId,
-        language,
-        share
+    const theme = readThemeCookie(c.req.header('Cookie'));
+    const fingerprint = themedFingerprint(
+        await computeShareFingerprint(deployId, language, share),
+        theme
     );
     const origin = new URL(c.req.url).origin;
     const indexable =
@@ -342,6 +351,7 @@ const servePage = async ({
             );
             const model: SharePageModel = {
                 language,
+                theme,
                 publicId: share.publicId,
                 origin,
                 assetVersion: deployId,
@@ -422,7 +432,9 @@ export const registerShareRoutes = (
                         errorLanguage,
                         kind,
                         c.env.WISHLIST_TG_URL,
-                        getDeployId(c.env)
+                        getDeployId(c.env),
+                        readThemeCookie(c.req.header('Cookie')),
+                        toSafeBackPath(new URL(c.req.url).pathname)
                     ),
                     { status, headers }
                 ),
@@ -539,7 +551,7 @@ export const registerShareRoutes = (
 
     app.get('/robots.txt', c => {
         const body = isProductionCanonicalHost(c.env, c.req.url)
-            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\nDisallow: ${APP_SHELL_PATH}\nDisallow: ${API_PATH_ROOT}\nDisallow: ${IMAGE_PATH_ROOT}\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
+            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\nDisallow: ${APP_SHELL_PATH}\nDisallow: ${API_PATH_ROOT}\nDisallow: ${IMAGE_PATH_ROOT}\nDisallow: ${THEME_PATH}\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
             : 'User-agent: *\nDisallow: /\n';
 
         return c.body(body, 200, {
@@ -586,6 +598,23 @@ export const registerHomeRoutes = (
     app: WorkerApp,
     dependencies: ShareRouteDependencies = {}
 ) => {
+    app.get(THEME_PATH, c => {
+        const requested = c.req.query('set');
+        const theme = isWebTheme(requested) ? requested : 'system';
+
+        return new Response(null, {
+            status: 303,
+            headers: withSecurityHeaders(
+                new Headers({
+                    Location: toSafeBackPath(c.req.query('back')),
+                    'Set-Cookie': buildThemeCookie(theme),
+                    'Cache-Control': NO_STORE,
+                    'X-Robots-Tag': NOINDEX
+                })
+            )
+        });
+    });
+
     app.get('/', c => {
         const language =
             matchAcceptLanguage(c.req.header('Accept-Language')) ??
@@ -616,7 +645,11 @@ export const registerHomeRoutes = (
             parseLanguageSegment(c.req.param('lang')) ?? DEFAULT_LANGUAGE;
         const deployId = getDeployId(c.env);
         const origin = new URL(c.req.url).origin;
-        const fingerprint = await computeHomeFingerprint(deployId, language);
+        const theme = readThemeCookie(c.req.header('Cookie'));
+        const fingerprint = themedFingerprint(
+            await computeHomeFingerprint(deployId, language),
+            theme
+        );
         const indexable = isProductionCanonicalHost(c.env, c.req.url);
         const { response } = await serveCachedHtml({
             c,
@@ -628,6 +661,7 @@ export const registerHomeRoutes = (
             render: () => {
                 return renderHomePage({
                     language,
+                    theme,
                     origin,
                     assetVersion: deployId,
                     indexable,

@@ -429,6 +429,12 @@ const uk: BaseTranslation = {
         language: {
             label: 'Мова'
         },
+        theme: {
+            label: 'Тема',
+            system: 'Як у системі',
+            light: 'Світла тема',
+            dark: 'Темна тема'
+        },
         notFound: {
             title: 'Сторінку не знайдено',
             description: 'Цього листа бажань не існує або посилання застаріло.',
@@ -680,6 +686,7 @@ const uk: BaseTranslation = {
             givesCount:
                 '{count:number} {{count:|подарунок||подарунки|подарунків|подарунка}} у планах',
             addWish: 'Додати бажання',
+            themeToggle: 'Тема: {current:string}. Змінити',
             tiles: {
                 wishes: {
                     title: 'Мої бажання',
@@ -1158,7 +1165,14 @@ const uk: BaseTranslation = {
             languageAuto: 'Автоматично: {language:string}',
             paymentsSet: 'Вказано',
             paymentsEmpty: 'Не вказано',
-            visibilityNone: 'Не вказано'
+            visibilityNone: 'Не вказано',
+            theme: {
+                title: 'Тема',
+                system: 'Як у Телеграмі',
+                systemHint: 'Світла або темна, як зараз у Телеграмі.',
+                light: 'Світла',
+                dark: 'Темна'
+            }
         }
     }
 };

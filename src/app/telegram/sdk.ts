@@ -10,6 +10,7 @@ const FEATURE_VERSIONS = {
     closingConfirmation: '6.2',
     headerColor: '6.9',
     writeAccess: '6.9',
+    cloudStorage: '6.9',
     contact: '6.9',
     settingsButton: '7.0',
     verticalSwipes: '7.7',

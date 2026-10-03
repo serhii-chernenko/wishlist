@@ -1,3 +1,4 @@
+import type { WebTheme } from '../theme';
 import type { SupportLink } from '../../bot/content/support-links';
 import type { SharePageLanguage } from './public-id';
 
@@ -19,6 +20,7 @@ export interface ShareWishView {
 
 export interface SharePageModel {
     language: SharePageLanguage;
+    theme?: WebTheme;
     publicId: string;
     origin: string;
     assetVersion: string;
@@ -37,6 +39,7 @@ export interface SharePageModel {
 
 export interface HomePageModel {
     language: SharePageLanguage;
+    theme?: WebTheme;
     origin: string;
     assetVersion: string;
     indexable: boolean;

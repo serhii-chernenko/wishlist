@@ -4,6 +4,7 @@ import type { HomePageModel } from '../view-model';
 import { BotCallToAction, EXTERNAL_LINK_REL, SupportSection } from './footer';
 import { HeroTag } from './hero';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeSwitcher } from './theme-switcher';
 import { TEXT_LINK_CLASS } from './link-classes';
 
 const STEP_KEYS = ['create', 'share', 'give'] as const;
@@ -137,7 +138,6 @@ const HomeFooter = ({ model }: { model: HomePageModel }) => {
             <BotCallToAction
                 botUrl={model.botUrl}
                 label={getHomeCallToActionLabel(model)}
-                logoIdPrefix='wl-footer-cta'
             />
             <SupportSection
                 language={model.language}
@@ -171,10 +171,17 @@ export const HomePage = ({ model }: { model: HomePageModel }) => {
 
     return (
         <>
-            <LanguageSwitcher
-                language={model.language}
-                pathFor={buildHomePath}
-            />
+            <div class='top-bar'>
+                <ThemeSwitcher
+                    language={model.language}
+                    theme={model.theme ?? 'system'}
+                    back={buildHomePath(model.language)}
+                />
+                <LanguageSwitcher
+                    language={model.language}
+                    pathFor={buildHomePath}
+                />
+            </div>
             <main>
                 <HeroTag
                     heading={

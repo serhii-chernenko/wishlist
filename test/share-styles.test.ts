@@ -22,8 +22,9 @@ const FONTS_SOURCE = readFileSync(
 );
 
 const LIGHT_TOKENS_PATTERN = /^:root \{([^}]*)\}/m;
-const DARK_TOKENS_PATTERN =
-    /@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/;
+const DARK_OVERRIDE_PATTERN =
+    /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \{([^}]*)\}/;
+const EXPLICIT_DARK_PATTERN = /^\[data-theme='wishlist-dark'\] \{([^}]*)\}/m;
 
 const parseTokens = (block: string) => {
     return new Map(
@@ -33,16 +34,26 @@ const parseTokens = (block: string) => {
     );
 };
 
+const DARK_SUFFIX = '-dark';
+
 const readThemes = () => {
+    const tokens = parseTokens(
+        LIGHT_TOKENS_PATTERN.exec(STYLESHEET_SOURCE)?.[1] ?? ''
+    );
+    const light = new Map<string, string>();
+    const dark = new Map<string, string>();
+
+    for (const [name, value] of tokens) {
+        if (name.endsWith(DARK_SUFFIX)) {
+            dark.set(name.slice(0, -DARK_SUFFIX.length), value);
+        } else {
+            light.set(name, value);
+        }
+    }
+
     return new Map([
-        [
-            'light',
-            parseTokens(LIGHT_TOKENS_PATTERN.exec(STYLESHEET_SOURCE)?.[1] ?? '')
-        ],
-        [
-            'dark',
-            parseTokens(DARK_TOKENS_PATTERN.exec(STYLESHEET_SOURCE)?.[1] ?? '')
-        ]
+        ['light', light],
+        ['dark', dark]
     ]);
 };
 
@@ -133,7 +144,11 @@ test('the page stylesheet is committed, self contained and CSP friendly', () => 
     assert.doesNotMatch(COMMITTED_STYLESHEET, /url\(\s*['"]?https?:/);
     assert.match(COMMITTED_STYLESHEET, /prefers-color-scheme:dark/);
     assert.match(COMMITTED_STYLESHEET, /--paper:#f1e3fb/);
-    assert.match(COMMITTED_STYLESHEET, /--paper:#1a1220/);
+    assert.match(COMMITTED_STYLESHEET, /--paper-dark:#1a1220/);
+    assert.match(
+        COMMITTED_STYLESHEET,
+        /\[data-theme=wishlist-dark\]\{color-scheme:dark;--paper:var\(--paper-dark\)/
+    );
 });
 
 test('every font face is self hosted from a committed woff2 file', () => {
@@ -215,6 +230,23 @@ test('the focus ring outline stands out from every surface it sits on', () => {
             assert.ok(
                 contrastRatio(ringColor, surfaceColor) >= NON_TEXT_CONTRAST,
                 `${name}: ${ring} on ${surface}`
+            );
+        }
+    }
+});
+
+test('system dark and the explicit dark theme map every token to its dark value', () => {
+    const light = readThemes().get('light') ?? new Map<string, string>();
+
+    for (const pattern of [DARK_OVERRIDE_PATTERN, EXPLICIT_DARK_PATTERN]) {
+        const block = pattern.exec(STYLESHEET_SOURCE)?.[1] ?? '';
+
+        assert.match(block, /color-scheme: dark;/);
+
+        for (const name of light.keys()) {
+            assert.ok(
+                block.includes(`--${name}: var(--${name}-dark);`),
+                `${pattern.source}: --${name}`
             );
         }
     }

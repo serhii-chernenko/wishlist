@@ -1,23 +1,23 @@
 import type { SupportLink } from '../../../bot/content/support-links';
 import { getTranslator, type AppLocale } from '../../../bot/i18n';
 import { TEXT_LINK_CLASS } from './link-classes';
-import { LogoMark } from './logo';
+import { HERO_LOGO_ID_PREFIX } from './hero';
+import { LogoReference } from './logo';
 
 export const EXTERNAL_LINK_REL = 'noopener noreferrer';
 const LEADING_EMOJI = /^[\p{Extended_Pictographic}️‍\s]+/u;
 
+/** Call to action that reuses the hero logo every page draws above it. */
 export const BotCallToAction = ({
     botUrl,
-    label,
-    logoIdPrefix = 'wl-cta'
+    label
 }: {
     botUrl: string;
     label: string;
-    logoIdPrefix?: string;
 }) => {
     return (
         <a class='cta' href={botUrl} rel={EXTERNAL_LINK_REL}>
-            <LogoMark idPrefix={logoIdPrefix} class='cta-logo' />
+            <LogoReference idPrefix={HERO_LOGO_ID_PREFIX} class='cta-logo' />
             <span>{label}</span>
         </a>
     );

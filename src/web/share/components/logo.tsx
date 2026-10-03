@@ -16,6 +16,25 @@ export const heartSymbolId = (idPrefix: string) => {
     return `${idPrefix}-heart`;
 };
 
+export const logoMarkId = (idPrefix: string) => {
+    return `${idPrefix}-mark`;
+};
+
+/** Repeats a logo already drawn on the page by `<use>`, so its path data is sent only once. */
+export const LogoReference = ({
+    idPrefix,
+    class: className
+}: {
+    idPrefix: string;
+    class: string;
+}) => {
+    return (
+        <svg class={className} viewBox={LOGO_VIEW_BOX} aria-hidden='true'>
+            <use href={`#${logoMarkId(idPrefix)}`} />
+        </svg>
+    );
+};
+
 export const LogoMark = ({
     idPrefix,
     class: className
@@ -28,24 +47,26 @@ export const LogoMark = ({
             <defs>
                 <path id={heartSymbolId(idPrefix)} d={HEART_PATH} />
             </defs>
-            <path d={LOGO_PATHS[0]} fill={LOGO_BOX_FILL} />
-            <path d={LOGO_PATHS[1]} fill={INK} />
-            <path d={LOGO_PATHS[2]} fill={LOGO_HEART_FILL} />
-            <path d={LOGO_PATHS[3]} fill={INK} />
-            <path
-                d={LOGO_PATHS[4]}
-                fill='none'
-                stroke={INK}
-                stroke-miterlimit={LOGO_STROKE_MITERLIMIT}
-                stroke-width={LOGO_STROKE_WIDTH}
-            />
-            <path
-                d={LOGO_PATHS[5]}
-                fill='none'
-                stroke={INK}
-                stroke-miterlimit={LOGO_STROKE_MITERLIMIT}
-                stroke-width={LOGO_STROKE_WIDTH}
-            />
+            <g id={logoMarkId(idPrefix)}>
+                <path d={LOGO_PATHS[0]} fill={LOGO_BOX_FILL} />
+                <path d={LOGO_PATHS[1]} fill={INK} />
+                <path d={LOGO_PATHS[2]} fill={LOGO_HEART_FILL} />
+                <path d={LOGO_PATHS[3]} fill={INK} />
+                <path
+                    d={LOGO_PATHS[4]}
+                    fill='none'
+                    stroke={INK}
+                    stroke-miterlimit={LOGO_STROKE_MITERLIMIT}
+                    stroke-width={LOGO_STROKE_WIDTH}
+                />
+                <path
+                    d={LOGO_PATHS[5]}
+                    fill='none'
+                    stroke={INK}
+                    stroke-miterlimit={LOGO_STROKE_MITERLIMIT}
+                    stroke-width={LOGO_STROKE_WIDTH}
+                />
+            </g>
         </svg>
     );
 };

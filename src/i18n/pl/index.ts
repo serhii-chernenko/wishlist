@@ -429,6 +429,12 @@ const pl: Translation = {
         language: {
             label: 'Język'
         },
+        theme: {
+            label: 'Motyw',
+            system: 'Jak w systemie',
+            light: 'Jasny motyw',
+            dark: 'Ciemny motyw'
+        },
         notFound: {
             title: 'Nie znaleziono strony',
             description:
@@ -683,6 +689,7 @@ const pl: Translation = {
             givesCount:
                 '{count} {{count:|prezent||prezenty|prezentów|prezentu}} w planach',
             addWish: 'Dodaj życzenie',
+            themeToggle: 'Motyw: {current}. Zmień',
             tiles: {
                 wishes: {
                     title: 'Moje życzenia',
@@ -1163,7 +1170,14 @@ const pl: Translation = {
             languageAuto: 'Automatycznie: {language}',
             paymentsSet: 'Dodane',
             paymentsEmpty: 'Nie dodano',
-            visibilityNone: 'Nie ustawiono'
+            visibilityNone: 'Nie ustawiono',
+            theme: {
+                title: 'Motyw',
+                system: 'Jak w Telegramie',
+                systemHint: 'Jasny lub ciemny, tak jak teraz w Telegramie.',
+                light: 'Jasny',
+                dark: 'Ciemny'
+            }
         }
     }
 };

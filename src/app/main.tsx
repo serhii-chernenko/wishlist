@@ -14,7 +14,11 @@ import {
     watchViewport
 } from './telegram/lifecycle';
 import { getLaunchContext, isSupportedClient } from './telegram/sdk';
-import { readColorScheme, watchTheme } from './telegram/theme';
+import {
+    getEffectiveScheme,
+    loadThemePreference,
+    watchTheme
+} from './telegram/theme';
 
 if (!Array.prototype.at) {
     Object.defineProperty(Array.prototype, 'at', {
@@ -83,7 +87,7 @@ const start = (container: HTMLElement) => {
             query: {
                 platform: launch.platform,
                 version: launch.version,
-                theme: readColorScheme(launch.webApp),
+                theme: getEffectiveScheme(launch.webApp),
                 ...(launch.startParam !== null && { start: launch.startParam })
             }
         });
@@ -124,6 +128,7 @@ const start = (container: HTMLElement) => {
     };
 
     watchTheme(launch.webApp);
+    void loadThemePreference();
     watchViewport();
     expandApp();
     connectBottomButton();

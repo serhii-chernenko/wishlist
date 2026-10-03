@@ -3,7 +3,15 @@ import { Eye, Info, Languages, Wallet } from 'lucide';
 import type { ScreenProps } from '../nav/routes';
 import { useLL, useNav, useSession } from '../state/context';
 import { haptics } from '../telegram/haptics';
+import {
+    THEME_PREFERENCES,
+    type ThemePreference
+} from '../logic/theme-preference';
+import { useStore } from '../state/store';
+import { setThemePreference, themePreference } from '../telegram/theme';
+import { ChoiceCards, type ChoiceOption } from '../ui/choice-cards';
 import { RowList, type RowListItem } from '../ui/row-list';
+import { THEME_ICONS } from '../ui/theme-toggle';
 import { ScreenLayout } from '../ui/screen';
 
 const SettingsGroup = ({
@@ -21,6 +29,38 @@ const SettingsGroup = ({
                 {title}
             </h2>
             <RowList items={items} />
+        </section>
+    );
+};
+
+const ThemeSettings = () => {
+    const LL = useLL();
+    const preference = useStore(themePreference);
+    const texts = LL.settings.theme;
+    const options: ChoiceOption<ThemePreference>[] = THEME_PREFERENCES.map(
+        value => {
+            return {
+                value,
+                title: texts[value](),
+                icon: THEME_ICONS[value],
+                ...(value === 'system' && { hint: texts.systemHint() })
+            };
+        }
+    );
+
+    return (
+        <section class='menu-group' aria-labelledby='settings-theme'>
+            <h2 id='settings-theme' class='menu-group-title'>
+                {texts.title()}
+            </h2>
+            <ChoiceCards
+                name='theme'
+                legend={texts.title()}
+                options={options}
+                value={preference}
+                variant='list'
+                onChange={setThemePreference}
+            />
         </section>
     );
 };
@@ -99,6 +139,7 @@ export const SettingsScreen = (_props: ScreenProps<'settings'>) => {
                 title={LL.settings.groups.app()}
                 items={appItems}
             />
+            <ThemeSettings />
         </ScreenLayout>
     );
 };

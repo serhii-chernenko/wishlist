@@ -1,4 +1,5 @@
 import type { SystemNoticeTexts } from '../i18n/system-texts';
+import { HeroTag } from './hero-tag';
 
 export interface SystemNoticeProps {
     screen: string;
@@ -16,10 +17,11 @@ export const SystemNotice = ({
 }: SystemNoticeProps) => {
     return (
         <main class='screen' data-screen={screen} aria-busy='false'>
-            <section class='hero system-hero'>
-                <h1 class='hero-title' tabindex={-1}>
-                    <span class='hero-name'>{texts.title}</span>
-                </h1>
+            <HeroTag
+                class='system-hero'
+                headingLevel='h1'
+                heading={<span class='hero-name'>{texts.title}</span>}
+            >
                 <p class='hero-meta'>{texts.text}</p>
                 {href === undefined ? (
                     <button
@@ -46,7 +48,7 @@ export const SystemNotice = ({
                         {texts.cta}
                     </a>
                 )}
-            </section>
+            </HeroTag>
         </main>
     );
 };

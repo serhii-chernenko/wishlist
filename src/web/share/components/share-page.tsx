@@ -13,6 +13,7 @@ import { EXTERNAL_LINK_REL, PageFooter } from './footer';
 import { HeroTag } from './hero';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeSwitcher } from './theme-switcher';
 import { ENVELOPE_LINK_CLASS, TEXT_LINK_CLASS } from './link-classes';
 import { WishCard } from './wish-card';
 
@@ -99,12 +100,19 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
 
     return (
         <>
-            <LanguageSwitcher
-                language={model.language}
-                pathFor={language => {
-                    return buildSharePath(model.publicId, language);
-                }}
-            />
+            <div class='top-bar'>
+                <ThemeSwitcher
+                    language={model.language}
+                    theme={model.theme ?? 'system'}
+                    back={buildSharePath(model.publicId, model.language)}
+                />
+                <LanguageSwitcher
+                    language={model.language}
+                    pathFor={language => {
+                        return buildSharePath(model.publicId, language);
+                    }}
+                />
+            </div>
             <main>
                 <ShareHero model={model} />
                 {model.payments ? (

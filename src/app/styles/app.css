@@ -117,6 +117,15 @@
     --animation-pulse: pulse-soft 1.4s ease-in-out infinite;
     --border-fine: 1.5px;
     --divider-width: 1px;
+    --row-title-line: 1.375rem;
+    --row-height: 3.25rem;
+    --row-height-primary: 3.5rem;
+    --row-icon-size: 1.5rem;
+    --row-badge-size: 2.25rem;
+    --row-badge-size-compact: 2rem;
+    --row-chevron-size: 1.25rem;
+    --row-radio-size: 1.5rem;
+    --hero-hole-clearance: 2.25rem;
     --opacity-muted: 0.6;
     --motion-switch: 120ms ease-out;
     --z-bar: 10;
@@ -1859,5 +1868,103 @@
 
     .editor-sheet .toggle-row:first-child {
         margin-top: 0;
+    }
+}
+
+@layer components {
+    .menu-row,
+    .choice-card,
+    .choice-group-list .choice-card {
+        align-items: flex-start;
+    }
+
+    .menu-row {
+        padding-block: calc((var(--row-height) - var(--row-title-line)) / 2);
+    }
+
+    .menu-list-primary .menu-row {
+        padding-block: calc(
+            (var(--row-height-primary) - var(--row-title-line)) / 2
+        );
+    }
+
+    .menu-row-label,
+    .row-label,
+    .row-value,
+    .choice-title {
+        line-height: var(--row-title-line);
+    }
+
+    .menu-icon,
+    .row-icon,
+    .menu-row-chevron,
+    .row-trailing,
+    .choice-card .choice-radio,
+    .choice-group-list .choice-radio {
+        flex: none;
+        align-self: flex-start;
+        margin-block: calc((var(--row-title-line) - var(--row-lead-size)) / 2);
+    }
+
+    .menu-icon {
+        --row-lead-size: var(--row-badge-size);
+    }
+
+    .menu-list-pairs .menu-icon {
+        --row-lead-size: var(--row-badge-size-compact);
+    }
+
+    .row-icon {
+        --row-lead-size: var(--row-icon-size);
+    }
+
+    .menu-row-chevron,
+    .row-trailing {
+        --row-lead-size: var(--row-chevron-size);
+    }
+
+    .choice-card .choice-radio,
+    .choice-group-list .choice-radio {
+        --row-lead-size: var(--row-radio-size);
+    }
+
+    .hero-title {
+        padding-inline-end: var(--hero-hole-clearance);
+    }
+
+    .menu-group .choice-group {
+        margin-top: 0.5rem;
+    }
+
+    .hero-theme {
+        position: absolute;
+        top: 0.875rem;
+        right: calc(var(--hero-hole-clearance) + 1.5rem);
+        display: grid;
+        place-items: center;
+        width: var(--tap-size);
+        height: var(--tap-size);
+        color: var(--text);
+        background: var(--paper);
+        border: var(--border-thin) solid var(--ink);
+        border-radius: var(--radius-round);
+        box-shadow: var(--shadow-hard-sm);
+        cursor: pointer;
+    }
+
+    .hero-theme .icon {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .hero-theme:active {
+        translate: 1px 1px;
+        box-shadow: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hero-theme:active {
+            translate: none;
+        }
     }
 }

@@ -1,3 +1,4 @@
+import { HeroTag } from '../share/components/hero';
 import type { SharePageLanguage } from '../share/public-id';
 import { FONT_PRELOAD_PATH } from '../share/components/layout';
 
@@ -145,10 +146,9 @@ const AppUnavailable = ({
             <AppHead assetVersion={assetVersion} />
             <body>
                 <main class='screen'>
-                    <section class='hero'>
-                        <h1 class='hero-title'>
-                            <span class='hero-name'>{texts.title}</span>
-                        </h1>
+                    <HeroTag
+                        heading={<span class='hero-name'>{texts.title}</span>}
+                    >
                         <p class='hero-meta'>{texts.text}</p>
                         <a
                             class='cta hero-action'
@@ -157,7 +157,7 @@ const AppUnavailable = ({
                         >
                             {texts.action}
                         </a>
-                    </section>
+                    </HeroTag>
                 </main>
             </body>
         </html>
