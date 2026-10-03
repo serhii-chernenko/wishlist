@@ -1,6 +1,11 @@
 import type { SupportLink } from '../../bot/content/support-links';
 import type { SharePageLanguage } from './public-id';
 
+export interface ShareWishPhoto {
+    url: string;
+    alt: string;
+}
+
 export interface ShareWishView {
     title: string;
     description: string | null;
@@ -9,6 +14,7 @@ export interface ShareWishView {
     priority: boolean;
     createdAt: Date;
     updatedAt: Date;
+    photos?: readonly ShareWishPhoto[];
 }
 
 export interface SharePageModel {

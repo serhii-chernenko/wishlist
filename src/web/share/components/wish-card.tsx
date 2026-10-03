@@ -7,14 +7,16 @@ import {
 import { cutDescription, cutTitle } from '../../../bot/input/limits';
 import { isRenderableLink } from '../../../bot/input/link';
 import { inlineMarkup } from '../inline-markup';
-import type { ShareWishView } from '../view-model';
+import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { HERO_LOGO_ID_PREFIX } from './hero';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
 import { heartSymbolId } from './logo';
+import { WISH_DETAILS_LABEL } from './pending-copy';
 
 const WWW_PREFIX = /^www\./;
 const HEART_HREF = `#${heartSymbolId(HERO_LOGO_ID_PREFIX)}`;
 const STICKER_VIEW_BOX = '-125 -124 250 206';
+const NO_PHOTOS: readonly ShareWishPhoto[] = [];
 
 export const getLinkHostname = (link: string) => {
     try {
@@ -42,6 +44,27 @@ const HeartSticker = () => {
     );
 };
 
+const WishCover = ({ photos }: { photos: readonly ShareWishPhoto[] }) => {
+    const [cover] = photos;
+
+    if (cover === undefined) {
+        return <div class='wish-photo' />;
+    }
+
+    const morePhotos = photos.length - 1;
+
+    return (
+        <div class='wish-photo'>
+            <img src={cover.url} alt={cover.alt} loading='lazy' />
+            {morePhotos > 0 ? (
+                <span class='wish-photo-count' aria-hidden='true'>
+                    +{morePhotos}
+                </span>
+            ) : null}
+        </div>
+    );
+};
+
 export const WishCard = ({
     wish,
     language,
@@ -59,48 +82,48 @@ export const WishCard = ({
         : null;
 
     return (
-        <li class={wish.priority ? 'wish wish-priority' : 'wish'}>
+        <li class='wish'>
             {wish.priority ? <HeartSticker /> : null}
             <article class='wish-tag'>
-                <div class='wish-body'>
-                    <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
-                    {wish.priority ? (
-                        <p class='sr-only'>{LL.web.wish.priority()}</p>
-                    ) : null}
-                    {wish.price > 0 ? (
-                        <p class='price'>
-                            <span class='sr-only'>{LL.web.wish.price()} </span>
-                            {formatPrice(wish.price, language, currency)}
-                        </p>
-                    ) : null}
+                <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
+                <WishCover photos={wish.photos ?? NO_PHOTOS} />
+                {wish.priority ? (
+                    <p class='sr-only'>{LL.web.wish.priority()}</p>
+                ) : null}
+                {wish.price > 0 ? (
+                    <p class='price'>
+                        <span class='sr-only'>{LL.web.wish.price()} </span>
+                        {formatPrice(wish.price, language, currency)}
+                    </p>
+                ) : null}
+                {hostname !== null && wish.link !== null ? (
+                    <a
+                        class='wish-link'
+                        href={wish.link}
+                        rel={OWNER_LINK_REL}
+                        target='_blank'
+                    >
+                        {LL.web.wish.link({ host: hostname })}
+                    </a>
+                ) : null}
+                <details class='wish-details'>
+                    <summary>{WISH_DETAILS_LABEL[language]}</summary>
                     {wish.description ? (
                         <p class='wish-text'>
                             <InlineContent
                                 nodes={inlineMarkup(
                                     cutDescription(wish.description),
-                                    {
-                                        emphasis: false
-                                    }
+                                    { emphasis: false }
                                 )}
                             />
                         </p>
-                    ) : null}
-                    {hostname !== null && wish.link !== null ? (
-                        <a
-                            class='wish-link'
-                            href={wish.link}
-                            rel={OWNER_LINK_REL}
-                            target='_blank'
-                        >
-                            {LL.web.wish.link({ host: hostname })}
-                        </a>
                     ) : null}
                     <p class='wish-dates'>
                         {created === updated
                             ? LL.web.wish.created({ date: created })
                             : LL.web.wish.updated({ created, updated })}
                     </p>
-                </div>
+                </details>
             </article>
         </li>
     );

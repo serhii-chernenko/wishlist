@@ -164,7 +164,7 @@ test('priority sticker, price chip and dates follow the page language', () => {
 
     assert.match(
         html,
-        /<li class="wish wish-priority"><svg class="wish-heart"[^>]*aria-hidden="true">/
+        /<li class="wish"><svg class="wish-heart"[^>]*aria-hidden="true">/
     );
     assert.match(html, /<p class="sr-only">Дуже хоче<\/p>/);
     assert.match(
@@ -178,7 +178,7 @@ test('regular wishes carry no priority sticker and free wishes no price chip', (
     const html = renderSharePage(buildModel());
 
     assert.match(html, /<li class="wish">/);
-    assert.doesNotMatch(html, /wish-heart|wish-priority|class="price"/);
+    assert.doesNotMatch(html, /wish-heart|class="price"/);
     assert.match(
         renderSharePage(buildModel({ wishes: [buildWish({ price: 99.5 })] })),
         /99\.50/
@@ -190,6 +190,66 @@ test('the updated date is hidden when it equals the created date', () => {
 
     assert.match(html, /<p class="wish-dates">Added 2 January 2026<\/p>/);
     assert.doesNotMatch(html, /updated 2 January 2026/);
+});
+
+test('wishes without photos show the heart placeholder instead of an image', () => {
+    const html = renderSharePage(buildModel());
+
+    assert.match(
+        html,
+        /<h2 class="wish-title">Coffee machine<\/h2><div class="wish-photo"><\/div>/
+    );
+    assert.doesNotMatch(html, /<img\b|wish-photo-count/);
+});
+
+test('the first photo is a lazy cover and the rest are counted on a badge', () => {
+    const photos = ['a', 'b', 'c'].map((hash, index) => {
+        return {
+            url: `/img/s/${hash}`,
+            alt: `Photo ${index + 1} of 3: "Coffee" <machine>`
+        };
+    });
+    const html = renderSharePage(
+        buildModel({
+            wishes: [
+                buildWish({ photos }),
+                buildWish({ title: 'Single', photos: photos.slice(0, 1) })
+            ]
+        })
+    );
+
+    assert.equal(html.match(/<img\b/g)?.length, 2);
+    assert.match(
+        html,
+        /<div class="wish-photo"><img src="\/img\/s\/a" alt="Photo 1 of 3: &quot;Coffee&quot; &lt;machine&gt;" loading="lazy"\/><span class="wish-photo-count" aria-hidden="true">\+2<\/span><\/div>/
+    );
+    assert.equal(html.match(/wish-photo-count/g)?.length, 1);
+    assert.doesNotMatch(html, /\/img\/s\/[bc]|wish-photo-empty/);
+});
+
+test('description and dates fold into a localized details disclosure', () => {
+    const labels = { uk: 'Детальніше', en: 'More details', pl: 'Szczegóły' };
+
+    for (const [language, label] of Object.entries(labels)) {
+        const html = renderSharePage(
+            buildModel({
+                language: language as keyof typeof labels,
+                wishes: [buildWish({ description: 'Blue one' })]
+            })
+        );
+
+        assert.match(
+            html,
+            new RegExp(
+                `<details class="wish-details"><summary>${label}</summary><p class="wish-text">Blue one</p><p class="wish-dates">[^<]+</p></details>`
+            )
+        );
+    }
+
+    assert.match(
+        renderSharePage(buildModel()),
+        /<details class="wish-details"><summary>More details<\/summary><p class="wish-dates">/
+    );
 });
 
 test('payments are shown once and cut to the payments cap', () => {
@@ -383,6 +443,30 @@ test('twenty maximum size wishes stay below 60 KB', () => {
     );
 
     assert.ok(Buffer.byteLength(html) < 60_000, `${Buffer.byteLength(html)}`);
+
+    const withPhotos = renderSharePage(
+        buildModel({
+            language: 'uk',
+            wishes: wishes.map((wish, index) => {
+                return {
+                    ...wish,
+                    photos: Array.from({ length: 9 }, (_, photo) => {
+                        return {
+                            url: `/img/s/${'f'.repeat(64)}`,
+                            alt: `Фото ${photo + 1} з 9, ${index}`
+                        };
+                    })
+                };
+            }),
+            visibleCount: 20,
+            payments: 'р'.repeat(1000)
+        })
+    );
+
+    assert.ok(
+        Buffer.byteLength(withPhotos) < 60_000,
+        `${Buffer.byteLength(withPhotos)}`
+    );
 });
 
 test('error pages are noindex, localized and carry no list data', () => {
