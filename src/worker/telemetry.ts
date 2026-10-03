@@ -54,6 +54,8 @@ export type TelemetryLocale = 'uk' | 'en' | 'pl' | 'auto';
 
 export const SHARE_PAGE_TELEMETRY_PATH = '/w/:publicId';
 
+export const HOME_PAGE_TELEMETRY_PATH = '/:lang';
+
 export type SharePageResult =
     | 'rendered'
     | 'cached'
@@ -125,12 +127,16 @@ type TelemetryFields = {
 
 const knownPaths = new Set([
     '/',
+    '/status',
     '/health',
     '/admin/release-broadcast',
-    '/robots.txt'
+    '/robots.txt',
+    '/sitemap.xml'
 ]);
 
-const sharePagePathPattern = /^(?:\/(?:uk|en|pl))?\/w(?:\/|$)/;
+const sharePagePathPattern = /^(?:\/(?:ua|uk|en|pl))?\/w(?:\/|$)/;
+
+const homePagePathPattern = /^\/(?:ua|uk|en|pl)\/?$/;
 
 const commandCategories = new Set(['start', 'lang', 'releases']);
 
@@ -224,6 +230,10 @@ export const normalizeTelemetryPath = (
 
     if (sharePagePathPattern.test(path)) {
         return SHARE_PAGE_TELEMETRY_PATH;
+    }
+
+    if (homePagePathPattern.test(path)) {
+        return HOME_PAGE_TELEMETRY_PATH;
     }
 
     return knownPaths.has(path) ? path : '/unknown';

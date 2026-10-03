@@ -1,9 +1,5 @@
 import { getTranslator } from '../../../bot/i18n';
-import {
-    buildSharePath,
-    SHARE_PAGE_LANGUAGES,
-    type SharePageLanguage
-} from '../public-id';
+import { SHARE_PAGE_LANGUAGES, type SharePageLanguage } from '../public-id';
 
 export const LANGUAGE_ENDONYMS = {
     uk: 'Українська',
@@ -19,10 +15,10 @@ export const LANGUAGE_SHORT_LABELS = {
 
 export const LanguageSwitcher = ({
     language,
-    publicId
+    pathFor
 }: {
     language: SharePageLanguage;
-    publicId: string;
+    pathFor: (language: SharePageLanguage) => string;
 }) => {
     const LL = getTranslator(language);
 
@@ -42,7 +38,7 @@ export const LanguageSwitcher = ({
                                 </span>
                             ) : (
                                 <a
-                                    href={buildSharePath(publicId, option)}
+                                    href={pathFor(option)}
                                     hreflang={option}
                                     lang={option}
                                     aria-label={`${LANGUAGE_ENDONYMS[option]} (${LANGUAGE_SHORT_LABELS[option]})`}

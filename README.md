@@ -27,7 +27,7 @@ The bot answers only in private chats.
 - **Find a wish list.** Search by `@username` or by phone number. Third-party lists can be filtered by price, and you can mark a wish as "I want to give".
 - **Visibility.** Choose whether others can find you by username, by phone number, or both.
 - **Payments requisites.** Add details (a Monobank jar, a card number, a PayPal contact, a Buymeacoffee link) for people who cannot give you a gift and would rather send money.
-- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results.
+- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results.
 - **Stats.** Active users, wishes created and wishes fulfilled all time.
 - **Donate.** Ways to support the project: Monobank, Ko-fi, PayPal and Revolut.
 - **Feedback.** Send a message to the author.
@@ -149,8 +149,8 @@ The `.dev.vars*` and `env/*` files hold secrets and are never committed. See the
 
 ```
 src/
-  worker/      Hono app, webhook route, health and admin routes, queues, cron tasks, telemetry
-  web/         Public share pages (Hono JSX): routes, rendering, page cache, fingerprint, Tailwind/daisyUI source in styles/
+  worker/      Hono app, webhook route, status, health and admin routes, queues, cron tasks, telemetry
+  web/         Public home and share pages (Hono JSX): routes, rendering, sitemap, page cache, fingerprint, Tailwind source in styles/
   bot/         Telegraf bot composition, router runtime, callback_data, screens, services,
                input validators, content (keyboards, markup, filters, support links)
   db/          Drizzle client, schemas (one file per table), repositories

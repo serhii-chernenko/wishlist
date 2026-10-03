@@ -52,6 +52,7 @@ export {
 const GH_PAGE_SIZE = 100;
 const MAX_PULL_REQUESTS_INSPECTED = 3;
 const SMOKE_COMMAND_TEXT = '/start';
+const STATUS_PATH = '/status';
 const PREVIEW_ENVIRONMENT_COMMANDS = ['wait', 'point', 'smoke', 'reset'];
 const buildCheckNamePattern = /workers builds/i;
 const previewUrlHeaderPattern = /^### Preview URL:\s*(\S+)/m;
@@ -916,7 +917,7 @@ const requestJson = async (
 };
 
 export interface ReadinessResult {
-    rootReady: boolean;
+    statusReady: boolean;
     healthReady: boolean;
     healthStatus: number | null;
 }
@@ -926,15 +927,19 @@ export const checkPreviewReadiness = async (
     origin: string,
     secret: string
 ): Promise<ReadinessResult> => {
-    const root = await requestJson(dependencies, `${origin}/`, {});
-    const rootReady =
-        root !== undefined &&
-        root.status === 200 &&
-        isRecord(root.body) &&
-        root.body.service === WORKER_NAME;
+    const status = await requestJson(
+        dependencies,
+        `${origin}${STATUS_PATH}`,
+        {}
+    );
+    const statusReady =
+        status !== undefined &&
+        status.status === 200 &&
+        isRecord(status.body) &&
+        status.body.service === WORKER_NAME;
 
-    if (!rootReady) {
-        return { rootReady, healthReady: false, healthStatus: null };
+    if (!statusReady) {
+        return { statusReady, healthReady: false, healthStatus: null };
     }
 
     const health = await requestJson(dependencies, `${origin}/health`, {
@@ -947,7 +952,7 @@ export const checkPreviewReadiness = async (
         health.body.ready === true;
 
     return {
-        rootReady,
+        statusReady,
         healthReady,
         healthStatus: health === undefined ? null : health.status
     };
@@ -967,25 +972,25 @@ export const waitForReadiness = async (
             origin,
             secret
         );
-        const summary = `${result.rootReady}:${result.healthReady}:${result.healthStatus}`;
+        const summary = `${result.statusReady}:${result.healthReady}:${result.healthStatus}`;
 
         if (summary !== lastSummary) {
             writeEvent(dependencies, {
                 event: 'preview_readiness',
-                rootReady: result.rootReady,
+                statusReady: result.statusReady,
                 healthReady: result.healthReady,
                 healthStatus: result.healthStatus
             });
             lastSummary = summary;
         }
 
-        if (result.rootReady && result.healthReady) {
+        if (result.statusReady && result.healthReady) {
             return;
         }
 
         if (dependencies.now() >= polling.deadline) {
             throw new PreviewOperatorError(
-                `Timed out waiting for the preview to become ready (root ok: ${result.rootReady}, last /health status: ${result.healthStatus ?? 'no response'}). Check the URL in the Workers Builds pull request comment and, if it differs, run pnpm telegram:webhook:set:preview --url <url> manually.`
+                `Timed out waiting for the preview to become ready (${STATUS_PATH} ok: ${result.statusReady}, last /health status: ${result.healthStatus ?? 'no response'}). Check the URL in the Workers Builds pull request comment and, if it differs, run pnpm telegram:webhook:set:preview --url <url> manually.`
             );
         }
 

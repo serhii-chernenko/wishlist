@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 
 import {
+    registerHomeRoutes,
     registerShareRoutes,
     type ShareRouteDependencies
 } from '../web/routes';
@@ -24,7 +25,7 @@ export const createApp = (
 ) => {
     const app = new Hono<{ Bindings: WorkerBindings }>();
 
-    app.get('/', c => {
+    app.get('/status', c => {
         return c.json({
             service: 'wishlist',
             runtime: 'cloudflare-workers',
@@ -39,6 +40,7 @@ export const createApp = (
         }),
         ...adminDependencies
     });
+    registerHomeRoutes(app, shareDependencies);
     registerShareRoutes(app, shareDependencies);
     registerTelegramRoutes(app, telegramDependencies);
 

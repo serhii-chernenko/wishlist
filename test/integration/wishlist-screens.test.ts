@@ -660,7 +660,7 @@ describe('wishlist screens on D1', () => {
             const requestSharePage = (publicId: string) => {
                 const app = createApp({}, {}, {});
 
-                return app.request(`/uk/w/${publicId}`, {}, {
+                return app.request(`/ua/w/${publicId}`, {}, {
                     ...harness.env,
                     BOT_ENVIRONMENT: 'production'
                 } as unknown as WorkerBindings);

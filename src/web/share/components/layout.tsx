@@ -31,9 +31,34 @@ export interface PageLayoutProps {
     description: string;
     indexable: boolean;
     alternates?: PageAlternates;
+    structuredData?: Readonly<Record<string, unknown>>;
     assetVersion: string;
     children?: Child;
 }
+
+const SCRIPT_BREAKING_CHARACTERS = /[<>&\u2028\u2029]/g;
+
+const escapeJsonForHtml = (value: unknown) => {
+    return JSON.stringify(value).replace(
+        SCRIPT_BREAKING_CHARACTERS,
+        character => {
+            return `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
+        }
+    );
+};
+
+const StructuredData = ({
+    data
+}: {
+    data: Readonly<Record<string, unknown>>;
+}) => {
+    return (
+        <script
+            type='application/ld+json'
+            dangerouslySetInnerHTML={{ __html: escapeJsonForHtml(data) }}
+        />
+    );
+};
 
 const PageHead = ({
     language,
@@ -41,6 +66,7 @@ const PageHead = ({
     description,
     indexable,
     alternates,
+    structuredData,
     assetVersion
 }: Omit<PageLayoutProps, 'children'>) => {
     return (
@@ -84,6 +110,7 @@ const PageHead = ({
                     alternates={alternates}
                 />
             ) : null}
+            {structuredData ? <StructuredData data={structuredData} /> : null}
             <link
                 rel='preload'
                 href={FONT_PRELOAD_PATH}
@@ -162,6 +189,9 @@ export const PageLayout = (props: PageLayoutProps) => {
                 indexable={props.indexable}
                 assetVersion={props.assetVersion}
                 {...(props.alternates && { alternates: props.alternates })}
+                {...(props.structuredData && {
+                    structuredData: props.structuredData
+                })}
             />
             <body>
                 <div class='shell'>{props.children}</div>

@@ -74,10 +74,10 @@ test('required worker configuration needs the three secrets and a known environm
     }
 });
 
-test('worker root identifies the wishlist service without exposing configuration', async () => {
+test('worker status identifies the wishlist service without exposing configuration', async () => {
     const app = createApp();
     const response = await app.request(
-        '/',
+        '/status',
         undefined,
         validConfiguration as unknown as WorkerBindings
     );

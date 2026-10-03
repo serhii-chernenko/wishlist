@@ -28,3 +28,15 @@ export interface SharePageModel {
     githubUrl: string;
     supportLinks: readonly SupportLink[];
 }
+
+export interface HomePageModel {
+    language: SharePageLanguage;
+    origin: string;
+    assetVersion: string;
+    indexable: boolean;
+    botUrl: string;
+    githubUrl: string;
+    authorUrl: string;
+    princessUrl: string;
+    supportLinks: readonly SupportLink[];
+}

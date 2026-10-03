@@ -17,18 +17,29 @@ import { getTranslator } from '../bot/i18n';
 import type { SharePageErrorKind } from './share/components/error-page';
 import { matchAcceptLanguage } from './share/accept-language';
 import {
+    computeHomeFingerprint,
     computeShareFingerprint,
     etagMatches,
     getDeployId,
     resolvePublicUsername
 } from './share/fingerprint';
 import {
+    buildHomePath,
     buildSharePath,
     CANONICAL_SHARE_HOST,
+    CANONICAL_SHARE_ORIGIN,
+    LANGUAGE_URL_SEGMENTS,
+    LEGACY_UKRAINIAN_SEGMENT,
     normalizeSharePublicId,
+    parseLanguageSegment,
     type SharePageLanguage
 } from './share/public-id';
-import { renderErrorPage, renderSharePage } from './share/render';
+import {
+    renderErrorPage,
+    renderHomePage,
+    renderSharePage
+} from './share/render';
+import { buildSitemap } from './share/sitemap';
 import type { SharePageModel } from './share/view-model';
 
 export interface CacheLike {
@@ -47,6 +58,10 @@ export const SHARE_CACHE_MAX_AGE_SECONDS = 86_400;
 export const SHARE_CACHE_PATH_PREFIX = '/__share-cache';
 
 const DEFAULT_LANGUAGE: SharePageLanguage = 'uk';
+const PERMANENT_REDIRECT_MAX_AGE_SECONDS = 86_400;
+const HOME_CACHE_SEGMENT = 'home';
+const SITEMAP_PATH = '/sitemap.xml';
+const LANGUAGE_SEGMENT_PATTERN = `(?:${Object.values(LANGUAGE_URL_SEGMENTS).join('|')})`;
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const NO_STORE = 'private, no-store';
 const NOINDEX = 'noindex';
@@ -91,6 +106,19 @@ const withSecurityHeaders = (headers: Headers) => {
     }
 
     return headers;
+};
+
+const permanentRedirect = (location: string) => {
+    return new Response(null, {
+        status: 301,
+        headers: withSecurityHeaders(
+            new Headers({
+                Location: location,
+                'Cache-Control': `public, max-age=${PERMANENT_REDIRECT_MAX_AGE_SECONDS}`,
+                'X-Robots-Tag': NOINDEX
+            })
+        )
+    });
 };
 
 const isProductionCanonicalHost = (env: WorkerBindings, requestUrl: string) => {
@@ -141,29 +169,29 @@ type FinishShareResponse = (
     cacheOutcome: ShareCacheOutcome
 ) => Response;
 
-const servePage = async ({
+type CachedHtmlResult = 'notModified' | 'cached' | 'rendered';
+
+const serveCachedHtml = async ({
     c,
     language,
-    share,
-    repositories,
+    fingerprint,
+    cacheKey,
+    indexable,
     cache,
-    finish
+    render
 }: {
     c: ShareContext;
     language: SharePageLanguage;
-    share: PublicShareFingerprint;
-    repositories: Repositories;
+    fingerprint: string;
+    cacheKey: string;
+    indexable: boolean;
     cache: CacheLike | null;
-    finish: FinishShareResponse;
-}) => {
-    const deployId = getDeployId(c.env);
-    const fingerprint = await computeShareFingerprint(
-        deployId,
-        language,
-        share
-    );
-    const indexable =
-        isProductionCanonicalHost(c.env, c.req.url) && share.visibleCount > 0;
+    render: () => Promise<string> | string;
+}): Promise<{
+    response: Response;
+    result: CachedHtmlResult;
+    cacheOutcome: ShareCacheOutcome;
+}> => {
     const baseHeaders = () => {
         const headers = withSecurityHeaders(
             new Headers({
@@ -181,20 +209,16 @@ const servePage = async ({
     };
 
     if (etagMatches(c.req.header('If-None-Match'), fingerprint)) {
-        return finish(
-            new Response(null, { status: 304, headers: baseHeaders() }),
-            'notModified',
-            'hit'
-        );
+        return {
+            response: new Response(null, {
+                status: 304,
+                headers: baseHeaders()
+            }),
+            result: 'notModified',
+            cacheOutcome: 'hit'
+        };
     }
 
-    const origin = new URL(c.req.url).origin;
-    const cacheKey = buildCacheKey(
-        origin,
-        language,
-        share.publicId,
-        fingerprint
-    );
     const lookup = await lookupCachedPage(cache, cacheKey);
     const cached = lookup.response;
 
@@ -204,34 +228,17 @@ const servePage = async ({
         headers.set('Content-Type', HTML_CONTENT_TYPE);
         headers.set('Server-Timing', 'share-cache;desc=hit');
 
-        return finish(
-            new Response(await cached.text(), { status: 200, headers }),
-            'cached',
-            'hit'
-        );
+        return {
+            response: new Response(await cached.text(), {
+                status: 200,
+                headers
+            }),
+            result: 'cached',
+            cacheOutcome: 'hit'
+        };
     }
 
-    const wishes = await Effect.runPromise(
-        repositories.wishes.listShareable(share.userId)
-    );
-    const model: SharePageModel = {
-        language,
-        publicId: share.publicId,
-        origin,
-        assetVersion: deployId,
-        displayName: share.displayName,
-        username: resolvePublicUsername(share),
-        payments: share.payments,
-        currency: share.currency,
-        visibleCount: share.visibleCount,
-        lastUpdatedAt: share.lastUpdatedAt,
-        wishes,
-        indexable,
-        botUrl: c.env.WISHLIST_TG_URL,
-        githubUrl: c.env.GITHUB_REPO_URL,
-        supportLinks: getSupportLinks(c.env, getTranslator(language))
-    };
-    const html = renderSharePage(model);
+    const html = await render();
 
     if (cache) {
         const cachedCopy = new Response(html, {
@@ -265,11 +272,71 @@ const servePage = async ({
     headers.set('Content-Type', HTML_CONTENT_TYPE);
     headers.set('Server-Timing', `share-cache;desc=${lookup.outcome}`);
 
-    return finish(
-        new Response(html, { status: 200, headers }),
-        'rendered',
-        lookup.outcome
+    return {
+        response: new Response(html, { status: 200, headers }),
+        result: 'rendered',
+        cacheOutcome: lookup.outcome
+    };
+};
+
+const servePage = async ({
+    c,
+    language,
+    share,
+    repositories,
+    cache,
+    finish
+}: {
+    c: ShareContext;
+    language: SharePageLanguage;
+    share: PublicShareFingerprint;
+    repositories: Repositories;
+    cache: CacheLike | null;
+    finish: FinishShareResponse;
+}) => {
+    const deployId = getDeployId(c.env);
+    const fingerprint = await computeShareFingerprint(
+        deployId,
+        language,
+        share
     );
+    const origin = new URL(c.req.url).origin;
+    const indexable =
+        isProductionCanonicalHost(c.env, c.req.url) && share.visibleCount > 0;
+    const { response, result, cacheOutcome } = await serveCachedHtml({
+        c,
+        language,
+        fingerprint,
+        cacheKey: buildCacheKey(origin, language, share.publicId, fingerprint),
+        indexable,
+        cache,
+        render: async () => {
+            const wishes = await Effect.runPromise(
+                repositories.wishes.listShareable(share.userId)
+            );
+            const model: SharePageModel = {
+                language,
+                publicId: share.publicId,
+                origin,
+                assetVersion: deployId,
+                displayName: share.displayName,
+                username: resolvePublicUsername(share),
+                payments: share.payments,
+                currency: share.currency,
+                visibleCount: share.visibleCount,
+                lastUpdatedAt: share.lastUpdatedAt,
+                wishes,
+                indexable,
+                botUrl: c.env.WISHLIST_TG_URL,
+                githubUrl: c.env.GITHUB_REPO_URL,
+                supportLinks: getSupportLinks(c.env, getTranslator(language))
+            };
+
+            return renderSharePage(model);
+        }
+    });
+
+    return finish(response, result, cacheOutcome);
 };
 
 export const registerShareRoutes = (
@@ -351,22 +418,10 @@ export const registerShareRoutes = (
         }
 
         if (normalizedId !== requestedId) {
-            const location = buildSharePath(
-                normalizedId,
-                language ?? undefined
-            );
-
             return finish(
-                new Response(null, {
-                    status: 301,
-                    headers: withSecurityHeaders(
-                        new Headers({
-                            Location: location,
-                            'Cache-Control': 'public, max-age=86400',
-                            'X-Robots-Tag': NOINDEX
-                        })
-                    )
-                }),
+                permanentRedirect(
+                    buildSharePath(normalizedId, language ?? undefined)
+                ),
                 'redirected',
                 'bypass'
             );
@@ -458,7 +513,7 @@ export const registerShareRoutes = (
 
     app.get('/robots.txt', c => {
         const body = isProductionCanonicalHost(c.env, c.req.url)
-            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\n`
+            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
             : 'User-agent: *\nDisallow: /\n';
 
         return c.body(body, 200, {
@@ -471,7 +526,116 @@ export const registerShareRoutes = (
         return serve(c, null);
     });
 
-    app.get('/:lang{uk|en|pl}/w/:publicId', c => {
-        return serve(c, c.req.param('lang') as SharePageLanguage);
+    app.get(`/:lang{${LANGUAGE_SEGMENT_PATTERN}}/w/:publicId`, c => {
+        return serve(
+            c,
+            parseLanguageSegment(c.req.param('lang')) ?? DEFAULT_LANGUAGE
+        );
+    });
+
+    app.get(`/${LEGACY_UKRAINIAN_SEGMENT}/w/:publicId`, c => {
+        const startedAt = now().getTime();
+        const requestedId = c.req.param('publicId');
+        const response = permanentRedirect(
+            buildSharePath(
+                normalizeSharePublicId(requestedId) ?? requestedId,
+                'uk'
+            )
+        );
+
+        emitSharePageServedTelemetry(c.env, getExecutionContext(c), {
+            method: c.req.method,
+            result: 'redirected',
+            cacheOutcome: 'bypass',
+            status: response.status,
+            elapsedMs: Math.max(0, now().getTime() - startedAt),
+            locale: 'uk'
+        });
+
+        return response;
+    });
+};
+
+export const registerHomeRoutes = (
+    app: WorkerApp,
+    dependencies: ShareRouteDependencies = {}
+) => {
+    app.get('/', c => {
+        const language =
+            matchAcceptLanguage(c.req.header('Accept-Language')) ??
+            DEFAULT_LANGUAGE;
+
+        return new Response(null, {
+            status: 302,
+            headers: withSecurityHeaders(
+                new Headers({
+                    Location: buildHomePath(language),
+                    Vary: 'Accept-Language',
+                    'Cache-Control': NO_STORE
+                })
+            )
+        });
+    });
+
+    app.get(`/:lang{${LANGUAGE_SEGMENT_PATTERN}}/`, c => {
+        return permanentRedirect(
+            buildHomePath(
+                parseLanguageSegment(c.req.param('lang')) ?? DEFAULT_LANGUAGE
+            )
+        );
+    });
+
+    app.get(`/:lang{${LANGUAGE_SEGMENT_PATTERN}}`, async c => {
+        const language =
+            parseLanguageSegment(c.req.param('lang')) ?? DEFAULT_LANGUAGE;
+        const deployId = getDeployId(c.env);
+        const origin = new URL(c.req.url).origin;
+        const fingerprint = await computeHomeFingerprint(deployId, language);
+        const indexable = isProductionCanonicalHost(c.env, c.req.url);
+        const { response } = await serveCachedHtml({
+            c,
+            language,
+            fingerprint,
+            cacheKey: `${origin}${SHARE_CACHE_PATH_PREFIX}/${HOME_CACHE_SEGMENT}/${language}/${fingerprint}`,
+            indexable,
+            cache: getCache(dependencies),
+            render: () => {
+                return renderHomePage({
+                    language,
+                    origin,
+                    assetVersion: deployId,
+                    indexable,
+                    botUrl: c.env.WISHLIST_TG_URL,
+                    githubUrl: c.env.GITHUB_REPO_URL,
+                    authorUrl: c.env.AUTHOR_TWITTER_LINK,
+                    princessUrl: c.env.PRINCESS_TG_URL,
+                    supportLinks: getSupportLinks(
+                        c.env,
+                        getTranslator(language)
+                    )
+                });
+            }
+        });
+
+        return response;
+    });
+
+    app.on(
+        'GET',
+        [`/${LEGACY_UKRAINIAN_SEGMENT}`, `/${LEGACY_UKRAINIAN_SEGMENT}/`],
+        () => {
+            return permanentRedirect(buildHomePath('uk'));
+        }
+    );
+
+    app.get(SITEMAP_PATH, c => {
+        if (!isProductionCanonicalHost(c.env, c.req.url)) {
+            return c.notFound();
+        }
+
+        return c.body(buildSitemap(new URL(c.req.url).origin), 200, {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600'
+        });
     });
 };

@@ -178,7 +178,7 @@ describe('share page routes', () => {
     it('renders a miss, then serves the same page as a hit, and stores one cache entry', async () => {
         const { publicId } = await seedShare();
 
-        const miss = await request(`/uk/w/${publicId}`);
+        const miss = await request(`/ua/w/${publicId}`);
         const missBody = await miss.text();
 
         assert.equal(miss.status, 200);
@@ -200,7 +200,7 @@ describe('share page routes', () => {
             `http://localhost/__share-cache/uk/${publicId}/${etagOf(miss).replaceAll('"', '')}`
         );
 
-        const hit = await request(`/uk/w/${publicId}`);
+        const hit = await request(`/ua/w/${publicId}`);
 
         assert.equal(hit.status, 200);
         assert.equal(hit.headers.get('Server-Timing'), 'share-cache;desc=hit');
@@ -212,7 +212,7 @@ describe('share page routes', () => {
 
     it('serves each language from its own cache entry', async () => {
         const { publicId } = await seedShare();
-        const ukrainian = await request(`/uk/w/${publicId}`);
+        const ukrainian = await request(`/ua/w/${publicId}`);
         const polish = await request(`/pl/w/${publicId}`);
 
         assert.notEqual(etagOf(ukrainian), etagOf(polish));
@@ -400,12 +400,12 @@ describe('share page routes', () => {
             ]
         ];
 
-        let previous = await request(`/uk/w/${publicId}`);
+        let previous = await request(`/ua/w/${publicId}`);
 
         for (const [name, mutate] of mutations) {
             await mutate();
 
-            const next = await request(`/uk/w/${publicId}`);
+            const next = await request(`/ua/w/${publicId}`);
 
             assert.equal(next.status, 200, name);
             assert.equal(
@@ -421,7 +421,7 @@ describe('share page routes', () => {
 
     it('does not change the ETag after a profile sync that only updates last seen', async () => {
         const { owner, publicId } = await seedShare();
-        const before = await request(`/uk/w/${publicId}`);
+        const before = await request(`/ua/w/${publicId}`);
 
         await run(
             repositories.users.syncProfile(owner.id, {
@@ -431,7 +431,7 @@ describe('share page routes', () => {
             })
         );
 
-        const after = await request(`/uk/w/${publicId}`);
+        const after = await request(`/ua/w/${publicId}`);
 
         assert.equal(etagOf(after), etagOf(before));
         assert.equal(
@@ -493,10 +493,10 @@ describe('share page routes', () => {
     it('redirects uppercase ids to the lowercase url with a 301', async () => {
         const { publicId } = await seedShare();
 
-        const localized = await request(`/uk/w/${publicId.toUpperCase()}`);
+        const localized = await request(`/ua/w/${publicId.toUpperCase()}`);
 
         assert.equal(localized.status, 301);
-        assert.equal(localized.headers.get('Location'), `/uk/w/${publicId}`);
+        assert.equal(localized.headers.get('Location'), `/ua/w/${publicId}`);
 
         const negotiated = await request(`/w/${publicId.toUpperCase()}`);
 
@@ -509,10 +509,10 @@ describe('share page routes', () => {
         const unknownId = '0'.repeat(26);
 
         for (const path of [
-            '/uk/w/not-an-id',
-            `/uk/w/${unknownId}`,
+            '/ua/w/not-an-id',
+            `/ua/w/${unknownId}`,
             `/w/${unknownId}`,
-            '/uk/w/ilou0000000000000000000000'
+            '/ua/w/ilou0000000000000000000000'
         ]) {
             const response = await request(path);
             const body = await response.text();
@@ -545,7 +545,7 @@ describe('share page routes', () => {
             )
         );
 
-        const blocked = await request(`/uk/w/${publicId}`);
+        const blocked = await request(`/ua/w/${publicId}`);
 
         assert.equal(blocked.status, 404);
         assert.equal(blocked.headers.get('X-Robots-Tag'), 'noindex');
@@ -555,11 +555,11 @@ describe('share page routes', () => {
     it('returns 410 after stopping to share and restores the same link when sharing again', async () => {
         const { owner, publicId } = await seedShare();
 
-        assert.equal((await request(`/uk/w/${publicId}`)).status, 200);
+        assert.equal((await request(`/ua/w/${publicId}`)).status, 200);
 
         await run(repositories.shares.revoke(owner.id, nextNow()));
 
-        for (const path of [`/uk/w/${publicId}`, `/w/${publicId}`]) {
+        for (const path of [`/ua/w/${publicId}`, `/w/${publicId}`]) {
             const gone = await request(path);
             const body = await gone.text();
 
@@ -576,7 +576,7 @@ describe('share page routes', () => {
 
         await run(repositories.shares.publish(owner.id, 'Alice', nextNow()));
 
-        const restored = await request(`/uk/w/${publicId}`);
+        const restored = await request(`/ua/w/${publicId}`);
 
         assert.equal(restored.status, 200);
         assert.match(await restored.text(), /Coffee/);
@@ -589,8 +589,8 @@ describe('share page routes', () => {
         );
 
         assert.ok(rotated);
-        assert.equal((await request(`/uk/w/${publicId}`)).status, 404);
-        assert.equal((await request(`/uk/w/${rotated.publicId}`)).status, 200);
+        assert.equal((await request(`/ua/w/${publicId}`)).status, 404);
+        assert.equal((await request(`/ua/w/${rotated.publicId}`)).status, 200);
     });
 
     it('never shows hidden or removed wishes, the phone number or gives', async () => {
@@ -628,7 +628,7 @@ describe('share page routes', () => {
 
         assert.ok(share);
 
-        const response = await request(`/uk/w/${share.publicId}`);
+        const response = await request(`/ua/w/${share.publicId}`);
         const body = await response.text();
 
         assert.equal(response.status, 200);
@@ -664,7 +664,7 @@ describe('share page routes', () => {
 
             await setSearchable(owner.id, true);
 
-            const body = await (await request(`/uk/w/${publicId}`)).text();
+            const body = await (await request(`/ua/w/${publicId}`)).text();
 
             assert.doesNotMatch(body, /@owner_user/);
             assert.doesNotMatch(body, /t\.me\/owner_user/);
@@ -675,13 +675,13 @@ describe('share page routes', () => {
 
             await setSearchable(owner.id, true);
 
-            const hidden = await request(`/uk/w/${publicId}`);
+            const hidden = await request(`/ua/w/${publicId}`);
 
             await run(
                 repositories.shares.setShowUsername(owner.id, true, nextNow())
             );
 
-            const shown = await request(`/uk/w/${publicId}`);
+            const shown = await request(`/ua/w/${publicId}`);
             const shownBody = await shown.text();
 
             assert.notEqual(etagOf(shown), etagOf(hidden));
@@ -690,7 +690,7 @@ describe('share page routes', () => {
 
             await setSearchable(owner.id, false);
 
-            const notSearchable = await request(`/uk/w/${publicId}`);
+            const notSearchable = await request(`/ua/w/${publicId}`);
 
             assert.notEqual(etagOf(notSearchable), etagOf(shown));
             assert.doesNotMatch(await notSearchable.text(), /@owner_user/);
@@ -700,7 +700,7 @@ describe('share page routes', () => {
                 repositories.shares.setShowUsername(owner.id, false, nextNow())
             );
 
-            const disabledAgain = await request(`/uk/w/${publicId}`);
+            const disabledAgain = await request(`/ua/w/${publicId}`);
 
             assert.notEqual(etagOf(disabledAgain), etagOf(shown));
             assert.doesNotMatch(await disabledAgain.text(), /@owner_user/);
@@ -723,7 +723,7 @@ describe('share page routes', () => {
                         )
                     );
 
-                    for (const language of ['uk', 'en', 'pl']) {
+                    for (const language of ['ua', 'en', 'pl']) {
                         const response = await request(
                             `/${language}/w/${publicId}`
                         );
@@ -767,7 +767,7 @@ describe('share page routes', () => {
         );
         assert.equal(
             await production.text(),
-            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\n'
+            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
         );
 
         for (const environment of ['preview', 'local']) {
@@ -789,7 +789,7 @@ describe('share page routes', () => {
         const { owner, publicId } = await seedShare();
 
         const production = await (
-            await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`)
+            await request(`${CANONICAL_ORIGIN}/ua/w/${publicId}`)
         ).text();
 
         assert.match(
@@ -801,7 +801,7 @@ describe('share page routes', () => {
 
         const preview = await (
             await request(
-                `/uk/w/${publicId}`,
+                `/ua/w/${publicId}`,
                 {},
                 buildEnv({ BOT_ENVIRONMENT: 'preview' })
             )
@@ -811,7 +811,7 @@ describe('share page routes', () => {
 
         await run(repositories.wishes.softRemoveAll(owner.id, nextNow()));
 
-        const empty = await request(`/uk/w/${publicId}`);
+        const empty = await request(`/ua/w/${publicId}`);
         const emptyBody = await empty.text();
 
         assert.equal(empty.status, 200);
@@ -823,7 +823,7 @@ describe('share page routes', () => {
         const { publicId } = await seedShare();
 
         const workersDev = await request(
-            `${WORKERS_DEV_ORIGIN}/uk/w/${publicId}`
+            `${WORKERS_DEV_ORIGIN}/ua/w/${publicId}`
         );
         const workersDevBody = await workersDev.text();
 
@@ -835,7 +835,7 @@ describe('share page routes', () => {
         assert.match(
             workersDevBody,
             new RegExp(
-                `<link rel="canonical" href="${WORKERS_DEV_ORIGIN}/uk/w/${publicId}"`
+                `<link rel="canonical" href="${WORKERS_DEV_ORIGIN}/ua/w/${publicId}"`
             )
         );
 
@@ -844,7 +844,7 @@ describe('share page routes', () => {
         assert.equal(await robots.text(), 'User-agent: *\nDisallow: /\n');
 
         const canonical = await (
-            await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`)
+            await request(`${CANONICAL_ORIGIN}/ua/w/${publicId}`)
         ).text();
 
         assert.match(
@@ -858,7 +858,7 @@ describe('share page routes', () => {
 
         await seedGeneratedWishes(harness, owner.id, 120);
 
-        const body = await (await request(`/uk/w/${publicId}`)).text();
+        const body = await (await request(`/ua/w/${publicId}`)).text();
 
         assert.equal(body.match(/<article /g)?.length, 100);
         assert.match(body, /Показано перші 100 бажань/);
@@ -866,8 +866,8 @@ describe('share page routes', () => {
 
     it('answers HEAD like GET without a body', async () => {
         const { publicId } = await seedShare();
-        const get = await request(`/uk/w/${publicId}`);
-        const head = await request(`/uk/w/${publicId}`, { method: 'HEAD' });
+        const get = await request(`/ua/w/${publicId}`);
+        const head = await request(`/ua/w/${publicId}`, { method: 'HEAD' });
 
         assert.equal(head.status, 200);
         assert.equal(await head.text(), '');
@@ -884,10 +884,10 @@ describe('share page routes', () => {
     it('sets the security headers on every share response', async () => {
         const { publicId } = await seedShare();
         const responses = await Promise.all([
-            request(`/uk/w/${publicId}`),
+            request(`/ua/w/${publicId}`),
             request(`/w/${publicId}`),
-            request(`/uk/w/${'0'.repeat(26)}`),
-            request(`/uk/w/${publicId.toUpperCase()}`)
+            request(`/ua/w/${'0'.repeat(26)}`),
+            request(`/ua/w/${publicId.toUpperCase()}`)
         ]);
 
         for (const response of responses) {
@@ -910,7 +910,7 @@ describe('share page routes', () => {
     it('renders without a cache when none is available', async () => {
         const { publicId } = await seedShare();
         const app = createApp({}, {}, {});
-        const response = await app.request(`/uk/w/${publicId}`, {}, buildEnv());
+        const response = await app.request(`/ua/w/${publicId}`, {}, buildEnv());
 
         assert.equal(response.status, 200);
         assert.equal(
@@ -928,7 +928,7 @@ describe('share page routes', () => {
             }
         };
         const app = createApp({}, {}, { cache: failingCache });
-        const response = await app.request(`/uk/w/${publicId}`, {}, buildEnv());
+        const response = await app.request(`/ua/w/${publicId}`, {}, buildEnv());
 
         assert.equal(response.status, 200);
     });
@@ -945,7 +945,7 @@ describe('share page routes', () => {
             }
         };
         const app = createApp({}, {}, { cache: failingCache });
-        const response = await app.request(`/uk/w/${publicId}`, {}, buildEnv());
+        const response = await app.request(`/ua/w/${publicId}`, {}, buildEnv());
 
         assert.equal(response.status, 200);
         assert.equal(
@@ -959,13 +959,13 @@ describe('share page routes', () => {
         const { owner, publicId } = await seedShare();
         const previewEnv = buildEnv({ BOT_ENVIRONMENT: 'preview' });
 
-        const indexable = await request(`${CANONICAL_ORIGIN}/uk/w/${publicId}`);
+        const indexable = await request(`${CANONICAL_ORIGIN}/ua/w/${publicId}`);
 
         assert.equal(indexable.status, 200);
         assert.equal(indexable.headers.get('X-Robots-Tag'), null);
 
         const notModified = await request(
-            `${CANONICAL_ORIGIN}/uk/w/${publicId}`,
+            `${CANONICAL_ORIGIN}/ua/w/${publicId}`,
             {
                 headers: { 'If-None-Match': etagOf(indexable) }
             }
@@ -975,10 +975,10 @@ describe('share page routes', () => {
         assert.equal(notModified.headers.get('X-Robots-Tag'), null);
 
         const nonIndexable = [
-            await request(`${WORKERS_DEV_ORIGIN}/uk/w/${publicId}`),
-            await request(`/uk/w/${publicId}`, {}, previewEnv),
+            await request(`${WORKERS_DEV_ORIGIN}/ua/w/${publicId}`),
+            await request(`/ua/w/${publicId}`, {}, previewEnv),
             await request(`/w/${publicId}`, {}, previewEnv),
-            await request(`/uk/w/${publicId.toUpperCase()}`, {}, previewEnv)
+            await request(`/ua/w/${publicId.toUpperCase()}`, {}, previewEnv)
         ];
 
         for (const response of nonIndexable) {
@@ -990,7 +990,7 @@ describe('share page routes', () => {
         assert.ok(previewPage);
 
         const previewNotModified = await request(
-            `/uk/w/${publicId}`,
+            `/ua/w/${publicId}`,
             { headers: { 'If-None-Match': etagOf(previewPage) } },
             previewEnv
         );
@@ -1001,24 +1001,301 @@ describe('share page routes', () => {
         await run(repositories.wishes.softRemoveAll(owner.id, nextNow()));
 
         const emptyOnCanonical = await request(
-            `${CANONICAL_ORIGIN}/uk/w/${publicId}`
+            `${CANONICAL_ORIGIN}/ua/w/${publicId}`
         );
 
         assert.equal(emptyOnCanonical.status, 200);
         assert.equal(emptyOnCanonical.headers.get('X-Robots-Tag'), 'noindex');
     });
 
-    it('keeps the root, readiness and unknown routes untouched', async () => {
-        const root = await request('/');
+    it('serves the status json on /status and keeps unknown routes not found', async () => {
+        const status = await request('/status');
 
-        assert.equal(root.status, 200);
-        assert.deepEqual(await root.json(), {
+        assert.equal(status.status, 200);
+        assert.deepEqual(await status.json(), {
             service: 'wishlist',
             runtime: 'cloudflare-workers',
             status: 'runtime-ready'
         });
         assert.equal((await request('/w/')).status, 404);
         assert.equal((await request('/de/w/' + '0'.repeat(26))).status, 404);
+        assert.equal((await request('/de')).status, 404);
+        assert.equal((await request('/uax')).status, 404);
+        assert.equal((await request('/ua/w/')).status, 404);
+        assert.equal((await request(`/enx/w/${'0'.repeat(26)}`)).status, 404);
+    });
+
+    it('permanently redirects legacy /uk urls to /ua', async () => {
+        const { publicId } = await seedShare();
+
+        for (const [path, location] of [
+            [`/uk/w/${publicId}`, `/ua/w/${publicId}`],
+            [`/uk/w/${publicId.toUpperCase()}`, `/ua/w/${publicId}`],
+            ['/uk/w/not-an-id', '/ua/w/not-an-id'],
+            ['/uk', '/ua'],
+            ['/uk/', '/ua']
+        ] as const) {
+            const response = await request(path);
+
+            assert.equal(response.status, 301, path);
+            assert.equal(response.headers.get('Location'), location, path);
+            assert.equal(
+                response.headers.get('Cache-Control'),
+                'public, max-age=86400',
+                path
+            );
+        }
+
+        const followed = await request(`/ua/w/${publicId}`);
+        const body = await followed.text();
+
+        assert.equal(followed.status, 200);
+        assert.equal(followed.headers.get('Content-Language'), 'uk');
+        assert.match(body, /<html lang="uk">/);
+        assert.match(
+            body,
+            new RegExp(
+                `<link rel="alternate" hreflang="uk" href="http://localhost/ua/w/${publicId}"`
+            )
+        );
+    });
+
+    it('redirects the root to a home page by Accept-Language', async () => {
+        for (const [header, location] of [
+            ['pl-PL,pl;q=0.9,en;q=0.5', '/pl'],
+            ['en-GB,en;q=0.9', '/en'],
+            ['uk-UA,uk;q=0.9', '/ua'],
+            ['de-DE,fr;q=0.8', '/ua'],
+            [undefined, '/ua']
+        ] as const) {
+            const response = await request(
+                '/',
+                header === undefined
+                    ? {}
+                    : { headers: { 'Accept-Language': header } }
+            );
+
+            assert.equal(response.status, 302, header);
+            assert.equal(response.headers.get('Location'), location, header);
+            assert.equal(response.headers.get('Vary'), 'Accept-Language');
+            assert.equal(
+                response.headers.get('Cache-Control'),
+                'private, no-store'
+            );
+        }
+    });
+
+    it('serves a localized home page with seo metadata and no database reads', async () => {
+        const response = await request(`${CANONICAL_ORIGIN}/ua`);
+        const body = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('Content-Language'), 'uk');
+        assert.equal(response.headers.get('Cache-Control'), 'no-cache');
+        assert.equal(response.headers.get('X-Robots-Tag'), null);
+        assert.equal(
+            response.headers.get('Content-Security-Policy'),
+            EXPECTED_CSP
+        );
+        assert.match(body, /<html lang="uk">/);
+        assert.match(body, /<meta name="robots" content="index, follow"\/>/);
+        assert.match(
+            body,
+            /<link rel="canonical" href="https:\/\/wishlist\.chernenko\.dev\/ua"\/>/
+        );
+
+        for (const [language, segment] of [
+            ['uk', 'ua'],
+            ['en', 'en'],
+            ['pl', 'pl']
+        ]) {
+            assert.match(
+                body,
+                new RegExp(
+                    `<link rel="alternate" hreflang="${language}" href="${CANONICAL_ORIGIN}/${segment}"/>`
+                )
+            );
+        }
+
+        assert.match(
+            body,
+            new RegExp(
+                `<link rel="alternate" hreflang="x-default" href="${CANONICAL_ORIGIN}/"/>`
+            )
+        );
+        assert.match(
+            body,
+            new RegExp(
+                `<meta property="og:url" content="${CANONICAL_ORIGIN}/ua"/>`
+            )
+        );
+        assert.match(
+            body,
+            /<h1 class="hero-title"><span class="hero-name">Лист бажань<\/span><\/h1>/
+        );
+        assert.match(body, /Відкрити @wishlist_ua_bot/);
+        assert.match(body, /<ol class="steps">/);
+        assert.match(body, /href="https:\/\/x\.com\/serhiichernenko"/);
+        assert.match(body, /href="https:\/\/t\.me\/ixPrincessBot"/);
+        assert.match(body, /href="https:\/\/send\.monobank\.ua\/jar\//);
+        assert.match(body, /<a href="\/en" hreflang="en" lang="en"/);
+        assert.doesNotMatch(body, /href="\/uk/);
+
+        const scripts = Array.from(
+            body.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)
+        );
+
+        assert.equal(scripts.length, 1);
+        assert.equal(scripts[0]?.[1], ' type="application/ld+json"');
+
+        const structuredData = JSON.parse(scripts[0]?.[2] ?? '') as Record<
+            string,
+            unknown
+        >;
+
+        assert.equal(structuredData['@type'], 'SoftwareApplication');
+        assert.equal(structuredData.operatingSystem, 'Telegram');
+        assert.equal(structuredData.url, `${CANONICAL_ORIGIN}/ua`);
+        assert.equal(structuredData.inLanguage, 'uk');
+        assert.deepEqual(structuredData.offers, {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'UAH'
+        });
+        assert.equal(typeof structuredData.applicationCategory, 'string');
+
+        const polish = await (await request('/pl')).text();
+
+        assert.match(polish, /<html lang="pl">/);
+        assert.match(polish, /<title>Lista życzeń/);
+        assert.match(polish, /Otwórz @wishlist_ua_bot/);
+
+        const english = await (await request('/en')).text();
+
+        assert.match(english, /<title>Wish list/);
+        assert.match(english, /How it works/);
+    });
+
+    it('keeps home pages noindex outside production on the canonical host', async () => {
+        for (const [path, env] of [
+            [`${WORKERS_DEV_ORIGIN}/en`, buildEnv()],
+            [
+                `${CANONICAL_ORIGIN}/en`,
+                buildEnv({ BOT_ENVIRONMENT: 'preview' })
+            ],
+            ['/en', buildEnv()]
+        ] as const) {
+            const response = await request(path, {}, env);
+
+            assert.equal(response.status, 200, path);
+            assert.equal(response.headers.get('X-Robots-Tag'), 'noindex', path);
+            assert.match(
+                await response.text(),
+                /<meta name="robots" content="noindex"\/>/,
+                path
+            );
+        }
+    });
+
+    it('caches home pages by deploy and language and answers 304 on a matching etag', async () => {
+        const first = await request('/en');
+        const etag = etagOf(first);
+
+        assert.equal(
+            first.headers.get('Server-Timing'),
+            'share-cache;desc=miss'
+        );
+        assert.equal(cache.putKeys.length, 1);
+        assert.match(
+            cache.putKeys[0] ?? '',
+            /^http:\/\/localhost\/__share-cache\/home\/en\/[0-9a-f]{32}$/
+        );
+
+        const second = await request('/en');
+
+        assert.equal(
+            second.headers.get('Server-Timing'),
+            'share-cache;desc=hit'
+        );
+        assert.equal(await second.text(), await first.text());
+        assert.equal(etagOf(second), etag);
+
+        const revalidated = await request('/en', {
+            headers: { 'If-None-Match': etag }
+        });
+
+        assert.equal(revalidated.status, 304);
+        assert.notEqual(etagOf(await request('/pl')), etag);
+
+        const otherDeploy = await request(
+            '/en',
+            {},
+            buildEnv({ CF_VERSION_METADATA: { id: 'next-deploy' } } as never)
+        );
+
+        assert.notEqual(etagOf(otherDeploy), etag);
+    });
+
+    it('redirects home pages with a trailing slash to the canonical form', async () => {
+        for (const [path, location] of [
+            ['/ua/', '/ua'],
+            ['/en/', '/en'],
+            ['/pl/', '/pl']
+        ] as const) {
+            const response = await request(path);
+
+            assert.equal(response.status, 301, path);
+            assert.equal(response.headers.get('Location'), location, path);
+        }
+    });
+
+    it('serves a sitemap with only the home pages on the production host', async () => {
+        const response = await request(`${CANONICAL_ORIGIN}/sitemap.xml`);
+        const body = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.match(
+            response.headers.get('Content-Type') ?? '',
+            /^application\/xml/
+        );
+        assert.deepEqual(
+            Array.from(body.matchAll(/<loc>([^<]+)<\/loc>/g), match => {
+                return match[1];
+            }),
+            [
+                `${CANONICAL_ORIGIN}/ua`,
+                `${CANONICAL_ORIGIN}/en`,
+                `${CANONICAL_ORIGIN}/pl`
+            ]
+        );
+        assert.doesNotMatch(body, /\/w\//);
+        assert.match(
+            body,
+            new RegExp(
+                `<xhtml:link rel="alternate" hreflang="uk" href="${CANONICAL_ORIGIN}/ua"/>`
+            )
+        );
+        assert.match(
+            body,
+            new RegExp(
+                `<xhtml:link rel="alternate" hreflang="x-default" href="${CANONICAL_ORIGIN}/"/>`
+            )
+        );
+
+        assert.equal(
+            (await request(`${WORKERS_DEV_ORIGIN}/sitemap.xml`)).status,
+            404
+        );
+        assert.equal(
+            (
+                await request(
+                    `${CANONICAL_ORIGIN}/sitemap.xml`,
+                    {},
+                    buildEnv({ BOT_ENVIRONMENT: 'preview' })
+                )
+            ).status,
+            404
+        );
     });
 
     it('renders the full page content for a populated list', async () => {

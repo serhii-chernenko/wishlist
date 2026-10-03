@@ -425,6 +425,74 @@ const en: Translation = {
         meta: {
             description:
                 '{name}: {count} {{count:wish|wishes}} on the wish list'
+        },
+        home: {
+            title: 'Wish list: a Telegram bot for wishes and gift ideas',
+            description:
+                'Collect your wishes in a Telegram bot, share one link, and the people close to you will give you exactly what you want. Free, in English, Ukrainian and Polish.',
+            name: 'Wish list',
+            tagline:
+                'Keep your wishes in Telegram, share a link, and let the people close to you pick a gift you actually want.',
+            cta: 'Open {bot}',
+            note: 'Free. All you need is Telegram.',
+            steps: {
+                title: 'How it works',
+                create: {
+                    title: 'Create your list in the bot',
+                    text: 'Add wishes with a title, a description, up to 9 photos, a price and a link to the shop.'
+                },
+                share: {
+                    title: 'Share a link',
+                    text: 'The bot makes a public page of your list. Send the link to friends, or let them find you in the bot by username or phone number.'
+                },
+                give: {
+                    title: 'Friends pick a gift',
+                    text: 'They tap “Give” and the wish lands in their “I want to give” list. Other givers see that it is taken, you do not, so the surprise stays a surprise.'
+                }
+            },
+            features: {
+                title: 'What the bot can do',
+                photos: {
+                    title: 'Photos and links',
+                    text: 'Up to 9 photos per wish and a link to the shop, so nobody gets the wrong model or colour.'
+                },
+                prices: {
+                    title: 'Prices and filters',
+                    text: 'Set a price in your currency, and friends can filter your wishes by their budget.'
+                },
+                priority: {
+                    title: 'Priorities',
+                    text: 'Mark what you want most: those wishes get a heart.'
+                },
+                hidden: {
+                    title: 'Hidden wishes',
+                    text: 'Keep drafts and personal things to yourself: only you can see hidden wishes.'
+                },
+                page: {
+                    title: 'A page for friends',
+                    text: 'All your wishes on one page that opens without Telegram. It updates itself.'
+                },
+                search: {
+                    title: 'Find friends',
+                    text: 'Find other lists by username or phone number, if their owners allow it.'
+                },
+                languages: {
+                    title: 'Three languages',
+                    text: 'English, Ukrainian and Polish, or automatic, following your Telegram language.'
+                }
+            },
+            privacy: {
+                title: 'Privacy',
+                phone: 'Your phone number is never public: it is only used for search.',
+                name: 'Your name appears on the page only after you agree, and disappears as soon as you stop sharing.',
+                openSource:
+                    'The code is open source under AGPL-3.0, so anyone can check how the bot handles data.'
+            },
+            links: {
+                title: 'More from the author',
+                author: 'The author on X',
+                princess: 'Another bot by the author: Princess of the Day'
+            }
         }
     },
     commands: {

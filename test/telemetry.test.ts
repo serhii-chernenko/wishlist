@@ -9,6 +9,7 @@ import {
     getTelegramCallbackCategory,
     getTelegramCommandCategory,
     getTelegramUpdateType,
+    HOME_PAGE_TELEMETRY_PATH,
     normalizeTelemetryPath,
     SHARE_PAGE_TELEMETRY_PATH,
     toWishlistAttributes
@@ -461,6 +462,7 @@ test('share page paths collapse to one id-free route and robots.txt stays known'
 
     for (const path of [
         `/w/${publicId}`,
+        `/ua/w/${publicId}`,
         `/uk/w/${publicId}`,
         `/en/w/${publicId.toUpperCase()}`,
         `/pl/w/${publicId}/extra`,
@@ -477,6 +479,19 @@ test('share page paths collapse to one id-free route and robots.txt stays known'
     assert.equal(SHARE_PAGE_TELEMETRY_PATH, '/w/:publicId');
     assert.equal(normalizeTelemetryPath('/robots.txt', null), '/robots.txt');
     assert.equal(normalizeTelemetryPath('/de/w/abc', null), '/unknown');
+    assert.equal(normalizeTelemetryPath('/status', null), '/status');
+    assert.equal(normalizeTelemetryPath('/sitemap.xml', null), '/sitemap.xml');
+
+    for (const path of ['/ua', '/en', '/pl', '/uk', '/ua/', '/pl/']) {
+        assert.equal(
+            normalizeTelemetryPath(path, null),
+            HOME_PAGE_TELEMETRY_PATH,
+            path
+        );
+    }
+
+    assert.equal(HOME_PAGE_TELEMETRY_PATH, '/:lang');
+    assert.equal(normalizeTelemetryPath('/de', null), '/unknown');
     assert.equal(normalizeTelemetryPath('/wishes', null), '/unknown');
 });
 
@@ -550,10 +565,11 @@ test('telemetry never leaks share public ids from paths or share events', async 
         const pathTemplates = [
             (id: string) => `/w/${id}`,
             (id: string) => `/w/${id.toUpperCase()}`,
+            (id: string) => `/ua/w/${id}`,
             (id: string) => `/uk/w/${id}`,
             (id: string) => `/en/w/${id}`,
             (id: string) => `/pl/w/${id}`,
-            (id: string) => `/uk/w/${id}?utm=${id}`
+            (id: string) => `/ua/w/${id}?utm=${id}`
         ];
 
         for (let iteration = 0; iteration < 100; iteration += 1) {

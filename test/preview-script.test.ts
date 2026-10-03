@@ -732,7 +732,7 @@ const createReadyFetch = (requests: RequestRecord[]) => {
     });
 };
 
-test('readiness checks root first and sends the secret only to /health', async () => {
+test('readiness checks /status first and sends the secret only to /health', async () => {
     const requests: RequestRecord[] = [];
     let attempt = 0;
     const { dependencies, output } = createDependencies({
@@ -765,10 +765,10 @@ test('readiness checks root first and sends the secret only to /health', async (
     assert.deepEqual(
         requests.map(request => request.url),
         [
-            `${previewOrigin}/`,
-            `${previewOrigin}/`,
+            `${previewOrigin}/status`,
+            `${previewOrigin}/status`,
             `${previewOrigin}/health`,
-            `${previewOrigin}/`,
+            `${previewOrigin}/status`,
             `${previewOrigin}/health`
         ]
     );
@@ -862,7 +862,7 @@ test('readiness ignores oversized response bodies', async () => {
             secretToken
         );
 
-        assert.equal(result.rootReady, false);
+        assert.equal(result.statusReady, false);
     }
 });
 
@@ -1527,7 +1527,7 @@ test('point with the default wait path waits, sets and verifies the webhook', as
         ]);
         assert.deepEqual(
             requests.map(request => request.url),
-            [`${previewOrigin}/`, `${previewOrigin}/health`]
+            [`${previewOrigin}/status`, `${previewOrigin}/health`]
         );
         assertNoSensitiveValues([...output, ...captured]);
     });

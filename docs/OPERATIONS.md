@@ -18,7 +18,7 @@ The Mongo to D1 cutover (section 8) and parts of the Workers Builds setup (secti
 9. [Rollback](#9-rollback)
 10. [Production operations](#10-production-operations)
 11. [Releases and announcements](#11-releases-and-announcements)
-12. [Share pages](#12-share-pages)
+12. [Share pages and home pages](#12-share-pages-and-home-pages)
 13. [Observability](#13-observability)
 14. [Troubleshooting](#14-troubleshooting)
 15. [Lessons from princess that apply](#15-lessons-from-princess-that-apply)
@@ -26,19 +26,19 @@ The Mongo to D1 cutover (section 8) and parts of the Workers Builds setup (secti
 
 ## 1. Architecture at a glance
 
-| Piece             | Value                                                                                                                             |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime           | Cloudflare Worker `wishlist` (wrangler env `production`), Hono + Hono JSX + Telegraf                                              |
-| Domain            | `wishlist.chernenko.dev` (custom domain): the bot webhook and the public share pages (`/w/<id>`, `/<lang>/w/<id>`, `/robots.txt`) |
-| Telegram webhook  | Secret header (`X-Telegram-Bot-Api-Secret-Token`) plus secret path (`TELEGRAM_WEBHOOK_PATH`)                                      |
-| Production D1     | `wishlist-production` (`6d194ed1-4446-4092-af68-606a33601801`)                                                                    |
-| Preview D1        | `wishlist-preview` (`3ab03825-4610-4164-9bec-2c47d00ac73e`)                                                                       |
-| Production queues | `wishlist-release-announcements` (producer and consumer) with dead-letter queue `wishlist-release-announcements-dlq`              |
-| Preview queue     | `wishlist-preview-release-announcements` (producer only, nothing consumes it)                                                     |
-| Production crons  | `0 0 * * *` (daily maintenance), `*/10 * * * *` (release broadcast and state snapshot)                                            |
-| Account           | Cloudflare account `5396970bbe7f97f2d01c5b759444cd40`                                                                             |
-| Bots              | Production `@wishlist_ua_bot`, preview `@InevixTestBot`                                                                           |
-| Legacy            | Node.js long polling on a VPS with MongoDB Atlas, tagged `legacy-1.7.1` (`924b0e3`). Not part of 2.0.0.                           |
+| Piece             | Value                                                                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime           | Cloudflare Worker `wishlist` (wrangler env `production`), Hono + Hono JSX + Telegraf                                                                                                               |
+| Domain            | `wishlist.chernenko.dev` (custom domain): the bot webhook, the home pages (`/ua`, `/en`, `/pl`), the public share pages (`/w/<id>`, `/<lang>/w/<id>`), `/status`, `/robots.txt` and `/sitemap.xml` |
+| Telegram webhook  | Secret header (`X-Telegram-Bot-Api-Secret-Token`) plus secret path (`TELEGRAM_WEBHOOK_PATH`)                                                                                                       |
+| Production D1     | `wishlist-production` (`6d194ed1-4446-4092-af68-606a33601801`)                                                                                                                                     |
+| Preview D1        | `wishlist-preview` (`3ab03825-4610-4164-9bec-2c47d00ac73e`)                                                                                                                                        |
+| Production queues | `wishlist-release-announcements` (producer and consumer) with dead-letter queue `wishlist-release-announcements-dlq`                                                                               |
+| Preview queue     | `wishlist-preview-release-announcements` (producer only, nothing consumes it)                                                                                                                      |
+| Production crons  | `0 0 * * *` (daily maintenance), `*/10 * * * *` (release broadcast and state snapshot)                                                                                                             |
+| Account           | Cloudflare account `5396970bbe7f97f2d01c5b759444cd40`                                                                                                                                              |
+| Bots              | Production `@wishlist_ua_bot`, preview `@InevixTestBot`                                                                                                                                            |
+| Legacy            | Node.js long polling on a VPS with MongoDB Atlas, tagged `legacy-1.7.1` (`924b0e3`). Not part of 2.0.0.                                                                                            |
 
 Config lives in `wrangler.jsonc` (strict JSON). The preview Worker shape is under `env.production.previews`.
 
@@ -736,17 +736,24 @@ The kill switch variable `ENABLE_RELEASE_BROADCAST` (`"true"` in production in `
 
 The same `CHANGELOG.md` entries are published as GitHub Releases, using the English text of each bullet. The `release` job in `.github/workflows/main.yml` runs after `validate` passes on every push to `main` and calls `pnpm releases:github`. The first automatic version is `2.0.0` (`FIRST_AUTOMATIC_VERSION`); earlier versions are never published automatically. The tag is named like the version and points at the `main` commit that published it. Versions that already have a release are skipped, so a push that does not touch `CHANGELOG.md` only logs `already exists; skipping`. The workflow only publishes notes; it does not deploy.
 
-## 12. Share pages
+## 12. Share pages and home pages
 
-The Worker serves a public page for every list that its owner shared. The pages are server-rendered with Hono JSX (`src/web`), have no client JavaScript, and share the Worker, the D1 binding and the telemetry with the bot.
+The Worker serves a public page for every list that its owner shared, and a home page about the bot in each language. The pages are server-rendered with Hono JSX (`src/web`), have no client JavaScript, and share the Worker, the D1 binding and the telemetry with the bot.
+
+The URL segment for Ukrainian is `ua` on purpose (`/ua`, `/ua/w/<id>`), while the language itself stays `uk` everywhere else: `<html lang>`, `hreflang`, `Content-Language`, the cache key, telemetry and the database. The mapping lives in one place, `LANGUAGE_URL_SEGMENTS` in `src/web/share/public-id.ts`.
 
 ### Routes
 
 | Route                | Behavior                                                                                                                                                                                                                                                              |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`              | `302` to `/ua`, `/en` or `/pl` by the best match of `Accept-Language` (same matcher as `/w/<id>`), else `/ua`. `Vary: Accept-Language`, `Cache-Control: private, no-store`. It is the `x-default` alternate of the home pages                                         |
+| `GET /<lang>`        | The home page, with `lang` in `ua`, `en`, `pl`. `/<lang>/` gets a `301` to `/<lang>`. No D1 read                                                                                                                                                                      |
 | `GET /w/<id>`        | The link the bot hands out. `302` to `/<lang>/w/<id>`, where the language is the best match of `Accept-Language` among `uk`, `pl`, `en`, else the owner's language. `Vary: Accept-Language`, `Cache-Control: private, no-store`. It is also the `x-default` alternate |
-| `GET /<lang>/w/<id>` | The page, with `lang` in `uk`, `en`, `pl`. An uppercase id gets a `301` to the lowercase URL                                                                                                                                                                          |
+| `GET /<lang>/w/<id>` | The page, with `lang` in `ua`, `en`, `pl`. An uppercase id gets a `301` to the lowercase URL                                                                                                                                                                          |
+| `GET /uk/...`        | Legacy URLs: `/uk/w/<id>` gets a `301` to `/ua/w/<id>` (lowercased id), `/uk` and `/uk/` get a `301` to `/ua`                                                                                                                                                         |
+| `GET /status`        | The JSON `{"service":"wishlist","runtime":"cloudflare-workers","status":"runtime-ready"}`, used by `pnpm preview:wait` and `preview:point` as the first readiness check                                                                                               |
 | `GET /robots.txt`    | Generated per environment (see Indexing)                                                                                                                                                                                                                              |
+| `GET /sitemap.xml`   | Only on the production host: the three home pages with their `hreflang` alternates. `404` elsewhere                                                                                                                                                                   |
 
 An id that does not match `^[0-9a-hjkmnp-tv-z]{26}$`, an unknown id, or a list of a blocked owner answers `404`. A stopped share answers `410`. Both are `noindex` and `no-store`. The page itself shows only wishes that are neither hidden nor removed (at most 100, with a notice when there are more), the name saved at consent, the `@username` only if the owner switched it on for the share (`wishlist_shares.show_username`, off by default) and is currently searchable by username, and the owner's payment details. It never shows the phone number, the give list or givers.
 
@@ -770,16 +777,18 @@ Each page has a fingerprint, the first 16 bytes (hex) of a SHA-256 over: the dep
 - The rendered HTML is stored in the Cache API (`caches.default`) under `<origin>/__share-cache/<lang>/<id>/<fingerprint>` with `Cache-Control: public, max-age=86400` and never with cookies. A change makes a new key, so no purge is needed; old entries expire after 24 hours.
 - Every `200` carries `Server-Timing: share-cache;desc=hit|miss|bypass`. The second view of an unchanged page must show `hit`.
 - The Cache API is per data center, so each data center renders once per fingerprint.
+- Home pages use the same mechanism with a fingerprint over the deploy id and the language only, stored under `<origin>/__share-cache/home/<lang>/<fingerprint>`. They change only with a deploy.
 - **Cache API caveat.** It does nothing on `*.workers.dev`. Previews always render and report `miss`. Verify caching only on `https://wishlist.chernenko.dev`.
 - `D1` is read twice on a miss (fingerprint, then wishes) and once on a hit or a `304`.
 
 ### Indexing and privacy
 
 - A page is `index, follow` only when `BOT_ENVIRONMENT` is `production`, the request host is exactly `wishlist.chernenko.dev`, and the list has at least one visible wish. Everything else (previews, `*.workers.dev` version URLs, empty lists, `404`, `410`) is `noindex`. Canonical and `hreflang` links always use the request origin.
-- `robots.txt` allows `/` and disallows `/__share-cache/` on the production host, and disallows everything elsewhere. There is deliberately no sitemap, so lists are never enumerated.
+- Home pages are `index, follow` under the same production host rule (without the wish count condition) and carry `hreflang` for `uk`, `en`, `pl` plus `x-default` (`/`), Open Graph and Twitter tags, and one JSON-LD `SoftwareApplication` block (`<script type="application/ld+json">`, a data block the CSP does not need to allow).
+- `robots.txt` allows `/`, disallows `/__share-cache/` and points to `https://wishlist.chernenko.dev/sitemap.xml` on the production host, and disallows everything elsewhere. The sitemap lists only the three home pages, never share pages, so lists are never enumerated.
 - The first Share shows a consent screen: the Telegram profile name, visible wishes and payment details become public, anyone with the link can open the page, search engines may index it, and sharing can be stopped at any time. The `@username` is listed there as shown only if the owner switches it on (a button on the link screen, offered only to owners who are searchable by username; the choice is forgotten when sharing stops). The name is saved as `display_name` (64 characters at most), refreshed silently on later shares and deleted when sharing stops.
 - Pages send `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a CSP with `default-src 'none'` and `style-src 'self'` (no inline styles). Owner links get `rel="nofollow ugc noopener noreferrer"`.
-- Telemetry never contains the public id (the path is normalized to `/w/:publicId`). Cloudflare invocation logs do contain the path, as they already do for the webhook path.
+- Telemetry never contains the public id (the path is normalized to `/w/:publicId`; home pages are normalized to `/:lang`). Cloudflare invocation logs do contain the path, as they already do for the webhook path.
 - Old telegra.ph pages stay online but are no longer updated.
 
 ### Assets and data

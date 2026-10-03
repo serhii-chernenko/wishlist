@@ -5,12 +5,16 @@ import { ulid } from 'ulid';
 
 import { generateSharePublicId } from '../src/db/schemas/wishlist-shares';
 import {
+    buildHomePath,
+    buildHomeUrl,
     buildSharePath,
     buildShareUrl,
     isSharePageLanguage,
+    parseLanguageSegment,
     isValidSharePublicId,
     normalizeSharePublicId,
-    SHARE_PAGE_LANGUAGES
+    SHARE_PAGE_LANGUAGES,
+    toLanguageSegment
 } from '../src/web/share/public-id';
 
 const publicId = '01k6g4z8q3m2n7p5r9s1t0v6wx';
@@ -66,7 +70,7 @@ test('share urls use the request origin and an optional page language', () => {
     );
     assert.equal(
         buildShareUrl('https://wishlist.chernenko.dev/', publicId, 'uk'),
-        `https://wishlist.chernenko.dev/uk/w/${publicId}`
+        `https://wishlist.chernenko.dev/ua/w/${publicId}`
     );
     assert.equal(
         buildShareUrl(
@@ -79,6 +83,28 @@ test('share urls use the request origin and an optional page language', () => {
     assert.equal(
         buildShareUrl('http://localhost:8787', publicId),
         `http://localhost:8787/w/${publicId}`
+    );
+});
+
+test('ukrainian uses the ua url segment while the language stays uk', () => {
+    assert.equal(toLanguageSegment('uk'), 'ua');
+    assert.equal(toLanguageSegment('en'), 'en');
+    assert.equal(toLanguageSegment('pl'), 'pl');
+    assert.equal(parseLanguageSegment('ua'), 'uk');
+    assert.equal(parseLanguageSegment('en'), 'en');
+    assert.equal(parseLanguageSegment('pl'), 'pl');
+    assert.equal(parseLanguageSegment('uk'), null);
+    assert.equal(parseLanguageSegment(undefined), null);
+    assert.equal(buildSharePath(publicId, 'uk'), `/ua/w/${publicId}`);
+    assert.equal(buildHomePath('uk'), '/ua');
+    assert.equal(buildHomePath('pl'), '/pl');
+    assert.equal(
+        buildHomeUrl('https://wishlist.chernenko.dev', 'uk'),
+        'https://wishlist.chernenko.dev/ua'
+    );
+    assert.equal(
+        buildHomeUrl('https://wishlist.chernenko.dev'),
+        'https://wishlist.chernenko.dev/'
     );
 });
 

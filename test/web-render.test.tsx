@@ -218,11 +218,15 @@ test('hreflang, canonical, open graph and twitter tags describe the page', () =>
         new RegExp(`<link rel="canonical" href="${base}/pl/w/${PUBLIC_ID}"`)
     );
 
-    for (const language of ['uk', 'en', 'pl']) {
+    for (const [language, segment] of [
+        ['uk', 'ua'],
+        ['en', 'en'],
+        ['pl', 'pl']
+    ]) {
         assert.match(
             html,
             new RegExp(
-                `<link rel="alternate" hreflang="${language}" href="${base}/${language}/w/${PUBLIC_ID}"`
+                `<link rel="alternate" hreflang="${language}" href="${base}/${segment}/w/${PUBLIC_ID}"`
             )
         );
     }
@@ -282,7 +286,7 @@ test('the language switcher links to the other languages and marks the current o
     assert.match(
         html,
         new RegExp(
-            `<a href="/uk/w/${PUBLIC_ID}" hreflang="uk" lang="uk" aria-label="Українська \\(UA\\)">UA</a>`
+            `<a href="/ua/w/${PUBLIC_ID}" hreflang="uk" lang="uk" aria-label="Українська \\(UA\\)">UA</a>`
         )
     );
     assert.match(

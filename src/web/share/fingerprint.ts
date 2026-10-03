@@ -4,6 +4,7 @@ import type { SharePageLanguage } from './public-id';
 export const FALLBACK_DEPLOY_ID = 'dev';
 
 const FINGERPRINT_BYTES = 16;
+const HOME_FINGERPRINT_KIND = 'home';
 
 const bytesToHex = (bytes: Uint8Array) => {
     return Array.from(bytes, byte => {
@@ -30,7 +31,23 @@ export const resolvePublicUsername = (
         : null;
 };
 
-export const computeShareFingerprint = async (
+const digestFields = async (fields: readonly unknown[]) => {
+    const digest = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(JSON.stringify(fields))
+    );
+
+    return bytesToHex(new Uint8Array(digest).slice(0, FINGERPRINT_BYTES));
+};
+
+export const computeHomeFingerprint = (
+    deployId: string,
+    language: SharePageLanguage
+) => {
+    return digestFields([HOME_FINGERPRINT_KIND, deployId, language]);
+};
+
+export const computeShareFingerprint = (
     deployId: string,
     language: SharePageLanguage,
     share: PublicShareFingerprint
@@ -47,12 +64,8 @@ export const computeShareFingerprint = async (
         share.visibleCount,
         share.lastUpdatedAt?.getTime() ?? null
     ];
-    const digest = await crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(JSON.stringify(fields))
-    );
 
-    return bytesToHex(new Uint8Array(digest).slice(0, FINGERPRINT_BYTES));
+    return digestFields(fields);
 };
 
 export const etagMatches = (

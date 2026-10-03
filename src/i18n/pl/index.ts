@@ -434,6 +434,74 @@ const pl: Translation = {
         meta: {
             description:
                 '{name}: {count} {{count:|życzenie||życzenia|życzeń|życzenia}} na liście życzeń'
+        },
+        home: {
+            title: 'Lista życzeń: bot w Telegramie na życzenia i pomysły na prezenty',
+            description:
+                'Zbieraj życzenia w bocie w Telegramie, udostępnij jeden link, a bliscy podarują Ci dokładnie to, czego chcesz. Za darmo, po polsku, ukraińsku i angielsku.',
+            name: 'Lista życzeń',
+            tagline:
+                'Zapisuj życzenia w Telegramie, udostępnij link, a bliscy wybiorą prezent, którego naprawdę potrzebujesz.',
+            cta: 'Otwórz {bot}',
+            note: 'Za darmo. Wystarczy Telegram.',
+            steps: {
+                title: 'Jak to działa',
+                create: {
+                    title: 'Utwórz listę w bocie',
+                    text: 'Dodaj życzenia z nazwą, opisem, maksymalnie 9 zdjęciami, ceną i linkiem do sklepu.'
+                },
+                share: {
+                    title: 'Udostępnij link',
+                    text: 'Bot utworzy publiczną stronę Twojej listy. Wyślij link znajomym albo pozwól im znaleźć Cię w bocie po nazwie użytkownika lub numerze telefonu.'
+                },
+                give: {
+                    title: 'Znajomi wybierają prezent',
+                    text: 'Klikają „Podaruję” i życzenie trafia na ich listę „Chcę podarować”. Inni darczyńcy widzą, że jest już wybrane, a Ty nie, więc niespodzianka pozostaje niespodzianką.'
+                }
+            },
+            features: {
+                title: 'Co potrafi bot',
+                photos: {
+                    title: 'Zdjęcia i linki',
+                    text: 'Do 9 zdjęć na życzenie i link do sklepu, żeby nikt nie pomylił modelu ani koloru.'
+                },
+                prices: {
+                    title: 'Ceny i filtry',
+                    text: 'Podaj cenę w swojej walucie, a znajomi przefiltrują życzenia według swojego budżetu.'
+                },
+                priority: {
+                    title: 'Priorytety',
+                    text: 'Zaznacz, czego chcesz najbardziej: takie życzenia dostają serduszko.'
+                },
+                hidden: {
+                    title: 'Ukryte życzenia',
+                    text: 'Szkice i sprawy osobiste zostają przy Tobie: ukryte życzenia widzisz tylko Ty.'
+                },
+                page: {
+                    title: 'Strona dla znajomych',
+                    text: 'Wszystkie życzenia na jednej stronie, którą można otworzyć bez Telegrama. Aktualizuje się sama.'
+                },
+                search: {
+                    title: 'Szukanie znajomych',
+                    text: 'Znajduj listy innych po nazwie użytkownika lub numerze telefonu, jeśli na to pozwolili.'
+                },
+                languages: {
+                    title: 'Trzy języki',
+                    text: 'Polski, ukraiński i angielski albo automatycznie według języka Telegrama.'
+                }
+            },
+            privacy: {
+                title: 'Prywatność',
+                phone: 'Numer telefonu nigdy nie jest publiczny: służy tylko do wyszukiwania.',
+                name: 'Imię pojawia się na stronie dopiero po Twojej zgodzie i znika, gdy tylko przestajesz udostępniać.',
+                openSource:
+                    'Kod jest otwarty na licencji AGPL-3.0, więc każdy może sprawdzić, jak bot obchodzi się z danymi.'
+            },
+            links: {
+                title: 'Więcej od autora',
+                author: 'Autor na X',
+                princess: 'Inny bot autora: Księżniczka dnia'
+            }
         }
     },
     commands: {

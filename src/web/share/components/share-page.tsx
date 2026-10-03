@@ -6,6 +6,7 @@ import {
 } from '../../../bot/input/limits';
 import { SHAREABLE_WISHES_LIMIT } from '../../../db/repositories/wish-repository';
 import { inlineMarkup, trimEdgeWhitespace } from '../inline-markup';
+import { buildSharePath } from '../public-id';
 import type { SharePageModel } from '../view-model';
 import { PageFooter } from './footer';
 import { HeroTag } from './hero';
@@ -87,7 +88,9 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
         <>
             <LanguageSwitcher
                 language={model.language}
-                publicId={model.publicId}
+                pathFor={language => {
+                    return buildSharePath(model.publicId, language);
+                }}
             />
             <main>
                 <ShareHero model={model} />
