@@ -12,6 +12,15 @@ const STYLESHEET_SOURCE = readFileSync(
     'utf8'
 );
 
+const GIFT_TAG_SOURCE = readFileSync(
+    new URL('../src/web/styles/gift-tag.css', import.meta.url),
+    'utf8'
+);
+const FONTS_SOURCE = readFileSync(
+    new URL('../src/web/styles/fonts.css', import.meta.url),
+    'utf8'
+);
+
 const LIGHT_TOKENS_PATTERN = /^:root \{([^}]*)\}/m;
 const DARK_TOKENS_PATTERN =
     /@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/;
@@ -178,13 +187,22 @@ test('both themes exist and every text pair meets WCAG AAA', () => {
     }
 });
 
+test('the shared partials are imported and own the font faces and tag primitives', () => {
+    assert.match(STYLESHEET_SOURCE, /@import '\.\/fonts\.css';/);
+    assert.match(STYLESHEET_SOURCE, /@import '\.\/gift-tag\.css';/);
+    assert.doesNotMatch(STYLESHEET_SOURCE, /@font-face/);
+    assert.equal(FONTS_SOURCE.match(/@font-face/g)?.length, 7);
+    assert.doesNotMatch(FONTS_SOURCE, /url\(\s*['"]?https?:/);
+    assert.match(GIFT_TAG_SOURCE, /^@layer components \{/);
+});
+
 test('the focus ring outline stands out from every surface it sits on', () => {
     assert.match(
         STYLESHEET_SOURCE,
         /:focus-visible \{\s*outline: 3px solid var\(--ink\);/
     );
     assert.match(
-        STYLESHEET_SOURCE,
+        GIFT_TAG_SOURCE,
         /\.envelope-link:focus-visible \{\s*outline-color: var\(--on-box\);/
     );
 
