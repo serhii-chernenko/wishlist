@@ -66,8 +66,19 @@ const ShareConsent = ({ share }: { share: ShareDto }) => {
     );
 };
 
-const sendShareLink = (LL: AppTranslator, url: string) => {
-    openTelegramLink(buildShareUrl(url, LL.share.sendText()));
+/** Friends get the Telegram link first; the page link rides along in the text for people without Telegram. */
+const sendShareLinks = (
+    LL: AppTranslator,
+    links: { url: string; appUrl: string | null }
+) => {
+    openTelegramLink(
+        links.appUrl === null
+            ? buildShareUrl(links.url, LL.share.sendText())
+            : buildShareUrl(
+                  links.appUrl,
+                  LL.share.sendTextWithPage({ pageUrl: links.url })
+              )
+    );
 };
 
 export const ShareScreen = (_props: ScreenProps<'share'>) => {
@@ -206,7 +217,10 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
               ? {
                     text: LL.share.link.send(),
                     onClick: () => {
-                        sendShareLink(LL, current.url ?? '');
+                        sendShareLinks(LL, {
+                            url: current.url ?? '',
+                            appUrl: current.appUrl
+                        });
                     }
                 }
               : null
@@ -243,20 +257,28 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                     }
 
                     const url = data.url;
+                    const appUrl = data.appUrl;
 
                     return (
                         <>
                             <Tag class='share-link-card'>
                                 <h2 class='state-title'>
-                                    {LL.share.link.title()}
+                                    {appUrl === null
+                                        ? LL.share.link.title()
+                                        : LL.share.link.appTitle()}
                                 </h2>
-                                <p class='share-url'>{url}</p>
+                                <p class='share-url'>{appUrl ?? url}</p>
+                                {appUrl === null ? null : (
+                                    <p class='field-hint'>
+                                        {LL.share.link.appHint()}
+                                    </p>
+                                )}
                                 <div class='share-actions'>
                                     <button
                                         type='button'
                                         class='btn'
                                         onClick={() => {
-                                            void copyLink(url);
+                                            void copyLink(appUrl ?? url);
                                         }}
                                     >
                                         {LL.share.link.copy()}
@@ -265,7 +287,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                         type='button'
                                         class='btn'
                                         onClick={() => {
-                                            sendShareLink(LL, url);
+                                            sendShareLinks(LL, { url, appUrl });
                                         }}
                                     >
                                         {LL.share.link.send()}
@@ -274,16 +296,59 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                         type='button'
                                         class='btn'
                                         onClick={() => {
-                                            openLink(url);
+                                            if (appUrl === null) {
+                                                openLink(url);
+                                            } else {
+                                                openTelegramLink(appUrl);
+                                            }
                                         }}
                                     >
-                                        {LL.share.link.open()}
+                                        {appUrl === null
+                                            ? LL.share.link.open()
+                                            : LL.share.link.openApp()}
                                     </button>
                                 </div>
                                 <p class='field-hint'>
                                     {LL.share.autoUpdate()}
                                 </p>
                             </Tag>
+                            {appUrl === null ? null : (
+                                <section
+                                    class='share-web'
+                                    aria-labelledby='share-web-title'
+                                >
+                                    <h2
+                                        id='share-web-title'
+                                        class='share-web-title'
+                                    >
+                                        {LL.share.link.webTitle()}
+                                    </h2>
+                                    <p class='field-hint'>
+                                        {LL.share.link.webHint()}
+                                    </p>
+                                    <p class='share-url'>{url}</p>
+                                    <div class='share-web-actions'>
+                                        <button
+                                            type='button'
+                                            class='text-button'
+                                            onClick={() => {
+                                                void copyLink(url);
+                                            }}
+                                        >
+                                            {LL.share.link.copy()}
+                                        </button>
+                                        <button
+                                            type='button'
+                                            class='text-button'
+                                            onClick={() => {
+                                                openLink(url);
+                                            }}
+                                        >
+                                            {LL.share.link.open()}
+                                        </button>
+                                    </div>
+                                </section>
+                            )}
                             {pageEmpty ? (
                                 <p class='share-page-empty' role='note'>
                                     {LL.share.pageEmpty()}

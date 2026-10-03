@@ -3,6 +3,7 @@ import { createContext, useContext } from 'hono/jsx/dom';
 import type {
     AppLocale,
     BootstrapDto,
+    ClientEventInput,
     ClientEventKind,
     ClientScreen,
     LanguageResultDto,
@@ -29,6 +30,8 @@ export interface Session {
     locale: AppLocale;
     LL: AppTranslator;
 }
+
+export type ClientEventDetails = Pick<ClientEventInput, 'field' | 'code'>;
 
 export interface Navigator {
     push(route: Route): void;
@@ -60,7 +63,11 @@ export interface AppServices {
     applyLanguage(result: LanguageResultDto): void;
     updateMe(me: MeDto): void;
     reloadSession(): Promise<void>;
-    reportEvent(kind: ClientEventKind, screen: ClientScreen): void;
+    reportEvent(
+        kind: ClientEventKind,
+        screen: ClientScreen,
+        details?: ClientEventDetails
+    ): void;
 }
 
 export const AppContext = createContext<AppServices | null>(null);

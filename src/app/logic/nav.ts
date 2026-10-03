@@ -139,6 +139,13 @@ export const resolveStartRoutes = (
     ];
 };
 
+/** The stack a guest lands on right after registering: the deep link they opened the app with, never the Visibility screen they just finished. */
+export const routesAfterRegistration = (startParam: string | null): Route[] => {
+    return resolveStartRoutes(startParam, true).filter(route => {
+        return route.screen !== 'visibility';
+    });
+};
+
 export const createNavState = (routes: readonly Route[]): NavState => {
     const entries = routes.map((route, index) => {
         return { key: index + 1, route };

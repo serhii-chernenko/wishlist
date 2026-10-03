@@ -1,3 +1,4 @@
+import { settleNativeCall } from '../logic/native-call';
 import { callSafely, getLaunchContext, supportsNative } from './sdk';
 
 const TELEGRAM_LINK_PATTERN = /^https:\/\/t\.me\//;
@@ -70,19 +71,20 @@ export const closeApp = () => {
 export const requestWriteAccess = () => {
     const { webApp } = getLaunchContext();
 
-    return new Promise<boolean>(resolve => {
-        if (webApp === null || !supportsNative('writeAccess')) {
-            resolve(false);
-
-            return;
+    return settleNativeCall<boolean>(settle => {
+        if (
+            webApp?.requestWriteAccess === undefined ||
+            !supportsNative('writeAccess')
+        ) {
+            return false;
         }
 
-        callSafely(() => {
-            webApp.requestWriteAccess?.(allowed => {
-                resolve(allowed);
-            });
+        webApp.requestWriteAccess(allowed => {
+            settle(allowed);
         });
-    });
+
+        return true;
+    }, false);
 };
 
 export type ContactRequestResult = 'sent' | 'cancelled' | 'unsupported';
@@ -90,17 +92,18 @@ export type ContactRequestResult = 'sent' | 'cancelled' | 'unsupported';
 export const requestContact = () => {
     const { webApp } = getLaunchContext();
 
-    return new Promise<ContactRequestResult>(resolve => {
-        if (webApp === null || !supportsNative('contact')) {
-            resolve('unsupported');
-
-            return;
+    return settleNativeCall<ContactRequestResult>(settle => {
+        if (
+            webApp?.requestContact === undefined ||
+            !supportsNative('contact')
+        ) {
+            return false;
         }
 
-        callSafely(() => {
-            webApp.requestContact?.(sent => {
-                resolve(sent ? 'sent' : 'cancelled');
-            });
+        webApp.requestContact(sent => {
+            settle(sent ? 'sent' : 'cancelled');
         });
-    });
+
+        return true;
+    }, 'unsupported');
 };

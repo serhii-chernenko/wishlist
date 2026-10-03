@@ -33,7 +33,7 @@ import { TagSkeletons } from '../ui/skeleton';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
 import { WishGrid, WishTag } from '../ui/wish-tag';
-import { updateCounts } from './wishes';
+import { refreshGives } from './gives';
 
 interface ThirdListData {
     items: ThirdWishDto[];
@@ -140,7 +140,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const LL = useLL();
     const nav = useNav();
     const services = useApp();
-    const { api, cache, toast } = services;
+    const { api, toast } = services;
     const { locale, config } = useSession();
     const publicId = source.kind === 'share' ? source.publicId : null;
     const [filter, setFilter] = useState<WishFilterValue | null>(null);
@@ -230,16 +230,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                 });
             }
 
-            updateCounts(services, counts => {
-                return {
-                    ...counts,
-                    gives: Math.max(
-                        0,
-                        counts.gives + (action === 'give' ? 1 : -1)
-                    )
-                };
-            });
-            cache.invalidate('gives');
+            refreshGives(services);
             toast.show(
                 action === 'give' ? LL.third.given() : LL.third.taken(),
                 'success'
@@ -247,7 +238,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
         } catch (error) {
             const failure = toFailure(error);
 
-            if (hasErrorCode(failure, 'notFound')) {
+            if (action === 'give' && hasErrorCode(failure, 'notFound')) {
                 list.mutate(cached => {
                     return cached === undefined
                         ? cached

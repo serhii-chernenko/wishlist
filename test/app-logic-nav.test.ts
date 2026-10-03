@@ -15,6 +15,7 @@ import {
     resetRoutes,
     resolveStartRoutes,
     rootRoute,
+    routesAfterRegistration,
     SCREEN_IDS,
     type Route
 } from '../src/app/logic/nav';
@@ -194,4 +195,36 @@ test('screen ids are a subset of the telemetry screen set', () => {
 
 test('an empty stack is a programming error', () => {
     assert.throws(() => currentEntry({ entries: [], nextKey: 1 }));
+});
+
+test('a guest with a share link lands on that list after registering', () => {
+    const start = `s_${PUBLIC_ID}`;
+
+    assert.deepEqual(screensOf(resolveStartRoutes(start, false)), [
+        'onboarding',
+        'visibility'
+    ]);
+    assert.deepEqual(routesAfterRegistration(start), [
+        { screen: 'home' },
+        {
+            screen: 'thirdList',
+            source: { kind: 'share', publicId: PUBLIC_ID }
+        }
+    ]);
+});
+
+test('after registering, other deep links resume and Visibility is dropped', () => {
+    assert.deepEqual(screensOf(routesAfterRegistration('w_42')), [
+        'home',
+        'wishes',
+        'wishEditor'
+    ]);
+    assert.deepEqual(screensOf(routesAfterRegistration('gives')), [
+        'home',
+        'gives'
+    ]);
+    assert.deepEqual(screensOf(routesAfterRegistration('visibility')), [
+        'home'
+    ]);
+    assert.deepEqual(screensOf(routesAfterRegistration(null)), ['home']);
 });

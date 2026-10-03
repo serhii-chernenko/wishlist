@@ -10,7 +10,8 @@ import {
 } from 'lucide';
 
 import type { Route, ScreenId, ScreenProps } from '../nav/routes';
-import { useLL, useNav, useSession } from '../state/context';
+import { routesAfterRegistration } from '../logic/nav';
+import { useApp, useLL, useNav, useSession } from '../state/context';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
 import { Icon, type IconNode } from '../ui/icon';
@@ -200,11 +201,12 @@ export const OnboardingView = ({ id }: { id: 'home' | 'onboarding' }) => {
 
 export const OnboardingScreen = (_props: ScreenProps<'onboarding'>) => {
     const nav = useNav();
+    const { launch } = useApp();
     const { me } = useSession();
 
     useEffect(() => {
         if (me.registered) {
-            nav.reset([{ screen: 'home' }]);
+            nav.reset(routesAfterRegistration(launch.startParam));
         }
     }, [me.registered]);
 

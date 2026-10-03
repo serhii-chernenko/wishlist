@@ -147,6 +147,7 @@ export const Router = ({ handle }: { handle: NavigatorHandle }) => {
         ScreenProps<Route['screen']>
     >;
     const { scrollPositions } = handle;
+    const { reportEvent } = useApp();
 
     useBackButton(canGoBack(nav), () => {
         haptics.selection();
@@ -159,6 +160,7 @@ export const Router = ({ handle }: { handle: NavigatorHandle }) => {
         window.scrollTo(0, saved ?? 0);
         scrollPositions.delete(entry.key);
         focusScreenTitle();
+        reportEvent('screenView', toClientScreen(entry.route));
     }, [entry.key]);
 
     return (

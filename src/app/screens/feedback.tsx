@@ -27,7 +27,7 @@ const describeFieldError = (
 
 export const FeedbackScreen = (_props: ScreenProps<'feedback'>) => {
     const LL = useLL();
-    const { api } = useApp();
+    const { api, reportEvent } = useApp();
     const { config } = useSession();
     const [text, setText] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -45,12 +45,22 @@ export const FeedbackScreen = (_props: ScreenProps<'feedback'>) => {
 
         if (trimmed === '') {
             setError(LL.feedback.errors.empty());
+            haptics.error();
+            reportEvent('validationFailed', 'feedback', {
+                field: 'feedback',
+                code: 'empty'
+            });
 
             return;
         }
 
         if (countCharacters(trimmed) > max) {
             setError(LL.feedback.errors.tooLong({ max }));
+            haptics.error();
+            reportEvent('validationFailed', 'feedback', {
+                field: 'feedback',
+                code: 'tooLong'
+            });
 
             return;
         }
@@ -68,6 +78,14 @@ export const FeedbackScreen = (_props: ScreenProps<'feedback'>) => {
             const fieldError = getFieldErrors(failure).text;
 
             haptics.error();
+
+            if (fieldError !== undefined) {
+                reportEvent('validationFailed', 'feedback', {
+                    field: 'feedback',
+                    code: fieldError
+                });
+            }
+
             setError(
                 fieldError === undefined
                     ? failureMessage(LL, failure)

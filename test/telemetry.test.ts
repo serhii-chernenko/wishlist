@@ -727,7 +727,8 @@ test('Mini App events carry closed labels only', () => {
                 platform: 'ios',
                 startKind: 'wish',
                 isGuest: true,
-                locale: 'uk'
+                locale: 'uk',
+                theme: 'dark'
             }),
             'production'
         ),
@@ -739,6 +740,7 @@ test('Mini App events carry closed labels only', () => {
             startKind: 'wish',
             isGuest: true,
             locale: 'uk',
+            theme: 'dark',
             botEnvironment: 'production'
         }
     );
@@ -754,7 +756,14 @@ test('Mini App events carry closed labels only', () => {
             status: 200,
             elapsedMs: 2
         }),
-        appClientEvent({ kind: 'renderError', screen: 'wishEditor' })
+        appClientEvent({ kind: 'renderError', screen: 'wishEditor' }),
+        appClientEvent({ kind: 'screenView', screen: 'wishes' }),
+        appClientEvent({
+            kind: 'validationFailed',
+            screen: 'wishEditor',
+            field: 'title',
+            code: 'tooLong'
+        })
     ]) {
         const attributes = toWishlistAttributes(fields, 'production');
 
@@ -772,6 +781,40 @@ test('Mini App events carry closed labels only', () => {
             'production'
         ).path,
         '/img/w'
+    );
+});
+
+test('client validation events keep the closed field and code labels and reject unknown ones', () => {
+    assert.deepEqual(
+        toWishlistAttributes(
+            appClientEvent({
+                kind: 'validationFailed',
+                screen: 'wishEditor',
+                field: 'price',
+                code: 'containsLink'
+            }),
+            'production'
+        ),
+        {
+            eventName: 'app_client_event',
+            path: '/api/app',
+            outcome: 'success',
+            kind: 'validationFailed',
+            screen: 'wishEditor',
+            field: 'price',
+            code: 'containsLink',
+            botEnvironment: 'production'
+        }
+    );
+    assert.equal(
+        toWishlistAttributes(
+            {
+                event: 'app_client_event',
+                code: 'free text with spaces' as never
+            },
+            'production'
+        ).code,
+        'invalid'
     );
 });
 
@@ -876,7 +919,8 @@ test('Mini App telemetry never leaks Telegram ids, initData or tokens', async ()
                     platform: pickRandom(random, platforms),
                     startKind: 'wish',
                     isGuest: false,
-                    locale: 'en'
+                    locale: 'en',
+                    theme: 'light'
                 }),
                 appAuthRejectedEvent(pickRandom(random, reasons)),
                 appRateLimitedEvent('api')

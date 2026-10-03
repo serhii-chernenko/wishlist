@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     buildAppUrl,
     buildMainAppLink,
+    buildShareAppLink,
     formatStartParam,
     getStartKind,
     parseStartParam,
@@ -135,4 +136,16 @@ test('buildMainAppLink opens the Main Mini App with an optional start param', ()
         buildMainAppLink('https://t.me/wishlist_ua_bot', '<script>'),
         'https://t.me/wishlist_ua_bot?startapp'
     );
+});
+
+test('buildShareAppLink points a shared list at the bot Mini App and parses back', () => {
+    const link = buildShareAppLink('https://t.me/wishlist_ua_bot/', PUBLIC_ID);
+
+    assert.equal(link, `https://t.me/wishlist_ua_bot?startapp=s_${PUBLIC_ID}`);
+    assert.deepEqual(parseStartParam(`s_${PUBLIC_ID}`), {
+        kind: 'share',
+        publicId: PUBLIC_ID
+    });
+    assert.equal(buildShareAppLink('', PUBLIC_ID), null);
+    assert.equal(buildShareAppLink(undefined, PUBLIC_ID), null);
 });

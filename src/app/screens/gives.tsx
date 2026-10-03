@@ -12,7 +12,12 @@ import {
     type RemovedItem
 } from '../logic/optimistic';
 import type { ScreenProps } from '../nav/routes';
-import { useApp, useAppResource, useLL } from '../state/context';
+import {
+    useApp,
+    useAppResource,
+    useLL,
+    type AppServices
+} from '../state/context';
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -28,6 +33,21 @@ import {
 } from './wishes';
 
 const giveKey: KeyOf<GiveEntryDto> = entry => entry.wish.id;
+
+/** Reloads the give list after a give or take elsewhere and takes the Home count from the server, so a give that already existed is not counted twice. */
+export const refreshGives = (services: AppServices) => {
+    void services.cache
+        .load<GiveListDto>(GIVES_LIST_KEY, signal => {
+            return services.api.request('listGives', { signal });
+        })
+        .then(page => {
+            if (page !== undefined) {
+                updateCounts(services, counts => {
+                    return { ...counts, gives: page.total };
+                });
+            }
+        });
+};
 
 const GiveBadges = ({ entry }: { entry: GiveEntryDto }) => {
     const LL = useLL();

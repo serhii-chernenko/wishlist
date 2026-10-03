@@ -191,6 +191,21 @@ export const appendPage = <Item, Page extends PageDto<Item>>(
     };
 };
 
+/** Reloads from the first page until at least `minimum` items are back, so a revalidation keeps everything "Show more" had loaded, in the server's current order. */
+export const loadPagesUntil = async <Item, Page extends PageDto<Item>>(
+    fetchPage: (offset: number) => Promise<Page>,
+    minimum: number,
+    keyOf: KeyOf<Item>
+): Promise<Page> => {
+    let page = await fetchPage(0);
+
+    while (page.items.length < minimum && page.nextOffset !== null) {
+        page = appendPage(page, await fetchPage(page.nextOffset), keyOf);
+    }
+
+    return page;
+};
+
 export const emptyPage = <Page extends PageDto<unknown>>(page: Page): Page => {
     return { ...page, items: [], total: 0, nextOffset: null };
 };

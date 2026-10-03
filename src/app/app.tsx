@@ -1,13 +1,9 @@
-import type {
-    AppLocale,
-    BootstrapDto,
-    ClientEventKind,
-    ClientScreen
-} from '../shared/app-api';
+import type { AppLocale, BootstrapDto } from '../shared/app-api';
 import type { ApiClient } from './api/client';
 import { createTranslator } from './i18n/i18n';
 import type { SystemScreenId } from './logic/errors';
 import { resolveStartRoutes } from './logic/nav';
+import { createTelemetryGate } from './logic/telemetry';
 import { createNavigator, Router, type NavigatorHandle } from './nav/router';
 import { BootErrorScreen } from './screens/boot-error';
 import { OutsideTelegramScreen } from './screens/outside-telegram';
@@ -69,6 +65,7 @@ export const createAppServices = ({
 }: AppServicesInput) => {
     const session = createStore(toSession(bootstrap));
     const revalidation = createStore(0);
+    const telemetryGate = createTelemetryGate();
     const navigation = createNavigator(
         resolveStartRoutes(launch.startParam, bootstrap.me.registered),
         session
@@ -109,10 +106,15 @@ export const createAppServices = ({
 
             updateSession(() => next);
         },
-        reportEvent(kind: ClientEventKind, screen: ClientScreen) {
-            api.request('reportClientEvent', { body: { kind, screen } }).catch(
-                () => undefined
-            );
+        reportEvent(kind, screen, details = {}) {
+            if (!telemetryGate.allow({ kind, screen }, Date.now())) {
+                return;
+            }
+
+            api.request('reportClientEvent', {
+                body: { kind, screen, ...details },
+                keepalive: true
+            }).catch(() => undefined);
         }
     };
 

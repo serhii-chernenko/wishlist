@@ -744,13 +744,19 @@ type RootTranslation = {
 			 */
 			consent: RequiredParams<'host' | 'name'>
 			/**
-			 * ✅​ ​Т​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​д​о​с​т​у​п​н​и​й​ ​з​а​ ​п​о​с​и​л​а​н​н​я​м​:​
-		​{​u​r​l​}​
+			 * ✅​ ​Т​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​д​о​с​т​у​п​н​и​й​!​
+		​
+		​�​�​ ​В​і​д​к​р​и​т​и​ ​в​ ​T​e​l​e​g​r​a​m​:​
+		​{​a​p​p​U​r​l​}​
+		​
+		​�​�​ ​С​т​о​р​і​н​к​а​ ​в​ ​б​р​а​у​з​е​р​і​:​
+		​{​p​a​g​e​U​r​l​}​
 		​
 		​С​т​о​р​і​н​к​а​ ​о​н​о​в​л​ю​є​т​ь​с​я​ ​с​а​м​а​ ​п​і​с​л​я​ ​к​о​ж​н​о​ї​ ​з​м​і​н​и​ ​у​ ​с​п​и​с​к​у​.
-			 * @param {string} url
+			 * @param {string} appUrl
+			 * @param {string} pageUrl
 			 */
-			ready: RequiredParams<'url'>
+			ready: RequiredParams<'appUrl' | 'pageUrl'>
 			/**
 			 * ❓​ ​П​р​и​п​и​н​и​т​и​ ​д​і​л​и​т​и​с​я​ ​л​и​с​т​о​м​ ​б​а​ж​а​н​ь​?​
 		​
@@ -769,30 +775,41 @@ type RootTranslation = {
 			 */
 			newConfirm: string
 			/**
-			 * ✅​ ​О​с​ь​ ​н​о​в​е​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​т​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​:​
-		​{​u​r​l​}​
+			 * ✅​ ​О​с​ь​ ​н​о​в​і​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​т​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​.​
 		​
-		​С​т​а​р​е​ ​п​о​с​и​л​а​н​н​я​ ​б​і​л​ь​ш​е​ ​н​е​ ​п​р​а​ц​ю​є​.
-			 * @param {string} url
+		​�​�​ ​В​і​д​к​р​и​т​и​ ​в​ ​T​e​l​e​g​r​a​m​:​
+		​{​a​p​p​U​r​l​}​
+		​
+		​�​�​ ​С​т​о​р​і​н​к​а​ ​в​ ​б​р​а​у​з​е​р​і​:​
+		​{​p​a​g​e​U​r​l​}​
+		​
+		​С​т​а​р​і​ ​п​о​с​и​л​а​н​н​я​ ​б​і​л​ь​ш​е​ ​н​е​ ​п​р​а​ц​ю​ю​т​ь​.
+			 * @param {string} appUrl
+			 * @param {string} pageUrl
 			 */
-			rotated: RequiredParams<'url'>
+			rotated: RequiredParams<'appUrl' | 'pageUrl'>
 			/**
 			 * ℹ​️​ ​С​т​о​р​і​н​к​а​ ​з​а​р​а​з​ ​п​о​р​о​ж​н​я​:​ ​н​а​ ​н​і​й​ ​н​е​м​а​є​ ​в​и​д​и​м​и​х​ ​б​а​ж​а​н​ь​.​ ​П​о​с​и​л​а​н​н​я​ ​п​р​а​ц​ю​є​,​ ​а​ ​б​а​ж​а​н​н​я​ ​з​ʼ​я​в​л​я​т​ь​с​я​ ​н​а​ ​с​т​о​р​і​н​ц​і​ ​о​д​р​а​з​у​ ​п​і​с​л​я​ ​д​о​д​а​в​а​н​н​я​.
 			 */
 			pageEmpty: string
 			/**
-			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️
+			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:​ ​{​p​a​g​e​U​r​l​}
+			 * @param {string} pageUrl
 			 */
-			sendText: string
+			sendText: RequiredParams<'pageUrl'>
 			actions: {
 				/**
 				 * ✅​ ​П​о​д​і​л​и​т​и​с​я
 				 */
 				publish: string
 				/**
-				 * �​�​ ​В​і​д​к​р​и​т​и​ ​с​т​о​р​і​н​к​у
+				 * �​�​ ​В​і​д​к​р​и​т​и​ ​в​ ​T​e​l​e​g​r​a​m
 				 */
-				open: string
+				openTelegram: string
+				/**
+				 * �​�​ ​С​т​о​р​і​н​к​а​ ​в​ ​б​р​а​у​з​е​р​і
+				 */
+				openBrowser: string
 				/**
 				 * �​�​ ​Н​а​д​і​с​л​а​т​и​ ​д​р​у​з​я​м
 				 */
@@ -2982,11 +2999,36 @@ type RootTranslation = {
 				 * В​і​д​к​р​и​т​и​ ​с​т​о​р​і​н​к​у
 				 */
 				open: string
+				/**
+				 * П​о​с​и​л​а​н​н​я​ ​д​л​я​ ​T​e​l​e​g​r​a​m
+				 */
+				appTitle: string
+				/**
+				 * В​і​д​к​р​и​т​и​ ​в​ ​T​e​l​e​g​r​a​m
+				 */
+				openApp: string
+				/**
+				 * В​і​д​к​р​и​в​а​є​ ​т​в​і​й​ ​л​и​с​т​ ​п​р​о​с​т​о​ ​в​ ​T​e​l​e​g​r​a​m​,​ ​д​е​ ​д​р​у​з​і​ ​о​д​р​а​з​у​ ​м​о​ж​у​т​ь​ ​о​б​р​а​т​и​ ​п​о​д​а​р​у​н​о​к​.
+				 */
+				appHint: string
+				/**
+				 * С​т​о​р​і​н​к​а​ ​в​ ​б​р​а​у​з​е​р​і
+				 */
+				webTitle: string
+				/**
+				 * Д​л​я​ ​т​и​х​,​ ​х​т​о​ ​н​е​ ​к​о​р​и​с​т​у​є​т​ь​с​я​ ​T​e​l​e​g​r​a​m​.
+				 */
+				webHint: string
 			}
 			/**
 			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️
 			 */
 			sendText: string
+			/**
+			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:​ ​{​p​a​g​e​U​r​l​}
+			 * @param {string} pageUrl
+			 */
+			sendTextWithPage: RequiredParams<'pageUrl'>
 			/**
 			 * С​т​о​р​і​н​к​а​ ​о​н​о​в​л​ю​є​т​ь​с​я​ ​с​а​м​а​ ​п​і​с​л​я​ ​к​о​ж​н​о​ї​ ​з​м​і​н​и​ ​в​ ​л​и​с​т​і​.
 			 */
@@ -4258,12 +4300,17 @@ export type TranslationFunctions = {
 			 */
 			consent: (arg: { host: string, name: string }) => LocalizedString
 			/**
-			 * ✅ Твій лист бажань доступний за посиланням:
-		{url}
+			 * ✅ Твій лист бажань доступний!
+	
+		📲 Відкрити в Telegram:
+		{appUrl}
+	
+		🌐 Сторінка в браузері:
+		{pageUrl}
 	
 		Сторінка оновлюється сама після кожної зміни у списку.
 			 */
-			ready: (arg: { url: string }) => LocalizedString
+			ready: (arg: { appUrl: string, pageUrl: string }) => LocalizedString
 			/**
 			 * ❓ Припинити ділитися листом бажань?
 	
@@ -4282,29 +4329,38 @@ export type TranslationFunctions = {
 			 */
 			newConfirm: () => LocalizedString
 			/**
-			 * ✅ Ось нове посилання на твій лист бажань:
-		{url}
+			 * ✅ Ось нові посилання на твій лист бажань.
 	
-		Старе посилання більше не працює.
+		📲 Відкрити в Telegram:
+		{appUrl}
+	
+		🌐 Сторінка в браузері:
+		{pageUrl}
+	
+		Старі посилання більше не працюють.
 			 */
-			rotated: (arg: { url: string }) => LocalizedString
+			rotated: (arg: { appUrl: string, pageUrl: string }) => LocalizedString
 			/**
 			 * ℹ️ Сторінка зараз порожня: на ній немає видимих бажань. Посилання працює, а бажання зʼявляться на сторінці одразу після додавання.
 			 */
 			pageEmpty: () => LocalizedString
 			/**
-			 * Мій лист бажань ❤️
+			 * Мій лист бажань ❤️ Немає Telegram? Відкрий у браузері: {pageUrl}
 			 */
-			sendText: () => LocalizedString
+			sendText: (arg: { pageUrl: string }) => LocalizedString
 			actions: {
 				/**
 				 * ✅ Поділитися
 				 */
 				publish: () => LocalizedString
 				/**
-				 * 🔗 Відкрити сторінку
+				 * 📲 Відкрити в Telegram
 				 */
-				open: () => LocalizedString
+				openTelegram: () => LocalizedString
+				/**
+				 * 🌐 Сторінка в браузері
+				 */
+				openBrowser: () => LocalizedString
 				/**
 				 * 📤 Надіслати друзям
 				 */
@@ -6410,11 +6466,35 @@ export type TranslationFunctions = {
 				 * Відкрити сторінку
 				 */
 				open: () => LocalizedString
+				/**
+				 * Посилання для Telegram
+				 */
+				appTitle: () => LocalizedString
+				/**
+				 * Відкрити в Telegram
+				 */
+				openApp: () => LocalizedString
+				/**
+				 * Відкриває твій лист просто в Telegram, де друзі одразу можуть обрати подарунок.
+				 */
+				appHint: () => LocalizedString
+				/**
+				 * Сторінка в браузері
+				 */
+				webTitle: () => LocalizedString
+				/**
+				 * Для тих, хто не користується Telegram.
+				 */
+				webHint: () => LocalizedString
 			}
 			/**
 			 * Мій лист бажань ❤️
 			 */
 			sendText: () => LocalizedString
+			/**
+			 * Мій лист бажань ❤️ Немає Telegram? Відкрий у браузері: {pageUrl}
+			 */
+			sendTextWithPage: (arg: { pageUrl: string }) => LocalizedString
 			/**
 			 * Сторінка оновлюється сама після кожної зміни в листі.
 			 */

@@ -503,6 +503,12 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     ) => {
         setTouched(new Set(DRAFT_TEXT_FIELDS));
         haptics.error();
+        services.reportEvent('validationFailed', 'wishEditor', {
+            field: check.firstInvalid,
+            ...(check.errors[check.firstInvalid] !== undefined && {
+                code: check.errors[check.firstInvalid]
+            })
+        });
         toast.show(
             check.onlyTitleMissing
                 ? LL.editor.titleMissing()

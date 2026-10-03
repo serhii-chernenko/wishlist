@@ -214,7 +214,7 @@ const en: Translation = {
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
                 '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
-            ready: '✅ Your wish list is available at this link:\n{url}\n\nThe page updates itself after every change to your list.',
+            ready: '✅ Your wish list is ready!\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Page in the browser:\n{pageUrl}\n\nThe page updates itself after every change to your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
             stopped:
@@ -222,13 +222,15 @@ const en: Translation = {
             newConfirm:
                 '❓ Create a new link?\n\nThe old link will stop working right away, and nobody will be able to open your list with it anymore. You will need to send the new link to your friends again.',
             rotated:
-                '✅ Here is the new link to your wish list:\n{url}\n\nThe old link no longer works.',
+                '✅ Here are the new links to your wish list.\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Page in the browser:\n{pageUrl}\n\nThe old links no longer work.',
             pageEmpty:
                 'ℹ️ The page is empty right now: there are no visible wishes on it. The link works, and wishes will appear on the page as soon as you add them.',
-            sendText: 'My wish list ❤️',
+            sendText:
+                'My wish list ❤️\n\nNo Telegram? Open it in a browser: {pageUrl}',
             actions: {
                 publish: '✅ Share',
-                open: '🔗 Open page',
+                openTelegram: '📲 Open in Telegram',
+                openBrowser: '🌐 Page in the browser',
                 send: '📤 Send to friends',
                 stop: '🚫 Stop sharing',
                 newLink: '🔄 New link',
@@ -953,9 +955,17 @@ const en: Translation = {
                 copy: 'Copy',
                 copied: 'Link copied',
                 send: 'Send to friends',
-                open: 'Open the page'
+                open: 'Open the page',
+                appTitle: 'Link for Telegram',
+                openApp: 'Open in Telegram',
+                appHint:
+                    'Opens your list right in Telegram, where friends can pick a gift straight away.',
+                webTitle: 'Page in the browser',
+                webHint: 'For people who don’t use Telegram.'
             },
             sendText: 'My wish list ❤️',
+            sendTextWithPage:
+                'My wish list ❤️ No Telegram? Open it in the browser: {pageUrl}',
             autoUpdate:
                 'The page updates itself after every change to your list.',
             pageEmpty:

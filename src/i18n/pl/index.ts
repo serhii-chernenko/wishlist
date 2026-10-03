@@ -220,7 +220,7 @@ const pl: Translation = {
             empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
                 '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
-            ready: '✅ Twoja lista życzeń jest dostępna pod tym linkiem:\n{url}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
+            ready: '✅ Twoja lista życzeń jest gotowa!\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
             stopped:
@@ -228,13 +228,15 @@ const pl: Translation = {
             newConfirm:
                 '❓ Utworzyć nowy link?\n\nStary link od razu przestanie działać i nikt nie otworzy już nim twojej listy. Nowy link trzeba będzie ponownie wysłać znajomym.',
             rotated:
-                '✅ Oto nowy link do twojej listy życzeń:\n{url}\n\nStary link już nie działa.',
+                '✅ Oto nowe linki do twojej listy życzeń.\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStare linki już nie działają.',
             pageEmpty:
                 'ℹ️ Strona jest teraz pusta: nie ma na niej widocznych życzeń. Link działa, a życzenia pojawią się na stronie od razu po ich dodaniu.',
-            sendText: 'Moja lista życzeń ❤️',
+            sendText:
+                'Moja lista życzeń ❤️ Nie masz Telegrama? Otwórz w przeglądarce: {pageUrl}',
             actions: {
                 publish: '✅ Udostępnij',
-                open: '🔗 Otwórz stronę',
+                openTelegram: '📲 Otwórz w Telegramie',
+                openBrowser: '🌐 Strona w przeglądarce',
                 send: '📤 Wyślij znajomym',
                 stop: '🚫 Wyłącz udostępnianie',
                 newLink: '🔄 Nowy link',
@@ -965,9 +967,17 @@ const pl: Translation = {
                 copy: 'Kopiuj',
                 copied: 'Skopiowano link',
                 send: 'Wyślij znajomym',
-                open: 'Otwórz stronę'
+                open: 'Otwórz stronę',
+                appTitle: 'Link do Telegrama',
+                openApp: 'Otwórz w Telegramie',
+                appHint:
+                    'Otwiera twoją listę bezpośrednio w Telegramie, gdzie znajomi od razu wybiorą prezent.',
+                webTitle: 'Strona w przeglądarce',
+                webHint: 'Dla osób, które nie korzystają z Telegrama.'
             },
             sendText: 'Moja lista życzeń ❤️',
+            sendTextWithPage:
+                'Moja lista życzeń ❤️ Nie masz Telegrama? Otwórz w przeglądarce: {pageUrl}',
             autoUpdate:
                 'Strona aktualizuje się sama po każdej zmianie na liście.',
             pageEmpty:

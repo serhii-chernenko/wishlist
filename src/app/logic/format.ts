@@ -37,6 +37,36 @@ export const formatIsoDate = (value: string, locale: AppLocale) => {
     return Number.isNaN(date.getTime()) ? '' : formatDate(date, locale);
 };
 
+const DOTTED_DATE_PATTERN = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+const NOON_UTC_HOUR = 12;
+
+/** Release dates come as DD.MM.YYYY from the changelog manifest; ISO strings are accepted too. Noon UTC keeps the calendar day in Kyiv time. */
+export const parseReleaseDate = (value: string): Date | null => {
+    const dotted = DOTTED_DATE_PATTERN.exec(value.trim());
+
+    if (dotted !== null) {
+        const [, day, month, year] = dotted.map(Number);
+        const date = new Date(
+            Date.UTC(year ?? 0, (month ?? 1) - 1, day, NOON_UTC_HOUR)
+        );
+
+        return date.getUTCDate() === day &&
+            date.getUTCMonth() === (month ?? 1) - 1
+            ? date
+            : null;
+    }
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
+export const formatReleaseDate = (value: string, locale: AppLocale) => {
+    const date = parseReleaseDate(value);
+
+    return date === null ? value : formatDate(date, locale);
+};
+
 export const describePriceFilter = (
     filter: PriceFilterDto,
     locale: AppLocale,

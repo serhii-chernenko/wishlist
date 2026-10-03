@@ -20,6 +20,7 @@ const expectedMethods: Record<string, string[]> = {
         'findByTelegramId',
         'create',
         'syncProfile',
+        'markAppSeen',
         'releaseUsernameHolder',
         'setVisibility',
         'setLanguage',

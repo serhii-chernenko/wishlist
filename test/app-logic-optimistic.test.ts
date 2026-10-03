@@ -5,6 +5,7 @@ import {
     appendPage,
     createLatestGate,
     emptyPage,
+    loadPagesUntil,
     patchInPage,
     pickFields,
     removeFromPage,
@@ -176,4 +177,51 @@ test('only the latest ticket of overlapping requests wins', () => {
 
     assert.equal(gate.isLatest(first), false);
     assert.equal(gate.isLatest(second), true);
+});
+
+const serverPages = (ids: number[], size: number) => {
+    const offsets: number[] = [];
+    const fetchPage = (offset: number) => {
+        offsets.push(offset);
+
+        const slice = ids.slice(offset, offset + size).map(id => item(id));
+        const next = offset + size;
+
+        return Promise.resolve(
+            page(slice, ids.length, next < ids.length ? next : null)
+        );
+    };
+
+    return { fetchPage, offsets };
+};
+
+test('a range reload refetches as many pages as were loaded', async () => {
+    const server = serverPages([5, 4, 3, 2, 1], 2);
+    const reloaded = await loadPagesUntil(server.fetchPage, 4, keyOf);
+
+    assert.deepEqual(server.offsets, [0, 2]);
+    assert.deepEqual(reloaded.items.map(keyOf), [5, 4, 3, 2]);
+    assert.equal(reloaded.nextOffset, 4);
+});
+
+test('a range reload after a reorder neither skips nor repeats items', async () => {
+    const server = serverPages([3, 5, 4, 2, 1], 2);
+    const reloaded = await loadPagesUntil(server.fetchPage, 4, keyOf);
+
+    assert.deepEqual(reloaded.items.map(keyOf), [3, 5, 4, 2]);
+
+    const rest = await server.fetchPage(reloaded.nextOffset ?? 0);
+
+    assert.deepEqual(
+        appendPage(reloaded, rest, keyOf).items.map(keyOf),
+        [3, 5, 4, 2, 1]
+    );
+});
+
+test('a range reload stops at the end of the list', async () => {
+    const server = serverPages([2, 1], 2);
+    const reloaded = await loadPagesUntil(server.fetchPage, 10, keyOf);
+
+    assert.deepEqual(server.offsets, [0]);
+    assert.deepEqual(reloaded.items.map(keyOf), [2, 1]);
 });

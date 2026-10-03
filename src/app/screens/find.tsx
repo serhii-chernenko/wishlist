@@ -15,7 +15,7 @@ type NegativeStatus = 'notFound' | 'self' | 'tooLong';
 export const FindScreen = (_props: ScreenProps<'find'>) => {
     const LL = useLL();
     const nav = useNav();
-    const { api, toast } = useApp();
+    const { api, toast, reportEvent } = useApp();
     const { config } = useSession();
     const [query, setQuery] = useState('');
     const [problem, setProblem] = useState<NegativeStatus | 'empty' | null>(
@@ -39,6 +39,10 @@ export const FindScreen = (_props: ScreenProps<'find'>) => {
         if (trimmed === '') {
             setProblem('empty');
             haptics.error();
+            reportEvent('validationFailed', 'find', {
+                field: 'query',
+                code: 'empty'
+            });
 
             return;
         }
@@ -46,6 +50,10 @@ export const FindScreen = (_props: ScreenProps<'find'>) => {
         if (countCharacters(trimmed) > max) {
             setProblem('tooLong');
             haptics.error();
+            reportEvent('validationFailed', 'find', {
+                field: 'query',
+                code: 'tooLong'
+            });
 
             return;
         }

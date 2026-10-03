@@ -15,6 +15,7 @@ import {
     type AppFailure,
     type SystemScreenId
 } from '../logic/errors';
+import { isAbortError, readJsonBody } from '../logic/response-body';
 
 const NO_CONTENT_STATUS = 204;
 const JSON_CONTENT_TYPE = 'application/json';
@@ -29,6 +30,7 @@ export type ApiRequestOptions<Key extends AppApiRouteKey> = {
     query?: AppApiEndpoints[Key]['query'];
     body?: AppApiEndpoints[Key]['body'];
     signal?: AbortSignal;
+    keepalive?: boolean;
 };
 
 export class ApiRequestError extends Error {
@@ -62,10 +64,6 @@ const waitFor = (milliseconds: number) => {
     });
 };
 
-const isAbortError = (error: unknown) => {
-    return error instanceof DOMException && error.name === 'AbortError';
-};
-
 const buildBody = (body: unknown): BodyInit | undefined => {
     if (body === undefined || body === null) {
         return undefined;
@@ -89,14 +87,6 @@ const buildHeaders = (initData: string, body: unknown) => {
     return headers;
 };
 
-const readJson = async (response: Response): Promise<unknown> => {
-    try {
-        return await response.json();
-    } catch {
-        return null;
-    }
-};
-
 export const createApiClient = ({
     initData,
     onSystemFailure,
@@ -114,21 +104,16 @@ export const createApiClient = ({
             options.params ?? ({} as AppApiPathParams<Key>),
             (options.query ?? {}) as QueryValues
         );
-        const init: RequestInit = {
+        const body = buildBody(options.body);
+        const init = {
             method: route.method,
             headers: buildHeaders(initData, options.body),
             credentials: 'omit',
-            cache: 'no-store'
-        };
-        const body = buildBody(options.body);
-
-        if (body !== undefined) {
-            init.body = body;
-        }
-
-        if (options.signal !== undefined) {
-            init.signal = options.signal;
-        }
+            cache: 'no-store',
+            ...(body !== undefined && { body }),
+            ...(options.signal !== undefined && { signal: options.signal }),
+            ...(options.keepalive === true && { keepalive: true })
+        } as RequestInit;
 
         try {
             return await fetchImpl(path, init);
@@ -156,7 +141,7 @@ export const createApiClient = ({
                 return (
                     response.status === NO_CONTENT_STATUS
                         ? null
-                        : await readJson(response)
+                        : await readJsonBody(response)
                 ) as ApiResponse<Key>;
             }
 
@@ -165,7 +150,7 @@ export const createApiClient = ({
                     ? NETWORK_FAILURE
                     : toApiFailure(
                           response.status,
-                          await readJson(response),
+                          await readJsonBody(response),
                           parseRetryAfterHeader(
                               response.headers.get('Retry-After')
                           )

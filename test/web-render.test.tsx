@@ -389,18 +389,25 @@ test('the footer has the bot call to action, support links and the source link',
     );
 });
 
-test('a non-empty list links to the Telegram app with the share start parameter', () => {
+test('a non-empty list puts the Telegram app button with the share start parameter in the hero', () => {
     const html = renderSharePage(buildModel());
     const empty = renderSharePage(
         buildModel({ wishes: [], visibleCount: 0, indexable: false })
     );
+    const hero = html.slice(
+        html.indexOf('<header class="hero">'),
+        html.indexOf('</header>')
+    );
+    const label = 'Open in Telegram and pick a gift';
 
     assert.match(
-        html,
+        hero,
         new RegExp(
-            `href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${PUBLIC_ID}">Open in Telegram and pick a gift</a>`
+            `<a class="cta cta-text" href="https://t\\.me/wishlist_ua_bot\\?startapp=s_${PUBLIC_ID}"[^>]*>${label}</a>`
         )
     );
+    assert.equal(html.split(label).length - 1, 1);
+    assert.equal(html.split('startapp=').length - 1, 1);
     assert.doesNotMatch(empty, /startapp=/);
 });
 

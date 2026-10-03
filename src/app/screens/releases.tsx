@@ -1,7 +1,7 @@
 import { useState } from 'hono/jsx/dom';
 
 import { APP_RELEASES_PAGE_SIZE, type ReleasesDto } from '../../shared/app-api';
-import { formatIsoDate } from '../logic/format';
+import { formatReleaseDate } from '../logic/format';
 import type { ScreenProps } from '../nav/routes';
 import {
     useApp,
@@ -81,7 +81,7 @@ export const ReleasesScreen = (_props: ScreenProps<'releases'>) => {
                                                 </h2>
                                                 <p class='release-date'>
                                                     {LL.releases.date({
-                                                        date: formatIsoDate(
+                                                        date: formatReleaseDate(
                                                             release.date,
                                                             locale
                                                         )

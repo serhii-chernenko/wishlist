@@ -14,7 +14,7 @@ import {
     watchViewport
 } from './telegram/lifecycle';
 import { getLaunchContext, isSupportedClient } from './telegram/sdk';
-import { watchTheme } from './telegram/theme';
+import { readColorScheme, watchTheme } from './telegram/theme';
 
 if (!Array.prototype.at) {
     Object.defineProperty(Array.prototype, 'at', {
@@ -83,6 +83,7 @@ const start = (container: HTMLElement) => {
             query: {
                 platform: launch.platform,
                 version: launch.version,
+                theme: readColorScheme(launch.webApp),
                 ...(launch.startParam !== null && { start: launch.startParam })
             }
         });

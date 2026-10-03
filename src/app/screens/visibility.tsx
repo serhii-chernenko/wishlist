@@ -16,6 +16,7 @@ import {
 } from '../logic/contact-flow';
 import { getFieldErrors } from '../logic/errors';
 import type { ScreenProps } from '../nav/routes';
+import { routesAfterRegistration } from '../logic/nav';
 import { useApp, useLL, useNav, useSession } from '../state/context';
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
@@ -66,7 +67,7 @@ const isContactChoice = (
 export const VisibilityScreen = (_props: ScreenProps<'visibility'>) => {
     const LL = useLL();
     const nav = useNav();
-    const { api, toast, updateMe, reloadSession } = useApp();
+    const { api, toast, updateMe, reloadSession, launch } = useApp();
     const { me } = useSession();
     const [choice, setChoice] = useState<VisibilityType>(getInitialChoice(me));
     const [saving, setSaving] = useState(false);
@@ -100,7 +101,7 @@ export const VisibilityScreen = (_props: ScreenProps<'visibility'>) => {
         }
 
         await reloadSession().catch(() => undefined);
-        nav.reset([{ screen: 'home' }]);
+        nav.reset(routesAfterRegistration(launch.startParam));
     };
 
     const saveUsername = async () => {

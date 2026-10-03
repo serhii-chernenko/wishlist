@@ -5,6 +5,7 @@ import type {
     WishFilterValue,
     WishListDto
 } from '../../shared/app-api';
+import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
 import { hasErrorCode, type AppFailure } from '../logic/errors';
 import { describePriceFilter } from '../logic/format';
@@ -12,6 +13,7 @@ import {
     appendPage,
     createLatestGate,
     emptyPage,
+    loadPagesUntil,
     patchInPage,
     pickFields,
     removeFromPage,
@@ -85,10 +87,42 @@ export const readCachedWish = (cache: ResourceCache, id: number) => {
     return cache.read<OwnWishDto>(wishItemKey(id)).data;
 };
 
-/** Writes a server copy of a wish into the list page and its editor entry. */
+const pendingFlagWrites = new Map<number, number>();
+
+/** Writes a server copy of a wish into the list page and its editor entry; the list goes stale because any change moves the wish in the server order. */
 export const storeWish = (cache: ResourceCache, wish: OwnWishDto) => {
     mutateList(cache, page => replaceInPage(page, ownWishKey, wish));
+    cache.invalidate(WISHES_LIST_KEY);
     cache.mutate<OwnWishDto>(wishItemKey(wish.id), () => wish);
+};
+
+/** Reloads the own list keeping as many items as "Show more" had loaded. */
+export const loadWishRange = (
+    api: ApiClient,
+    cache: ResourceCache,
+    signal?: AbortSignal
+) => {
+    const loaded =
+        cache.read<WishListDto>(WISHES_LIST_KEY).data?.items.length ?? 0;
+
+    return loadPagesUntil<OwnWishDto, WishListDto>(
+        offset => {
+            return api.request('listWishes', {
+                ...(offset > 0 && { query: { offset } }),
+                ...(signal !== undefined && { signal })
+            });
+        },
+        loaded,
+        ownWishKey
+    );
+};
+
+const refreshWishList = (api: ApiClient, cache: ResourceCache) => {
+    if (hasListData(cache) && pendingFlagWrites.size === 0) {
+        void cache.load(WISHES_LIST_KEY, signal => {
+            return loadWishRange(api, cache, signal);
+        });
+    }
 };
 
 const patchWish = (
@@ -151,8 +185,6 @@ const flagToast = (LL: AppTranslator, flag: DraftFlag, value: boolean) => {
     return value ? LL.wishes.toasts.hidden() : LL.wishes.toasts.shown();
 };
 
-const pendingFlagWrites = new Map<number, number>();
-
 const trackFlagWrite = (id: number, delta: number) => {
     const next = (pendingFlagWrites.get(id) ?? 0) + delta;
 
@@ -193,6 +225,7 @@ export const useWishFlagToggle = () => {
             settle(updated) {
                 if (trackFlagWrite(wish.id, -1) === 0) {
                     storeWish(cache, updated);
+                    refreshWishList(api, cache);
                 }
 
                 toast.show(flagToast(LL, flag, value), 'success');
@@ -461,7 +494,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [cleaning, setCleaning] = useState(false);
     const list = useAppResource<WishListDto>(WISHES_LIST_KEY, signal => {
-        return api.request('listWishes', { signal });
+        return loadWishRange(api, services.cache, signal);
     });
     const page = list.data;
 

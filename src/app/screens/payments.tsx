@@ -42,7 +42,7 @@ export const PaymentsScreen = (_props: ScreenProps<'payments'>) => {
     const LL = useLL();
     const nav = useNav();
     const entryKey = useEntryKey();
-    const { api, toast, updateMe } = useApp();
+    const { api, toast, updateMe, reportEvent } = useApp();
     const { me, config } = useSession();
     const saved = me.payments ?? '';
     const [text, setText] = useState(saved);
@@ -67,6 +67,10 @@ export const PaymentsScreen = (_props: ScreenProps<'payments'>) => {
         if (!isValidPayments(trimmed)) {
             setError(LL.payments.errors.tooShort());
             haptics.error();
+            reportEvent('validationFailed', 'payments', {
+                field: 'payments',
+                code: 'tooShort'
+            });
 
             return;
         }
@@ -91,6 +95,10 @@ export const PaymentsScreen = (_props: ScreenProps<'payments'>) => {
                 toast.failure(failure);
             } else {
                 haptics.error();
+                reportEvent('validationFailed', 'payments', {
+                    field: 'payments',
+                    code: fieldError
+                });
                 setError(describeFieldError(LL, fieldError, max));
             }
         }

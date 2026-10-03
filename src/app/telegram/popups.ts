@@ -1,5 +1,6 @@
 import { createStore, type Store } from '../state/store';
-import { callSafely, getLaunchContext, supportsNative } from './sdk';
+import { settleNativeCall } from '../logic/native-call';
+import { getLaunchContext, supportsNative } from './sdk';
 
 export type PopupButtonKind = 'default' | 'destructive' | 'cancel';
 
@@ -22,6 +23,7 @@ export interface PendingPopup extends PopupRequest {
 export const POPUP_TITLE_MAX_LENGTH = 64;
 export const POPUP_MESSAGE_MAX_LENGTH = 256;
 export const POPUP_MAX_ACTIONS = 3;
+export const POPUP_BUTTON_MAX_LENGTH = 64;
 
 export const popupStore: Store<PendingPopup | null> =
     createStore<PendingPopup | null>(null);
@@ -37,33 +39,34 @@ const truncate = (value: string, max: number) => {
 const showNativePopup = (request: PopupRequest) => {
     const { webApp } = getLaunchContext();
 
-    return new Promise<string | null>(resolve => {
-        callSafely(() => {
-            webApp?.showPopup(
-                {
-                    ...(request.title !== undefined && {
-                        title: truncate(request.title, POPUP_TITLE_MAX_LENGTH)
-                    }),
-                    message: truncate(
-                        request.message,
-                        POPUP_MESSAGE_MAX_LENGTH
-                    ),
-                    buttons: request.actions
-                        .slice(0, POPUP_MAX_ACTIONS)
-                        .map(action => {
-                            return {
-                                id: action.id,
-                                type: action.kind ?? 'default',
-                                text: action.text
-                            };
-                        })
-                },
-                buttonId => {
-                    resolve(buttonId === '' ? null : buttonId);
-                }
-            );
-        });
-    });
+    return settleNativeCall<string | null>(settle => {
+        if (webApp === null) {
+            return false;
+        }
+
+        webApp.showPopup(
+            {
+                ...(request.title !== undefined && {
+                    title: truncate(request.title, POPUP_TITLE_MAX_LENGTH)
+                }),
+                message: truncate(request.message, POPUP_MESSAGE_MAX_LENGTH),
+                buttons: request.actions
+                    .slice(0, POPUP_MAX_ACTIONS)
+                    .map(action => {
+                        return {
+                            id: action.id,
+                            type: action.kind ?? 'default',
+                            text: truncate(action.text, POPUP_BUTTON_MAX_LENGTH)
+                        };
+                    })
+            },
+            buttonId => {
+                settle(buttonId === '' ? null : buttonId);
+            }
+        );
+
+        return true;
+    }, null);
 };
 
 const showInPagePopup = (request: PopupRequest) => {

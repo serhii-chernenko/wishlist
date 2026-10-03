@@ -16,6 +16,16 @@ const snapshot = {
     activeUsers1d: 30,
     activeUsers7d: 60,
     activeUsers30d: 90,
+    botOnlyUsers1d: 10,
+    botOnlyUsers7d: 20,
+    botOnlyUsers30d: 30,
+    appOnlyUsers1d: 1,
+    appOnlyUsers7d: 2,
+    appOnlyUsers30d: 3,
+    bothChannelUsers1d: 4,
+    bothChannelUsers7d: 5,
+    bothChannelUsers30d: 6,
+    appUsersTotal: 8,
     totalWishes: 800,
     activeWishes: 700,
     hiddenWishes: 20,
@@ -33,17 +43,19 @@ test('bot state snapshot aggregates users, wishes, gives and languages without i
         await harness.applyMigrations();
         await harness.env.DB.prepare(
             `INSERT INTO users
-                (telegram_id, language, payments, blocked_at, last_seen_at, created_at, updated_at)
-             VALUES (101, 'uk', NULL, NULL, ?1, 0, 0),
-                    (102, 'en', 'card 4444', NULL, ?2, 0, 0),
-                    (103, NULL, NULL, NULL, ?3, 0, 0),
-                    (104, 'pl', NULL, 1, ?1, 0, 0),
-                    (105, NULL, NULL, NULL, NULL, 0, 0)`
+                (telegram_id, language, payments, blocked_at, last_seen_at, last_bot_seen_at, last_app_seen_at, created_at, updated_at)
+             VALUES (101, 'uk', NULL, NULL, ?1, ?1, ?4, 0, 0),
+                    (102, 'en', 'card 4444', NULL, ?2, ?2, NULL, 0, 0),
+                    (103, NULL, NULL, NULL, ?3, NULL, ?3, 0, 0),
+                    (104, 'pl', NULL, 1, ?1, ?1, NULL, 0, 0),
+                    (105, NULL, NULL, NULL, NULL, NULL, ?5, 0, 0)`
         )
             .bind(
                 asOf.getTime() - hour,
                 asOf.getTime() - 3 * day,
-                asOf.getTime() - 20 * day
+                asOf.getTime() - 20 * day,
+                asOf.getTime() - 2 * hour,
+                asOf.getTime() - 2 * day
             )
             .run();
         await harness.env.DB.prepare(
@@ -68,6 +80,16 @@ test('bot state snapshot aggregates users, wishes, gives and languages without i
             activeUsers1d: 1,
             activeUsers7d: 2,
             activeUsers30d: 3,
+            botOnlyUsers1d: 0,
+            botOnlyUsers7d: 1,
+            botOnlyUsers30d: 1,
+            appOnlyUsers1d: 0,
+            appOnlyUsers7d: 1,
+            appOnlyUsers30d: 2,
+            bothChannelUsers1d: 1,
+            bothChannelUsers7d: 1,
+            bothChannelUsers30d: 1,
+            appUsersTotal: 3,
             totalWishes: 5,
             activeWishes: 4,
             hiddenWishes: 1,
@@ -168,6 +190,10 @@ test('the ten-minute cron emits one snapshot event and one language count per lo
     assert.equal(snapshotEvents.length, 1);
     assert.equal(snapshotEvents[0]?.registeredUsers, 120);
     assert.equal(snapshotEvents[0]?.activeUsers30d, 90);
+    assert.equal(snapshotEvents[0]?.botOnlyUsers7d, 20);
+    assert.equal(snapshotEvents[0]?.appOnlyUsers30d, 3);
+    assert.equal(snapshotEvents[0]?.bothChannelUsers1d, 4);
+    assert.equal(snapshotEvents[0]?.appUsersTotal, 8);
     assert.equal(snapshotEvents[0]?.usersWithPayments, 5);
     assert.equal('languageCounts' in (snapshotEvents[0] ?? {}), false);
     assert.deepEqual(

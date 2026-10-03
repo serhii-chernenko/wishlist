@@ -159,6 +159,10 @@ export const createResourceCache = (): ResourceCache => {
         const controller = new AbortController();
         const promise = loader(controller.signal)
             .then(data => {
+                if (controller.signal.aborted) {
+                    return undefined;
+                }
+
                 write(key, {
                     data,
                     failure: null,
