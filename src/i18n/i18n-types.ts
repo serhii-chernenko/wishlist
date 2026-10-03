@@ -793,7 +793,10 @@ type RootTranslation = {
 			 */
 			pageEmpty: string
 			/**
-			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:​ ​{​p​a​g​e​U​r​l​}
+			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​О​б​е​р​и​,​ ​щ​о​ ​м​е​н​і​ ​п​о​д​а​р​у​в​а​т​и​ ​�​�​
+		​
+		​�​�​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:​
+		​{​p​a​g​e​U​r​l​}
 			 * @param {string} pageUrl
 			 */
 			sendText: RequiredParams<'pageUrl'>
@@ -3021,14 +3024,13 @@ type RootTranslation = {
 				webHint: string
 			}
 			/**
-			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️
+			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​О​б​е​р​и​,​ ​щ​о​ ​м​е​н​і​ ​п​о​д​а​р​у​в​а​т​и​ ​�​�
 			 */
 			sendText: string
 			/**
-			 * М​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​❤​️​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:​ ​{​p​a​g​e​U​r​l​}
-			 * @param {string} pageUrl
+			 * �​�​ ​Н​е​м​а​є​ ​T​e​l​e​g​r​a​m​?​ ​В​і​д​к​р​и​й​ ​у​ ​б​р​а​у​з​е​р​і​:
 			 */
-			sendTextWithPage: RequiredParams<'pageUrl'>
+			sendBrowserHint: string
 			/**
 			 * С​т​о​р​і​н​к​а​ ​о​н​о​в​л​ю​є​т​ь​с​я​ ​с​а​м​а​ ​п​і​с​л​я​ ​к​о​ж​н​о​ї​ ​з​м​і​н​и​ ​в​ ​л​и​с​т​і​.
 			 */
@@ -4345,7 +4347,10 @@ export type TranslationFunctions = {
 			 */
 			pageEmpty: () => LocalizedString
 			/**
-			 * Мій лист бажань ❤️ Немає Telegram? Відкрий у браузері: {pageUrl}
+			 * Мій лист бажань ❤️ Обери, що мені подарувати 🎁
+	
+		🌐 Немає Telegram? Відкрий у браузері:
+		{pageUrl}
 			 */
 			sendText: (arg: { pageUrl: string }) => LocalizedString
 			actions: {
@@ -6488,13 +6493,13 @@ export type TranslationFunctions = {
 				webHint: () => LocalizedString
 			}
 			/**
-			 * Мій лист бажань ❤️
+			 * Мій лист бажань ❤️ Обери, що мені подарувати 🎁
 			 */
 			sendText: () => LocalizedString
 			/**
-			 * Мій лист бажань ❤️ Немає Telegram? Відкрий у браузері: {pageUrl}
+			 * 🌐 Немає Telegram? Відкрий у браузері:
 			 */
-			sendTextWithPage: (arg: { pageUrl: string }) => LocalizedString
+			sendBrowserHint: () => LocalizedString
 			/**
 			 * Сторінка оновлюється сама після кожної зміни в листі.
 			 */

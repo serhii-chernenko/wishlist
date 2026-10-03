@@ -232,7 +232,7 @@ const pl: Translation = {
             pageEmpty:
                 'ℹ️ Strona jest teraz pusta: nie ma na niej widocznych życzeń. Link działa, a życzenia pojawią się na stronie od razu po ich dodaniu.',
             sendText:
-                'Moja lista życzeń ❤️ Nie masz Telegrama? Otwórz w przeglądarce: {pageUrl}',
+                'Moja lista życzeń ❤️ Wybierz dla mnie prezent 🎁\n\n🌐 Nie masz Telegrama? Otwórz w przeglądarce:\n{pageUrl}',
             actions: {
                 publish: '✅ Udostępnij',
                 openTelegram: '📲 Otwórz w Telegramie',
@@ -975,9 +975,8 @@ const pl: Translation = {
                 webTitle: 'Strona w przeglądarce',
                 webHint: 'Dla osób, które nie korzystają z Telegrama.'
             },
-            sendText: 'Moja lista życzeń ❤️',
-            sendTextWithPage:
-                'Moja lista życzeń ❤️ Nie masz Telegrama? Otwórz w przeglądarce: {pageUrl}',
+            sendText: 'Moja lista życzeń ❤️ Wybierz dla mnie prezent 🎁',
+            sendBrowserHint: '🌐 Nie masz Telegrama? Otwórz w przeglądarce:',
             autoUpdate:
                 'Strona aktualizuje się sama po każdej zmianie na liście.',
             pageEmpty:

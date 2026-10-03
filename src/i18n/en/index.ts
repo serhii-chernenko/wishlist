@@ -226,7 +226,7 @@ const en: Translation = {
             pageEmpty:
                 'ℹ️ The page is empty right now: there are no visible wishes on it. The link works, and wishes will appear on the page as soon as you add them.',
             sendText:
-                'My wish list ❤️\n\nNo Telegram? Open it in a browser: {pageUrl}',
+                'My wish list ❤️ Pick a gift for me 🎁\n\n🌐 No Telegram? Open it in a browser:\n{pageUrl}',
             actions: {
                 publish: '✅ Share',
                 openTelegram: '📲 Open in Telegram',
@@ -963,9 +963,8 @@ const en: Translation = {
                 webTitle: 'Page in the browser',
                 webHint: 'For people who don’t use Telegram.'
             },
-            sendText: 'My wish list ❤️',
-            sendTextWithPage:
-                'My wish list ❤️ No Telegram? Open it in the browser: {pageUrl}',
+            sendText: 'My wish list ❤️ Pick a gift for me 🎁',
+            sendBrowserHint: '🌐 No Telegram? Open it in a browser:',
             autoUpdate:
                 'The page updates itself after every change to your list.',
             pageEmpty:

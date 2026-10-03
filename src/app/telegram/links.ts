@@ -49,9 +49,7 @@ export const openTelegramLink = (url: string) => {
 };
 
 export const buildShareUrl = (url: string, text: string) => {
-    const query = new URLSearchParams({ url, text });
-
-    return `https://t.me/share/url?${query.toString()}`;
+    return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 };
 
 export const closeApp = () => {

@@ -76,7 +76,12 @@ const sendShareLinks = (
             ? buildShareUrl(links.url, LL.share.sendText())
             : buildShareUrl(
                   links.appUrl,
-                  LL.share.sendTextWithPage({ pageUrl: links.url })
+                  [
+                      LL.share.sendText(),
+                      '',
+                      LL.share.sendBrowserHint(),
+                      links.url
+                  ].join('\n')
               )
     );
 };
