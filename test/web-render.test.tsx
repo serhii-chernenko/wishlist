@@ -1,3 +1,4 @@
+import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -551,13 +552,37 @@ test('the page has a doctype, no scripts and no external resources', () => {
 });
 
 const STRESS_PRIORITIES = ['high', 'low', 'high', 'medium'] as const;
+const MAX_RAW_SHARE_BYTES = 100_000;
+const MAX_GZIP_SHARE_BYTES = 20_000;
+const STRESS_ALPHABET = 'абвгґдеєжзиіїйклмнопрстуфхцчшщьюя ';
 
-test('twenty maximum size wishes stay below 60 KB', () => {
+const createStressText = (seed: number) => {
+    let state = seed;
+
+    return (length: number) => {
+        return Array.from({ length }, () => {
+            state = (state * 1_103_515_245 + 12_345) % 2_147_483_648;
+
+            return STRESS_ALPHABET[state % STRESS_ALPHABET.length];
+        }).join('');
+    };
+};
+
+const assertShareBudget = (html: string) => {
+    const raw = Buffer.byteLength(html);
+    const compressed = gzipSync(html).byteLength;
+
+    assert.ok(raw < MAX_RAW_SHARE_BYTES, `raw ${raw}`);
+    assert.ok(compressed < MAX_GZIP_SHARE_BYTES, `gzip ${compressed}`);
+};
+
+test('twenty maximum size wishes stay within the share page budget', () => {
+    const stressText = createStressText(7);
     const wishes = Array.from({ length: 20 }, (_, index) => {
         return buildWish({
-            title: `${index} ${'т'.repeat(197)}`,
-            description: 'о'.repeat(500),
-            link: `https://shop.test/items/${'p'.repeat(200)}${index}`,
+            title: `${index} ${stressText(197)}`,
+            description: stressText(500),
+            link: `https://shop.test/items/${stressText(200).replaceAll(' ', '-')}${index}`,
             price: 1000 + index,
             priority:
                 STRESS_PRIORITIES[index % STRESS_PRIORITIES.length] ?? 'none'
@@ -568,11 +593,11 @@ test('twenty maximum size wishes stay below 60 KB', () => {
             language: 'uk',
             wishes,
             visibleCount: 20,
-            payments: 'р'.repeat(1000)
+            payments: stressText(1000)
         })
     );
 
-    assert.ok(Buffer.byteLength(html) < 60_000, `${Buffer.byteLength(html)}`);
+    assertShareBudget(html);
 
     const withPhotos = renderSharePage(
         buildModel({
@@ -594,14 +619,11 @@ test('twenty maximum size wishes stay below 60 KB', () => {
                 };
             }),
             visibleCount: 20,
-            payments: 'р'.repeat(1000)
+            payments: stressText(1000)
         })
     );
 
-    assert.ok(
-        Buffer.byteLength(withPhotos) < 60_000,
-        `${Buffer.byteLength(withPhotos)}`
-    );
+    assertShareBudget(withPhotos);
 });
 
 test('error pages are noindex, localized and carry no list data', () => {
