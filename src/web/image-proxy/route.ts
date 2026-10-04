@@ -45,6 +45,7 @@ import {
     LINK_IMPORT_URL_HASH_LENGTH,
     SHARE_IMAGE_PATH_PREFIX
 } from '../../shared/app-api';
+import { IMAGE_THEME_PARAM, parseImageTheme } from '../../shared/image-theme';
 import { buildPhotoPlaceholderSvg } from '../../shared/photo-placeholder';
 import type { WorkerApp } from '../../worker/app';
 import { isLinkImportEnabled, type WorkerBindings } from '../../worker/env';
@@ -109,7 +110,11 @@ const PLACEHOLDER_CACHE_CONTROL: Record<ImageProxyScope, string> = {
 };
 
 const PLACEHOLDER_CONTENT_TYPE = 'image/svg+xml';
-const PLACEHOLDER_SVG = buildPhotoPlaceholderSvg();
+const PLACEHOLDER_SVG = {
+    adaptive: buildPhotoPlaceholderSvg(),
+    light: buildPhotoPlaceholderSvg('light'),
+    dark: buildPhotoPlaceholderSvg('dark')
+} as const;
 
 const readParam = (c: ProxyContext, name: string) => {
     return c.req.param(name) ?? '';
@@ -154,10 +159,12 @@ const imageResponse = (scope: ImageProxyScope, image: StoredImage) => {
     );
 };
 
-const placeholderResponse = (scope: ImageProxyScope) => {
+const placeholderResponse = (c: ProxyContext, scope: ImageProxyScope) => {
+    const theme = parseImageTheme(c.req.query(IMAGE_THEME_PARAM));
+
     return buildImageResponse(
         scope,
-        PLACEHOLDER_SVG,
+        PLACEHOLDER_SVG[theme ?? 'adaptive'],
         PLACEHOLDER_CONTENT_TYPE,
         PLACEHOLDER_CACHE_CONTROL[scope]
     );
@@ -399,7 +406,7 @@ const resolveImage = async (
 
     if (fetched === null) {
         return {
-            response: placeholderResponse(scope),
+            response: placeholderResponse(c, scope),
             result: 'placeholder'
         };
     }
@@ -537,7 +544,7 @@ const serveImportImage: ImageResponder = async (c, deps) => {
     );
 
     return isSkippedStagedImage(restaged)
-        ? { response: placeholderResponse('import'), result: 'placeholder' }
+        ? { response: placeholderResponse(c, 'import'), result: 'placeholder' }
         : { response: imageResponse('import', restaged), result: 'miss' };
 };
 

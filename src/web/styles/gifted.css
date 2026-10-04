@@ -16,8 +16,7 @@
         pointer-events: none;
     }
 
-    .wish-gifted .wish-photo img,
-    .wish-gifted .photo-placeholder {
+    .wish-gifted .wish-photo img {
         opacity: 0.8;
         filter: saturate(0.35);
     }

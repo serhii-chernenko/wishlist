@@ -41,27 +41,27 @@
     }
 
     :root {
-        --photo-placeholder-bg: #ece6f1;
-        --photo-placeholder-fill: #d9d1e1;
-        --photo-placeholder-line: #c6bcd2;
-        --photo-placeholder-bg-dark: #2a2131;
+        --photo-placeholder: #ececee;
+        --photo-placeholder-fill: #dedee2;
+        --photo-placeholder-ink: #b1b1ba;
+        --photo-placeholder-dark: #2a2131;
         --photo-placeholder-fill-dark: #3d3248;
-        --photo-placeholder-line-dark: #51445e;
+        --photo-placeholder-ink-dark: #51445e;
     }
 
     @media (prefers-color-scheme: dark) {
         :root:not([data-theme]) {
-            --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
+            --photo-placeholder: var(--photo-placeholder-dark);
             --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
-            --photo-placeholder-line: var(--photo-placeholder-line-dark);
+            --photo-placeholder-ink: var(--photo-placeholder-ink-dark);
             --gifted-band: var(--tag);
         }
     }
 
     [data-theme='wishlist-dark'] {
-        --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
+        --photo-placeholder: var(--photo-placeholder-dark);
         --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
-        --photo-placeholder-line: var(--photo-placeholder-line-dark);
+        --photo-placeholder-ink: var(--photo-placeholder-ink-dark);
         --gifted-band: var(--tag);
     }
 
@@ -309,7 +309,7 @@
         overflow: hidden;
         font-size: 0;
         color: transparent;
-        background: var(--photo-placeholder-bg);
+        background: var(--photo-placeholder);
         object-fit: cover;
     }
 
@@ -320,7 +320,7 @@
     }
 
     .photo-placeholder-background {
-        fill: var(--photo-placeholder-bg);
+        fill: var(--photo-placeholder);
     }
 
     .photo-placeholder-fill {
@@ -328,11 +328,11 @@
     }
 
     .photo-placeholder-line {
-        fill: var(--photo-placeholder-line);
+        fill: var(--photo-placeholder-ink);
     }
 
     .photo-placeholder-stroke {
-        stroke: var(--photo-placeholder-line);
+        stroke: var(--photo-placeholder-ink);
     }
 
     .wish-photo:empty::after {
@@ -347,31 +347,6 @@
             'M32 50.2C3.7 34.2 0 9.5 16 3.4 24.6 0 30.8 5.2 32 12 33.2 5.2 39.4 0 48 3.4 64 9.5 60.3 34.2 32 50.2Z'
         );
         transform: rotate(-8deg);
-    }
-
-    .wish-heart {
-        position: absolute;
-        z-index: var(--z-raised);
-        top: -1rem;
-        left: -0.875rem;
-        width: 2.75rem;
-        height: 2.375rem;
-        overflow: visible;
-        transform: rotate(-10deg);
-    }
-
-    .wish-heart .heart-halo {
-        fill: var(--paper);
-        stroke: var(--paper);
-        stroke-width: 44;
-        stroke-linejoin: round;
-    }
-
-    .wish-heart .heart-fill {
-        fill: var(--heart);
-        stroke: var(--ink);
-        stroke-width: 20;
-        stroke-linejoin: round;
     }
 
     .wish-title {

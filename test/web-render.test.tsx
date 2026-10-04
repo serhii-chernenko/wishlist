@@ -161,7 +161,7 @@ test('wishes without a renderable link get no link button', () => {
     assert.doesNotMatch(html, /javascript:/);
 });
 
-test('priority sticker, price chip and dates follow the page language', () => {
+test('priority badge, price chip and dates follow the page language', () => {
     const html = renderSharePage(
         buildModel({
             language: 'uk',
@@ -176,10 +176,7 @@ test('priority sticker, price chip and dates follow the page language', () => {
         })
     );
 
-    assert.match(
-        html,
-        /<li class="wish"><svg class="wish-heart"[^>]*aria-hidden="true">/
-    );
+    assert.match(html, /<li class="wish"><article class="wish-tag">/);
     assert.match(
         html,
         /<p class="priority-badge" data-level="high">Дуже хоче<\/p>/
@@ -247,21 +244,19 @@ test('wish prices follow the wish currency and the display currency of the page'
     assert.doesNotMatch(chosen, /class="notice"/);
 });
 
-test('only the high priority shows the heart sticker', () => {
-    for (const priority of ['none', 'low', 'medium'] as const) {
-        assert.doesNotMatch(
-            renderSharePage(buildModel({ wishes: [buildWish({ priority })] })),
-            /wish-heart/,
+test('the badge is the only priority signal: low, medium and high get it, none and every level skip the heart sticker', () => {
+    for (const priority of ['none', 'low', 'medium', 'high'] as const) {
+        const html = renderSharePage(
+            buildModel({ wishes: [buildWish({ priority })] })
+        );
+
+        assert.doesNotMatch(html, /wish-heart|wl-sticker/, priority);
+        assert.equal(
+            html.includes(`class="priority-badge" data-level="${priority}"`),
+            priority !== 'none',
             priority
         );
     }
-
-    assert.match(
-        renderSharePage(
-            buildModel({ wishes: [buildWish({ priority: 'high' })] })
-        ),
-        /wish-heart/
-    );
 });
 
 test('gifted wishes follow active ones as compact cards with the gifted band', () => {
@@ -288,7 +283,7 @@ test('gifted wishes follow active ones as compact cards with the gifted band', (
     assert.ok(html.indexOf('Active kettle') < html.indexOf('Gifted mug'));
     assert.match(giftedCard, /<div class="wish-photo" data-band="Подароване">/);
     assert.match(giftedCard, /class="price"/);
-    assert.doesNotMatch(giftedCard, /wish-heart|wish-link|wish-details/);
+    assert.doesNotMatch(giftedCard, /priority-badge|wish-link|wish-details/);
     assert.doesNotMatch(html, /Gifted description/);
     assert.doesNotMatch(renderSharePage(buildModel()), /data-band|wish-gifted/);
 });
@@ -323,11 +318,11 @@ test('free wishes never show the rates note', () => {
     assert.doesNotMatch(html, /class="notice"/);
 });
 
-test('regular wishes carry no priority sticker and free wishes no price chip', () => {
+test('regular wishes carry no priority badge and free wishes no price chip', () => {
     const html = renderSharePage(buildModel());
 
     assert.match(html, /<li class="wish">/);
-    assert.doesNotMatch(html, /wish-heart|class="price"/);
+    assert.doesNotMatch(html, /priority-badge|class="price"/);
     assert.match(
         renderSharePage(buildModel({ wishes: [buildWish({ price: 99.5 })] })),
         /99\.50/

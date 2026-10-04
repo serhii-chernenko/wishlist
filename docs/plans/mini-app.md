@@ -552,7 +552,7 @@ All screens are mobile-first, max width 36rem, use gift-tag visuals and daisyUI 
 2. **My wishes.**
     - Filter chip row: All, ≤999, 1000–1999, 2000–4999, 5000–9999, ≥10000, formatted in the user's currency.
     - Wish tags show:
-        - the heart sticker for priority wishes,
+        - the priority badge for low, medium and high wishes (no heart sticker),
         - the price chip when price > 0,
         - a "Only you see this" badge on hidden wishes,
         - the first photo as a thumbnail,
@@ -614,7 +614,7 @@ All screens are mobile-first, max width 36rem, use gift-tag visuals and daisyUI 
 - `role="status"` live region for toasts.
 - Touch targets at least 44 px.
 - Alt text for photos (`web.wish.photo`).
-- Color is never the only indicator: the heart sticker comes with sr-only text, and the hidden badge has text.
+- Color is never the only indicator: the priority badge has a text label, and the hidden badge has text.
 - `lang` is updated on locale change.
 - Off-Telegram or old SDK: in-page fallback buttons replace the BottomButton (`platform === 'unknown'`). The headless smoke uses this.
 - iOS keyboard: listen to `viewportChanged`, use `--tg-viewport-stable-height`, and scroll the focused field into view.
@@ -896,7 +896,7 @@ Hand-edit the existing `## 2.0.0` section of `CHANGELOG.md`, then run `pnpm rele
     - The upstream Telegram file URL is never logged or returned.
 4. **Compact card grid on share pages and in the app.**
     - The grid breaks out of the 36rem text column: share page wishes sit in a wide container (max about 72rem). Desktop shows 3 columns from about 64rem, 4 from about 80rem, and up to 6 on very wide screens. Mobile shows 1 column below about 26rem and 2 above.
-    - Compact card: photo on top (aspect 4:3, `object-fit: cover`, lazy, with alt text), title clamped to 2 lines, price tag chip, heart sticker for priority, a small "Open on <host>" button.
+    - Compact card: photo on top (aspect 4:3, `object-fit: cover`, lazy, with alt text), title clamped to 2 lines, price tag chip, priority badge, a small "Open on <host>" button.
     - Description and dates fold into `<details>` ("Детальніше"), so no JS is needed.
     - The gift-tag look stays: ink border, hard shadow, notched corner, but radii and shadows are scaled down for small cards.
     - Wishes without photos show a tasteful placeholder: the logo heart on lavender, not an empty box.

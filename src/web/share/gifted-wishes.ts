@@ -10,6 +10,7 @@ import { APP_THIRD_PARTY_GIFTED_LIMIT } from '../../shared/app-api';
 import { toWishCurrency } from '../../shared/money';
 import { toWishPriority } from '../../shared/priority';
 import { buildShareWishPhotos } from '../image-proxy/share-photos';
+import type { WebTheme } from '../theme';
 import type { ShareWishView } from './view-model';
 
 export const loadShareGiftedWishes = async (input: {
@@ -17,6 +18,7 @@ export const loadShareGiftedWishes = async (input: {
     share: Pick<PublicShareFingerprint, 'publicId' | 'userId' | 'showGifted'>;
     crypto: ApiCrypto;
     language: AppLocale;
+    theme?: WebTheme;
 }): Promise<ShareWishView[]> => {
     if (!input.share.showGifted) {
         return [];
@@ -44,6 +46,7 @@ export const loadShareGiftedWishes = async (input: {
                     crypto: input.crypto,
                     language: input.language,
                     publicId: input.share.publicId,
+                    ...(input.theme !== undefined && { theme: input.theme }),
                     wish
                 }),
                 gifted: true

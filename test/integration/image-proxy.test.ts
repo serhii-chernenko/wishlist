@@ -11,6 +11,7 @@ import {
     TelegramApiError,
     type TelegramApi
 } from '../../src/api/telegram-api';
+import { buildPhotoPlaceholderSvg } from '../../src/shared/photo-placeholder';
 import { createApp } from '../../src/worker/app';
 import type { WorkerBindings } from '../../src/worker/env';
 import type { TelemetryFields } from '../../src/worker/telemetry';
@@ -645,6 +646,37 @@ describe('image proxy', () => {
         assert.deepEqual(servedEvents(), ['share:placeholder:200']);
         assert.equal((await harness.env.IMAGES.list()).objects.length, 0);
         assert.equal(cache.entries.size, 0);
+    });
+
+    it('paints the placeholder in the theme named by the unsigned t parameter and falls back to the media query otherwise', async () => {
+        const { wish, publicId } = await seedOwner();
+        const signedApp = await appUrl(wish.id, 0);
+        const share = await shareUrl(publicId, wish.id, 0);
+
+        telegram.failGetFile = true;
+
+        for (const [theme, expected] of [
+            ['light', buildPhotoPlaceholderSvg('light')],
+            ['dark', buildPhotoPlaceholderSvg('dark')],
+            ['sepia', buildPhotoPlaceholderSvg()]
+        ] as const) {
+            const app = await request(`${signedApp}&t=${theme}`);
+            const shared = await request(`${share}?t=${theme}`);
+
+            assert.equal(await app.clone().text(), expected, theme);
+            assert.equal(await shared.clone().text(), expected, theme);
+            await assertPlaceholderResponse(app, 'app');
+            await assertPlaceholderResponse(shared, 'share');
+        }
+    });
+
+    it('keeps a signed app url valid with a t parameter and serves the real photo untouched', async () => {
+        const { wish } = await seedOwner();
+
+        const response = await request(`${await appUrl(wish.id, 0)}&t=dark`);
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('Content-Type'), 'image/jpeg');
     });
 
     it('keeps the error responses for requests that are not authorized even when Telegram fails', async () => {

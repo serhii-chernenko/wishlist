@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'hono/jsx/dom';
-import { Share2, Trash2 } from 'lucide';
+import { Share2, Signal, Trash2 } from 'lucide';
 
 import type {
     OwnWishDto,
@@ -27,11 +27,7 @@ import {
     type KeyOf,
     type RemovedItem
 } from '../logic/optimistic';
-import {
-    isHighPriority,
-    toToggledPriority,
-    type DraftFlag
-} from '../logic/wish-draft';
+import { type DraftFlag } from '../logic/wish-draft';
 import { newWishRoute } from '../logic/nav';
 import type { ScreenProps } from '../nav/routes';
 import {
@@ -46,11 +42,12 @@ import { toFailure, type ResourceCache } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
 import { confirmAction } from '../telegram/popups';
+import { ActionSheet } from '../ui/action-sheet';
 import { ChipGroup, type ChipOption } from '../ui/chips';
 import { EmptyState } from '../ui/empty-state';
 import { ErrorState } from '../ui/error-state';
-import { HEART_SYMBOL_ID } from '../ui/heart';
 import { Icon } from '../ui/icon';
+import { PriorityChoice } from '../ui/priority-choice';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { WishGrid, WishTag } from '../ui/wish-tag';
@@ -331,12 +328,8 @@ const priorityToast = (LL: AppTranslator, priority: WishPriority) => {
     });
 };
 
-const flagToast = (LL: AppTranslator, flag: DraftFlag, value: boolean) => {
-    if (flag === 'priority') {
-        return priorityToast(LL, toToggledPriority(value));
-    }
-
-    return value ? LL.wishes.toasts.hidden() : LL.wishes.toasts.shown();
+const hiddenToast = (LL: AppTranslator, hidden: boolean) => {
+    return hidden ? LL.wishes.toasts.hidden() : LL.wishes.toasts.shown();
 };
 
 const trackFlagWrite = (id: number, delta: number) => {
@@ -399,18 +392,13 @@ const useOptimisticFlagPatch = () => {
     };
 };
 
-/** Optimistic priority (high or none) and hidden switches shared by the cards and the editor. */
-export const useWishFlagToggle = () => {
+/** Optimistic hidden switch shared by the cards and the editor. */
+export const useWishHiddenToggle = () => {
     const LL = useLL();
     const patchFlag = useOptimisticFlagPatch();
 
-    return (wish: OwnWishDto, flag: DraftFlag, value: boolean) => {
-        const applied: Partial<OwnWishDto> =
-            flag === 'priority'
-                ? { priority: toToggledPriority(value) }
-                : { hidden: value };
-
-        patchFlag(wish, flag, applied, flagToast(LL, flag, value));
+    return (wish: OwnWishDto, hidden: boolean) => {
+        patchFlag(wish, 'hidden', { hidden }, hiddenToast(LL, hidden));
     };
 };
 
@@ -430,21 +418,6 @@ export const useWishPriorityChange = () => {
     };
 };
 
-const HEART_ICON_VIEW_BOX = '-112 -112 224 180';
-
-const HeartIcon = () => {
-    return (
-        <svg
-            class='icon-toggle-glyph'
-            viewBox={HEART_ICON_VIEW_BOX}
-            aria-hidden='true'
-            focusable='false'
-        >
-            <use href={`#${HEART_SYMBOL_ID}`} />
-        </svg>
-    );
-};
-
 const EyeIcon = ({ crossed }: { crossed: boolean }) => {
     return (
         <svg
@@ -460,28 +433,54 @@ const EyeIcon = ({ crossed }: { crossed: boolean }) => {
     );
 };
 
+const PriorityPicker = ({
+    wish,
+    onClose
+}: {
+    wish: OwnWishDto;
+    onClose: () => void;
+}) => {
+    const LL = useLL();
+    const changePriority = useWishPriorityChange();
+
+    return (
+        <ActionSheet
+            title={LL.wishes.priorityButton()}
+            subtitle={wish.title}
+            closeLabel={LL.common.close()}
+            onClose={onClose}
+        >
+            <PriorityChoice
+                name={`wish-${wish.id}-priority`}
+                value={wish.priority}
+                onChange={priority => {
+                    onClose();
+                    changePriority(wish, priority);
+                }}
+            />
+        </ActionSheet>
+    );
+};
+
 export const WishQuickToggles = ({ wish }: { wish: OwnWishDto }) => {
     const LL = useLL();
-    const toggleFlag = useWishFlagToggle();
+    const toggleHidden = useWishHiddenToggle();
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     return (
         <div class='quick-toggles'>
             <button
                 type='button'
-                class='icon-toggle icon-toggle-heart'
-                aria-pressed={String(isHighPriority(wish.priority))}
-                aria-label={LL.wishes.priorityToggle()}
-                title={LL.wishes.priorityToggle()}
+                class='icon-toggle icon-toggle-priority'
+                aria-haspopup='dialog'
+                aria-label={LL.wishes.priorityButton()}
+                title={LL.wishes.priorityButton()}
                 onClick={() => {
                     haptics.selection();
-                    toggleFlag(
-                        wish,
-                        'priority',
-                        !isHighPriority(wish.priority)
-                    );
+                    setPickerOpen(true);
                 }}
             >
-                <HeartIcon />
+                <Icon icon={Signal} class='icon-toggle-glyph' />
             </button>
             <button
                 type='button'
@@ -491,11 +490,19 @@ export const WishQuickToggles = ({ wish }: { wish: OwnWishDto }) => {
                 title={LL.wishes.hiddenToggle()}
                 onClick={() => {
                     haptics.selection();
-                    toggleFlag(wish, 'hidden', !wish.hidden);
+                    toggleHidden(wish, !wish.hidden);
                 }}
             >
                 <EyeIcon crossed={wish.hidden} />
             </button>
+            {pickerOpen ? (
+                <PriorityPicker
+                    wish={wish}
+                    onClose={() => {
+                        setPickerOpen(false);
+                    }}
+                />
+            ) : null}
         </div>
     );
 };

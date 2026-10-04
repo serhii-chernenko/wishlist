@@ -714,7 +714,7 @@ const en: Translation = {
                 },
                 priority: {
                     title: 'Priorities',
-                    text: 'Mark what you want most: those wishes get a heart.'
+                    text: 'Mark what you want most: the wish gets a priority badge that friends see.'
                 },
                 hidden: {
                     title: 'Hidden wishes',
@@ -1046,7 +1046,7 @@ const en: Translation = {
                 cta: 'Reset filter'
             },
             hiddenBadge: 'Only you can see this',
-            priorityToggle: 'High priority',
+            priorityButton: 'Priority',
             hiddenToggle: 'Hide from others',
             photoCount: 'Photos: {count}',
             edit: 'Edit',
@@ -1119,7 +1119,7 @@ const en: Translation = {
             },
             priority: {
                 label: 'Priority',
-                hint: 'The higher the priority, the higher the wish appears on your list. Only high-priority wishes get a heart.',
+                hint: 'The higher the priority, the higher the wish appears on your list.',
                 levels: {
                     none: 'None',
                     low: 'Low',

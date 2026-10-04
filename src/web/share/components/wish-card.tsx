@@ -12,7 +12,6 @@ import { isBadgePriority } from '../../../shared/priority-badge';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
-import { HeartSticker } from './heart-sticker';
 import { PriorityBadge } from './priority-badge';
 
 const WWW_PREFIX = /^www\./;
@@ -67,10 +66,6 @@ const WishPrice = ({
             </span>
         </p>
     );
-};
-
-export const isHighPriorityWish = (wish: Pick<ShareWishView, 'priority'>) => {
-    return wish.priority === 'high';
 };
 
 const WishCover = ({
@@ -147,11 +142,9 @@ export const WishCard = ({
         !gifted && isRenderableLink(wish.link)
             ? getLinkHostname(wish.link)
             : null;
-    const wanted = wish.priority === 'high' && !gifted;
 
     return (
         <li class={gifted ? 'wish wish-gifted' : 'wish'}>
-            {wanted ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
                 <WishCover

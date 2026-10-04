@@ -18,28 +18,29 @@ const GIFT_TAG_SOURCE = readSource('../src/web/styles/gift-tag.css');
 const APP_SOURCE = readSource('../src/app/styles/app.css');
 const MAX_PLACEHOLDER_BYTES = 8 * 1024;
 
-const PLACEHOLDER_ROLES = ['bg', 'fill', 'line'] as const;
+const TOKEN_BY_ROLE = {
+    background: '--photo-placeholder',
+    fill: '--photo-placeholder-fill',
+    ink: '--photo-placeholder-ink'
+} as const;
 
-const readPalette = (suffix: string) => {
+const readPalette = (suffix: '' | '-dark') => {
     return Object.fromEntries(
-        Array.from(
-            GIFT_TAG_SOURCE.matchAll(
-                new RegExp(
-                    `--photo-placeholder-(bg|fill|line)${suffix}: (#[0-9a-f]{6})`,
-                    'g'
-                )
-            )
-        ).map(([, name, value]) => [name, value])
+        Object.entries(TOKEN_BY_ROLE).map(([role, token]) => {
+            const value = new RegExp(`${token}${suffix}: (#[0-9a-f]{6});`).exec(
+                GIFT_TAG_SOURCE
+            )?.[1];
+
+            return [role, value];
+        })
     );
 };
 
 const readDarkAliases = (block: string) => {
     return Object.fromEntries(
-        Array.from(
-            block.matchAll(
-                /--photo-placeholder-(bg|fill|line): var\(--photo-placeholder-(?:bg|fill|line)-dark\);/g
-            )
-        ).map(([, name]) => [name, true])
+        Object.entries(TOKEN_BY_ROLE).map(([role, token]) => {
+            return [role, block.includes(`${token}: var(${token}-dark);`)];
+        })
     );
 };
 
@@ -90,24 +91,42 @@ test('the stylesheet tokens match the palettes used by the image', () => {
         /prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \{([^}]*)\}/.exec(
             GIFT_TAG_SOURCE
         )?.[1] ?? '';
-    const expectedLight = {
-        bg: PLACEHOLDER_LIGHT.background,
-        fill: PLACEHOLDER_LIGHT.fill,
-        line: PLACEHOLDER_LIGHT.line
-    };
-    const expectedDark = {
-        bg: PLACEHOLDER_DARK.background,
-        fill: PLACEHOLDER_DARK.fill,
-        line: PLACEHOLDER_DARK.line
-    };
     const everyRole = Object.fromEntries(
-        PLACEHOLDER_ROLES.map(role => [role, true])
+        Object.keys(TOKEN_BY_ROLE).map(role => [role, true])
     );
 
-    assert.deepEqual(readPalette(''), expectedLight);
-    assert.deepEqual(readPalette('-dark'), expectedDark);
+    assert.deepEqual(readPalette(''), PLACEHOLDER_LIGHT);
+    assert.deepEqual(readPalette('-dark'), PLACEHOLDER_DARK);
     assert.deepEqual(readDarkAliases(darkBlock), everyRole);
     assert.deepEqual(readDarkAliases(mediaBlock), everyRole);
+});
+
+test('a themed placeholder carries one fixed palette and no media query', () => {
+    for (const [theme, palette] of [
+        ['light', PLACEHOLDER_LIGHT],
+        ['dark', PLACEHOLDER_DARK]
+    ] as const) {
+        const svg = buildPhotoPlaceholderSvg(theme);
+
+        assert.ok(svg.includes(`fill="${palette.background}"`), theme);
+        assert.ok(svg.includes(`fill="${palette.ink}"`), theme);
+        assert.ok(svg.includes(`stroke="${palette.ink}"`), theme);
+        assert.doesNotMatch(svg, /<style|@media/, theme);
+    }
+
+    assert.ok(
+        !buildPhotoPlaceholderSvg('light').includes(PLACEHOLDER_DARK.background)
+    );
+    assert.ok(
+        !buildPhotoPlaceholderSvg('dark').includes(PLACEHOLDER_LIGHT.background)
+    );
+});
+
+test('the gifted muting hits the photo itself and never the placeholder', () => {
+    const gifted = readSource('../src/web/styles/gifted.css');
+
+    assert.match(gifted, /\.wish-gifted \.wish-photo img \{[^}]*opacity/);
+    assert.doesNotMatch(gifted, /\.photo-placeholder/);
 });
 
 test('broken photos never show their alt text on the share cards or in the app tiles', () => {

@@ -724,7 +724,7 @@ const pl: Translation = {
                 },
                 priority: {
                     title: 'Priorytety',
-                    text: 'Zaznacz, czego chcesz najbardziej: takie życzenia dostają serduszko.'
+                    text: 'Zaznacz, czego chcesz najbardziej: życzenie dostanie oznaczenie priorytetu, które widzą znajomi.'
                 },
                 hidden: {
                     title: 'Ukryte życzenia',
@@ -1060,7 +1060,7 @@ const pl: Translation = {
                 cta: 'Wyczyść filtr'
             },
             hiddenBadge: 'Widzisz tylko ty',
-            priorityToggle: 'Wysoki priorytet',
+            priorityButton: 'Priorytet',
             hiddenToggle: 'Ukryj przed innymi',
             photoCount: 'Zdjęcia: {count}',
             edit: 'Edytuj',
@@ -1133,7 +1133,7 @@ const pl: Translation = {
             },
             priority: {
                 label: 'Priorytet',
-                hint: 'Im wyższy priorytet, tym wyżej życzenie na liście. Serduszko dostają tylko życzenia z wysokim priorytetem.',
+                hint: 'Im wyższy priorytet, tym wyżej życzenie na liście.',
                 levels: {
                     none: 'Brak',
                     low: 'Niski',

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'hono/jsx/dom';
 import { Trash2 } from 'lucide';
 
 import {
-    WISH_PRIORITIES,
     type ApiImage,
     type FieldErrorCode,
     type ImageReorderSource,
@@ -70,7 +69,6 @@ import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
 import { openTelegramLink, requestWriteAccess } from '../telegram/links';
 import { confirmAction, showPopup } from '../telegram/popups';
-import { ChoiceCards, type ChoiceOption } from '../ui/choice-cards';
 import { Field } from '../ui/field';
 import { Icon } from '../ui/icon';
 import { ImportNoteBanner } from '../ui/import-note';
@@ -85,13 +83,14 @@ import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
 import { Toggle } from '../ui/toggle';
 import { ErrorState } from '../ui/error-state';
+import { PriorityChoice } from '../ui/priority-choice';
 import {
     forgetWish,
     readCachedWish,
     removeWishLocally,
     storeWish,
     updateCounts,
-    useWishFlagToggle,
+    useWishHiddenToggle,
     useWishPriorityChange,
     WISHES_LIST_KEY,
     wishItemKey
@@ -100,18 +99,6 @@ import {
 const FIELD_ID_PREFIX = 'wish-';
 const REMOVE_DONE = 'done';
 const REMOVE_NOT_DONE = 'notDone';
-
-const buildPriorityOptions = (
-    LL: AppTranslator
-): ReadonlyArray<ChoiceOption<WishPriority>> => {
-    return WISH_PRIORITIES.map(priority => {
-        return {
-            value: priority,
-            title: LL.editor.priority.levels[priority](),
-            marker: priority
-        };
-    });
-};
 
 type UploadSource =
     | { kind: 'file'; file: Blob; previewUrl: string }
@@ -556,7 +543,7 @@ const WishForm = ({
     const LL = useLL();
     const { me, config, locale } = useSession();
     const entryKey = useEntryKey();
-    const toggleFlag = useWishFlagToggle();
+    const toggleHidden = useWishHiddenToggle();
     const changePriority = useWishPriorityChange();
     const limits = config.limits;
     const [baseline, setBaseline] = useState<WishDraft>(() => {
@@ -653,7 +640,7 @@ const WishForm = ({
             return;
         }
 
-        toggleFlag(wish, 'hidden', value);
+        toggleHidden(wish, value);
     };
 
     const setPriority = (priority: WishPriority) => {
@@ -1117,12 +1104,9 @@ const WishForm = ({
                     <p class='priority-field-label' id='wish-priority-label'>
                         {LL.editor.priority.label()}
                     </p>
-                    <ChoiceCards
+                    <PriorityChoice
                         name='wish-priority'
-                        legend={LL.editor.priority.label()}
-                        options={buildPriorityOptions(LL)}
                         value={draft.priority}
-                        variant='list'
                         onChange={setPriority}
                         groupDescribedBy='wish-priority-hint'
                     />
