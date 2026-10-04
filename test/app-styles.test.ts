@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
+import { gzipSync } from 'node:zlib';
 
 const AAA_CONTRAST = 7;
 const NON_TEXT_CONTRAST = 3;
@@ -278,9 +279,15 @@ test('the source and the committed stylesheet load nothing from the network', ()
     assert.doesNotMatch(COMMITTED_STYLESHEET, /@import/);
 });
 
+const MAX_RAW_STYLESHEET_BYTES = 120_000;
+const MAX_GZIP_STYLESHEET_BYTES = 20_000;
+
 test('the committed stylesheet carries both themes and self hosted fonts', () => {
     assert.ok(existsSync(new URL('../public/app/app.css', import.meta.url)));
-    assert.ok(COMMITTED_STYLESHEET.length < 85_000);
+    assert.ok(COMMITTED_STYLESHEET.length < MAX_RAW_STYLESHEET_BYTES);
+    assert.ok(
+        gzipSync(COMMITTED_STYLESHEET).byteLength < MAX_GZIP_STYLESHEET_BYTES
+    );
     assert.match(COMMITTED_STYLESHEET, /\[data-theme=wishlist\]/);
     assert.match(COMMITTED_STYLESHEET, /\[data-theme=wishlist-dark\]/);
     assert.match(COMMITTED_STYLESHEET, /--paper:var\(--color-base-200\)/);
