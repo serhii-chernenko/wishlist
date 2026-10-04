@@ -1241,7 +1241,14 @@ describe('wishlist screens on D1', () => {
                     );
                 })
             );
-            assert.ok(lastText(rejected).html.includes('Оновити вартість'));
+            assert.ok(
+                rejected.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html.includes('Оновити вартість')
+                    );
+                })
+            );
             assert.equal((await readWish(wish.id))?.['price'], 1500);
 
             await fieldInput('price', '❌ Видалити');

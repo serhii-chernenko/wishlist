@@ -885,7 +885,7 @@ describe('share page routes', () => {
         );
         assert.equal(
             await production.text(),
-            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\nDisallow: /theme\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
+            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\nDisallow: /theme\nDisallow: /currency\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
         );
 
         for (const environment of ['preview', 'local']) {

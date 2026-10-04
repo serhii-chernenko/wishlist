@@ -15,6 +15,7 @@ import { HeartStickerDefs } from './heart-sticker';
 import { HeroTag } from './hero';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
+import { CurrencySwitcher } from './currency-switcher';
 import { ThemeSwitcher } from './theme-switcher';
 import { ENVELOPE_LINK_CLASS, TEXT_LINK_CLASS } from './link-classes';
 import { isHighPriorityWish, WishCard } from './wish-card';
@@ -128,6 +129,11 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                 <ThemeSwitcher
                     language={model.language}
                     theme={model.theme ?? 'system'}
+                    back={buildSharePath(model.publicId, model.language)}
+                />
+                <CurrencySwitcher
+                    language={model.language}
+                    choice={model.currencyChoice}
                     back={buildSharePath(model.publicId, model.language)}
                 />
                 <LanguageSwitcher

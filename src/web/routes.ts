@@ -64,6 +64,12 @@ import type {
     WebCurrencyChoice
 } from './share/view-model';
 import {
+    buildCurrencyCookie,
+    CURRENCY_PATH,
+    isWebCurrencyChoice,
+    readCurrencyCookie
+} from './currency';
+import {
     buildThemeCookie,
     isWebTheme,
     readThemeCookie,
@@ -212,12 +218,23 @@ interface ShareCurrency extends ShareCurrencyTelemetry {
     currencyChoice: WebCurrencyChoice;
 }
 
-const resolveShareCurrency = (language: SharePageLanguage): ShareCurrency => {
-    return {
-        currencyChoice: 'auto',
-        displayCurrency: getDefaultCurrency(language),
-        currencySource: 'language'
-    };
+const resolveShareCurrency = (
+    language: SharePageLanguage,
+    cookieHeader: string | undefined
+): ShareCurrency => {
+    const currencyChoice = readCurrencyCookie(cookieHeader);
+
+    return currencyChoice === 'auto'
+        ? {
+              currencyChoice,
+              displayCurrency: getDefaultCurrency(language),
+              currencySource: 'language'
+          }
+        : {
+              currencyChoice,
+              displayCurrency: currencyChoice,
+              currencySource: 'cookie'
+          };
 };
 
 type CachedHtmlResult = 'notModified' | 'cached' | 'rendered';
@@ -356,7 +373,7 @@ const servePage = async ({
         repositories.exchangeRates
     );
     const { currencyChoice, displayCurrency, currencySource } =
-        resolveShareCurrency(language);
+        resolveShareCurrency(language, c.req.header('Cookie'));
     const deliveryHintShown = isDeliveryHintShown(share);
     const fingerprint = variantFingerprint(
         await computeShareFingerprint(deployId, language, share, rates, {
@@ -617,7 +634,7 @@ export const registerShareRoutes = (
 
     app.get('/robots.txt', c => {
         const body = isProductionCanonicalHost(c.env, c.req.url)
-            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\nDisallow: ${APP_SHELL_PATH}\nDisallow: ${API_PATH_ROOT}\nDisallow: ${IMAGE_PATH_ROOT}\nDisallow: ${THEME_PATH}\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
+            ? `User-agent: *\nAllow: /\nDisallow: ${SHARE_CACHE_PATH_PREFIX}/\nDisallow: ${APP_SHELL_PATH}\nDisallow: ${API_PATH_ROOT}\nDisallow: ${IMAGE_PATH_ROOT}\nDisallow: ${THEME_PATH}\nDisallow: ${CURRENCY_PATH}\n\nSitemap: ${CANONICAL_SHARE_ORIGIN}${SITEMAP_PATH}\n`
             : 'User-agent: *\nDisallow: /\n';
 
         return c.body(body, 200, {
@@ -674,6 +691,23 @@ export const registerHomeRoutes = (
                 new Headers({
                     Location: toSafeBackPath(c.req.query('back')),
                     'Set-Cookie': buildThemeCookie(theme),
+                    'Cache-Control': NO_STORE,
+                    'X-Robots-Tag': NOINDEX
+                })
+            )
+        });
+    });
+
+    app.get(CURRENCY_PATH, c => {
+        const requested = c.req.query('set');
+        const choice = isWebCurrencyChoice(requested) ? requested : 'auto';
+
+        return new Response(null, {
+            status: 303,
+            headers: withSecurityHeaders(
+                new Headers({
+                    Location: toSafeBackPath(c.req.query('back')),
+                    'Set-Cookie': buildCurrencyCookie(choice),
                     'Cache-Control': NO_STORE,
                     'X-Robots-Tag': NOINDEX
                 })

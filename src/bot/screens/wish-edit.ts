@@ -1,7 +1,11 @@
 import type { Message } from 'telegraf/types';
 
 import type { WishRecord } from '../../db/repositories';
-import { getCurrencySymbol, toWishCurrency } from '../../shared/money';
+import {
+    CURRENCIES,
+    getCurrencySymbol,
+    toWishCurrency
+} from '../../shared/money';
 import { toWishPriority } from '../../shared/priority';
 import {
     appEntryButton,
@@ -18,7 +22,7 @@ import { parseDescription } from '../input/description';
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '../input/limits';
 import { parseLink } from '../input/link';
 import { pickLargestPhoto } from '../input/photo';
-import { parsePrice } from '../input/price';
+import { parsePriceWithCurrency } from '../input/price';
 import { isRemoveCommand } from '../input/remove-command';
 import { parseTitle } from '../input/title';
 import { parseWishImages } from '../input/wish-images';
@@ -171,6 +175,31 @@ const getPricePromptText = (req: BotRequest, wish: WishRecord) => {
     return `${prompt}\n${scenes.priceCurrency(getCurrencySymbol(req.locale, currency))}`;
 };
 
+const buildWishCurrencyKeyboard = (req: BotRequest, wish: WishRecord) => {
+    const current = toWishCurrency(wish.currency);
+
+    return singleColumnKeyboard(
+        CURRENCIES.filter(currency => {
+            return currency !== current;
+        }).map(currency => {
+            return callbackButton(req.LL.currency.options[currency](), {
+                type: 'wishCurrencySet',
+                wishId: wish.id,
+                currency
+            });
+        })
+    );
+};
+
+const sendWishCurrencyChoice = async (req: BotRequest, wish: WishRecord) => {
+    await req.send.text(
+        req.LL.wishlist.edit.currency.hint({
+            currency: getCurrencySymbol(req.locale, wish.currency)
+        }),
+        buildWishCurrencyKeyboard(req, wish)
+    );
+};
+
 const getFieldPromptText = (
     req: BotRequest,
     wish: WishRecord,
@@ -195,7 +224,7 @@ const getFieldPromptText = (
     }
 };
 
-const sendFieldPrompt = async (
+export const sendFieldPrompt = async (
     req: BotRequest,
     wish: WishRecord,
     field: WishField
@@ -209,6 +238,10 @@ const sendFieldPrompt = async (
         getFieldPromptText(req, wish, field, hasValue),
         hasValue ? removeValueKeyboard(req.LL) : removeReplyKeyboard()
     );
+
+    if (field === 'price') {
+        await sendWishCurrencyChoice(req, wish);
+    }
 };
 
 const finishFieldUpdate = async (
@@ -363,7 +396,7 @@ const handlePrice = async (
 ) => {
     const { LL } = req;
     const user = requireUser(req);
-    const parsed = parsePrice(text, getRemoveLabels());
+    const parsed = parsePriceWithCurrency(text, getRemoveLabels());
 
     if (!parsed.ok) {
         await rejectFieldInput(
@@ -378,7 +411,8 @@ const handlePrice = async (
 
     const { wishes } = createWishScreenServices(req);
     const updated = await wishes.updateFields(wish.id, user.id, {
-        price: parsed.value
+        price: parsed.value,
+        ...(parsed.currency === null ? {} : { currency: parsed.currency })
     });
 
     if (!updated) {
