@@ -14,6 +14,7 @@ import { EXTERNAL_LINK_REL, PageFooter } from './footer';
 import { HeroTag } from './hero';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
+import { PhotoPlaceholderSprite } from './photo-placeholder';
 import { CurrencySwitcher } from './currency-switcher';
 import { ThemeSwitcher } from './theme-switcher';
 import { ENVELOPE_LINK_CLASS, TEXT_LINK_CLASS } from './link-classes';
@@ -92,6 +93,29 @@ const OwnerDetails = ({ model }: { model: SharePageModel }) => {
     ) : null;
 };
 
+const NO_GIFTED: SharePageModel['wishes'] = [];
+
+const describeSummary = (model: SharePageModel) => {
+    const LL = getTranslator(model.language);
+    const giftedCount = (model.gifted ?? NO_GIFTED).length;
+    const date =
+        model.lastUpdatedAt === null
+            ? null
+            : formatDate(model.lastUpdatedAt, model.language);
+
+    if (giftedCount > 0) {
+        const counts = { active: model.visibleCount, gifted: giftedCount };
+
+        return date === null
+            ? LL.web.header.countWithGifted(counts)
+            : LL.web.header.summaryWithGifted({ ...counts, date });
+    }
+
+    return date === null
+        ? LL.web.header.count({ count: model.visibleCount })
+        : LL.web.header.summary({ count: model.visibleCount, date });
+};
+
 const ShareHero = ({ model }: { model: SharePageModel }) => {
     const LL = getTranslator(model.language);
     const appLink = buildShareAppLink(model.botUrl, model.publicId);
@@ -110,14 +134,7 @@ const ShareHero = ({ model }: { model: SharePageModel }) => {
 
     return (
         <HeroTag heading={heading}>
-            <p class='hero-meta'>
-                {model.lastUpdatedAt
-                    ? LL.web.header.summary({
-                          count: model.visibleCount,
-                          date: formatDate(model.lastUpdatedAt, model.language)
-                      })
-                    : LL.web.header.count({ count: model.visibleCount })}
-            </p>
+            <p class='hero-meta'>{describeSummary(model)}</p>
             {showsUsername && model.username !== null ? (
                 <p class='hero-user'>
                     <a
@@ -145,14 +162,18 @@ const ShareHero = ({ model }: { model: SharePageModel }) => {
     );
 };
 
-const NO_GIFTED: SharePageModel['wishes'] = [];
-
 const hasConvertedPrices = (model: SharePageModel) => {
     return [...model.wishes, ...(model.gifted ?? NO_GIFTED)].some(wish => {
         return (
             wish.price > 0 &&
             isPriceConverted(wish.currency, model.displayCurrency, model.rates)
         );
+    });
+};
+
+const hasPlaceholderCover = (model: SharePageModel) => {
+    return [...model.wishes, ...(model.gifted ?? NO_GIFTED)].some(wish => {
+        return (wish.photos?.length ?? 0) === 0;
     });
 };
 
@@ -196,11 +217,16 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
             <main>
                 <ShareHero model={model} />
                 <OwnerDetails model={model} />
-                {model.wishes.length === 0 ? (
+                {model.wishes.length > 0 ? null : gifted.length === 0 ? (
                     <p class='empty'>{LL.web.empty()}</p>
-                ) : null}
+                ) : (
+                    <p class='notice'>{LL.web.noActive()}</p>
+                )}
                 {model.wishes.length + gifted.length === 0 ? null : (
                     <>
+                        {hasPlaceholderCover(model) ? (
+                            <PhotoPlaceholderSprite />
+                        ) : null}
                         <ul class='wishes'>
                             {[...model.wishes, ...gifted].map((wish, index) => {
                                 return (

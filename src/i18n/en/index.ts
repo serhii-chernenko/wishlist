@@ -608,6 +608,9 @@ const en: Translation = {
         header: {
             count: '{count} {{count:wish|wishes}}',
             summary: '{count} {{count:wish|wishes}}, updated {date}',
+            countWithGifted: 'Active: {active}, gifted: {gifted}',
+            summaryWithGifted:
+                'Active: {active}, gifted: {gifted}, updated {date}',
             username: 'Telegram: @{username}',
             lead: 'Wish list from',
             fallback: 'Wish list'
@@ -631,8 +634,11 @@ const en: Translation = {
             details: 'More details',
             created: 'Added {date}',
             updated: 'Added {created}, updated {updated}',
-            gifted: 'Gifted'
+            gifted: 'Gifted',
+            photoLoading: 'Photo is loading'
         },
+        noActive:
+            'No active wishes right now. Below are the ones already gifted.',
         empty: 'Nothing here yet. Wishes will show up as soon as they’re added.',
         truncated: 'Showing the first {limit} wishes.',
         ratesNote:
@@ -800,6 +806,7 @@ const en: Translation = {
             photo: 'Photo {index} of {total}: {title}',
             photos: 'Photos, {count}',
             photoPlaceholder: 'No photo',
+            photoLoading: 'Photo is loading',
             menu: 'Menu',
             closeToast: 'Dismiss',
             countdown: {
@@ -1353,7 +1360,10 @@ const en: Translation = {
             title: 'Wish list',
             lead: 'Wish list of {label}',
             count: '{count} {{count:wish|wishes}}',
+            countWithGifted: 'Active: {active}, gifted: {gifted}',
             empty: 'This person hasn’t added any wishes yet.',
+            noActive:
+                'No active wishes right now. Below are the ones already gifted.',
             filteredEmpty: 'No wishes match this filter.',
             priority: 'Really wants this',
             openLink: 'Open on {host}',

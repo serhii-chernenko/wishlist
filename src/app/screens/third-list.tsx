@@ -10,6 +10,7 @@ import type {
 import type { AppTranslator } from '../i18n/i18n';
 import { failureMessage } from '../i18n/messages';
 import { hasErrorCode, type AppFailure } from '../logic/errors';
+import { hasPendingPhotos } from '../logic/photo-pending';
 import {
     describePriceFilter,
     selectPriceFilters,
@@ -30,6 +31,7 @@ import {
     useNav,
     useSession
 } from '../state/context';
+import { usePendingPhotoPolling } from '../state/photo-polling';
 import { toFailure } from '../state/store';
 import { haptics } from '../telegram/haptics';
 import { ChipGroup, type ChipOption } from '../ui/chips';
@@ -47,6 +49,7 @@ interface ThirdListData {
     payments: string | null;
     contact: OwnerContactDto | null;
     gifted: SharedWishDto[];
+    giftedTotal: number;
 }
 
 const NO_GIFTED: SharedWishDto[] = [];
@@ -126,10 +129,12 @@ const ThirdFailure = ({
 
 const OwnerHeader = ({
     owner,
-    total
+    total,
+    giftedTotal
 }: {
     owner: OwnerDto;
     total: number | null;
+    giftedTotal: number;
 }) => {
     const LL = useLL();
 
@@ -139,7 +144,14 @@ const OwnerHeader = ({
                 <p class='third-label'>{owner.label}</p>
             )}
             {total === null ? null : (
-                <p class='third-count'>{LL.third.count({ count: total })}</p>
+                <p class='third-count'>
+                    {giftedTotal > 0
+                        ? LL.third.countWithGifted({
+                              active: total,
+                              gifted: giftedTotal
+                          })
+                        : LL.third.count({ count: total })}
+                </p>
             )}
         </Tag>
     );
@@ -228,7 +240,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                 nextOffset: page.nextOffset,
                 payments: page.owner.payments,
                 contact: page.owner.contact,
-                gifted: page.gifted ?? NO_GIFTED
+                gifted: page.gifted ?? NO_GIFTED,
+                giftedTotal: page.giftedTotal
             };
         }
     );
@@ -247,6 +260,16 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const giftedItems = viewOnly
         ? (shared.data?.gifted ?? NO_GIFTED)
         : (list.data?.gifted ?? NO_GIFTED);
+    const giftedTotal = viewOnly
+        ? (shared.data?.giftedTotal ?? 0)
+        : (list.data?.giftedTotal ?? 0);
+    const photosPending =
+        hasPendingPhotos(visibleItems) || hasPendingPhotos(giftedItems);
+
+    usePendingPhotoPolling(photosPending, () => {
+        void (viewOnly ? shared.reload() : list.reload());
+    });
+
     const headerFailure = owner === null ? shared.failure : null;
     const pending =
         owner === null
@@ -357,7 +380,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                                   total: more.total,
                                   nextOffset: more.nextOffset
                               },
-                              gifted: page.gifted ?? NO_GIFTED
+                              gifted: page.gifted ?? NO_GIFTED,
+                              giftedTotal: page.giftedTotal
                           };
                 });
             } else {
@@ -378,7 +402,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                               nextOffset: page.nextOffset,
                               payments: page.owner.payments,
                               contact: cached.contact,
-                              gifted: page.gifted ?? NO_GIFTED
+                              gifted: page.gifted ?? NO_GIFTED,
+                              giftedTotal: page.giftedTotal
                           };
                 });
             }
@@ -465,7 +490,13 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             busy={pending}
             sticky={owner !== null}
             {...(owner !== null && {
-                summary: <OwnerHeader owner={owner} total={total} />
+                summary: (
+                    <OwnerHeader
+                        owner={owner}
+                        total={total}
+                        giftedTotal={giftedTotal}
+                    />
+                )
             })}
             {...(owner !== null &&
                 !viewOnly && {
@@ -538,13 +569,17 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                     ) : null}
                     {visibleItems.length === 0 &&
                     (viewOnly || list.data !== undefined) ? (
-                        <Tag class='state-tag'>
-                            <p class='state-text'>
-                                {filter === null
-                                    ? LL.third.empty()
-                                    : LL.third.filteredEmpty()}
-                            </p>
-                        </Tag>
+                        filter === null && giftedTotal > 0 ? (
+                            <p class='third-quiet'>{LL.third.noActive()}</p>
+                        ) : (
+                            <Tag class='state-tag'>
+                                <p class='state-text'>
+                                    {filter === null
+                                        ? LL.third.empty()
+                                        : LL.third.filteredEmpty()}
+                                </p>
+                            </Tag>
+                        )
                     ) : null}
                     {nextOffset === null ? null : (
                         <button

@@ -9,7 +9,10 @@ import type {
 import { APP_THIRD_PARTY_GIFTED_LIMIT } from '../../shared/app-api';
 import { toWishCurrency } from '../../shared/money';
 import { toWishPriority } from '../../shared/priority';
-import { buildShareWishPhotos } from '../image-proxy/share-photos';
+import {
+    buildShareWishPhotos,
+    isSharePhotoPending
+} from '../image-proxy/share-photos';
 import type { WebTheme } from '../theme';
 import type { ShareWishView } from './view-model';
 
@@ -32,7 +35,15 @@ export const loadShareGiftedWishes = async (input: {
     );
 
     return Promise.all(
-        wishes.map(async wish => {
+        wishes.map(async (wish): Promise<ShareWishView> => {
+            const photos = await buildShareWishPhotos({
+                crypto: input.crypto,
+                language: input.language,
+                publicId: input.share.publicId,
+                ...(input.theme !== undefined && { theme: input.theme }),
+                wish
+            });
+
             return {
                 title: wish.title,
                 description: wish.description,
@@ -42,14 +53,11 @@ export const loadShareGiftedWishes = async (input: {
                 priority: toWishPriority(wish.priorityLevel),
                 createdAt: wish.createdAt,
                 updatedAt: wish.updatedAt,
-                photos: await buildShareWishPhotos({
-                    crypto: input.crypto,
-                    language: input.language,
-                    publicId: input.share.publicId,
-                    ...(input.theme !== undefined && { theme: input.theme }),
-                    wish
-                }),
-                gifted: true
+                photos,
+                gifted: true,
+                ...(isSharePhotoPending(wish, photos) && {
+                    photoPending: true
+                })
             };
         })
     );

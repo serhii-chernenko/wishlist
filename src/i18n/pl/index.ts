@@ -617,6 +617,9 @@ const pl: Translation = {
             count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
             summary:
                 '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}, zaktualizowano {date}',
+            countWithGifted: 'Aktywne: {active}, podarowane: {gifted}',
+            summaryWithGifted:
+                'Aktywne: {active}, podarowane: {gifted}, zaktualizowano {date}',
             username: 'Telegram: @{username}',
             lead: 'Lista życzeń',
             fallback: 'Lista życzeń'
@@ -640,8 +643,11 @@ const pl: Translation = {
             details: 'Szczegóły',
             created: 'Dodano {date}',
             updated: 'Dodano {created}, zaktualizowano {updated}',
-            gifted: 'Podarowane'
+            gifted: 'Podarowane',
+            photoLoading: 'Wczytywanie zdjęcia'
         },
+        noActive:
+            'Obecnie nie ma aktywnych życzeń, poniżej te, które już podarowano.',
         empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
         truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
         ratesNote:
@@ -811,6 +817,7 @@ const pl: Translation = {
             photo: 'Zdjęcie {index} z {total}: {title}',
             photos: 'Zdjęcia, {count}',
             photoPlaceholder: 'Brak zdjęcia',
+            photoLoading: 'Wczytywanie zdjęcia',
             menu: 'Menu',
             closeToast: 'Zamknij komunikat',
             countdown: {
@@ -1371,7 +1378,10 @@ const pl: Translation = {
             title: 'Lista życzeń',
             lead: 'Lista życzeń: {label}',
             count: '{count} {{count:|życzenie||życzenia|życzeń|życzenia}}',
+            countWithGifted: 'Aktywne: {active}, podarowane: {gifted}',
             empty: 'Ta osoba jeszcze nie uzupełniła listy życzeń.',
+            noActive:
+                'Obecnie nie ma aktywnych życzeń, poniżej te, które już podarowano.',
             filteredEmpty: 'Żadne życzenie nie pasuje do tego filtra.',
             priority: 'Bardzo tego chce',
             openLink: 'Otwórz na {host}',

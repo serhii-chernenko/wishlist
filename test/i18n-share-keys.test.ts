@@ -27,6 +27,8 @@ const flatten = (tree: Tree, prefix: string): [string, string][] => {
 const expectedWebKeys = [
     'web.header.count',
     'web.header.summary',
+    'web.header.countWithGifted',
+    'web.header.summaryWithGifted',
     'web.header.username',
     'web.header.lead',
     'web.header.fallback',
@@ -45,7 +47,9 @@ const expectedWebKeys = [
     'web.wish.created',
     'web.wish.updated',
     'web.wish.gifted',
+    'web.wish.photoLoading',
     'web.empty',
+    'web.noActive',
     'web.truncated',
     'web.ratesNote',
     'web.footer.cta',

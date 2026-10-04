@@ -16,6 +16,7 @@ import {
     readExchangeRates,
     type ApiHandler
 } from '../context';
+import { kickPhotoDrainOnLoad } from '../photo-drain';
 import {
     buildAppConfig,
     getAppMessages,
@@ -80,6 +81,11 @@ export const bootstrap: ApiHandler = async c => {
         readCounts(repos, user),
         readExchangeRates(c)
     ]);
+
+    if (user !== null) {
+        await kickPhotoDrainOnLoad(c, user.id);
+    }
+
     const body: BootstrapDto = {
         me: toMeDto({ actor, user, sessionLanguage, locale }),
         messages: getAppMessages(locale),

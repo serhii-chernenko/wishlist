@@ -136,10 +136,16 @@ export interface ListImportResumeRequest {
     userId?: number;
 }
 
+/** `holdLeaseMs` keeps the user's drain lease for that long after the run starts, so a repeated trigger inside the window finds the user locked. */
 export interface ListImportDrainRequest {
     budgetMs: number;
     trigger: ListImportDrainTrigger;
     userId?: number;
+    holdLeaseMs?: number;
+}
+
+export interface ListImportKickRequest extends ListImportResumeRequest {
+    holdLeaseMs?: number;
 }
 
 export interface ListImportDrainSummary {
@@ -191,5 +197,5 @@ export interface ListImportService {
         request: ListImportDrainRequest
     ): Promise<ListImportDrainSummary>;
     prune(deps: ListImportDeps): Promise<number>;
-    kick(deps: ListImportDeps, request: ListImportResumeRequest): Promise<void>;
+    kick(deps: ListImportDeps, request: ListImportKickRequest): Promise<void>;
 }

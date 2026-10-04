@@ -529,11 +529,15 @@ export const createListImportRepository = (db: AppDb) => {
                 return updated.length > 0;
             });
         },
-        releaseDrainLease(jobId: number, leaseUntil: Date) {
+        releaseDrainLease(
+            jobId: number,
+            leaseUntil: Date,
+            heldUntil: Date | null = null
+        ) {
             return tryDb(async () => {
                 await db
                     .update(listImports)
-                    .set({ leaseUntil: null })
+                    .set({ leaseUntil: heldUntil })
                     .where(
                         and(
                             eq(listImports.id, jobId),

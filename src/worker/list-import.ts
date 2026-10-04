@@ -6,7 +6,10 @@ import type {
     ListImportDeps,
     ListImportService
 } from '../bot/services/list-import/types';
-import { LIST_IMPORT_CRON_BUDGET_MS } from '../shared/app-api';
+import {
+    LIST_IMPORT_CRON_BUDGET_MS,
+    LIST_IMPORT_LOAD_KICK_INTERVAL_MS
+} from '../shared/app-api';
 import { isListImportEnabled, type WorkerBindings } from './env';
 
 /**
@@ -37,20 +40,28 @@ const logFailure = (env: WorkerBindings, event: string, error: unknown) => {
 /**
  * Resumes stale commits and drains photos for one user (or everyone) within
  * the short kick budget, in the background. Callers kick after a commit, on
- * each app status poll and on the bot's Refresh button. Nothing runs while
- * `WISHLIST_IMPORT_ENABLED` is off.
+ * each app status poll and on the bot's Refresh button. With `throttled` the
+ * drain keeps the user's lease for `LIST_IMPORT_LOAD_KICK_INTERVAL_MS`, which
+ * is how list loads avoid draining more than once a minute per user. Nothing
+ * runs while `WISHLIST_IMPORT_ENABLED` is off.
  */
 export const kickListImport = (
     service: ListImportService | undefined,
     deps: ListImportDeps,
-    userId?: number
+    userId?: number,
+    options: { throttled?: boolean } = {}
 ) => {
     if (service === undefined || !isListImportEnabled(deps.env)) {
         return;
     }
 
     const task = service
-        .kick(deps, userId === undefined ? {} : { userId })
+        .kick(deps, {
+            ...(userId === undefined ? {} : { userId }),
+            ...(options.throttled === true
+                ? { holdLeaseMs: LIST_IMPORT_LOAD_KICK_INTERVAL_MS }
+                : {})
+        })
         .catch(error => {
             logFailure(deps.env, 'list_import_kick_failed', error);
         });

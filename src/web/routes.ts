@@ -28,7 +28,10 @@ import {
 } from '../worker/telemetry';
 import { getTranslator } from '../bot/i18n';
 import type { SharePageErrorKind } from './share/components/error-page';
-import { buildShareWishPhotos } from './image-proxy/share-photos';
+import {
+    buildShareWishPhotos,
+    isSharePhotoPending
+} from './image-proxy/share-photos';
 import { loadShareGiftedWishes } from './share/gifted-wishes';
 import { matchAcceptLanguage } from './share/accept-language';
 import {
@@ -405,6 +408,14 @@ const servePage = async ({
                         repositories.wishes.listShareable(share.userId)
                     )
                 ).map(async wish => {
+                    const photos = await buildShareWishPhotos({
+                        crypto,
+                        language,
+                        publicId: share.publicId,
+                        theme,
+                        wish
+                    });
+
                     return {
                         title: wish.title,
                         description: wish.description,
@@ -414,12 +425,9 @@ const servePage = async ({
                         priority: toWishPriority(wish.priorityLevel),
                         createdAt: wish.createdAt,
                         updatedAt: wish.updatedAt,
-                        photos: await buildShareWishPhotos({
-                            crypto,
-                            language,
-                            publicId: share.publicId,
-                            theme,
-                            wish
+                        photos,
+                        ...(isSharePhotoPending(wish, photos) && {
+                            photoPending: true
                         })
                     };
                 })

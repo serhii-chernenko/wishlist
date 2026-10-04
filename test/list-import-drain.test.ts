@@ -97,9 +97,15 @@ const createStore = (
 
             return true;
         },
-        async releaseLease(jobId, leaseUntil) {
-            if (store.leases.get(jobId) === leaseUntil.getTime()) {
+        async releaseLease(jobId, leaseUntil, heldUntil) {
+            if (store.leases.get(jobId) !== leaseUntil.getTime()) {
+                return;
+            }
+
+            if (heldUntil === undefined || heldUntil === null) {
                 store.leases.delete(jobId);
+            } else {
+                store.leases.set(jobId, heldUntil.getTime());
             }
         },
         async listPending(userId, limit) {
@@ -549,6 +555,77 @@ describe('list import photo drain', () => {
                 [['own-photo'], '']
             ]
         );
+    });
+
+    it('drains the gifted imported wishes of a user the first time a list load kicks', async () => {
+        const wishes = [
+            pendingWish(1213, { removed: true, done: true }),
+            pendingWish(1214, { removed: true, done: true })
+        ];
+        const { ports, store, telegram } = setup({
+            wishes,
+            images: originalsOk(wishes)
+        });
+        const summary = await drainPendingPhotos(ports, {
+            budgetMs: 20_000,
+            holdLeaseMs: 60_000
+        });
+
+        assert.deepEqual(summary, {
+            result: 'drained',
+            ingested: 2,
+            failed: 0
+        });
+        assert.equal(telegram.sentAt.length, 2);
+        assert.deepEqual(
+            store.wishes.map(wish => {
+                return wish.images.length;
+            }),
+            [1, 1]
+        );
+    });
+
+    it('keeps the lease for the hold interval so a repeated load kick does nothing, then drains again', async () => {
+        const first = pendingWish(31);
+        const second = pendingWish(32);
+        const { ports, store, clock, telegram } = setup({
+            wishes: [first],
+            images: originalsOk([first, second])
+        });
+        const request = { budgetMs: 20_000, holdLeaseMs: 60_000 };
+
+        await drainPendingPhotos(ports, request);
+
+        assert.equal(telegram.sentAt.length, 1);
+        assert.equal(store.leases.size, 1);
+
+        store.wishes.push(second);
+        clock.now += 30_000;
+
+        const locked = await drainPendingPhotos(ports, request);
+
+        assert.equal(locked.ingested, 0);
+        assert.equal(telegram.sentAt.length, 1);
+        assert.equal(second.sourceImageUrl === '', false);
+
+        clock.now += 31_000;
+
+        const reopened = await drainPendingPhotos(ports, request);
+
+        assert.equal(reopened.ingested, 1);
+        assert.equal(telegram.sentAt.length, 2);
+    });
+
+    it('releases the lease at once when no hold is asked for', async () => {
+        const wishes = [pendingWish(33)];
+        const { ports, store } = setup({
+            wishes,
+            images: originalsOk(wishes)
+        });
+
+        await drainPendingPhotos(ports, { budgetMs: 20_000 });
+
+        assert.equal(store.leases.size, 0);
     });
 
     it('stops at the budget and leaves the rest for the next run', async () => {

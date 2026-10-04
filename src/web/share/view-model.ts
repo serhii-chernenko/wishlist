@@ -22,6 +22,7 @@ export interface ShareWishView {
     updatedAt: Date;
     photos?: readonly ShareWishPhoto[];
     gifted?: boolean;
+    photoPending?: boolean;
 }
 
 export interface SharePageModel {

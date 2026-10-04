@@ -45,6 +45,7 @@ import {
     type ImageMintingContext
 } from '../dto';
 import { ApiError } from '../errors';
+import { kickPhotoDrainOnLoad } from '../photo-drain';
 import { readIdParam, readOffset, readOptionalQueryInteger } from '../validate';
 import { emitAppAction } from '../telemetry';
 import {
@@ -119,6 +120,14 @@ const loadGiftedOnLastPage = async (
     }
 
     return createGiftedService(c.var.repos).listVisibleOf(owner, priceBounds);
+};
+
+const countGiftedOfOwner = (
+    c: ApiContext,
+    owner: UserRecord,
+    priceBounds: PriceBoundsByCurrency | null
+) => {
+    return createGiftedService(c.var.repos).countVisibleOf(owner, priceBounds);
 };
 
 const withGifted = <Item>(gifted: Item[]) => {
@@ -218,6 +227,10 @@ export const openSharedList: ApiHandler = async c => {
         share.publicId,
         await loadGiftedOnLastPage(c, owner, preview, null)
     );
+    const giftedTotal = await countGiftedOfOwner(c, owner, null);
+
+    await kickPhotoDrainOnLoad(c, owner.id);
+
     const body: SharedListDto = {
         ownList: owner.id === viewer.id && !isAdminActor(c.env, c.var.actor),
         owner: toOwnerDto({
@@ -232,7 +245,8 @@ export const openSharedList: ApiHandler = async c => {
             contact: resolveOwnerContact({ owner, viewer, offset })
         }),
         preview,
-        ...withGifted(gifted)
+        ...withGifted(gifted),
+        giftedTotal
     };
 
     return c.json(body);
@@ -306,10 +320,15 @@ export const listOwnerWishes: ApiHandler = async c => {
             }
         )
     );
+    const giftedTotal = await countGiftedOfOwner(c, owner, priceBounds);
     const username = getPublicOwnerUsername(owner);
+
+    await kickPhotoDrainOnLoad(c, owner.id);
+
     const body: OwnerWishListDto = {
         ...pageDto,
         ...withGifted(gifted),
+        giftedTotal,
         owner: toOwnerDto({
             owner,
             token: c.req.param('token') ?? null,

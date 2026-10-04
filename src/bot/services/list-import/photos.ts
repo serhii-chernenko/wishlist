@@ -31,7 +31,11 @@ const SOURCE_REF_SEPARATOR = ':';
 export interface PhotoDrainStore {
     listCandidates(limit: number, userId?: number): Promise<DrainCandidate[]>;
     acquireLease(jobId: number, now: Date, leaseUntil: Date): Promise<boolean>;
-    releaseLease(jobId: number, leaseUntil: Date): Promise<void>;
+    releaseLease(
+        jobId: number,
+        leaseUntil: Date,
+        heldUntil?: Date | null
+    ): Promise<void>;
     listPending(userId: number, limit: number): Promise<PendingPhotoWish[]>;
     appendImage(
         wishId: number,
@@ -323,18 +327,32 @@ const drainUserWishes = async (run: UserRun): Promise<UserDrainOutcome> => {
     }
 };
 
+const toHeldUntil = (
+    ports: PhotoDrainPorts,
+    startedAt: number,
+    holdLeaseMs: number | undefined
+) => {
+    const heldUntil = startedAt + (holdLeaseMs ?? 0);
+
+    return holdLeaseMs !== undefined && heldUntil > ports.now()
+        ? new Date(heldUntil)
+        : null;
+};
+
 const drainUser = async (
     ports: PhotoDrainPorts,
     candidate: DrainCandidate,
     deadline: number,
-    summary: ListImportDrainSummary
+    summary: ListImportDrainSummary,
+    holdLeaseMs: number | undefined
 ): Promise<UserDrainOutcome | 'locked'> => {
+    const startedAt = ports.now();
     const leaseUntil = new Date(deadline + LIST_IMPORT_LEASE_MS);
 
     if (
         !(await ports.store.acquireLease(
             candidate.leaseJobId,
-            new Date(ports.now()),
+            new Date(startedAt),
             leaseUntil
         ))
     ) {
@@ -361,7 +379,11 @@ const drainUser = async (
             );
         }
 
-        await ports.store.releaseLease(candidate.leaseJobId, leaseUntil);
+        await ports.store.releaseLease(
+            candidate.leaseJobId,
+            leaseUntil,
+            toHeldUntil(ports, startedAt, holdLeaseMs)
+        );
     }
 };
 
@@ -378,7 +400,7 @@ const drainUser = async (
  */
 export const drainPendingPhotos = async (
     ports: PhotoDrainPorts,
-    request: Pick<ListImportDrainRequest, 'budgetMs' | 'userId'>
+    request: Pick<ListImportDrainRequest, 'budgetMs' | 'userId' | 'holdLeaseMs'>
 ): Promise<ListImportDrainSummary> => {
     const deadline = ports.now() + request.budgetMs;
     const summary: ListImportDrainSummary = {
@@ -400,7 +422,13 @@ export const drainPendingPhotos = async (
             return { ...summary, result: 'budget' };
         }
 
-        const outcome = await drainUser(ports, candidate, deadline, summary);
+        const outcome = await drainUser(
+            ports,
+            candidate,
+            deadline,
+            summary,
+            request.holdLeaseMs
+        );
 
         if (outcome === 'stopped') {
             return { ...summary, result: 'rateLimited' };

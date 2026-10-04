@@ -159,6 +159,13 @@ export const mintWishImages = (
     );
 };
 
+const isPhotoPending = (
+    wish: Pick<WishRecord, 'sourceImageUrl'>,
+    images: readonly ApiImage[]
+) => {
+    return wish.sourceImageUrl !== null && images.length === 0;
+};
+
 export const toOwnWishDto = (
     wish: WishRecord,
     images: ApiImage[]
@@ -179,7 +186,8 @@ export const toOwnWishDto = (
         images,
         createdAt: wish.createdAt.toISOString(),
         updatedAt: wish.updatedAt.toISOString(),
-        ...(isGiftedWish(wish) && { gifted: true })
+        ...(isGiftedWish(wish) && { gifted: true }),
+        ...(isPhotoPending(wish, images) && { photoPending: true })
     };
 };
 

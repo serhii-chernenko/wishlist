@@ -46,6 +46,7 @@ import {
     toOwnWishDto,
     toPageDto
 } from '../dto';
+import { kickPhotoDrainOnLoad } from '../photo-drain';
 import { ApiError } from '../errors';
 import { releaseImagesInBackground } from '../photos/image-cleanup';
 import { emitAppAction } from '../telemetry';
@@ -382,6 +383,9 @@ export const listWishes: ApiHandler = async c => {
             return toWishResponse(c, wish);
         })
     );
+
+    await kickPhotoDrainOnLoad(c, user.id);
+
     const body: WishListDto = {
         ...toPageDto(items, page.total + page.giftedTotal, offset),
         total: page.total,

@@ -78,6 +78,8 @@ export const APP_RETRY_AFTER_SECONDS = 60;
 export const APP_OWNER_TOKEN_TTL_SECONDS = 12 * 60 * 60;
 export const APP_CONTACT_POLL_INTERVAL_MS = 1000;
 export const APP_CONTACT_POLL_TIMEOUT_MS = 15_000;
+export const APP_PHOTO_PENDING_POLL_INTERVAL_MS = 10_000;
+export const APP_PHOTO_PENDING_POLL_TIMEOUT_MS = 2 * 60 * 1000;
 export const APP_UPLOAD_LONGEST_EDGE_PX = 1600;
 export const APP_UPLOAD_JPEG_QUALITY = 0.85;
 export const APP_THIRD_PARTY_PAYMENTS_MAX_LENGTH = 1000;
@@ -209,6 +211,7 @@ export const LIST_IMPORT_INSERT_ROWS_PER_STATEMENT = 7;
 export const LIST_IMPORT_INSERT_STATEMENTS_PER_BATCH = 7;
 export const LIST_IMPORT_PHOTO_PACE_MS = 1200;
 export const LIST_IMPORT_KICK_BUDGET_MS = 20_000;
+export const LIST_IMPORT_LOAD_KICK_INTERVAL_MS = 60 * 1000;
 export const LIST_IMPORT_CRON_BUDGET_MS = 5 * 60 * 1000;
 export const LIST_IMPORT_PROGRESS_EDIT_INTERVAL_MS = 2000;
 export const LIST_IMPORT_POLL_COMMITTING_MS = 1500;
@@ -485,6 +488,7 @@ export type OwnWishDto = {
     createdAt: string;
     updatedAt: string;
     gifted?: boolean;
+    photoPending?: boolean;
 };
 
 export type GiverSummaryDto = {
@@ -607,11 +611,13 @@ export type SharedListDto = {
     ownList: boolean;
     preview: PageDto<SharedWishDto> | null;
     gifted?: SharedWishDto[];
+    giftedTotal: number;
 };
 
 export type OwnerWishListDto = PageDto<ThirdWishDto> & {
     owner: OwnerDto;
     gifted?: SharedWishDto[];
+    giftedTotal: number;
 };
 
 export type VisibilityInput = { type: 'username' };

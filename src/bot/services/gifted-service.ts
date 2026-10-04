@@ -103,6 +103,18 @@ export const createGiftedService = (
 
             return updated === null ? null : { user: updated, changed: true };
         },
+        countVisibleOf(
+            owner: Pick<UserRecord, 'id' | 'showGifted'>,
+            priceBounds: PriceBoundsByCurrency | null
+        ) {
+            if (!owner.showGifted) {
+                return Promise.resolve(0);
+            }
+
+            return runRepository(
+                repositories.wishes.countGiftedVisibleOf(owner.id, priceBounds)
+            );
+        },
         listVisibleOf(
             owner: Pick<UserRecord, 'id' | 'showGifted'>,
             priceBounds: PriceBoundsByCurrency | null

@@ -1120,6 +1120,12 @@
         font-weight: 500;
     }
 
+    .third-quiet {
+        max-width: var(--measure);
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
     .third-description {
         position: relative;
         z-index: var(--z-raised);
@@ -1529,7 +1535,7 @@
     }
 
     @container wish-list (max-width: 19.99rem) {
-        .wish-grid .wish-photo:empty {
+        .wish-grid .wish-photo-placeholder {
             aspect-ratio: 3 / 1;
         }
     }

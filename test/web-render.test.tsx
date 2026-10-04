@@ -281,7 +281,10 @@ test('gifted wishes follow active ones as compact cards with the gifted band', (
     );
 
     assert.ok(html.indexOf('Active kettle') < html.indexOf('Gifted mug'));
-    assert.match(giftedCard, /<div class="wish-photo" data-band="Подароване">/);
+    assert.match(
+        giftedCard,
+        /<div class="wish-photo wish-photo-placeholder" data-band="Подароване">/
+    );
     assert.match(giftedCard, /class="price"/);
     assert.doesNotMatch(giftedCard, /priority-badge|wish-link|wish-details/);
     assert.doesNotMatch(html, /Gifted description/);
@@ -336,14 +339,97 @@ test('the updated date is hidden when it equals the created date', () => {
     assert.doesNotMatch(html, /updated January 2, 2026/);
 });
 
-test('wishes without photos show the heart placeholder instead of an image', () => {
+test('wishes without photos show the gift logo placeholder instead of an image or a heart', () => {
     const html = renderSharePage(buildModel());
 
     assert.match(
         html,
-        /<h2 class="wish-title">Coffee machine<\/h2><div class="wish-photo"><\/div>/
+        /<h2 class="wish-title">Coffee machine<\/h2><div class="wish-photo wish-photo-placeholder"><svg class="photo-placeholder" [^>]*aria-hidden="true"[^>]*><use href="#wl-photo-placeholder"><\/use><\/svg><\/div>/
     );
-    assert.doesNotMatch(html, /<img\b|carousel/);
+    assert.equal(html.split('id="wl-photo-placeholder"').length, 2);
+    assert.doesNotMatch(html, /<img\b|carousel|wish-photo-pending/);
+});
+
+test('the placeholder logo is drawn once however many wishes lack photos', () => {
+    const wishes = Array.from({ length: 5 }, (_, index) => {
+        return buildWish({ title: `Wish ${index}` });
+    });
+    const html = renderSharePage(buildModel({ wishes, visibleCount: 5 }));
+
+    assert.equal(html.split('id="wl-photo-placeholder"').length, 2);
+    assert.equal(html.split('<use href="#wl-photo-placeholder">').length, 6);
+});
+
+test('a wish with all photos loaded carries no placeholder logo', () => {
+    const html = renderSharePage(
+        buildModel({
+            wishes: [
+                buildWish({
+                    photos: [{ url: '/img/s/p0', alt: 'Photo 1 of 1' }]
+                })
+            ]
+        })
+    );
+
+    assert.doesNotMatch(html, /wl-photo-placeholder|wish-photo-placeholder/);
+});
+
+test('a wish whose imported photo is still pending shows the placeholder with a loading note', () => {
+    const html = renderSharePage(
+        buildModel({ wishes: [buildWish({ photoPending: true })] })
+    );
+
+    assert.match(
+        html,
+        /<div class="wish-photo wish-photo-placeholder wish-photo-pending"><svg [^>]*><use href="#wl-photo-placeholder"><\/use><\/svg><span class="sr-only">Photo is loading<\/span><\/div>/
+    );
+    assert.doesNotMatch(
+        renderSharePage(
+            buildModel({
+                language: 'uk',
+                wishes: [buildWish({ photoPending: true })]
+            })
+        ),
+        /Photo is loading/
+    );
+});
+
+test('the header counts active and gifted wishes only when some are gifted', () => {
+    const gifted = [buildWish({ title: 'Gifted mug', gifted: true })];
+    const withGifted = renderSharePage(buildModel({ gifted, visibleCount: 3 }));
+    const withoutGifted = renderSharePage(buildModel({ visibleCount: 3 }));
+
+    assert.match(
+        withGifted,
+        /<p class="hero-meta">Active: 3, gifted: 1, updated February 3, 2026<\/p>/
+    );
+    assert.match(
+        withoutGifted,
+        /<p class="hero-meta">3 wishes, updated February 3, 2026<\/p>/
+    );
+    assert.match(
+        renderSharePage(
+            buildModel({ gifted, visibleCount: 3, lastUpdatedAt: null })
+        ),
+        /<p class="hero-meta">Active: 3, gifted: 1<\/p>/
+    );
+});
+
+test('with no active wishes the empty alert needs no gifted wishes either', () => {
+    const gifted = [buildWish({ title: 'Gifted mug', gifted: true })];
+    const empty = renderSharePage(buildModel({ wishes: [], visibleCount: 0 }));
+    const onlyGifted = renderSharePage(
+        buildModel({ wishes: [], gifted, visibleCount: 0 })
+    );
+
+    assert.match(empty, /<p class="empty">/);
+    assert.doesNotMatch(empty, /No active wishes right now/);
+    assert.doesNotMatch(onlyGifted, /<p class="empty">/);
+    assert.match(
+        onlyGifted,
+        /<p class="notice">No active wishes right now\. Below are the ones already gifted\.<\/p>/
+    );
+    assert.match(onlyGifted, /Gifted mug/);
 });
 
 const buildPhotos = (count: number, prefix = 'p') => {

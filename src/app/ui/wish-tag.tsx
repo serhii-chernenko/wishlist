@@ -9,6 +9,7 @@ import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
 import { PhotoCarousel } from './photo-carousel';
 import { PhotoFrame } from './photo-frame';
+import { PhotoPlaceholder } from './photo-placeholder';
 import { PriceChip } from './price-chip';
 import { PriorityBadge } from './priority-badge';
 
@@ -23,6 +24,7 @@ export interface WishTagModel {
     linkHost: string | null;
     hidden?: boolean;
     gifted?: boolean;
+    photoPending?: boolean;
 }
 
 export interface WishTagProps {
@@ -33,24 +35,44 @@ export interface WishTagProps {
     actions?: Child;
 }
 
+const PendingPhotoNote = () => {
+    const LL = useLL();
+
+    return <span class='sr-only'>{LL.a11y.photoLoading()}</span>;
+};
+
 const WishCover = ({
     images,
     title,
     band,
     index,
+    pending,
     onOpen
 }: {
     images: readonly ApiImage[];
     title: string;
     band: string | undefined;
     index: number;
+    pending: boolean;
     onOpen: (() => void) | undefined;
 }) => {
     const LL = useLL();
     const [cover] = images;
 
     if (cover === undefined) {
-        return <div class='wish-photo' data-band={band} />;
+        return (
+            <div
+                class={
+                    pending
+                        ? 'wish-photo wish-photo-placeholder wish-photo-pending'
+                        : 'wish-photo wish-photo-placeholder'
+                }
+                data-band={band}
+            >
+                <PhotoPlaceholder />
+                {pending ? <PendingPhotoNote /> : null}
+            </div>
+        );
     }
 
     const describeSlide = (slideIndex: number) => {
@@ -118,6 +140,7 @@ export const WishTag = ({
                     title={wish.title}
                     band={gifted ? LL.gifted.band() : undefined}
                     index={index}
+                    pending={wish.photoPending === true}
                     onOpen={onOpen}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (

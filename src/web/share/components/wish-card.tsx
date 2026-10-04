@@ -12,6 +12,7 @@ import { isBadgePriority } from '../../../shared/priority-badge';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
+import { PhotoPlaceholderReference } from './photo-placeholder';
 import { PriorityBadge } from './priority-badge';
 
 const WWW_PREFIX = /^www\./;
@@ -73,18 +74,34 @@ const WishCover = ({
     band,
     label,
     countLabel,
+    pendingLabel,
     index
 }: {
     photos: readonly ShareWishPhoto[];
     band: string | undefined;
     label: string;
     countLabel: string;
+    pendingLabel: string | null;
     index: number;
 }) => {
     const [cover] = photos;
 
     if (cover === undefined) {
-        return <div class='wish-photo' data-band={band} />;
+        return (
+            <div
+                class={
+                    pendingLabel === null
+                        ? 'wish-photo wish-photo-placeholder'
+                        : 'wish-photo wish-photo-placeholder wish-photo-pending'
+                }
+                data-band={band}
+            >
+                <PhotoPlaceholderReference />
+                {pendingLabel === null ? null : (
+                    <span class='sr-only'>{pendingLabel}</span>
+                )}
+            </div>
+        );
     }
 
     if (photos.length === 1) {
@@ -156,6 +173,11 @@ export const WishCard = ({
                     countLabel={LL.web.wish.photoCount({
                         count: wish.photos?.length ?? 0
                     })}
+                    pendingLabel={
+                        wish.photoPending === true
+                            ? LL.web.wish.photoLoading()
+                            : null
+                    }
                     index={index}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (

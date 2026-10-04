@@ -27,11 +27,6 @@
 
     :root,
     [data-theme] {
-        --photo-placeholder-heart: color-mix(
-            in srgb,
-            var(--ink) 9%,
-            var(--paper)
-        );
         --shadow-hard-sm: 2px 2px 0 var(--ink);
         --shadow-hard: 3px 3px 0 var(--ink);
         --shadow-hard-lg: 5px 5px 0 var(--ink);
@@ -335,18 +330,16 @@
         stroke: var(--photo-placeholder-ink);
     }
 
-    .wish-photo:empty::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        width: 4rem;
-        height: 3.2rem;
-        margin: auto;
-        background: var(--photo-placeholder-heart);
-        clip-path: path(
-            'M32 50.2C3.7 34.2 0 9.5 16 3.4 24.6 0 30.8 5.2 32 12 33.2 5.2 39.4 0 48 3.4 64 9.5 60.3 34.2 32 50.2Z'
-        );
-        transform: rotate(-8deg);
+    @keyframes photo-pending-pulse {
+        50% {
+            opacity: 0.55;
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .wish-photo-pending .photo-placeholder {
+            animation: photo-pending-pulse 1.6s ease-in-out infinite;
+        }
     }
 
     .wish-title {

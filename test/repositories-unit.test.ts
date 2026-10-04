@@ -47,6 +47,7 @@ const expectedMethods: Record<string, string[]> = {
         'listOwned',
         'listOwnedWithGifted',
         'listGiftedVisibleOf',
+        'countGiftedVisibleOf',
         'restoreGifted',
         'setGiftedHidden',
         'listVisibleOf',

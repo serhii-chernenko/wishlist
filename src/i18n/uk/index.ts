@@ -614,6 +614,10 @@ const uk: BaseTranslation = {
             count: '{count:number} {{count:|бажання||бажання|бажань|бажання}}',
             summary:
                 '{count:number} {{count:|бажання||бажання|бажань|бажання}}, оновлено {date:string}',
+            countWithGifted:
+                'Активних: {active:number}, подарованих: {gifted:number}',
+            summaryWithGifted:
+                'Активних: {active:number}, подарованих: {gifted:number}, оновлено {date:string}',
             username: 'Телеграм: @{username:string}',
             lead: 'Лист бажань',
             fallback: 'Лист бажань'
@@ -637,9 +641,11 @@ const uk: BaseTranslation = {
             details: 'Детальніше',
             created: 'Додано {date:string}',
             updated: 'Додано {created:string}, оновлено {updated:string}',
-            gifted: 'Подароване'
+            gifted: 'Подароване',
+            photoLoading: 'Фото завантажується'
         },
         empty: 'Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.',
+        noActive: 'Активних бажань зараз немає, нижче — те, що вже подарували.',
         truncated: 'Показано перші {limit:number} бажань зі списку.',
         ratesNote:
             'Ціни в інших валютах орієнтовні, перераховані в {currency:string} за курсом НБУ на {date:string}.',
@@ -807,6 +813,7 @@ const uk: BaseTranslation = {
             photo: 'Фото {index:number} з {total:number}: {title:string}',
             photos: 'Фото, {count:number}',
             photoPlaceholder: 'Фото немає',
+            photoLoading: 'Фото завантажується',
             menu: 'Меню',
             closeToast: 'Закрити повідомлення',
             countdown: {
@@ -1358,7 +1365,11 @@ const uk: BaseTranslation = {
             title: 'Лист бажань',
             lead: 'Лист бажань: {label:string}',
             count: '{count:number} {{count:|бажання||бажання|бажань|бажання}}',
+            countWithGifted:
+                'Активних: {active:number}, подарованих: {gifted:number}',
             empty: 'Ця людина ще не заповнила лист бажань.',
+            noActive:
+                'Активних бажань зараз немає, нижче — те, що вже подарували.',
             filteredEmpty: 'Жодне бажання не підходить під цей фільтр.',
             priority: 'Дуже хоче',
             openLink: 'Відкрити на {host:string}',

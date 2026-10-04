@@ -5,7 +5,10 @@ import type {
     ListImportDrainRequest,
     ListImportService
 } from '../src/bot/services/list-import/types';
-import { LIST_IMPORT_CRON_BUDGET_MS } from '../src/shared/app-api';
+import {
+    LIST_IMPORT_CRON_BUDGET_MS,
+    LIST_IMPORT_LOAD_KICK_INTERVAL_MS
+} from '../src/shared/app-api';
 import type { WorkerBindings } from '../src/worker/env';
 import { kickListImport } from '../src/worker/list-import';
 import { runScheduledTasks } from '../src/worker/scheduled/tasks';
@@ -210,6 +213,34 @@ describe('list import kick', () => {
 
         assert.equal(scheduled.length, 1);
         assert.deepEqual(calls, ['kick:3']);
+    });
+
+    it('asks a list-load kick to hold the drain lease for a minute and plain kicks not to', async () => {
+        const { service } = createFakeService();
+        const requests: unknown[] = [];
+        const recording: ListImportService = {
+            ...service,
+            async kick(_deps, request) {
+                requests.push(request);
+            }
+        };
+        const scheduled: Promise<unknown>[] = [];
+        const deps = {
+            env: createEnv('true'),
+            waitUntil: (promise: Promise<unknown>) => {
+                scheduled.push(promise);
+            }
+        };
+
+        kickListImport(recording, deps, 3);
+        kickListImport(recording, deps, 4, { throttled: true });
+        await Promise.all(scheduled);
+
+        assert.equal(LIST_IMPORT_LOAD_KICK_INTERVAL_MS, 60_000);
+        assert.deepEqual(requests, [
+            { userId: 3 },
+            { userId: 4, holdLeaseMs: LIST_IMPORT_LOAD_KICK_INTERVAL_MS }
+        ]);
     });
 
     it('swallows a failing kick', async () => {

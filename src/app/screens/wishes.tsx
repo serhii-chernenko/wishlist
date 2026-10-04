@@ -11,6 +11,7 @@ import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
 import { hasErrorCode, type AppFailure } from '../logic/errors';
 import { describePriceFilter, selectPriceFilters } from '../logic/format';
+import { hasPendingPhotos } from '../logic/photo-pending';
 import {
     appendPage,
     createLatestGate,
@@ -38,6 +39,7 @@ import {
     type AppServices,
     type Session
 } from '../state/context';
+import { usePendingPhotoPolling } from '../state/photo-polling';
 import { toFailure, type ResourceCache } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -706,6 +708,10 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const page = list.data;
     const giftedActions = useGiftedActions(() => {
         void list.reload();
+    });
+
+    usePendingPhotoPolling(hasPendingPhotos(page?.items ?? []), () => {
+        refreshWishList(api, services.cache);
     });
 
     useEffect(() => {

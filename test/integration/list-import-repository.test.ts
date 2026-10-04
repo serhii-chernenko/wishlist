@@ -785,6 +785,61 @@ describe('list import repository and service on D1', () => {
         );
     });
 
+    it('can hand the drain lease over to a later expiry instead of freeing it', async () => {
+        const userId = await insertUser(15);
+
+        await store.wishes.insertImported([
+            importedRow(userId, 1, {
+                sourceImageUrl: 'https://storage.rewish.io/held'
+            })
+        ]);
+        await harness.env.DB.prepare(
+            "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'app', 'done', 'public', 0, 0)"
+        )
+            .bind(userId)
+            .run();
+
+        const [candidate] = await store.jobs.listDrainCandidates(10, userId);
+
+        assert.ok(candidate);
+
+        const now = new Date(clock.now);
+        const leaseUntil = new Date(clock.now + 20_000);
+        const heldUntil = new Date(clock.now + 60_000);
+
+        assert.equal(
+            await store.jobs.acquireDrainLease(
+                candidate.leaseJobId,
+                now,
+                leaseUntil
+            ),
+            true
+        );
+
+        await store.jobs.releaseDrainLease(
+            candidate.leaseJobId,
+            leaseUntil,
+            heldUntil
+        );
+
+        assert.equal(
+            await store.jobs.acquireDrainLease(
+                candidate.leaseJobId,
+                new Date(clock.now + 30_000),
+                leaseUntil
+            ),
+            false
+        );
+        assert.equal(
+            await store.jobs.acquireDrainLease(
+                candidate.leaseJobId,
+                new Date(clock.now + 61_000),
+                leaseUntil
+            ),
+            true
+        );
+    });
+
     it('keeps the drain lease on the oldest finished import while newer imports finish', async () => {
         const userId = await insertUser(14);
 

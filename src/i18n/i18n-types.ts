@@ -1925,6 +1925,19 @@ type RootTranslation = {
 			 */
 			summary: RequiredParams<'count' | 'date'>
 			/**
+			 * А​к​т​и​в​н​и​х​:​ ​{​a​c​t​i​v​e​}​,​ ​п​о​д​а​р​о​в​а​н​и​х​:​ ​{​g​i​f​t​e​d​}
+			 * @param {number} active
+			 * @param {number} gifted
+			 */
+			countWithGifted: RequiredParams<'active' | 'gifted'>
+			/**
+			 * А​к​т​и​в​н​и​х​:​ ​{​a​c​t​i​v​e​}​,​ ​п​о​д​а​р​о​в​а​н​и​х​:​ ​{​g​i​f​t​e​d​}​,​ ​о​н​о​в​л​е​н​о​ ​{​d​a​t​e​}
+			 * @param {number} active
+			 * @param {string} date
+			 * @param {number} gifted
+			 */
+			summaryWithGifted: RequiredParams<'active' | 'date' | 'gifted'>
+			/**
 			 * Т​е​л​е​г​р​а​м​:​ ​@​{​u​s​e​r​n​a​m​e​}
 			 * @param {string} username
 			 */
@@ -2013,11 +2026,19 @@ type RootTranslation = {
 			 * П​о​д​а​р​о​в​а​н​е
 			 */
 			gifted: string
+			/**
+			 * Ф​о​т​о​ ​з​а​в​а​н​т​а​ж​у​є​т​ь​с​я
+			 */
+			photoLoading: string
 		}
 		/**
 		 * Т​у​т​ ​п​о​к​и​ ​щ​о​ ​п​о​р​о​ж​н​ь​о​.​ ​Б​а​ж​а​н​н​я​ ​з​ʼ​я​в​л​я​т​ь​с​я​,​ ​щ​о​й​н​о​ ​ї​х​ ​д​о​д​а​д​у​т​ь​ ​д​о​ ​с​п​и​с​к​у​.
 		 */
 		empty: string
+		/**
+		 * А​к​т​и​в​н​и​х​ ​б​а​ж​а​н​ь​ ​з​а​р​а​з​ ​н​е​м​а​є​,​ ​н​и​ж​ч​е​ ​—​ ​т​е​,​ ​щ​о​ ​в​ж​е​ ​п​о​д​а​р​у​в​а​л​и​.
+		 */
+		noActive: string
 		/**
 		 * П​о​к​а​з​а​н​о​ ​п​е​р​ш​і​ ​{​l​i​m​i​t​}​ ​б​а​ж​а​н​ь​ ​з​і​ ​с​п​и​с​к​у​.
 		 * @param {number} limit
@@ -2500,6 +2521,10 @@ type RootTranslation = {
 			 * Ф​о​т​о​ ​н​е​м​а​є
 			 */
 			photoPlaceholder: string
+			/**
+			 * Ф​о​т​о​ ​з​а​в​а​н​т​а​ж​у​є​т​ь​с​я
+			 */
+			photoLoading: string
 			/**
 			 * М​е​н​ю
 			 */
@@ -4143,9 +4168,19 @@ type RootTranslation = {
 			 */
 			count: RequiredParams<'count'>
 			/**
+			 * А​к​т​и​в​н​и​х​:​ ​{​a​c​t​i​v​e​}​,​ ​п​о​д​а​р​о​в​а​н​и​х​:​ ​{​g​i​f​t​e​d​}
+			 * @param {number} active
+			 * @param {number} gifted
+			 */
+			countWithGifted: RequiredParams<'active' | 'gifted'>
+			/**
 			 * Ц​я​ ​л​ю​д​и​н​а​ ​щ​е​ ​н​е​ ​з​а​п​о​в​н​и​л​а​ ​л​и​с​т​ ​б​а​ж​а​н​ь​.
 			 */
 			empty: string
+			/**
+			 * А​к​т​и​в​н​и​х​ ​б​а​ж​а​н​ь​ ​з​а​р​а​з​ ​н​е​м​а​є​,​ ​н​и​ж​ч​е​ ​—​ ​т​е​,​ ​щ​о​ ​в​ж​е​ ​п​о​д​а​р​у​в​а​л​и​.
+			 */
+			noActive: string
 			/**
 			 * Ж​о​д​н​е​ ​б​а​ж​а​н​н​я​ ​н​е​ ​п​і​д​х​о​д​и​т​ь​ ​п​і​д​ ​ц​е​й​ ​ф​і​л​ь​т​р​.
 			 */
@@ -6840,6 +6875,14 @@ export type TranslationFunctions = {
 			 */
 			summary: (arg: { count: number, date: string }) => LocalizedString
 			/**
+			 * Активних: {active}, подарованих: {gifted}
+			 */
+			countWithGifted: (arg: { active: number, gifted: number }) => LocalizedString
+			/**
+			 * Активних: {active}, подарованих: {gifted}, оновлено {date}
+			 */
+			summaryWithGifted: (arg: { active: number, date: string, gifted: number }) => LocalizedString
+			/**
 			 * Телеграм: @{username}
 			 */
 			username: (arg: { username: string }) => LocalizedString
@@ -6917,11 +6960,19 @@ export type TranslationFunctions = {
 			 * Подароване
 			 */
 			gifted: () => LocalizedString
+			/**
+			 * Фото завантажується
+			 */
+			photoLoading: () => LocalizedString
 		}
 		/**
 		 * Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.
 		 */
 		empty: () => LocalizedString
+		/**
+		 * Активних бажань зараз немає, нижче — те, що вже подарували.
+		 */
+		noActive: () => LocalizedString
 		/**
 		 * Показано перші {limit} бажань зі списку.
 		 */
@@ -7391,6 +7442,10 @@ export type TranslationFunctions = {
 			 * Фото немає
 			 */
 			photoPlaceholder: () => LocalizedString
+			/**
+			 * Фото завантажується
+			 */
+			photoLoading: () => LocalizedString
 			/**
 			 * Меню
 			 */
@@ -8980,9 +9035,17 @@ export type TranslationFunctions = {
 			 */
 			count: (arg: { count: number }) => LocalizedString
 			/**
+			 * Активних: {active}, подарованих: {gifted}
+			 */
+			countWithGifted: (arg: { active: number, gifted: number }) => LocalizedString
+			/**
 			 * Ця людина ще не заповнила лист бажань.
 			 */
 			empty: () => LocalizedString
+			/**
+			 * Активних бажань зараз немає, нижче — те, що вже подарували.
+			 */
+			noActive: () => LocalizedString
 			/**
 			 * Жодне бажання не підходить під цей фільтр.
 			 */

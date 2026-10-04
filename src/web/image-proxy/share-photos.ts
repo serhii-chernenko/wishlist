@@ -16,6 +16,13 @@ export const buildShareImagePath = (
     return `${SHARE_IMAGE_PATH_PREFIX}/${publicId}/${wishId}/${index}/${hash}`;
 };
 
+export const isSharePhotoPending = (
+    wish: { sourceImageUrl: string | null },
+    photos: readonly ShareWishPhoto[]
+) => {
+    return wish.sourceImageUrl !== null && photos.length === 0;
+};
+
 export const buildShareWishPhotos = async (input: {
     crypto: ApiCrypto;
     language: AppLocale;

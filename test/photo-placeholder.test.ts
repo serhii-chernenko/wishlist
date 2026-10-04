@@ -129,6 +129,29 @@ test('the gifted muting hits the photo itself and never the placeholder', () => 
     assert.doesNotMatch(gifted, /\.photo-placeholder/);
 });
 
+test('a missing photo shows the logo placeholder, not the old faded heart', () => {
+    assert.doesNotMatch(
+        GIFT_TAG_SOURCE,
+        /photo-placeholder-heart|:empty::after/
+    );
+    assert.doesNotMatch(APP_SOURCE, /\.wish-photo:empty/);
+    assert.match(APP_SOURCE, /\.wish-grid \.wish-photo-placeholder \{/);
+});
+
+test('the pending photo pulse is a plain opacity change that reduced motion turns off', () => {
+    const media =
+        /@media \(prefers-reduced-motion: no-preference\) \{\s*\.wish-photo-pending \.photo-placeholder \{[^}]*animation: photo-pending-pulse/.test(
+            GIFT_TAG_SOURCE
+        );
+
+    assert.ok(media);
+    assert.match(
+        GIFT_TAG_SOURCE,
+        /@keyframes photo-pending-pulse \{\s*50% \{\s*opacity: 0\.55;/
+    );
+    assert.doesNotMatch(GIFT_TAG_SOURCE, /gradient\(/);
+});
+
 test('broken photos never show their alt text on the share cards or in the app tiles', () => {
     assert.match(
         GIFT_TAG_SOURCE,

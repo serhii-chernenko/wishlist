@@ -23,16 +23,17 @@ const STROKE_ATTRIBUTES = {
     'stroke-width': LOGO_STROKE_WIDTH
 } as const;
 
-/** The grey logo silhouette shown in place of a photo that failed to load; colours come from the `--photo-placeholder-*` tokens, so it follows the active theme. */
-export const PhotoPlaceholder = ({ label }: { label: string }) => {
+/** The grey logo silhouette shown in place of a photo that failed to load, is missing or is still importing; colours come from the `--photo-placeholder-*` tokens, so it follows the active theme. Without a `label` it is decorative. */
+export const PhotoPlaceholder = ({ label }: { label?: string }) => {
     return (
         <svg
             class='photo-placeholder'
             viewBox={`0 0 ${PLACEHOLDER_WIDTH} ${PLACEHOLDER_HEIGHT}`}
             preserveAspectRatio='xMidYMid slice'
-            role='img'
-            aria-label={label}
             focusable='false'
+            {...(label === undefined
+                ? { 'aria-hidden': 'true' }
+                : { role: 'img', 'aria-label': label })}
         >
             <rect
                 class='photo-placeholder-background'

@@ -567,7 +567,10 @@ export const createListImportService = (
                     budgetMs: request.budgetMs,
                     ...(request.userId === undefined
                         ? {}
-                        : { userId: request.userId })
+                        : { userId: request.userId }),
+                    ...(request.holdLeaseMs === undefined
+                        ? {}
+                        : { holdLeaseMs: request.holdLeaseMs })
                 }
             );
 
@@ -598,7 +601,10 @@ export const createListImportService = (
                 trigger: 'kick',
                 ...(request.userId === undefined
                     ? {}
-                    : { userId: request.userId })
+                    : { userId: request.userId }),
+                ...(request.holdLeaseMs === undefined
+                    ? {}
+                    : { holdLeaseMs: request.holdLeaseMs })
             });
         }
     };

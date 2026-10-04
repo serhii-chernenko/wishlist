@@ -180,6 +180,20 @@ export const isShownGifted = () => {
     );
 };
 
+const buildGiftedVisibleCondition = (
+    ownerId: number,
+    filter: PriceBoundsByCurrency | null
+) => {
+    return and(
+        eq(wishes.userId, ownerId),
+        eq(wishes.hidden, false),
+        isShownGifted(),
+        eq(users.showGifted, true),
+        isNull(users.blockedAt),
+        buildPriceFilterCondition(filter)
+    );
+};
+
 export const isActiveOrShownGifted = () => {
     return or(eq(wishes.removed, false), isShownGifted());
 };
@@ -598,22 +612,27 @@ export const createWishRepository = (db: AppDb) => {
                     .select({ wish: wishes })
                     .from(wishes)
                     .innerJoin(users, eq(users.id, wishes.userId))
-                    .where(
-                        and(
-                            eq(wishes.userId, ownerId),
-                            eq(wishes.hidden, false),
-                            isShownGifted(),
-                            eq(users.showGifted, true),
-                            isNull(users.blockedAt),
-                            buildPriceFilterCondition(options.filter)
-                        )
-                    )
+                    .where(buildGiftedVisibleCondition(ownerId, options.filter))
                     .orderBy(...GIFTED_LIST_ORDER)
                     .limit(options.limit);
 
                 return rows.map(row => {
                     return row.wish;
                 });
+            });
+        },
+        countGiftedVisibleOf(
+            ownerId: number,
+            filter: PriceBoundsByCurrency | null
+        ) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .innerJoin(users, eq(users.id, wishes.userId))
+                    .where(buildGiftedVisibleCondition(ownerId, filter));
+
+                return row?.total ?? 0;
             });
         },
         restoreGifted(wishId: number, userId: number, now: Date) {
