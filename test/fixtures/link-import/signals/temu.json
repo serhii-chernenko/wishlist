@@ -1,0 +1,17 @@
+{
+    "jsonLd": [
+        "{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"F75 2.4G wireless mechanical keyboard wired gaming RGB\",\"offers\":{\"@type\":\"Offer\",\"price\":\"89.62\",\"priceCurrency\":\"PLN\",\"availability\":\"https://schema.org/InStock\"}}",
+        "{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Temu\",\"item\":\"https://www.temu.com/\"}]}"
+    ],
+    "meta": {
+        "og:title": [
+            "f75 2 4g wireless mechanical keyboard wired gaming rgb - Temu"
+        ],
+        "og:type": ["product"]
+    },
+    "itemprops": [],
+    "canonical": null,
+    "titleTag": "f75 2 4g wireless mechanical keyboard wired gaming rgb - Temu",
+    "baseHref": null,
+    "truncated": false
+}

@@ -1,0 +1,30 @@
+{
+    "jsonLd": [
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"Product\",\n                \"name\": \"iPhone 16\",\n                \"url\": \"https://www.apple.com/shop/buy-iphone/iphone-16\",\n                \"mainEntityOfPage\": \"https://www.apple.com/shop/buy-iphone/iphone-16\",\n                \"offers\": [\n                    {\n                        \"@type\": \"AggregateOffer\",\n                        \"lowPrice\": 799,\n                        \"highPrice\": 829,\n                        \"priceCurrency\": \"USD\",\n                        \"shippingDetails\": {\n                            \"@type\": \"OfferShippingDetails\",\n                            \"shippingRate\": {\n                                \"@type\": \"MonetaryAmount\",\n                                \"value\": 0,\n                                \"currency\": \"USD\"\n                            }\n                        },\n                        \"hasMerchantReturnPolicy\": {\n                            \"@type\": \"MerchantReturnPolicy\",\n                            \"applicableCountry\": \"US\",\n                            \"returnPolicyCategory\": \"https://schema.org/MerchantReturnFiniteReturnWindow\",\n                            \"merchantReturnDays\": 14,\n                            \"returnMethod\": \"https://schema.org/ReturnByMail\",\n                            \"returnFees\": \"https://schema.org/FreeReturn\"\n                        }\n                    }\n                ],\n                \"image\": \"https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/iphone-16-finish-select-202409-6-1inch_GEO_US?wid=5120&hei=2880&fmt=jpeg&qlt=90&.v=1724710494447\",\n                \"description\": \"Get $35 - $885 off an iPhone 16 when you trade in an iPhone 8 Plus or newer. 0% financing available. Buy now with free shipping.\"\n            }\n        ",
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"BreadcrumbList\",\n                \"itemListElement\": [\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": \"1\",\n                        \"item\": {\n                            \"@id\": \"https://www.apple.com/iphone\",\n                            \"url\": \"https://www.apple.com/iphone\",\n                            \"name\": \"iPhone\"\n                        }\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": \"2\",\n                        \"item\": {\n                            \"@id\": \"https://www.apple.com/iphone-16\",\n                            \"url\": \"https://www.apple.com/iphone-16\",\n                            \"name\": \"iPhone 16\"\n                        }\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": \"3\",\n                        \"name\": \"Buy iPhone 16\"\n                    }\n                ]\n            }\n        ",
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"FAQPage\",\n                \"mainEntity\": [\n                    {\n                        \"@type\": \"Question\",\n                        \"name\": \"Can I activate an iPhone 16 outside of the United States?\",\n                        \"acceptedAnswer\": {\n                            \"@type\": \"Answer\",\n                            \"text\": \"iPhone 16, iPhone 17e, iPhone 17, iPhone Air, iPhone 18 Pro, and iPhone Duo models purchased in the U.S. or Puerto Rico don’t have a physical SIM tray and activate only using eSIM. You can activate your iPhone outside the country if your carrier supports eSIM. Learn more about using eSIM while traveling (Opens in a new window).    While traveling internationally, your carrier may offer convenient and affordable international roaming options. Additionally, if your iPhone is unlocked, you can use a travel eSIM at your destination. Learn more about using eSIM while traveling (Opens in a new window).\"\n                        }\n                    }\n                ]\n            }\n        "
+    ],
+    "meta": {
+        "og:locale": ["en_US"],
+        "og:type": ["product"],
+        "og:site_name": ["Apple"],
+        "og:url": ["https://www.apple.com/shop/buy-iphone/iphone-16"],
+        "og:image": [
+            "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/iphone-16-finish-select-202409-6-1inch_GEO_US?wid=1200&amp;hei=630&amp;fmt=jpeg&amp;qlt=95&amp;.v=1724710494447"
+        ],
+        "twitter:card": ["summary_large_image"],
+        "twitter:site": ["@apple"],
+        "og:title": ["Buy iPhone 16"],
+        "og:description": [
+            "Get $35 - $885 off an iPhone 16 when you trade in an iPhone 8 Plus or newer. 0% financing available. Buy now with free shipping."
+        ],
+        "description": [
+            "Get $35 - $885 off an iPhone 16 when you trade in an iPhone 8 Plus or newer. 0% financing available. Buy now with free shipping."
+        ]
+    },
+    "itemprops": [],
+    "canonical": "https://www.apple.com/shop/buy-iphone/iphone-16",
+    "titleTag": "Buy iPhone 16 - Apple",
+    "baseHref": null,
+    "truncated": false
+}
