@@ -1135,7 +1135,7 @@ The app and the bot are two views over the same D1 rows.
 Preview `@InevixTestBot` (one time):
 
 1. `/mybots`, pick the bot, Bot Settings, Configure Mini App, Enable Mini App. URL: `https://preview-wishlist.chernenko.workers.dev/app`.
-2. Configure the splash screen: icon from `public/apple-touch-icon.png`, light background `#F1E3FB`, dark background `#1A1220`.
+2. Configure the splash screen: icon from `public/apple-touch-icon.png`, light background `#F1E3FB`, dark background `#130C19`.
 3. Do not set a Menu Button; `pnpm preview:point` sets the admin's per chat.
 
 Production `@wishlist_ua_bot` (rollout step R5): the same steps with `https://wishlist.chernenko.dev/app`, the same splash, and media previews in uk, en and pl taken from `pnpm app:smoke` screenshots. No `/setdomain` and no `/newapp`; leave the Menu Button at its default.

@@ -321,16 +321,10 @@ test('the committed stylesheet carries both themes and self hosted fonts', () =>
     }
 });
 
-test('the gifted band sits on the paper in light and on the card colour in dark', () => {
+test('the gifted band sits on the page tint in both themes, so it cuts across the card', () => {
     const giftedSource = readFileSync(
         new URL('../src/web/styles/gifted.css', import.meta.url),
         'utf8'
-    );
-    const darkBlocks = Array.from(
-        GIFT_TAG_SOURCE.matchAll(
-            /(?::root:not\(\[data-theme\]\)|\[data-theme='wishlist-dark'\]) \{([^}]*)\}/g
-        ),
-        match => match[1] ?? ''
     );
 
     assert.match(giftedSource, /background: var\(--gifted-band\);/);
@@ -338,11 +332,37 @@ test('the gifted band sits on the paper in light and on the card colour in dark'
         GIFT_TAG_SOURCE,
         /:root,\s*\[data-theme\] \{[^}]*--gifted-band: var\(--paper\);/
     );
-    assert.equal(darkBlocks.length, 2);
+    assert.equal(GIFT_TAG_SOURCE.split('--gifted-band').length, 2);
+});
 
-    for (const block of darkBlocks) {
-        assert.match(block, /--gifted-band: var\(--tag\);/);
-    }
+const toOklabLightness = (hex: string) => {
+    const [red = 0, green = 0, blue = 0] = [1, 3, 5].map(offset => {
+        return toLinear(Number.parseInt(hex.slice(offset, offset + 2), 16));
+    });
+    const cone = (a: number, b: number, c: number) => {
+        return Math.cbrt(a * red + b * green + c * blue);
+    };
+
+    return (
+        0.2104542553 * cone(0.4122214708, 0.5363325363, 0.0514459929) +
+        0.793617785 * cone(0.2119034982, 0.6806995451, 0.1073969566) -
+        0.0040720468 * cone(0.0883024619, 0.2817188376, 0.6299787005)
+    );
+};
+
+test('in dark the card is clearly lighter than the page, mirroring light mode', () => {
+    const dark = readShareThemes().get('wishlist-dark');
+    const pageLightness = toOklabLightness(dark?.get('paper') ?? '#000000');
+    const cardLightness = toOklabLightness(dark?.get('tag') ?? '#000000');
+
+    assert.ok(
+        pageLightness >= 0.16 && pageLightness <= 0.18,
+        String(pageLightness)
+    );
+    assert.ok(
+        cardLightness - pageLightness >= 0.08,
+        String(cardLightness - pageLightness)
+    );
 });
 
 const STICKY_HEADER_SOURCE = readFileSync(
@@ -401,4 +421,26 @@ test('the link button sits at the bottom of the card and the action row follows 
         APP_SOURCE,
         /\.wish-link \+ \.wish-actions \{\s*margin-top: 0;\s*\}/
     );
+});
+
+test('the price chip hangs on a thread from the card edge, drawn by a themed mask that never takes taps', () => {
+    const thread =
+        /\.price::after \{([^}]*)\}/.exec(GIFT_TAG_SOURCE)?.[1] ?? '';
+
+    assert.match(thread, /background: var\(--ink\)/);
+    assert.match(thread, /mask: url\('\/icons\/price-string\.svg'\)/);
+    assert.match(thread, /pointer-events: none/);
+    assert.match(
+        thread,
+        /width: calc\(var\(--price-inset\) \+ var\(--card-border\)\)/
+    );
+    assert.doesNotMatch(thread, /data:/);
+
+    const icon = readFileSync(
+        new URL('../public/icons/price-string.svg', import.meta.url),
+        'utf8'
+    );
+
+    assert.match(icon, /stroke-width="2\.5"/);
+    assert.match(icon, /stroke-linecap="round"/);
 });

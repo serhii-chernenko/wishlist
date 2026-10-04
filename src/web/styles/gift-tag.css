@@ -22,6 +22,7 @@
         --measure: 65ch;
         --page-width: 36rem;
         --wish-grid-gap: 1.5rem 0.75rem;
+        --price-inset: 1.0625rem;
         --z-raised: 1;
     }
 
@@ -39,9 +40,9 @@
         --photo-placeholder: #ececee;
         --photo-placeholder-fill: #dedee2;
         --photo-placeholder-ink: #b1b1ba;
-        --photo-placeholder-dark: #2a2131;
-        --photo-placeholder-fill-dark: #3d3248;
-        --photo-placeholder-ink-dark: #51445e;
+        --photo-placeholder-dark: #1e1525;
+        --photo-placeholder-fill-dark: #32273c;
+        --photo-placeholder-ink-dark: #483a54;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -49,7 +50,6 @@
             --photo-placeholder: var(--photo-placeholder-dark);
             --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
             --photo-placeholder-ink: var(--photo-placeholder-ink-dark);
-            --gifted-band: var(--tag);
         }
     }
 
@@ -57,7 +57,6 @@
         --photo-placeholder: var(--photo-placeholder-dark);
         --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
         --photo-placeholder-ink: var(--photo-placeholder-ink-dark);
-        --gifted-band: var(--tag);
     }
 
     .sr-only {
@@ -364,7 +363,7 @@
     .price {
         position: relative;
         align-self: flex-start;
-        margin-inline-start: 1.0625rem;
+        margin-inline-start: var(--price-inset);
         padding: 0.0625rem 0.625rem 0.0625rem 0.8125rem;
         font-family: var(--font-display);
         font-size: 0.875rem;
@@ -372,6 +371,19 @@
         line-height: 1.5;
         border: var(--card-border) solid var(--ink);
         border-radius: var(--radius-pill);
+    }
+
+    .price::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: calc(-1 * (var(--price-inset) + var(--card-border)));
+        width: calc(var(--price-inset) + var(--card-border));
+        height: 0.625rem;
+        background: var(--ink);
+        mask: url('/icons/price-string.svg') 0 0 / 100% 100% no-repeat;
+        transform: translateY(-50%);
+        pointer-events: none;
     }
 
     .price::before {

@@ -11,7 +11,7 @@ Visual source: the bot avatar (scratchpad/assets/bot-avatar-640.jpg): flat fills
 - --heart #F57AA6 primary CTA fill (black text on it); the high priority badge shares this pink
 - --box #2AABE2 money/payments envelope fill (black text on it)
 - --heart-ink #7A1040 links on light surfaces (AAA)
-  Dark (prefers-color-scheme): page #1A1220, tag #261B2E, ink/outline #F1E3FB (lavender outlines instead of black), text #FBF4FF; heart/box fills keep black text. All text pairs ≥ 7:1 (keep the existing contrast test, update values).
+  Dark (prefers-color-scheme): page #130C19 (OKLCH L 0.17), tag #2A1E33 (L 0.26, a clearly raised surface), gifted band = the page token again, so it cuts across the card as a darker strip like the light theme, ink/outline #F1E3FB (lavender outlines instead of black), text #FBF4FF; heart/box fills keep black text. All text pairs ≥ 7:1 (keep the existing contrast test, update values).
   Borders: 2.5px solid ink on interactive/tag elements; hard offset shadow `3px 3px 0 var(--ink)` (never blurred, never grey). Radius: tags 14px except the notched corner; buttons 999px? NO — buttons radius 10px; chips 999px. Radii differ by hierarchy (hero tag 22px, wish tags 14px, chips full).
 
 ## Type

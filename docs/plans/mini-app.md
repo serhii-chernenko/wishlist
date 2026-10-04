@@ -159,7 +159,7 @@ Generated-file ownership: only the orchestrator commits `public/app/*` and `publ
       --color-accent:#7a1040; --color-accent-content:#ffffff; --color-neutral:#000000; --color-neutral-content:#ffffff;
       --color-error:<AAA vs #fff>; --color-error-content:#ffffff; (info/success/warning likewise)
       --radius-box:14px; --radius-field:10px; --radius-selector:999px; --border:2.5px; --depth:0; --noise:0; }
-    @plugin 'daisyui/theme' { name: 'wishlist-dark'; color-scheme: dark; base-100 #261b2e, base-200 #1a1220,
+    @plugin 'daisyui/theme' { name: 'wishlist-dark'; color-scheme: dark; base-100 #2a1e33, base-200 #130c19,
       base-content #fbf4ff, neutral #f1e3fb / neutral-content #000000, accent #ffb3d0 / accent-content #000000, primary/secondary as light }
     [data-theme] { --paper: var(--color-base-200); --tag: var(--color-base-100); --ink: var(--color-neutral);
       --text: var(--color-base-content); --heart: var(--color-primary); --on-heart: var(--color-primary-content);
@@ -507,7 +507,7 @@ S2 also checks whether the event's `response` string can be checked with the ini
 
 - **Preview `@InevixTestBot`, one time:**
     - /mybots, Bot Settings, Configure Mini App, Enable Mini App. URL: `https://preview-wishlist.chernenko.workers.dev/app`.
-    - Configure Splash Screen: icon from `public/apple-touch-icon.png`, light `#F1E3FB`, dark `#1A1220`.
+    - Configure Splash Screen: icon from `public/apple-touch-icon.png`, light `#F1E3FB`, dark `#130C19`.
     - Do not set a Menu Button.
 - **Production `@wishlist_ua_bot`** (runbook R6): the same steps with `https://wishlist.chernenko.dev/app`, the same splash, and media previews in uk, en and pl taken from `app:smoke` screenshots. No `/setdomain` and no `/newapp`.
 - **Bot API 10.2 origin protection:** the whole app stays on one origin, and external links use `WebApp.openLink`. Check that inline `web_app` buttons pointing at a branch preview origin (different from the configured Main App domain) still work [unverified]. If they don't, test branches through the long-lived `preview` (`pnpm worker:preview --name preview`).

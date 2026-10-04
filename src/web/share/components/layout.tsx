@@ -11,7 +11,7 @@ export const FONT_PRELOAD_PATH =
     '/fonts/unbounded-cyrillic-wght-normal.woff2?v=5.3.0';
 
 const LIGHT_THEME_COLOR = '#f1e3fb';
-const DARK_THEME_COLOR = '#1a1220';
+const DARK_THEME_COLOR = '#130c19';
 
 export const OPEN_GRAPH_LOCALES = {
     uk: 'uk_UA',

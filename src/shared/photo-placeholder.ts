@@ -31,9 +31,9 @@ export const PLACEHOLDER_LIGHT: PlaceholderPalette = {
 };
 
 export const PLACEHOLDER_DARK: PlaceholderPalette = {
-    background: '#2a2131',
-    fill: '#3d3248',
-    ink: '#51445e'
+    background: '#1e1525',
+    fill: '#32273c',
+    ink: '#483a54'
 };
 
 const PALETTES: Record<PlaceholderTheme, PlaceholderPalette> = {

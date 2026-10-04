@@ -11,7 +11,7 @@ import type { ColorScheme, WebApp } from './types';
 
 export const PAPER_COLORS = {
     light: '#f1e3fb',
-    dark: '#1a1220'
+    dark: '#130c19'
 } as const satisfies Record<ColorScheme, string>;
 
 export const THEME_NAMES = {

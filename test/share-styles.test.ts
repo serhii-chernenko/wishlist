@@ -127,8 +127,8 @@ const EXPECTED_TOKENS = {
         'heart-ink': '#7a1040'
     },
     dark: {
-        paper: '#1a1220',
-        tag: '#261b2e',
+        paper: '#130c19',
+        tag: '#2a1e33',
         ink: '#f1e3fb',
         text: '#fbf4ff',
         heart: '#f57aa6',
@@ -144,7 +144,7 @@ test('the page stylesheet is committed, self contained and CSP friendly', () => 
     assert.doesNotMatch(COMMITTED_STYLESHEET, /url\(\s*['"]?https?:/);
     assert.match(COMMITTED_STYLESHEET, /prefers-color-scheme:dark/);
     assert.match(COMMITTED_STYLESHEET, /--paper:#f1e3fb/);
-    assert.match(COMMITTED_STYLESHEET, /--paper-dark:#1a1220/);
+    assert.match(COMMITTED_STYLESHEET, /--paper-dark:#130c19/);
     assert.match(
         COMMITTED_STYLESHEET,
         /\[data-theme=wishlist-dark\]\{color-scheme:dark;--paper:var\(--paper-dark\)/
