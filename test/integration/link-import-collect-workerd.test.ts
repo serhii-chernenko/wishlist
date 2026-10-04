@@ -22,11 +22,18 @@ const updateSnapshots = process.env.LINK_IMPORT_UPDATE_SIGNALS === '1';
 const compatibilityDate = '2026-05-09';
 const OVERSIZED_PATH = '/oversized';
 const OVERSIZED_EXTRA_BYTES = 512 * 1024;
+const PAGE_CONTENT_TYPE_HEADER = 'x-page-content-type';
+const WINDOWS_1251_TITLE = [
+    ...Buffer.from('<html><head><title>'),
+    0xc0,
+    0xe1,
+    ...Buffer.from('</title></head></html>')
+];
 
 const workerEntry = `
 import { collectPageSignals } from ${JSON.stringify(collectModulePath)};
 
-const HTML_HEADERS = { 'content-type': 'text/html; charset=utf-8' };
+const DEFAULT_CONTENT_TYPE = 'text/html; charset=utf-8';
 const encoder = new TextEncoder();
 
 const oversizedBody = (totalBytes) => {
@@ -57,8 +64,11 @@ export default {
             url.pathname === ${JSON.stringify(OVERSIZED_PATH)}
                 ? oversizedBody(${LINK_IMPORT_HTML_MAX_BYTES + OVERSIZED_EXTRA_BYTES})
                 : request.body;
+        const contentType =
+            request.headers.get(${JSON.stringify(PAGE_CONTENT_TYPE_HEADER)}) ??
+            DEFAULT_CONTENT_TYPE;
         const signals = await collectPageSignals(
-            new Response(body, { headers: HTML_HEADERS })
+            new Response(body, { headers: { 'content-type': contentType } })
         );
 
         return Response.json(signals);
@@ -192,6 +202,19 @@ describe('link-import collector under workerd', () => {
         );
 
         assert.equal(signals.titleTag, 'Page');
+    });
+
+    it('decodes a windows-1251 page from its declared charset', async () => {
+        const response = await worker.fetch('/', {
+            method: 'POST',
+            body: new Uint8Array(WINDOWS_1251_TITLE),
+            headers: {
+                [PAGE_CONTENT_TYPE_HEADER]: 'text/html; charset=windows-1251'
+            }
+        });
+        const signals = (await response.json()) as PageSignals;
+
+        assert.equal(signals.titleTag, 'Аб');
     });
 
     it('stops at the HTML byte cap and keeps what it already read', async () => {

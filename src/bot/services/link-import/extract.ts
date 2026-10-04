@@ -744,11 +744,14 @@ const isGenericOpenGraph = (
     return title !== null && siteNames.includes(compactName(title));
 };
 
-const containsSiteName = (segment: string, siteNames: readonly string[]) => {
-    const compact = compactName(segment);
+const namesSite = (segment: string, siteNames: readonly string[]) => {
+    const candidates = new Set([
+        compactName(segment),
+        ...(segment.toLowerCase().match(TOKEN_PATTERN) ?? [])
+    ]);
 
     return siteNames.some(name => {
-        return compact.includes(name);
+        return candidates.has(name);
     });
 };
 
@@ -760,7 +763,7 @@ export const stripSiteSuffix = (
     const parts = title.split(TITLE_SEPARATOR_PATTERN);
 
     for (let index = 2; index < parts.length; index += 2) {
-        if (containsSiteName(parts[index] ?? '', siteNames)) {
+        if (namesSite(parts[index] ?? '', siteNames)) {
             return parts
                 .slice(0, index - 1)
                 .join('')

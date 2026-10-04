@@ -523,6 +523,22 @@ describe('extractProduct fallbacks and helpers', () => {
         );
     });
 
+    it('strips only segments whose words name the site', () => {
+        assert.equal(
+            stripSiteSuffix('Декор - Halloween', ['allo']),
+            'Декор - Halloween'
+        );
+        assert.equal(
+            stripSiteSuffix('Zestaw - Promocja', ['prom']),
+            'Zestaw - Promocja'
+        );
+        assert.equal(stripSiteSuffix('Zestaw - Prom.ua', ['prom']), 'Zestaw');
+        assert.equal(
+            stripSiteSuffix('Sneakers - Zalando Shop', ['zalandoshop']),
+            'Sneakers'
+        );
+    });
+
     it('decodes named and numeric entities and leaves unknown ones', () => {
         assert.equal(
             decodeHtmlEntities('A &amp; B &#8211; C &#x20AC; &unknown;'),
