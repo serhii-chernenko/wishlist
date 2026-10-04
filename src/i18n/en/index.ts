@@ -253,7 +253,7 @@ const en: Translation = {
             success: '✅ Here’s the link to your wish list:\n{url}',
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
-                '🌐 Before you share\n\nThe bot will create a public page for your wish list on {host}. It will show:\n• your Telegram name: {name}\n• your @username, only if you turn it on\n• all your wishes except hidden ones, with their photos\n• your payment info, if you’ve added it and it’s turned on\n\nAnyone with the link can open the page, and it may show up in search results. Your phone number, delivery address, and “Gifts to give” list are never shown there. If you turn on your phone number and address, only people in Telegram see them.\n\nYou can stop sharing anytime.',
+                '🌐 Before you share\n\nThe bot will create a public page for your wish list on {host}. It will show:\n• your Telegram name: {name}\n• your @username, only if you turn it on\n• all your wishes except hidden ones, with their photos\n• gifted wishes at the end of the list, unless you turn them off\n• your payment info, if you’ve added it and it’s turned on\n\nAnyone with the link can open the page, and it may show up in search results. Your phone number, delivery address, and “Gifts to give” list are never shown there. If you turn on your phone number and address, only people in Telegram see them.\n\nYou can stop sharing anytime.',
             ready: '✅ Your wish list is live!\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Open in browser:\n{pageUrl}\n\nThe page updates automatically whenever you change your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will go offline and your saved name will be deleted. If you share again later, the same link will work again, so anyone who has it will see your list again.',
@@ -493,7 +493,7 @@ const en: Translation = {
             phone: '❓ Show your phone number?\n\nAnyone who opens your wish list in Telegram will see it, whether through your link or by searching for your username or number. It’s never shown on the web page. Messages already sent stay in the recipient’s chat.',
             address:
                 '❓ Show your delivery address?\n\nAnyone who opens your wish list in Telegram will see it, whether through your link or by searching for your username or number. It’s shown only together with your phone number, and never on the web page. Messages already sent stay in the recipient’s chat.',
-            both: '❓ Show your delivery address together with your phone number?\n\nYour address is only useful with your phone number, so we’ll show both. Anyone who opens your list in Telegram will see them, but they’re never shown on the web page.'
+            both: '❓ Show your delivery address together with your phone number?\n\nWe’ll show your address only together with your phone number, because it’s no use without one. Anyone who opens your list in Telegram will see both, whether through your link or by searching for your username or number. Neither is ever shown on the web page. Messages already sent stay in the recipient’s chat.'
         },
         needsAddress: '❌ Add a delivery address first.',
         phoneMissing:
@@ -1242,8 +1242,9 @@ const en: Translation = {
                 name: 'your Telegram name: {name}',
                 username: 'your @username, only if you turn it on',
                 wishes: 'all wishes except hidden ones, with their photos',
+                gifted: 'gifted wishes at the end of the list, unless you turn them off',
                 payments:
-                    'your payment info, if you’ve added it (your phone number and delivery address are never shown there, even if you turn them on)',
+                    'your payment info, if you’ve added it and it’s turned on',
                 public: 'Anyone with the link can open the page, and it may show up in search results.',
                 private:
                     'Your phone number, delivery address, and “Gifts to give” list are never shown there.',
@@ -1268,7 +1269,7 @@ const en: Translation = {
                     phone: 'Anyone who opens your list in Telegram will see your phone number, whether through your link or by searching for your username or number. It’s never shown on the web page. Messages already sent stay in the recipient’s chat.',
                     address:
                         'Anyone who opens your list in Telegram will see your delivery address, whether through your link or by searching for your username or number. It’s shown only together with your phone number, and never on the web page. Messages already sent stay in the recipient’s chat.',
-                    both: 'Your address is only useful with your phone number, so we’ll show both. Anyone who opens your list in Telegram will see them, but they’re never shown on the web page.'
+                    both: 'We’ll show your address only together with your phone number, because it’s no use without one. Anyone who opens your list in Telegram will see both, whether through your link or by searching for your username or number. Neither is ever shown on the web page. Messages already sent stay in the recipient’s chat.'
                 },
                 phoneMissing:
                     'First, let others find you by phone number in Visibility.',

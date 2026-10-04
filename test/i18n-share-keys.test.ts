@@ -213,9 +213,9 @@ test('wish counts use the right plural form in every locale', () => {
 
 test('the consent copy names the host and the public, indexable nature of the page', () => {
     const hints = {
-        uk: ['пошукових систем', 'будь-коли'],
-        en: ['search results', 'anytime'],
-        pl: ['wyszukiwarek', 'w każdej chwili']
+        uk: ['пошукових систем', 'будь-коли', 'в кінці списку'],
+        en: ['search results', 'anytime', 'end of the list'],
+        pl: ['wyszukiwarek', 'w każdej chwili', 'na końcu listy']
     } as const;
 
     for (const locale of ['uk', 'en', 'pl'] as const) {

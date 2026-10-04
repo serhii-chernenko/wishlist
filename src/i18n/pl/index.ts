@@ -255,7 +255,7 @@ const pl: Translation = {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
             empty: '❌ Na razie nie ma czego udostępnić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
-                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu w Telegramie: {name}\n• twój @username, tylko jeśli go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli są dodane i włączone\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane; numer i adres, jeśli je włączysz, zobaczą tylko osoby w Telegramie.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu w Telegramie: {name}\n• twój @username, tylko jeśli go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• podarowane życzenia na końcu listy, jeśli ich nie wyłączysz\n• twoje dane płatnicze, jeśli są dodane i włączone\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane; numer i adres, jeśli je włączysz, zobaczą tylko osoby w Telegramie.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest gotowa!\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz listę ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
@@ -501,7 +501,7 @@ const pl: Translation = {
             phone: '❓ Pokazywać numer telefonu?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce numer nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
             address:
                 '❓ Pokazywać adres dostawy?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
-            both: '❓ Pokazywać adres dostawy razem z numerem telefonu?\n\nBez numeru telefonu sam adres niewiele pomoże, dlatego pokażemy oba. Zobaczy je każdy, kto otworzy twoją listę w Telegramie, ale nigdy nie są pokazywane na stronie w przeglądarce.'
+            both: '❓ Pokazywać adres dostawy razem z numerem telefonu?\n\nAdres pokażemy tylko razem z numerem telefonu, bo bez numeru niewiele pomoże. Oba zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce nigdy nie są pokazywane. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
         },
         needsAddress: '❌ Najpierw dodaj adres dostawy.',
         phoneMissing:
@@ -1260,8 +1260,8 @@ const pl: Translation = {
                 name: 'imię z twojego Telegrama: {name}',
                 username: 'twój @username, tylko jeśli go włączysz',
                 wishes: 'wszystkie życzenia poza ukrytymi, wraz z ich zdjęciami',
-                payments:
-                    'twoje dane płatnicze, jeśli są dodane (numer telefonu i adres dostawy nie są tam pokazywane, nawet jeśli je włączysz)',
+                gifted: 'podarowane życzenia na końcu listy, jeśli ich nie wyłączysz',
+                payments: 'twoje dane płatnicze, jeśli są dodane i włączone',
                 public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
                 private:
                     'Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane.',
@@ -1286,7 +1286,7 @@ const pl: Translation = {
                     phone: 'Twój numer telefonu zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
                     address:
                         'Twój adres dostawy zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
-                    both: 'Bez numeru telefonu sam adres niewiele pomoże, dlatego pokażemy oba. Zobaczy je każdy, kto otworzy twoją listę w Telegramie, ale nigdy nie są pokazywane na stronie w przeglądarce.'
+                    both: 'Adres pokażemy tylko razem z numerem telefonu, bo bez numeru niewiele pomoże. Oba zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce nigdy nie są pokazywane. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
                 },
                 phoneMissing:
                     'Najpierw w sekcji „Widoczność” pozwól, żeby inni mogli cię znajdować po numerze.',

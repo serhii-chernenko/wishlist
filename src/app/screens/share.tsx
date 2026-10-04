@@ -292,6 +292,7 @@ const ShareConsent = ({ share }: { share: ShareDto }) => {
                 <li>{consent.name({ name: share.consent.name })}</li>
                 <li>{consent.username()}</li>
                 <li>{consent.wishes()}</li>
+                <li>{consent.gifted()}</li>
                 <li>{consent.payments()}</li>
             </ul>
             <p>{consent.public()}</p>
