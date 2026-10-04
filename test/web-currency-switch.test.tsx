@@ -32,6 +32,7 @@ const buildModel = (
         deliveryHintShown: false,
         rates: FALLBACK_RATES,
         visibleCount: 1,
+        giftedCount: 0,
         lastUpdatedAt: new Date('2026-02-03T10:00:00Z'),
         wishes: [
             {

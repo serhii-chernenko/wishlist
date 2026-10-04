@@ -55,6 +55,7 @@ import {
 import type {
     ListImportAdapters,
     ListImportDeps,
+    ListImportDrainSummary,
     ListImportJobGate,
     ListImportService,
     SourceFetchContext
@@ -102,6 +103,18 @@ const toTelemetryContext = (deps: ListImportDeps): TelemetryContext => {
     const { waitUntil } = deps;
 
     return waitUntil === undefined ? undefined : { waitUntil };
+};
+
+const didDrainWork = (summary: ListImportDrainSummary) => {
+    if (summary.result === 'idle') {
+        return false;
+    }
+
+    return (
+        summary.result !== 'drained' ||
+        summary.ingested > 0 ||
+        summary.failed > 0
+    );
 };
 
 const failedPreview = (
@@ -574,7 +587,7 @@ export const createListImportService = (
                 }
             );
 
-            if (summary.result !== 'idle' || request.trigger === 'cron') {
+            if (request.trigger === 'cron' || didDrainWork(summary)) {
                 emitTelemetry(
                     deps.env,
                     toTelemetryContext(deps),

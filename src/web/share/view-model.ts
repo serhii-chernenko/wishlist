@@ -41,6 +41,7 @@ export interface SharePageModel {
     visibleCount: number;
     lastUpdatedAt: Date | null;
     wishes: readonly ShareWishView[];
+    giftedCount: number;
     gifted?: readonly ShareWishView[];
     indexable: boolean;
     botUrl: string;

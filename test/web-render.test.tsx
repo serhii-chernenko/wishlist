@@ -58,6 +58,7 @@ const buildModel = (
         deliveryHintShown: false,
         rates: FALLBACK_RATES,
         visibleCount: 1,
+        giftedCount: 0,
         lastUpdatedAt: new Date('2026-02-03T10:00:00Z'),
         wishes: [buildWish()],
         indexable: true,
@@ -396,7 +397,9 @@ test('a wish whose imported photo is still pending shows the placeholder with a 
 
 test('the header counts active and gifted wishes only when some are gifted', () => {
     const gifted = [buildWish({ title: 'Gifted mug', gifted: true })];
-    const withGifted = renderSharePage(buildModel({ gifted, visibleCount: 3 }));
+    const withGifted = renderSharePage(
+        buildModel({ gifted, giftedCount: 1, visibleCount: 3 })
+    );
     const withoutGifted = renderSharePage(buildModel({ visibleCount: 3 }));
 
     assert.match(
@@ -409,17 +412,34 @@ test('the header counts active and gifted wishes only when some are gifted', () 
     );
     assert.match(
         renderSharePage(
-            buildModel({ gifted, visibleCount: 3, lastUpdatedAt: null })
+            buildModel({
+                gifted,
+                giftedCount: 1,
+                visibleCount: 3,
+                lastUpdatedAt: null
+            })
         ),
         /<p class="hero-meta">Active: 3, gifted: 1<\/p>/
     );
+});
+
+test('the header gifted count is the real total even above the rendered cap', () => {
+    const gifted = Array.from({ length: APP_THIRD_PARTY_GIFTED_LIMIT }, () => {
+        return buildWish({ title: 'Gifted mug', gifted: true });
+    });
+    const totalGifted = APP_THIRD_PARTY_GIFTED_LIMIT + 15;
+    const html = renderSharePage(
+        buildModel({ gifted, giftedCount: totalGifted, visibleCount: 3 })
+    );
+
+    assert.match(html, new RegExp(`Active: 3, gifted: ${totalGifted},`));
 });
 
 test('with no active wishes the empty alert needs no gifted wishes either', () => {
     const gifted = [buildWish({ title: 'Gifted mug', gifted: true })];
     const empty = renderSharePage(buildModel({ wishes: [], visibleCount: 0 }));
     const onlyGifted = renderSharePage(
-        buildModel({ wishes: [], gifted, visibleCount: 0 })
+        buildModel({ wishes: [], gifted, giftedCount: 1, visibleCount: 0 })
     );
 
     assert.match(empty, /<p class="empty">/);

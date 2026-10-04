@@ -97,7 +97,7 @@ const NO_GIFTED: SharePageModel['wishes'] = [];
 
 const describeSummary = (model: SharePageModel) => {
     const LL = getTranslator(model.language);
-    const giftedCount = (model.gifted ?? NO_GIFTED).length;
+    const giftedCount = model.giftedCount;
     const date =
         model.lastUpdatedAt === null
             ? null

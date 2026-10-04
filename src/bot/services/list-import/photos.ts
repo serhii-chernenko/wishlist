@@ -214,8 +214,23 @@ const sendPhoto = async (
         : { kind: 'stopped' };
 };
 
+const clearWishImage = async (run: UserRun, wish: PendingPhotoWish) => {
+    const cleared = await run.ports.store.clearImage(
+        wish.id,
+        run.candidate.userId
+    );
+
+    run.touched = run.touched || cleared;
+};
+
+const clearAllWishImages = async (run: UserRun) => {
+    const cleared = await run.ports.store.clearAll(run.candidate.userId);
+
+    run.touched = run.touched || cleared > 0;
+};
+
 const failWish = async (run: UserRun, wish: PendingPhotoWish) => {
-    await run.ports.store.clearImage(wish.id, run.candidate.userId);
+    await clearWishImage(run, wish);
     run.summary.failed += 1;
 };
 
@@ -242,7 +257,7 @@ const drainWish = async (
     const adapter = findAdapter(run.ports.adapters, wish.sourceRef);
 
     if (!acceptsImportedImage(wish) || adapter === null) {
-        await store.clearImage(wish.id, userId);
+        await clearWishImage(run, wish);
 
         return 'next';
     }
@@ -284,7 +299,7 @@ const drainWish = async (
         run.summary.ingested += 1;
         run.touched = true;
     } else {
-        await store.clearImage(wish.id, userId);
+        await clearWishImage(run, wish);
     }
 
     return 'next';
@@ -295,7 +310,7 @@ const drainUserWishes = async (run: UserRun): Promise<UserDrainOutcome> => {
     const { userId } = run.candidate;
 
     if (run.candidate.blocked) {
-        await store.clearAll(userId);
+        await clearAllWishImages(run);
 
         return 'finished';
     }
@@ -315,7 +330,7 @@ const drainUserWishes = async (run: UserRun): Promise<UserDrainOutcome> => {
             const outcome = await drainWish(run, wish);
 
             if (outcome === 'forbidden') {
-                await store.clearAll(userId);
+                await clearAllWishImages(run);
 
                 return 'finished';
             }

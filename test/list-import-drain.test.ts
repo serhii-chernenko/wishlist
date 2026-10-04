@@ -406,6 +406,66 @@ describe('list import photo drain', () => {
         );
     });
 
+    it('touches the share when a failed photo is cleared so the page drops the pending state', async () => {
+        const wish = pendingWish(40, {
+            sourceImageUrl: 'https://evil.test/cover.jpg'
+        });
+        const { ports, store } = setup({ wishes: [wish] });
+
+        const summary = await drainPendingPhotos(ports, { budgetMs: 20_000 });
+
+        assert.equal(summary.failed, 1);
+        assert.equal(store.wishes[0]?.sourceImageUrl, '');
+        assert.deepEqual(store.touched, [1]);
+    });
+
+    it('touches the share when a photo is cleared for a removed wish', async () => {
+        const wish = pendingWish(41, { removed: true });
+        const { ports, store } = setup({ wishes: [wish] });
+
+        await drainPendingPhotos(ports, { budgetMs: 20_000 });
+
+        assert.equal(store.wishes[0]?.sourceImageUrl, '');
+        assert.deepEqual(store.touched, [1]);
+    });
+
+    it('touches the share once when every pending photo of a blocked bot or a 403 user is cleared', async () => {
+        const blockedWishes = [pendingWish(42), pendingWish(43)];
+        const blocked = setup({
+            wishes: blockedWishes,
+            candidates: [
+                { userId: 1, telegramId: 1001, blocked: true, leaseJobId: 10 }
+            ]
+        });
+        const forbiddenWishes = [pendingWish(44), pendingWish(45)];
+        const forbidden = setup({
+            wishes: forbiddenWishes,
+            images: originalsOk(forbiddenWishes)
+        });
+
+        forbidden.telegram.failures.push(telegramError(403));
+
+        await drainPendingPhotos(blocked.ports, { budgetMs: 20_000 });
+        await drainPendingPhotos(forbidden.ports, { budgetMs: 20_000 });
+
+        assert.deepEqual(blocked.store.touched, [1]);
+        assert.deepEqual(forbidden.store.touched, [1]);
+    });
+
+    it('does not touch the share when nothing was cleared or landed', async () => {
+        const wishes = [pendingWish(46)];
+        const { ports, store } = setup({
+            wishes,
+            images: originalsOk(wishes),
+            hostAllowed: false
+        });
+
+        await drainPendingPhotos(ports, { budgetMs: 20_000 });
+
+        assert.deepEqual(store.touched, []);
+        assert.notEqual(store.wishes[0]?.sourceImageUrl, '');
+    });
+
     it('clears a blocked user without downloading anything', async () => {
         const wishes = [pendingWish(10)];
         const { ports, store, fetcher } = setup({

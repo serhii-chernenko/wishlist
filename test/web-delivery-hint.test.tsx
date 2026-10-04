@@ -33,6 +33,7 @@ const buildModel = (
         deliveryHintShown: false,
         rates: FALLBACK_RATES,
         visibleCount: 0,
+        giftedCount: 0,
         lastUpdatedAt: null,
         wishes: [],
         indexable: false,

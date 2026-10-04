@@ -448,6 +448,7 @@ const servePage = async ({
                 visibleCount: share.visibleCount,
                 lastUpdatedAt: share.lastUpdatedAt,
                 wishes,
+                giftedCount: share.showGifted ? share.giftedCount : 0,
                 gifted: await loadShareGiftedWishes({
                     repositories,
                     share,

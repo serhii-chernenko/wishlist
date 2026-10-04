@@ -7,6 +7,7 @@ import {
     SHARE_DISPLAY_NAME_MAX_LENGTH,
     type PublicShareFingerprint
 } from '../../src/db/repositories';
+import { APP_THIRD_PARTY_GIFTED_LIMIT } from '../../src/shared/app-api';
 import { resolvePublicUsername } from '../../src/web/share/fingerprint';
 import { isValidSharePublicId } from '../../src/web/share/public-id';
 import { createD1Harness, type D1Harness } from './d1-harness';
@@ -371,6 +372,39 @@ describe('share repository', () => {
             ),
             null
         );
+    });
+
+    it('counts every visible gifted wish with the same total as the app count query', async () => {
+        const owner = await createOwner();
+        const share = await run(
+            repositories.shares.publish(owner.id, 'Alice', nextNow())
+        );
+        const giftedTotal = APP_THIRD_PARTY_GIFTED_LIMIT + 5;
+
+        await run(repositories.users.setShowGifted(owner.id, true, nextNow()));
+
+        for (let index = 0; index < giftedTotal; index += 1) {
+            const wish = await createWish(owner.id, `gifted ${index}`);
+
+            await run(
+                repositories.wishes.softRemove(
+                    wish.id,
+                    owner.id,
+                    true,
+                    nextNow()
+                )
+            );
+        }
+
+        const fingerprint = await run(
+            repositories.shares.findPublicFingerprint(share.publicId)
+        );
+        const appCount = await run(
+            repositories.wishes.countGiftedVisibleOf(owner.id, null)
+        );
+
+        assert.equal(fingerprint?.giftedCount, giftedTotal);
+        assert.equal(fingerprint?.giftedCount, appCount);
     });
 
     it('changes the fingerprint inputs after every content mutation and only then', async () => {
