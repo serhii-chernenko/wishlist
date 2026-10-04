@@ -164,8 +164,12 @@ test('every 2.0.0 changelog item is translated into English and Polish', () => {
     const releases = parseChangelog(fs.readFileSync('CHANGELOG.md', 'utf8'));
     const release = releases.find(entry => entry.version === '2.0.0');
     const items = Object.values(release?.groups ?? {}).flat();
+    const section =
+        fs.readFileSync('CHANGELOG.md', 'utf8').split(/^## /m)[1] ?? '';
+    const bulletCount = section.match(/^- \[/gm)?.length ?? 0;
 
-    assert.equal(items.length, 16);
+    assert.ok(bulletCount > 0);
+    assert.equal(items.length, bulletCount);
     assert.ok(items.every(item => item.uk && item.en && item.pl));
 });
 

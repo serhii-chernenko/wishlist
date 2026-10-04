@@ -84,7 +84,7 @@ Decisions:
 - [ ] Tests, review, security audit
 - [x] Prices in the viewer's language currency (UAH, EUR, PLN) with approximate NBU conversion, per-currency price filters and a daily rates refresh (2026-10-04)
 - [ ] Preview test on @InevixTestBot, production rollout
-- [ ] Production rollout: apply `20261003214556_many_harry_osborn` and `20261004011719_careless_mulholland_black` (`exchange_rates`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
+- [ ] Production rollout: apply the five pending migrations (`20261003214556_many_harry_osborn`, `20261004011719_careless_mulholland_black`, `20261004083515_far_impossible_man`, `20261004090459_flat_omega_sentinel`, `20261004111004_show_gifted_default_on`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
 - [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
 ### Batch 2 (in 2.0.0, started 2026-10-04)
@@ -98,12 +98,12 @@ Decisions:
 - [x] Photo reordering (drag and drop, keyboard, "make first", bot) (merged 2026-10-04)
 - [x] Polish: sun-moon theme icon, icon and title alignment, short home grid labels, required badge, textarea autosize, muted OFF toggles (merged 2026-10-04)
 - [x] Gifted wishes at the end of the app list and, when the owner opts in, of shared lists, with a "Gifted" band (merged 2026-10-04)
-- [ ] One pattern for destructive actions in the app: red buttons, a countdown on the button itself, undo toasts for removed items, and destructive confirm popups for bulk actions
-- [ ] Link import: paste a product link, parse title, photos, price and description, and ingest photos into Telegram (app and bot)
+- [x] One pattern for destructive actions in the app: red buttons, a countdown on the button itself, undo toasts for removed items, and destructive confirm popups for bulk actions
+- [x] Link import: paste a product link, parse title, photos, price and description, and ingest photos into Telegram (app and bot)
 - [ ] Copy pass (Polish, US English) over all strings
 - [ ] Review, security audit, preview test
 - [ ] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order
-- [ ] Production rollout additions: Time Travel bookmark, priority count check, new migration, post-deploy priority repair
+- [x] Production rollout additions documented: Time Travel bookmark, priority count check, new migrations, post-deploy priority repair, R2 `import/` lifecycle rule (added on both buckets 2026-10-04)
 
 ### Cutover
 

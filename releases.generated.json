@@ -5,28 +5,48 @@
         "groups": {
             "added": [
                 {
-                    "uk": "🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.\n🇺🇸 The bot now speaks English, Ukrainian and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.",
-                    "en": "🇺🇸 The bot now speaks English, Ukrainian and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.\n🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.",
-                    "pl": "🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.\n🇺🇸 The bot now speaks English, Ukrainian and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму."
+                    "uk": "🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.\n🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.",
+                    "en": "🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.\n🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.",
+                    "pl": "🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.\n🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.\n🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму."
                 },
                 {
-                    "uk": "Ціни тепер показуються у валюті твоєї мови: у гривнях українською, в євро англійською та в злотих польською. Перераховані суми орієнтовні, за щоденним курсом НБУ.",
-                    "en": "Prices now show in the currency of your language: hryvnias in Ukrainian, euros in English and złoty in Polish. Converted amounts are approximate, at the daily National Bank of Ukraine rate.",
-                    "pl": "Ceny wyświetlają się teraz w walucie twojego języka: w hrywnach po ukraińsku, w euro po angielsku i w złotych po polsku. Przeliczone kwoty są orientacyjne, według dziennego kursu Narodowego Banku Ukrainy."
+                    "uk": "Бажання можна додати за посиланням: встав посилання на товар у застосунку або надішли його боту, і назва, опис, ціна та фото заповняться самі. Працює з більшістю магазинів, як-от Rozetka, Prom, OLX чи IKEA, а якщо сайт не віддає дані, решту можна заповнити вручну.",
+                    "en": "Add a wish from a link: paste a product link in the app or send it to the bot, and the title, description, price, and photos fill in automatically. It works with most stores, like Rozetka, Prom, OLX, or IKEA, and if a site doesn't share its data, you can fill in the rest yourself.",
+                    "pl": "Życzenie dodasz z linku: wklej link do produktu w aplikacji albo wyślij go botowi, a nazwa, opis, cena i zdjęcia uzupełnią się same. Działa z większością sklepów, np. Rozetka, Prom, OLX czy IKEA, a jeśli strona nie udostępnia danych, resztę uzupełnisz ręcznie."
+                },
+                {
+                    "uk": "Валюту тепер можна обрати в налаштуваннях: гривня, долар, євро або злотий. Кожне бажання зберігає валюту, в якій вказана ціна, а друзі бачать суму у своїй валюті, орієнтовно за щоденним курсом НБУ. На сторінці листа бажань валюту можна перемкнути вгорі.",
+                    "en": "You can now pick your currency in Settings: hryvnia, US dollar, euro, or złoty. Each wish keeps the currency it was priced in, and friends see the amount in their own currency, converted approximately at the official daily rate. The wish list page has a currency switcher at the top.",
+                    "pl": "Walutę możesz teraz wybrać w ustawieniach: hrywna, dolar amerykański, euro lub złoty. Każde życzenie zachowuje walutę, w której podano cenę, a znajomi widzą kwotę w swojej walucie, przeliczoną orientacyjnie po oficjalnym dziennym kursie. Na stronie listy życzeń walutę przełączysz u góry."
+                },
+                {
+                    "uk": "Можна зберегти адресу доставки, наприклад відділення чи поштомат, і в меню «Поділитися» обрати, що бачать інші: реквізити, телефон і адресу. Телефон і адресу бачать лише ті, хто відкриває твій лист у Телеграмі, на вебсторінці їх немає ніколи. Там само можна заборонити пошуковим системам показувати твою сторінку.",
+                    "en": "You can save a delivery address, such as a post office branch or a parcel locker, and choose in the Share menu what others see: payment info, phone, and address. Only people who open your list in Telegram see the phone and address; they never appear on the web page. You can also keep search engines from showing your page there.",
+                    "pl": "Możesz zapisać adres dostawy, na przykład oddział lub paczkomat, i w menu „Udostępnij” wybrać, co widzą inni: dane płatnicze, telefon i adres. Telefon i adres widzą tylko osoby, które otwierają twoją listę w Telegramie; na stronie internetowej nie pojawiają się nigdy. Tam też możesz zablokować wyświetlanie twojej strony w wyszukiwarkach."
+                },
+                {
+                    "uk": "Подаровані бажання тепер не зникають: у застосунку вони стоять у кінці списку з позначкою «Подароване», а друзі бачать їх на сторінці листа, якщо ти не вимкнеш це в «Поділитися».",
+                    "en": "Gifted wishes no longer disappear: in the app they sit at the end of your list with a \"Gifted\" band, and friends see them on your list page unless you turn that off in Share.",
+                    "pl": "Podarowane życzenia już nie znikają: w aplikacji są na końcu listy z oznaczeniem „Podarowane”, a znajomi widzą je na stronie twojej listy, chyba że wyłączysz to w „Udostępnij”."
+                },
+                {
+                    "uk": "Фото бажання тепер можна впорядкувати: перетягни їх у застосунку або зроби будь-яке фото першим у чаті. Перше фото стає головним.",
+                    "en": "You can now reorder a wish's photos: drag them in the app or make any photo the first one in the chat. The first photo becomes the cover.",
+                    "pl": "Zdjęcia życzenia możesz teraz ułożyć w dowolnej kolejności: przeciągnij je w aplikacji albo ustaw dowolne zdjęcie jako pierwsze w czacie. Pierwsze zdjęcie staje się zdjęciem głównym."
                 },
                 {
                     "uk": "Довгі списки бажань тепер розбиті на сторінки: кнопка «Показати ще» підвантажує наступні бажання.",
-                    "en": "Long wish lists are now split into pages: the \"Show more\" button loads the next wishes.",
+                    "en": "Long wish lists are now split into pages: the \"Show more\" button loads more wishes.",
                     "pl": "Długie listy życzeń są teraz podzielone na strony: przycisk „Pokaż więcej” wczytuje kolejne życzenia."
                 },
                 {
                     "uk": "«Поділитися» тепер створює власну сторінку твого листа бажань на https://wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.",
-                    "en": "\"Share\" now creates your own wish list page on https://wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates itself after every change, it has a language switcher, and you can stop sharing at any time. Old telegra.ph pages stay but no longer update.",
+                    "en": "\"Share\" now creates your own wish list page on https://wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates automatically after every change, it has a language switcher, and you can stop sharing anytime. Old telegra.ph pages will stay up but won't be updated.",
                     "pl": "„Udostępnij” tworzy teraz własną stronę twojej listy życzeń na https://wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane."
                 },
                 {
                     "uk": "Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і бронювати бажання. Чат-бот працює як раніше, а дані спільні.",
-                    "en": "Wishlist now has an app right inside Telegram: open it with the \"Open the app\" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.",
+                    "en": "Wishlist now has an app right inside Telegram: open it with the \"Open app\" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.",
                     "pl": "Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne."
                 },
                 {
@@ -37,7 +57,7 @@
                 {
                     "uk": "Зі сторінки листа бажань можна одразу відкрити його в Телеграмі й забронювати бажання.",
                     "en": "From a wish list page you can open the list in Telegram right away and reserve a wish.",
-                    "pl": "Ze strony listy życzeń możesz od razu otworzyć ją w Telegramie i zarezerwować życzenie."
+                    "pl": "Ze strony listy życzeń możesz od razu otworzyć listę w Telegramie i zarezerwować życzenie."
                 },
                 {
                     "uk": "Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.",
@@ -48,19 +68,24 @@
             "updated": [
                 {
                     "uk": "Бот переїхав на нову хмарну інфраструктуру: тепер він працює швидше та надійніше. Усі листи бажань і списки «Хочу подарувати» збережені.",
-                    "en": "The bot has moved to a new cloud infrastructure, so it is faster and more reliable. All wish lists and \"I want to give\" lists are safe.",
+                    "en": "The bot has moved to new cloud infrastructure, so it's faster and more reliable. All wish lists and \"Gifts to give\" lists are safe.",
                     "pl": "Bot przeniósł się do nowej infrastruktury w chmurze, więc działa szybciej i stabilniej. Wszystkie listy życzeń i listy „Chcę podarować” zostały zachowane."
                 },
                 {
+                    "uk": "Замість позначки «Дуже хочу» тепер є пріоритет: низький, середній або високий, з кольоровою позначкою. Бажання з вищим пріоритетом стоять першими, а всі «Дуже хочу» стали високим пріоритетом.",
+                    "en": "Instead of the \"Really want this\" mark, wishes now have a priority: low, medium, or high, with a colored badge. Higher-priority wishes come first, and every \"Really want this\" wish is now high priority.",
+                    "pl": "Zamiast oznaczenia „Bardzo chcę” życzenia mają teraz priorytet: niski, średni lub wysoki, z kolorową plakietką. Życzenia o wyższym priorytecie są na początku, a wszystkie „Bardzo chcę” mają teraz wysoki priorytet."
+                },
+                {
                     "uk": "Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.",
-                    "en": "You can now support the author via Monobank, Ko-fi, PayPal or Revolut.",
+                    "en": "You can now support the author via Monobank, Ko-fi, PayPal, or Revolut.",
                     "pl": "Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut."
                 }
             ],
             "fixed": [
                 {
                     "uk": "Пошук за юзернеймом тепер не залежить від регістру літер.",
-                    "en": "Search by username no longer depends on upper or lower case.",
+                    "en": "Username search is no longer case-sensitive.",
                     "pl": "Wyszukiwanie po nazwie użytkownika nie zależy już od wielkości liter."
                 },
                 {
@@ -69,19 +94,19 @@
                     "pl": "Ustawienia widoczności działają teraz poprawnie: możesz wybrać, żeby inni znajdowali cię tylko po nazwie użytkownika albo tylko po numerze telefonu."
                 },
                 {
-                    "uk": "Кнопка «Очистити» знову працює, і тепер перед очищенням бот перепитує, чи ти впевнений(-а).",
-                    "en": "The \"Clean\" button works again, and the bot now asks you to confirm before cleaning.",
+                    "uk": "Кнопка «Очистити» знову працює, і тепер перед очищенням бот перепитує, чи точно все очистити.",
+                    "en": "The \"Clear\" button works again, and the bot now asks you to confirm before clearing.",
                     "pl": "Przycisk „Wyczyść” znowu działa, a bot pyta teraz o potwierdzenie przed czyszczeniem."
                 },
                 {
                     "uk": "У списку «Хочу подарувати» бронь тепер скасовується саме для того бажання, яке ти обираєш, а після скасування бот показує правильне повідомлення.",
-                    "en": "In the \"I want to give\" list the reservation is now cancelled for exactly the wish you pick, and after cancelling it the bot shows the right message.",
+                    "en": "On your \"Gifts to give\" list, the reservation is now canceled for exactly the wish you pick, and after canceling, the bot shows the right message.",
                     "pl": "Na liście „Chcę podarować” rezerwacja jest teraz anulowana dokładnie dla tego życzenia, które wybierzesz, a po jej anulowaniu bot pokazuje właściwy komunikat."
                 },
                 {
                     "uk": "У чужому листі бажань знову видно, скільки ще людей забронювали те саме.",
-                    "en": "In someone else's wish list you can see again how many other people have reserved the same thing.",
-                    "pl": "Na cudzej liście życzeń znów widać, ile jeszcze osób zarezerwowało to samo."
+                    "en": "On someone else's wish list, you can once again see how many people reserved the same gift.",
+                    "pl": "Na cudzej liście życzeń znów widać, ile jeszcze osób zarezerwowało to samo życzenie."
                 },
                 {
                     "uk": "Назви та описи бажань більше не ламають оформлення повідомлень, а дати показуються за київським часом.",
