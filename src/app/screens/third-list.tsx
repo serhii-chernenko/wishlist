@@ -1,4 +1,4 @@
-import { useState } from 'hono/jsx/dom';
+import { useEffect, useState } from 'hono/jsx/dom';
 
 import type {
     OwnerContactDto,
@@ -199,8 +199,19 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
         },
         SHARED_STALE_MS
     );
+    const opensOwnList = shared.data?.ownList === true;
     const owner =
-        source.kind === 'owner' ? source.owner : (shared.data?.owner ?? null);
+        source.kind === 'owner'
+            ? source.owner
+            : opensOwnList
+              ? null
+              : (shared.data?.owner ?? null);
+
+    useEffect(() => {
+        if (opensOwnList) {
+            nav.replace({ screen: 'wishes' });
+        }
+    }, [opensOwnList]);
     const token = owner?.token ?? null;
     const list = useAppResource(
         token === null ? null : `third:list:${token}:${filter ?? 'all'}`,

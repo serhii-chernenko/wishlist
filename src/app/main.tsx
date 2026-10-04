@@ -14,6 +14,7 @@ import {
     watchActivation,
     watchViewport
 } from './telegram/lifecycle';
+import { watchKeyboardDismissal } from './telegram/keyboard';
 import { getLaunchContext, isSupportedClient } from './telegram/sdk';
 import {
     getEffectiveScheme,
@@ -132,6 +133,7 @@ const start = (container: HTMLElement) => {
     watchTheme(launch.webApp);
     void loadThemePreference();
     watchViewport();
+    watchKeyboardDismissal();
     expandApp();
     connectBottomButton();
     window.addEventListener('offline', () => {

@@ -3,7 +3,7 @@ import { isAdminActor } from '../../bot/runtime/context';
 import { createSearchService } from '../../bot/services/search-service';
 import type { SearchInput, SearchResultDto } from '../../shared/app-api';
 import { requireUser, type ApiHandler } from '../context';
-import { toOwnerDto } from '../dto';
+import { resolveViewerLocale, toOwnerDto } from '../dto';
 import { createBodyReader, readJsonBody } from '../validate';
 import { emitAppAction } from '../telemetry';
 import { mintOwnerToken } from './lists';
@@ -38,7 +38,9 @@ export const search: ApiHandler = async c => {
     const outcome = await createSearchService(c.var.repos).findByQuery({
         query: input.query,
         searcherId: viewer.id,
-        searcherIsAdmin: isAdminActor(c.env, c.var.actor)
+        searcherIsAdmin: isAdminActor(c.env, c.var.actor),
+        searcherLocale: resolveViewerLocale(c.var.actor, viewer),
+        searcherCurrency: viewer.currency
     });
 
     if (outcome.status !== 'found') {

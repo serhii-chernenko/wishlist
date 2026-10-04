@@ -70,8 +70,21 @@ const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
     const outcome = await search.findByQuery({
         query,
         searcherId: user.id,
-        searcherIsAdmin: req.isAdmin
+        searcherIsAdmin: req.isAdmin,
+        searcherLocale: req.locale,
+        searcherCurrency: user.currency
     });
+
+    if (outcome.status === 'needsCountryCode') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'needsCountryCode'
+        });
+        await req.send.text(LL.findList.errors.needsCountryCode());
+        await render(req);
+
+        return;
+    }
 
     if (outcome.status === 'notFound') {
         req.telemetry.botActionCompleted({

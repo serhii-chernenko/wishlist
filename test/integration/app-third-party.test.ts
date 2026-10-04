@@ -285,6 +285,91 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(wrongType.status, 422);
         });
 
+        it('finds a phone by international, national and local formats and nothing else', async () => {
+            await registerUser(VIEWER, { language: 'uk' });
+            await registerUser(OWNER_A, {
+                phone: '+380501234567',
+                phoneDigits: '380501234567'
+            });
+            const statuses = async (queries: string[]) => {
+                return Promise.all(
+                    queries.map(async query => {
+                        return (await search(VIEWER, query)).status;
+                    })
+                );
+            };
+
+            assert.deepEqual(
+                await statuses([
+                    '+380501234567',
+                    '+38 (050) 123-45-67',
+                    '380501234567',
+                    '0501234567',
+                    '050 123 45 67',
+                    '501234567'
+                ]),
+                ['found', 'found', 'found', 'found', 'found', 'found']
+            );
+            assert.deepEqual(
+                await statuses([
+                    '38050123456',
+                    '80501234567',
+                    '3805012345678',
+                    '0501234568',
+                    '501234568'
+                ]),
+                ['notFound', 'notFound', 'notFound', 'notFound', 'notFound']
+            );
+        });
+
+        it('reads a nine-digit number as Polish for Polish searchers and refuses it for others', async () => {
+            await registerUser(OWNER_A, {
+                phone: '+48512345678',
+                phoneDigits: '48512345678'
+            });
+            await registerUser(VIEWER, { language: 'pl', currency: 'PLN' });
+
+            assert.equal((await search(VIEWER, '512 345 678')).status, 'found');
+
+            await harness.clearApplicationTables();
+            await registerUser(OWNER_A, {
+                phone: '+48512345678',
+                phoneDigits: '48512345678'
+            });
+            await registerUser(VIEWER, { language: 'en', currency: 'USD' });
+
+            assert.deepEqual(await search(VIEWER, '512 345 678'), {
+                status: 'needsCountryCode'
+            });
+            assert.equal(
+                (await search(VIEWER, '+48 512 345 678')).status,
+                'found'
+            );
+            assert.deepEqual(
+                events
+                    .filter(event => {
+                        return event.action === 'wishlist_searched';
+                    })
+                    .map(event => {
+                        return event.result;
+                    }),
+                ['found', 'needsCountryCode', 'found']
+            );
+        });
+
+        it('never matches a phone through letters mixed into a username query', async () => {
+            await registerUser(VIEWER, { language: 'uk' });
+            await registerUser(OWNER_A, {
+                phone: '+380501234567',
+                phoneDigits: '380501234567',
+                usernameSearchable: false
+            });
+
+            assert.deepEqual(await search(VIEWER, 'x380501234567'), {
+                status: 'notFound'
+            });
+        });
+
         it('lets the admin search themselves and refuses guests', async () => {
             await registerUser(ADMIN);
 
@@ -1022,19 +1107,49 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(dto.label, 'Alice Liddell');
         });
 
-        it('returns a null token when a non-admin opens their own share', async () => {
+        it('flags a non-admin opening their own share and leaks no reservations', async () => {
             const viewer = await registerUser(VIEWER);
+            const giver = await registerUser(STRANGER);
+            const wish = await addWish(viewer.id, 'Mine');
             const share = await publish(viewer.id, 'Viewer');
+
+            await run(harness.repositories.gives.add(giver.id, wish.id, NOW));
+
             const response = await call(
                 VIEWER,
                 'GET',
                 `/shared/${share.publicId}`
             );
+            const dto = (await response.json()) as SharedListDto;
 
-            assert.equal(
-                ((await response.json()) as SharedListDto).owner.token,
-                null
-            );
+            assert.equal(dto.owner.token, null);
+            assert.equal(dto.ownList, true);
+            assert.doesNotMatch(JSON.stringify(dto), /givers/);
+        });
+
+        it('keeps the third-party view for the admin opening their own share', async () => {
+            const admin = await registerUser(ADMIN);
+            const share = await publish(admin.id, 'Admin');
+            const dto = (await (
+                await call(ADMIN, 'GET', `/shared/${share.publicId}`)
+            ).json()) as SharedListDto;
+
+            assert.equal(dto.ownList, false);
+            assert.ok(dto.owner.token);
+        });
+
+        it('does not flag other people share pages as the viewer own list', async () => {
+            await registerUser(VIEWER);
+
+            const owner = await registerUser(OWNER_A, {
+                usernameSearchable: false
+            });
+            const share = await publish(owner.id, 'Alice Liddell');
+            const dto = (await (
+                await call(VIEWER, 'GET', `/shared/${share.publicId}`)
+            ).json()) as SharedListDto;
+
+            assert.equal(dto.ownList, false);
         });
 
         it('answers 410 for a revoked share and 404 for unknown, malformed and blocked', async () => {

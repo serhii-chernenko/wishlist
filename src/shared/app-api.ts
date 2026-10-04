@@ -598,12 +598,13 @@ export type SearchInput = { query: string };
 
 export type SearchResultDto =
     | { status: 'found'; owner: OwnerDto }
-    | { status: 'notFound' | 'self' | 'tooLong' };
+    | { status: 'notFound' | 'self' | 'tooLong' | 'needsCountryCode' };
 
 export type SharedWishDto = Omit<ThirdWishDto, 'givers'>;
 
 export type SharedListDto = {
     owner: OwnerDto;
+    ownList: boolean;
     preview: PageDto<SharedWishDto> | null;
     gifted?: SharedWishDto[];
 };

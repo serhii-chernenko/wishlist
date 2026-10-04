@@ -5,7 +5,8 @@
         grid-auto-flow: column;
         gap: 0.25rem;
         min-inline-size: 0;
-        margin: 0;
+        margin: calc(var(--segmented-label-gap) + var(--switch-lift)) 0
+            calc(var(--segmented-hint-gap) + var(--switch-lift));
         padding: 0.25rem;
         background: var(--tag);
         border: var(--border-regular) solid var(--ink);

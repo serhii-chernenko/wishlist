@@ -129,6 +129,7 @@ export interface WebApp {
     setHeaderColor(color: string): void;
     setBackgroundColor(color: string): void;
     setBottomBarColor?(color: string): void;
+    hideKeyboard?(): void;
     enableClosingConfirmation(): void;
     disableClosingConfirmation(): void;
     enableVerticalSwipes?(): void;

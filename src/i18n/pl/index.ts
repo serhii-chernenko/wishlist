@@ -308,7 +308,7 @@ const pl: Translation = {
     findList: {
         title: '🔎 Znajdź listę życzeń',
         description:
-            'Spróbuj znaleźć osobę po nazwie użytkownika lub numerze telefonu.\n\nPowody, dla których osoby nie można znaleźć:\n1. Ta osoba nie korzysta jeszcze z bota.\n2. Jeśli szukasz po numerze telefonu i masz pewność, że numer jest prawidłowy…\nMożliwe, że ta osoba nie udostępniła botowi swojego numeru.\nSpróbuj poszukać po nazwie użytkownika.\n\n<b>Wpisz nazwę użytkownika lub numer telefonu tej osoby w następnej wiadomości.</b>',
+            'Spróbuj znaleźć osobę po nazwie użytkownika lub numerze telefonu.\n\nPowody, dla których osoby nie można znaleźć:\n1. Ta osoba nie korzysta jeszcze z bota.\n2. Jeśli szukasz po numerze telefonu i masz pewność, że numer jest prawidłowy…\nMożliwe, że ta osoba nie udostępniła botowi swojego numeru.\nSpróbuj poszukać po nazwie użytkownika.\n\n<b>Wpisz nazwę użytkownika lub numer telefonu tej osoby w następnej wiadomości.</b>\n<i>@nazwa lub numer, np. 512 345 678</i>',
         empty: 'Ta osoba jeszcze nie uzupełniła listy życzeń.',
         filtered:
             'Żadne życzenie nie pasuje do tego filtra.\nSpróbuj go wyczyścić.',
@@ -341,7 +341,9 @@ const pl: Translation = {
             tooLong:
                 '❌ To zapytanie jest za długie! Maksymalna liczba znaków: {0}. Spróbuj jeszcze raz.',
             rateLimited:
-                '⏳ Za dużo wyszukiwań z rzędu. Spróbuj ponownie za minutę.'
+                '⏳ Za dużo wyszukiwań z rzędu. Spróbuj ponownie za minutę.',
+            needsCountryCode:
+                '❌ Dodaj do numeru numer kierunkowy kraju, np. +48512345678.'
         },
         success: {
             give: '✅ Zarezerwowano! Życzenie trafiło na listę <b>Chcę podarować</b>.',
@@ -1344,7 +1346,7 @@ const pl: Translation = {
         find: {
             title: 'Znajdź listę życzeń',
             label: 'Nazwa użytkownika lub numer telefonu',
-            placeholder: '@username lub +48…',
+            placeholder: '@nazwa lub numer, np. 512 345 678',
             hint: 'Możesz znaleźć osobę, która korzysta z bota i zgodziła się na wyszukiwanie.',
             submit: 'Znajdź',
             searching: 'Wyszukiwanie…',
@@ -1354,7 +1356,9 @@ const pl: Translation = {
                     'Nie znaleziono nikogo. Sprawdź nazwę użytkownika lub numer.',
                 self: 'To przecież twoja lista 😉 Jest w sekcji „Moje życzenia”.',
                 tooLong:
-                    'Zapytanie jest za długie (maksymalna liczba znaków: {max}).'
+                    'Zapytanie jest za długie (maksymalna liczba znaków: {max}).',
+                needsCountryCode:
+                    'Dodaj do numeru numer kierunkowy kraju, np. +48512345678.'
             },
             reasons: {
                 title: 'Dlaczego kogoś może nie być w wynikach',

@@ -1873,7 +1873,7 @@ describe('wishlist screens on D1', () => {
             );
         });
 
-        it('finds by phone digits and ignores short numbers', async () => {
+        it('finds by phone digits and asks for a country code on short numbers', async () => {
             const owner = await createUser({
                 phone: '+380501234567',
                 phoneDigits: '380501234567'
@@ -1914,7 +1914,7 @@ describe('wishlist screens on D1', () => {
                 short.events.some(event => {
                     return (
                         event.kind === 'text' &&
-                        event.html.includes('не знайдена')
+                        event.html.includes('код країни')
                     );
                 })
             );

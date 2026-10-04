@@ -306,7 +306,7 @@ const en: Translation = {
     findList: {
         title: '🔎 Find a wish list',
         description:
-            'Search by username or phone number.\n\nCan’t find someone? They may not have used the bot yet, or may not have shared their number. Try their username instead.\n\n<b>Send me their username or phone number.</b>',
+            'Search by username or phone number.\n\nCan’t find someone? They may not have used the bot yet, or may not have shared their number. Try their username instead.\n\n<b>Send me their username or phone number.</b>\n<i>@username or phone number with country code</i>',
         empty: 'This person hasn’t added any wishes yet.',
         filtered: 'No wishes match this filter.\nTry resetting it.',
         filled: {
@@ -337,7 +337,10 @@ const en: Translation = {
             foundYourself: '❌ Nice try! You can’t look yourself up 😘',
             tooLong:
                 '❌ That search is too long! The limit is {0} characters. Try again.',
-            rateLimited: '⏳ Too many searches in a row. Try again in a minute.'
+            rateLimited:
+                '⏳ Too many searches in a row. Try again in a minute.',
+            needsCountryCode:
+                '❌ Add the country code to the number, e.g. +380501234567.'
         },
         success: {
             give: '✅ Reserved! The wish was added to your <b>Gifts to give</b> list.',
@@ -1327,7 +1330,7 @@ const en: Translation = {
         find: {
             title: 'Find a wish list',
             label: 'Username or phone number',
-            placeholder: '@username or phone number',
+            placeholder: '@username or phone number with country code',
             hint: 'You can find people who use the bot and allow others to find them.',
             submit: 'Find',
             searching: 'Searching…',
@@ -1335,7 +1338,9 @@ const en: Translation = {
                 empty: 'Enter a username or a phone number.',
                 notFound: 'No one found. Check the username or phone number.',
                 self: 'That’s your own list 😉 It’s under “My wishes.”',
-                tooLong: 'Your search is too long: {max} characters max.'
+                tooLong: 'Your search is too long: {max} characters max.',
+                needsCountryCode:
+                    'Add the country code to the number, e.g. +380501234567.'
             },
             reasons: {
                 title: 'Why someone might not show up',

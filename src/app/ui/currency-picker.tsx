@@ -29,15 +29,13 @@ export const CurrencyPicker = ({
     });
 
     return (
-        <div class='currency-picker'>
-            <Segmented
-                name='price-currency'
-                legend={LL.editor.currency.label()}
-                options={options}
-                value={value}
-                onChange={onChange}
-                disabled={disabled}
-            />
-        </div>
+        <Segmented
+            name='price-currency'
+            legend={LL.editor.currency.label()}
+            options={options}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+        />
     );
 };

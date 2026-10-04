@@ -219,6 +219,7 @@ export const openSharedList: ApiHandler = async c => {
         await loadGiftedOnLastPage(c, owner, preview, null)
     );
     const body: SharedListDto = {
+        ownList: owner.id === viewer.id && !isAdminActor(c.env, c.var.actor),
         owner: toOwnerDto({
             owner,
             token,

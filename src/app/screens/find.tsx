@@ -10,7 +10,7 @@ import { Field } from '../ui/field';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
 
-type NegativeStatus = 'notFound' | 'self' | 'tooLong';
+type NegativeStatus = 'notFound' | 'self' | 'tooLong' | 'needsCountryCode';
 
 export const FindScreen = (_props: ScreenProps<'find'>) => {
     const LL = useLL();
@@ -111,6 +111,7 @@ export const FindScreen = (_props: ScreenProps<'find'>) => {
                     value={query}
                     error={problem === null ? null : describeProblem(problem)}
                     showCounter={false}
+                    enterKeyHint='search'
                     onValue={value => {
                         setQuery(value);
                         setProblem(null);

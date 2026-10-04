@@ -17,7 +17,8 @@ const FEATURE_VERSIONS = {
     bottomBarColor: '7.10',
     bottomButton: '7.10',
     activated: '8.0',
-    safeArea: '8.0'
+    safeArea: '8.0',
+    hideKeyboard: '9.1'
 } as const;
 
 export type TelegramFeature = keyof typeof FEATURE_VERSIONS;

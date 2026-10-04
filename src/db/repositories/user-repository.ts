@@ -11,7 +11,7 @@ export type NewUser = typeof users.$inferInsert;
 export type UserLanguage = NonNullable<UserRecord['language']>;
 
 export const LAST_SEEN_WRITE_INTERVAL_MILLISECONDS = 60 * 60 * 1000;
-export const MINIMUM_PHONE_SEARCH_DIGITS = 10;
+export const MINIMUM_PHONE_SEARCH_DIGITS = 11;
 
 export interface VisibilityInput {
     usernameSearchable: boolean;
@@ -450,7 +450,7 @@ export const createUserRepository = (db: AppDb) => {
                     conditions.push(
                         and(
                             sql`${users.phone} is not null`,
-                            sql`substr(${users.phoneDigits}, ${-phoneDigits.length}) = ${phoneDigits}`
+                            eq(users.phoneDigits, phoneDigits)
                         )
                     );
                 }

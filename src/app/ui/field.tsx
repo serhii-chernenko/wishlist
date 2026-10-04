@@ -5,6 +5,7 @@ import { cutText } from '../../bot/input/limits';
 import { computeAutoRows } from '../logic/autosize';
 import { countCharacters, isNearLimit } from '../logic/format';
 import { useLL } from '../state/context';
+import { dismissKeyboardOnEnter } from '../telegram/keyboard';
 
 type InputMode = 'text' | 'decimal' | 'numeric' | 'url' | 'tel' | 'search';
 
@@ -20,6 +21,7 @@ export interface FieldProps {
     rows?: number;
     type?: 'text' | 'url' | 'search';
     inputMode?: InputMode;
+    enterKeyHint?: 'search' | 'go' | 'done';
     placeholder?: string;
     suffix?: string;
     disabled?: boolean;
@@ -108,6 +110,7 @@ export const Field = ({
     rows = 4,
     type = 'text',
     inputMode,
+    enterKeyHint = 'done',
     placeholder,
     suffix,
     disabled = false,
@@ -203,6 +206,8 @@ export const Field = ({
                         {...shared}
                         type={type}
                         inputmode={inputMode}
+                        enterkeyhint={enterKeyHint}
+                        onKeyDown={dismissKeyboardOnEnter}
                         autocomplete='off'
                     />
                     {suffix === undefined ? null : (

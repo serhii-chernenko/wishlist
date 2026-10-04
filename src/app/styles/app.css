@@ -134,6 +134,8 @@
     --field-max-rows: 12;
     --field-pad-block: 0.5rem;
     --field-chrome: calc(2 * var(--field-pad-block) + 2 * var(--border-thin));
+    --segmented-label-gap: 0.75rem;
+    --segmented-hint-gap: 0.5rem;
     --hero-hole-clearance: 2.25rem;
     --opacity-muted: 0.6;
     --countdown-duration: 5s;
@@ -2096,7 +2098,6 @@
 @import './segmented.css';
 @import './switch.css';
 @import './priority.css';
-@import './currency.css';
 @import './contact.css';
 @import './photo-reorder.css';
 @import '../../web/styles/carousel.css';

@@ -1088,14 +1088,16 @@ describe('Bot flows through the Worker on D1', () => {
             );
         });
 
-        it('finds by a national phone number of ten digits or more only', async () => {
+        it('finds by a ten-digit national phone number and asks for a country code on short ones', async () => {
             await seedOwner();
             await webhook.registerUser(bob);
             await tap(bob, 'n:find');
             await say(bob, '05011');
 
             assert.ok(
-                webhook.messageTexts().includes(LL.findList.errors.notFound())
+                webhook
+                    .messageTexts()
+                    .includes(LL.findList.errors.needsCountryCode())
             );
 
             await say(bob, '0501112233');
@@ -1105,11 +1107,11 @@ describe('Bot flows through the Worker on D1', () => {
             );
         });
 
-        it('finds by the full number or its national tail, never by a prefix', async () => {
+        it('finds by the full number or the national format, never by a prefix', async () => {
             await seedOwner();
             await webhook.registerUser(bob);
             await tap(bob, 'n:find');
-            await say(bob, '3805011122');
+            await say(bob, '38050111223');
 
             assert.ok(
                 webhook.messageTexts().includes(LL.findList.errors.notFound())

@@ -116,7 +116,7 @@ describe('D1 repositories', () => {
             );
         });
 
-        it('finds searchable users by username ignoring case and by phone substring', async () => {
+        it('finds searchable users by username ignoring case and by exact phone digits only', async () => {
             const byName = await createUser({
                 username: 'Lili_Lykke',
                 usernameSearchable: true
@@ -133,28 +133,24 @@ describe('D1 repositories', () => {
             const foundByName = await run(
                 repositories.users.findSearchable({ username: 'lILI_lykke' })
             );
-            const foundByPhone = await run(
-                repositories.users.findSearchable({ phoneDigits: '0930340658' })
-            );
             const foundByFullPhone = await run(
                 repositories.users.findSearchable({
                     phoneDigits: '380930340658'
                 })
             );
-            const tooShortPhone = await run(
-                repositories.users.findSearchable({ phoneDigits: '930340658' })
-            );
-            const phonePrefix = await run(
-                repositories.users.findSearchable({ phoneDigits: '3809303406' })
-            );
-            const phoneMiddle = await run(
-                repositories.users.findSearchable({
-                    phoneDigits: '80930340650'
-                })
-            );
-            const phoneLonger = await run(
-                repositories.users.findSearchable({
-                    phoneDigits: '1380930340658'
+            const attempts = await Promise.all(
+                [
+                    '0930340658',
+                    '930340658',
+                    '3809303406',
+                    '80930340658',
+                    '80930340650',
+                    '1380930340658',
+                    '38093034065'
+                ].map(phoneDigits => {
+                    return run(
+                        repositories.users.findSearchable({ phoneDigits })
+                    );
                 })
             );
             const notSearchable = await run(
@@ -165,13 +161,12 @@ describe('D1 repositories', () => {
             );
 
             assert.equal(foundByName?.id, byName.id);
-            assert.equal(foundByPhone?.id, byPhone.id);
             assert.equal(foundByFullPhone?.id, byPhone.id);
-            assert.equal(foundByPhone?.phoneDigits, '380930340658');
-            assert.equal(tooShortPhone, null);
-            assert.equal(phonePrefix, null);
-            assert.equal(phoneMiddle, null);
-            assert.equal(phoneLonger, null);
+            assert.equal(foundByFullPhone?.phoneDigits, '380930340658');
+            assert.deepEqual(
+                attempts,
+                attempts.map(() => null)
+            );
             assert.equal(notSearchable, null);
             assert.equal(nothingRequested, null);
             assert.notEqual(hidden.id, byName.id);

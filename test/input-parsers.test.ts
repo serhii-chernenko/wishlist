@@ -237,21 +237,110 @@ test('parseDescription trims, limits and supports removal', () => {
     });
 });
 
-test('parseFindQuery strips at signs and detects long phone numbers', () => {
-    assert.deepEqual(parseFindQuery('@Some_User'), {
+const UKRAINIAN_SEARCHER = { locale: 'uk', currency: 'UAH' } as const;
+const POLISH_SEARCHER = { locale: 'pl', currency: 'PLN' } as const;
+const ENGLISH_USD_SEARCHER = { locale: 'en', currency: 'USD' } as const;
+const ENGLISH_PLN_SEARCHER = { locale: 'en', currency: 'PLN' } as const;
+const ENGLISH_UAH_SEARCHER = { locale: 'en', currency: 'UAH' } as const;
+
+const phoneOf = (
+    text: string,
+    region: Parameters<typeof parseFindQuery>[1] = ENGLISH_USD_SEARCHER
+) => {
+    return parseFindQuery(text, region)?.phone;
+};
+
+test('parseFindQuery strips at signs and leaves usernames out of phone search', () => {
+    assert.deepEqual(parseFindQuery('@Some_User', UKRAINIAN_SEARCHER), {
         username: 'Some_User',
-        phoneDigits: null
+        phone: { kind: 'none' }
     });
-    assert.deepEqual(parseFindQuery('+380 (50) 123-45-67'), {
-        username: '+380 (50) 123-45-67',
-        phoneDigits: '380501234567'
+    assert.deepEqual(parseFindQuery('user380501234567', UKRAINIAN_SEARCHER), {
+        username: 'user380501234567',
+        phone: { kind: 'none' }
     });
-    assert.deepEqual(parseFindQuery('123456789'), {
-        username: '123456789',
-        phoneDigits: null
+    assert.equal(parseFindQuery('   ', UKRAINIAN_SEARCHER), null);
+    assert.equal(parseFindQuery(undefined, UKRAINIAN_SEARCHER), null);
+});
+
+test('parseFindQuery treats phone-shaped text as a phone only', () => {
+    assert.deepEqual(
+        parseFindQuery('+380 (50) 123-45-67', ENGLISH_USD_SEARCHER),
+        {
+            username: null,
+            phone: { kind: 'digits', digits: '380501234567' }
+        }
+    );
+});
+
+test('parseFindQuery keeps eleven or more digits as a full international number', () => {
+    assert.deepEqual(phoneOf('380501234567'), {
+        kind: 'digits',
+        digits: '380501234567'
     });
-    assert.equal(parseFindQuery('   '), null);
-    assert.equal(parseFindQuery(undefined), null);
+    assert.deepEqual(phoneOf('+48 512 345 678'), {
+        kind: 'digits',
+        digits: '48512345678'
+    });
+    assert.deepEqual(phoneOf('+1 (415) 555-0132'), {
+        kind: 'digits',
+        digits: '14155550132'
+    });
+    assert.deepEqual(phoneOf('1234567890123456'), { kind: 'none' });
+});
+
+test('parseFindQuery prefixes ten-digit Ukrainian national numbers with 38', () => {
+    for (const region of [UKRAINIAN_SEARCHER, ENGLISH_USD_SEARCHER]) {
+        assert.deepEqual(phoneOf('0501234567', region), {
+            kind: 'digits',
+            digits: '380501234567'
+        });
+        assert.deepEqual(phoneOf('050 123-45-67', region), {
+            kind: 'digits',
+            digits: '380501234567'
+        });
+    }
+
+    assert.deepEqual(phoneOf('5012345678'), { kind: 'needsCountryCode' });
+});
+
+test('parseFindQuery infers the country of nine-digit numbers from the searcher', () => {
+    assert.deepEqual(phoneOf('512 345 678', POLISH_SEARCHER), {
+        kind: 'digits',
+        digits: '48512345678'
+    });
+    assert.deepEqual(phoneOf('501234567', UKRAINIAN_SEARCHER), {
+        kind: 'digits',
+        digits: '380501234567'
+    });
+    assert.deepEqual(phoneOf('512345678', ENGLISH_PLN_SEARCHER), {
+        kind: 'digits',
+        digits: '48512345678'
+    });
+    assert.deepEqual(phoneOf('501234567', ENGLISH_UAH_SEARCHER), {
+        kind: 'digits',
+        digits: '380501234567'
+    });
+    assert.deepEqual(phoneOf('512345678', { locale: 'pl', currency: 'UAH' }), {
+        kind: 'digits',
+        digits: '48512345678'
+    });
+    assert.deepEqual(phoneOf('512345678', ENGLISH_USD_SEARCHER), {
+        kind: 'needsCountryCode'
+    });
+});
+
+test('parseFindQuery never turns short or ambiguous numbers into a prefix search', () => {
+    for (const text of ['123', '12345678', '+', '( )']) {
+        const phone = phoneOf(text, UKRAINIAN_SEARCHER);
+
+        assert.notEqual(phone?.kind, 'digits', text);
+    }
+
+    assert.deepEqual(phoneOf('12345678', UKRAINIAN_SEARCHER), {
+        kind: 'needsCountryCode'
+    });
+    assert.deepEqual(phoneOf('+', UKRAINIAN_SEARCHER), { kind: 'none' });
 });
 
 test('pickLargestPhoto chooses the biggest resolution', () => {
