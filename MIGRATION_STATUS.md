@@ -100,9 +100,9 @@ Decisions:
 - [x] Gifted wishes at the end of the app list and, when the owner opts in, of shared lists, with a "Gifted" band (merged 2026-10-04)
 - [x] One pattern for destructive actions in the app: red buttons, a countdown on the button itself, undo toasts for removed items, and destructive confirm popups for bulk actions
 - [x] Link import: paste a product link, parse title, photos, price and description, and ingest photos into Telegram (app and bot)
-- [ ] Copy pass (Polish, US English) over all strings
-- [ ] Review, security audit, preview test
-- [ ] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order
+- [x] Copy pass (Polish, US English) over all strings (2026-10-04)
+- [x] Review, security audit, preview test (2026-10-04)
+- [x] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order (2026-10-04)
 - [x] Production rollout additions documented: Time Travel bookmark, priority count check, new migrations, post-deploy priority repair, R2 `import/` lifecycle rule (added on both buckets 2026-10-04)
 
 ### Cutover
