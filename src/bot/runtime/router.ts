@@ -68,7 +68,13 @@ const ROUTER_OWNED_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([
 ]);
 
 export const KEYBOARD_PRESERVING_CALLBACK_TYPES: ReadonlySet<CallbackActionType> =
-    new Set(['thirdGive', 'thirdTake', 'giveRemove', 'noop']);
+    new Set([
+        'thirdGive',
+        'thirdTake',
+        'giveRemove',
+        'listImportVisibility',
+        'noop'
+    ]);
 
 export const TOAST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([
     'thirdGive',

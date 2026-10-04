@@ -9,6 +9,7 @@ import {
 } from '../utils/strings';
 import {
     getTelegramRetryAfterSeconds,
+    isMessageNotModified,
     isTelegramBadRequest,
     isTelegramButtonUrlError,
     isTelegramForbidden
@@ -17,6 +18,7 @@ import { defaultSleep, type Sleep } from './defer';
 import type {
     ReplyMarkup,
     Sender,
+    TextHandle,
     TextOptions,
     WishMessage,
     WishlistBotTelemetry
@@ -58,6 +60,16 @@ export const sendWithRetry = async <T>(
 
             retries += 1;
             await sleep(retryAfter * 1000);
+        }
+    }
+};
+
+const swallowNotModified = async (operation: () => Promise<unknown>) => {
+    try {
+        await operation();
+    } catch (error) {
+        if (!isMessageNotModified(error)) {
+            throw error;
         }
     }
 };
@@ -153,12 +165,12 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
         }
     };
 
-    const sendText = async (
+    const sendMessage = (
         html: string,
-        keyboard?: ReplyMarkup,
-        options?: TextOptions
+        keyboard: ReplyMarkup | undefined,
+        options: TextOptions | undefined
     ) => {
-        await deliver(() => {
+        return deliver(() => {
             return sendWithUrlButtonFallback(keyboard, markup => {
                 return ctx.telegram.sendMessage(chatId, html, {
                     parse_mode: 'HTML',
@@ -167,6 +179,49 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
                 });
             });
         });
+    };
+
+    const sendText = async (
+        html: string,
+        keyboard?: ReplyMarkup,
+        options?: TextOptions
+    ) => {
+        await sendMessage(html, keyboard, options);
+    };
+
+    const sendTextWithHandle = async (
+        html: string,
+        keyboard?: ReplyMarkup,
+        options?: TextOptions
+    ): Promise<TextHandle> => {
+        const { message_id: messageId } = await sendMessage(
+            html,
+            keyboard,
+            options
+        );
+
+        return {
+            messageId,
+            edit(nextHtml, nextKeyboard) {
+                return swallowNotModified(() => {
+                    return deliver(() => {
+                        return ctx.telegram.editMessageText(
+                            chatId,
+                            messageId,
+                            undefined,
+                            nextHtml,
+                            {
+                                parse_mode: 'HTML',
+                                ...(nextKeyboard
+                                    ? { reply_markup: nextKeyboard }
+                                    : {}),
+                                ...withLinkPreview(options)
+                            }
+                        );
+                    });
+                });
+            }
+        };
     };
 
     const sendWishMedia = async (
@@ -267,6 +322,7 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
 
     return {
         text: sendText,
+        textWithHandle: sendTextWithHandle,
         async wish(item, keyboard) {
             const outcome = await sendWishMedia(item, keyboard);
 

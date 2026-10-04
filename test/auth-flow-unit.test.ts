@@ -82,6 +82,9 @@ const createAuthRequest = (options: {
         async text(html, keyboard) {
             texts.push({ html, keyboard });
         },
+        async textWithHandle() {
+            throw new Error('unexpected textWithHandle');
+        },
         wish: record,
         toast: record,
         removeKeyboard: record,
