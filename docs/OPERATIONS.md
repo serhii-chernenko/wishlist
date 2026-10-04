@@ -26,6 +26,7 @@ The Mongo to D1 cutover (section 8) and parts of the Workers Builds setup (secti
 17. [Telegram Mini App](#17-telegram-mini-app)
 18. [Prices and exchange rates](#18-prices-and-exchange-rates)
 19. [Link import](#19-link-import)
+20. [List import](#20-list-import)
 
 ## 1. Architecture at a glance
 
@@ -1307,3 +1308,60 @@ A user pastes a product link in the Mini App or sends it to the bot, and the Wor
 ### Privacy
 
 Link import never logs or emits URLs, query strings, hosts, page titles or prices: not in telemetry, not in `console` output, not in R2 keys or `/img/i` paths. Safe-fetch failures carry only a closed failure label and the status code. The normalised URL is stored only inside the cached `meta.json`.
+
+## 20. List import
+
+A user imports a whole wish list from another service, rewish.io first, from Settings in the Mini App or the bot. The flow is preview (no writes besides a job row), an explicit commit, then a background photo drain.
+
+### Architecture
+
+- **One service for every caller.** `src/bot/services/list-import/` holds the business logic: `rewish/` (client, hand-written schema guards, mapping, adapter), `registry.ts` (one adapter per source), `plan.ts` (dedupe and caps), `commit.ts`, `photos.ts` (the drain), `resume-message.ts` and `list-import-service.ts`. `src/worker/list-import.ts` builds the service once per isolate and passes it to the bot, the API and the scheduled tasks; it also exports `kickListImport` and the cron step. The service holds no per-request state; the env, clock, `waitUntil`, optional fetch and Telegram API arrive with every call.
+- **Rewish API.** `https://rewish.io/public/api`, GET only, through `safeFetcher.fetchJson` with the allowlist `rewish.io` and the headers `X-Systemcode: ReWish-Web` and a fresh `X-Flow-Id` per call (the honest User-Agent and `Accept: application/json` come from the safe fetcher). A profile link calls `/user/by-code/{slug}`, `/re-wish/{userUuid}` and `/wish/by-rewish-id?rewish_id=` for at most 10 lists; a collection link calls `/collection/get-by-id?id&user_code&access_code`. The access code rides along on every call. Each call has 5 s, the whole fetch 8 s, each body at most 2 MiB. Envelope code 214 is `userNotFound`, 615 `privateCollection`, 0 `invalidUrl`, any other code `upstream`; a body that fails the schema guards is `schemaChanged`; timeouts and network errors are `timeout`; HTTP errors are `upstream`; no item left is `empty`.
+- **Mapping.** Status 3 becomes a gifted wish (`removed=1, done=1, gifted_hidden=0`); 0, 1, 2, 4 and unknown values stay active. Currencies 1 UAH, 2 USD, 3 EUR and 5 PLN keep their price; any other currency (14 is ambiguous) drops the price and counts as "no price (other currency)". A zero price is no price. Titles are whitespace-collapsed and cut to 200, descriptions cut to 500, links kept only when renderable. The image is `avatar_path` (wishes) or the first media, else `collection_picture` (collection items), and only `https://storage.rewish.io/...` URLs are kept.
+- **Plan.** An item is a duplicate when its normalized title (NFKC, collapsed whitespace, case-folded), normalized link (an empty link never matches) or `source_ref` matches any wish of the owner, removed and gifted ones included, or an earlier item of the batch. Active items are limited to `500 − active wishes`; gifted ones do not use that space. One import creates at most 500 wishes in total. Everything past a limit counts as `overLimit`. A plan with nothing to create is `limitReached` (something was cut by a limit) or `empty`.
+- **Jobs.** `list_imports` holds one row per preview: `previewed` → `committing` → `done` or `failed`; `expired` (30 minutes, or a newer preview) and `cancelled`. `source_url` (the canonical link, which can include the access code) is set to null on every terminal state. A partial unique index allows one `committing` job per user; hitting it is the `busy` outcome.
+- **Commit.** `startCommit` moves a fresh preview to `committing` with a 60 s lease and one attempt. `runCommit` fetches the source again and re-plans (counts can differ slightly from the preview), stores the new `planned`, then inserts steps of at most 49 rows (7 statements of 7 rows, 13 bound parameters per row). Each step is one D1 batch: the inserts (`on conflict do nothing` on `(user_id, source_ref)`) plus the job update that adds the rows created in that step to `created`/`created_gifted` and renews the lease, so the counters can never drift from the wishes. Imported wishes get `updated_at = job.created_at − source position` (ms), so the owner's list shows the source order, and the hidden choice applies to gifted wishes too. A transient source failure (`timeout`, `upstream`, `rateLimited`) with attempts left pauses the job for the resumer; any other failure fails it.
+- **Resume.** A `committing` job whose lease ran out is resumed in place by the ten-minute cron or by a kick: the resumer claims it (one more attempt), and the re-plan skips the rows an earlier pass inserted by `source_ref`. After 3 attempts the job fails with `timeout`. When a resumed bot import finishes, the service edits the stored progress message (`chat_message_id`) with the done or failed text and a Refresh button.
+- **Photo drain.** Only the cover photo is imported. Wishes keep the raw URL in `source_image_url` until the photo lands or fails for good. The drain picks owners that have pending URLs **and** at least one `done` or `failed` job, and takes a per-user lease on that user's latest such job row (`lease_until`). Those rows never change state again, so the drain lease never collides with a commit lease, and a drain may run while a newer import of the same user is committing. For each pending wish (oldest first) it tries the original image (`_compressed` stripped), then the URL as given, both only on `storage.rewish.io`; downloads go through `downloadTelegramPhoto` (JPEG, PNG or WebP by magic bytes, at most 10 MiB), uploads through `ingestStagedImage` (sendPhoto to the user's own chat, then a background deleteMessage), and the `file_id` is stored with `appendImportedImage`. That update only accepts an active wish or a shown gifted wish with no photos yet, clears the URL in the same statement and never touches `updated_at`, so the list order is kept; after a run that stored any photo, the owner's share row `updated_at` is bumped so the share page fingerprint changes.
+- **Drain rules.** Uploads to one chat stay at least 1.2 s apart. A failed download of both candidates, an unsupported image or a Telegram 400 clears that wish's URL. A 403 or a user marked blocked clears every pending URL of that user. The host limiter, a Telegram 429 or any other transient Telegram error stops the run and leaves the URLs for later. Removed non-gifted wishes, hidden gifted wishes and wishes that already have a photo are cleared and skipped. One `LINK_HOST_LIMITER` token per user run. Budgets: 20 s per kick, 5 minutes per cron run. A 500-wish import takes roughly 30–40 minutes of photos.
+- **Status.** `ListImportStatusDto.photosPending` counts every wish of the user that still has a pending photo URL, not only the job's wishes (wishes carry no job id). `planned` and `created` include gifted wishes.
+- **Kicks.** `kickListImport(service, deps, userId)` runs `resumeStale` and then `drainPhotos` for that user within 20 s, in `waitUntil`. Callers kick after a commit, on each app status poll and on the bot's Refresh button.
+
+### Production data copied into preview
+
+The production-to-preview copy skips `list_imports` and wipes it in preview, but `wishes.source_ref` and `wishes.source_image_url` ride along. Those copied wishes have no job row, so the drain never picks them up and the preview bot never sends their photos to anyone. If a tester then imports on preview and their import finishes, the drain also processes their own copied wishes that still have a pending URL; that only affects the tester's own chat.
+
+### Scheduled tasks
+
+| Cron           | Task           | What it does                                                                                                      |
+| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `*/10 * * * *` | `import:drain` | Expires previews older than 30 minutes, resumes stale commits, then drains photos for up to 5 minutes.            |
+| `0 0 * * *`    | `import:prune` | Deletes terminal jobs older than 30 days, except jobs of users who still have pending photos (the drain's lease). |
+
+Both run only while `WISHLIST_IMPORT_ENABLED` is `"true"`, and a failure is logged (`list_import_drain_failed`, `list_import_prune_failed`, error type only) without failing the scheduled run. Previews have no crons, so there kicks are the only thing that moves imports and photos along.
+
+### Flags and bindings
+
+| Name                      | Where                   | Meaning                                                                                                                                                                                                                               |
+| ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WISHLIST_IMPORT_ENABLED` | vars, every block       | Kill switch. `"true"` locally and in previews, `"false"` in production until rollout. Off: the app row and the bot button are hidden, the API answers `503 disabled`, and the drain, resume and prune do not run (pending URLs wait). |
+| `APP_IMPORT_LIMITER`      | ratelimits, every block | Shared with link import; applies to previews in the app and the bot.                                                                                                                                                                  |
+| `LINK_HOST_LIMITER`       | ratelimits, every block | Shared with link import and between users: one token per preview or commit run (`host:rewish.io`) and one per drain user run. Busy hours slow the photos down.                                                                        |
+| `BOT_TOKEN`               | secret                  | The drain and the resume message use the Worker's own bot token when no Telegram API is passed in.                                                                                                                                    |
+
+### Telemetry
+
+- `list_import_completed`, emitted by the service for every finished commit (both triggers), with `channel` from the job, `source`, `kind`, `visibility`, `trigger` (`request`, `resume`), `result` (`success`, `failed`) and `reason` on failure, `createdBucket` and `giftedBucket`. Callers must not emit it again.
+- `list_import_photos_drained`, emitted by the service for every cron run and for kicks that did something, with `trigger` (`cron`, `kick`), `result` (`drained`, `budget`, `rateLimited`, `idle`), `ingestedBucket` and `failedBucket`.
+- `list_import_previewed` is emitted by the callers (bot and API), which also own the per-user limiter and URL parsing.
+- Count buckets: `none`, `oneToNine`, `tenToFortyNine`, `fiftyToTwoHundred`, `overTwoHundred`.
+
+### Privacy
+
+The list import never logs or emits the slug, access code, URLs, titles, prices, job ids or user ids. `source_url` lives only in the job row until a terminal state and is never returned to clients. `source_image_url` is a public CDN URL and is cleared once the photo is processed. Job rows are deleted with the user (`on delete cascade`) and are never copied into preview.
+
+### Troubleshooting
+
+- **Photos never arrive.** Check `list_import_photos_drained`: `rateLimited` runs mean the shared host limiter or Telegram throttled; `idle` from the cron while photos are pending means the owner has no `done` or `failed` job (for example only a copied preview wish). `SELECT count(*) FROM wishes WHERE source_image_url IS NOT NULL` shows the backlog.
+- **An import stays `committing`.** It resumes on the next cron or kick once its lease (60 s) is stale, and fails after 3 attempts. While the flag is off nothing resumes.
+- **"rewish changed its format".** `schemaChanged` failures mean the guards in `rewish/schema.ts` no longer match; compare a live response with `test/fixtures/list-import/rewish/`.

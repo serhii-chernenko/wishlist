@@ -16,6 +16,7 @@ import {
 } from 'drizzle-orm';
 
 import {
+    LIST_IMPORT_INSERT_ROWS_PER_STATEMENT,
     WISH_PRIORITY_LEVELS,
     type WishPriorityLevel
 } from '../../shared/app-api';
@@ -74,6 +75,38 @@ export interface OwnWishPage extends WishPage {
 export interface GiftedListOptions {
     filter: PriceBoundsByCurrency | null;
     limit: number;
+}
+
+export interface ImportedWishRow {
+    userId: number;
+    title: string;
+    description: string | null;
+    link: string | null;
+    price: number;
+    currency: Currency;
+    hidden: boolean;
+    removed: boolean;
+    done: boolean;
+    sourceRef: string;
+    sourceImageUrl: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface WishDedupeKey {
+    title: string;
+    link: string | null;
+    sourceRef: string | null;
+}
+
+export interface PendingPhotoWish {
+    id: number;
+    sourceRef: string | null;
+    sourceImageUrl: string;
+    removed: boolean;
+    done: boolean;
+    giftedHidden: boolean;
+    imageCount: number;
 }
 
 export const SHAREABLE_WISHES_LIMIT = 100;
@@ -168,6 +201,49 @@ const ownedAndGifted = (wishId: number, userId: number) => {
     );
 };
 
+const acceptsImportedImage = () => {
+    return and(
+        or(
+            eq(wishes.removed, false),
+            and(eq(wishes.done, true), eq(wishes.giftedHidden, false))
+        ),
+        sql`json_array_length(${wishes.images}) = 0`
+    );
+};
+
+const SQL_FALSE = sql`0`;
+const EMPTY_IMAGES = sql`'[]'`;
+
+/**
+ * One multi-row insert of imported wishes. The columns that never vary are
+ * SQL literals, so a row binds exactly `LIST_IMPORT_INSERT_COLUMNS` (13)
+ * parameters and a full statement stays under D1's 100-parameter ceiling.
+ * A row whose `(userId, sourceRef)` already exists is skipped.
+ */
+export const buildImportedWishInsert = (
+    db: AppDb,
+    rows: readonly ImportedWishRow[]
+) => {
+    return db
+        .insert(wishes)
+        .values(
+            rows.map(row => {
+                return {
+                    ...row,
+                    images: EMPTY_IMAGES,
+                    priority: SQL_FALSE,
+                    priorityLevel: SQL_FALSE,
+                    giftedHidden: SQL_FALSE
+                };
+            })
+        )
+        .onConflictDoNothing();
+};
+
+export const chunkImportedWishRows = (rows: readonly ImportedWishRow[]) => {
+    return chunk(rows, LIST_IMPORT_INSERT_ROWS_PER_STATEMENT);
+};
+
 export const GIFTED_LIST_ORDER = [desc(wishes.updatedAt), desc(wishes.id)];
 
 const ACTIVE_THEN_GIFTED_ORDER = [
@@ -254,6 +330,133 @@ export const createWishRepository = (db: AppDb) => {
                     );
 
                 return row?.total ?? 0;
+            });
+        },
+        listDedupeKeys(userId: number) {
+            return tryDb((): Promise<WishDedupeKey[]> => {
+                return db
+                    .select({
+                        title: wishes.title,
+                        link: wishes.link,
+                        sourceRef: wishes.sourceRef
+                    })
+                    .from(wishes)
+                    .where(eq(wishes.userId, userId));
+            });
+        },
+        insertImported(rows: readonly ImportedWishRow[]) {
+            return tryDb(async () => {
+                let inserted = 0;
+
+                for (const rowChunk of chunkImportedWishRows(rows)) {
+                    const created = await buildImportedWishInsert(
+                        db,
+                        rowChunk
+                    ).returning({ id: wishes.id });
+
+                    inserted += created.length;
+                }
+
+                return inserted;
+            });
+        },
+        listPendingPhotos(userId: number, limit: number) {
+            return tryDb(async (): Promise<PendingPhotoWish[]> => {
+                const rows = await db
+                    .select({
+                        id: wishes.id,
+                        sourceRef: wishes.sourceRef,
+                        sourceImageUrl: wishes.sourceImageUrl,
+                        removed: wishes.removed,
+                        done: wishes.done,
+                        giftedHidden: wishes.giftedHidden,
+                        imageCount: sql<number>`json_array_length(${wishes.images})`
+                    })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    )
+                    .orderBy(asc(wishes.id))
+                    .limit(limit);
+
+                return rows.flatMap(row => {
+                    return row.sourceImageUrl === null
+                        ? []
+                        : [
+                              {
+                                  ...row,
+                                  sourceImageUrl: row.sourceImageUrl,
+                                  imageCount: Number(row.imageCount)
+                              }
+                          ];
+                });
+            });
+        },
+        countPendingPhotos(userId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    );
+
+                return row?.total ?? 0;
+            });
+        },
+        appendImportedImage(wishId: number, userId: number, fileId: string) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({
+                        images: sql`json_insert(${wishes.images}, '$[#]', ${fileId})`,
+                        sourceImageUrl: null
+                    })
+                    .where(
+                        and(
+                            eq(wishes.id, wishId),
+                            eq(wishes.userId, userId),
+                            acceptsImportedImage()
+                        )
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        clearSourceImage(wishId: number, userId: number) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ sourceImageUrl: null })
+                    .where(
+                        and(eq(wishes.id, wishId), eq(wishes.userId, userId))
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        clearAllSourceImages(userId: number) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ sourceImageUrl: null })
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length;
             });
         },
         listActiveImagesJson(userId: number) {

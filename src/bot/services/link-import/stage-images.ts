@@ -50,10 +50,6 @@ type ImageAttempt =
 
 const FAILED: ImageAttempt = { kind: 'skipped', reason: 'failed' };
 const FAILED_LOAD = { skipped: 'failed' } as const;
-const UNSUPPORTED: ImageAttempt = {
-    kind: 'skipped',
-    reason: 'unsupportedFormat'
-};
 
 const isTelegramPhotoType = (
     type: SniffedImageType | null
@@ -116,6 +112,48 @@ const storeImage = async (
     });
 };
 
+export type DownloadedPhoto =
+    | { ok: true; image: StagedImageBody }
+    | { ok: false; reason: StagingSkipReason };
+
+/**
+ * Downloads one image through the safe fetcher and keeps it only when it is a
+ * photo Telegram accepts: JPEG, PNG or WebP by its magic bytes and at most
+ * 10 MiB. A too-large or unrecognized image is `unsupportedFormat`; a failed
+ * download is `failed`.
+ */
+export const downloadTelegramPhoto = async (
+    fetcher: SafeFetcher,
+    imageUrl: string,
+    timeoutMs: number = LINK_IMPORT_IMAGE_TIMEOUT_MS
+): Promise<DownloadedPhoto> => {
+    try {
+        const fetched = await fetcher.fetchImage(imageUrl, {
+            timeoutMs,
+            maxBytes: LINK_IMPORT_IMAGE_MAX_BYTES
+        });
+
+        if (!fetched.ok) {
+            return {
+                ok: false,
+                reason:
+                    fetched.failure === 'tooLarge'
+                        ? 'unsupportedFormat'
+                        : 'failed'
+            };
+        }
+
+        const { bytes } = fetched.value;
+        const contentType = toTelegramPhotoType(bytes);
+
+        return contentType === null
+            ? { ok: false, reason: 'unsupportedFormat' }
+            : { ok: true, image: { body: bytes, contentType } };
+    } catch {
+        return { ok: false, reason: 'failed' };
+    }
+};
+
 const stageOne = async (
     context: StagingContext,
     urlHash: string,
@@ -141,29 +179,27 @@ const stageOne = async (
             return FAILED;
         }
 
-        const fetched = await context.fetcher.fetchImage(imageUrl, {
-            timeoutMs: Math.min(LINK_IMPORT_IMAGE_TIMEOUT_MS, remainingMs),
-            maxBytes: LINK_IMPORT_IMAGE_MAX_BYTES
-        });
+        const downloaded = await downloadTelegramPhoto(
+            context.fetcher,
+            imageUrl,
+            Math.min(LINK_IMPORT_IMAGE_TIMEOUT_MS, remainingMs)
+        );
 
-        if (!fetched.ok) {
-            return fetched.failure === 'tooLarge' ? UNSUPPORTED : FAILED;
+        if (!downloaded.ok) {
+            return { kind: 'skipped', reason: downloaded.reason };
         }
 
-        const { bytes } = fetched.value;
-        const contentType = toTelegramPhotoType(bytes);
-
-        if (contentType === null) {
-            return UNSUPPORTED;
-        }
-
-        const body: StagedImageBody = { body: bytes, contentType };
+        const body = downloaded.image;
 
         await storeImage({ ...context, bucket }, urlHash, index, body);
 
         return {
             kind: 'staged',
-            image: { index, contentType, bytes: bytes.byteLength },
+            image: {
+                index,
+                contentType: body.contentType,
+                bytes: body.body.byteLength
+            },
             body
         };
     } catch {
