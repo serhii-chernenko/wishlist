@@ -5,6 +5,7 @@ import {
 } from '../content/keyboards';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import { getLanguageButtonLabel, screen as homeScreen } from './home';
+import { isListImportAvailable } from './list-import';
 
 const render = async (req: BotRequest) => {
     const { LL, user } = req;
@@ -32,6 +33,9 @@ const render = async (req: BotRequest) => {
                     : LL.payments.title.add(),
                 'payments'
             ),
+            isListImportAvailable(req)
+                ? navigationButton(LL.listImport.entry(), 'listImport')
+                : null,
             navigationButton(getLanguageButtonLabel(LL), 'language'),
             homeButton(LL)
         ])

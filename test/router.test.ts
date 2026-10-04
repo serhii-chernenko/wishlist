@@ -41,6 +41,9 @@ const createRecordingSender = () => {
     };
     const sender: Sender = {
         text: record('text'),
+        textWithHandle: async () => {
+            throw new Error('unexpected textWithHandle');
+        },
         wish: record('wish'),
         toast: record('toast'),
         removeKeyboard: record('removeKeyboard'),

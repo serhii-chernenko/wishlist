@@ -235,12 +235,22 @@ export interface TextOptions {
     disableLinkPreview?: boolean;
 }
 
+export interface TextHandle {
+    messageId: number;
+    edit(html: string, keyboard?: InlineKeyboardMarkup): Promise<void>;
+}
+
 export interface Sender {
     text(
         html: string,
         keyboard?: ReplyMarkup,
         options?: TextOptions
     ): Promise<void>;
+    textWithHandle(
+        html: string,
+        keyboard?: ReplyMarkup,
+        options?: TextOptions
+    ): Promise<TextHandle>;
     wish(item: WishMessage, keyboard?: InlineKeyboardMarkup): Promise<void>;
     toast(text: string): Promise<void>;
     removeKeyboard(): Promise<void>;
