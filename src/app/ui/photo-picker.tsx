@@ -1,7 +1,19 @@
+import { useEffect, useState } from 'hono/jsx/dom';
+import { ArrowUpLeft, GripVertical } from 'lucide';
+
 import type { ApiImage } from '../../shared/app-api';
 import type { AppTranslator } from '../i18n/i18n';
+import { keyboardTargetIndex, moveItem, reorderHashes } from '../logic/reorder';
 import type { PhotoFailureKind, PhotoUploadStatus } from '../logic/wish-draft';
 import { useLL } from '../state/context';
+import { haptics } from '../telegram/haptics';
+import { Icon } from './icon';
+import {
+    PHOTO_HANDLE_ATTRIBUTE,
+    PHOTO_HASH_ATTRIBUTE,
+    PHOTO_SLOT_ATTRIBUTE,
+    usePhotoDrag
+} from './photo-drag';
 import { PhotoFrame } from './photo-frame';
 
 export interface PendingPhotoTile {
@@ -24,17 +36,21 @@ export interface PhotoPickerProps {
     waitingForSave: boolean;
     progress: UploadProgress | null;
     removing: boolean;
+    reorderDisabled?: boolean;
     onPick: (files: File[]) => void;
     onRemove: (index: number, image: ApiImage) => void;
     onRemoveAll: () => void;
     onRetry: (key: number) => void;
     onDiscard: (key: number) => void;
     onChatFallback?: () => void;
+    onReorder?: (hashes: string[]) => void;
 }
 
 const INPUT_ID = 'wish-photo-input';
 const TITLE_ID = 'wish-photos-title';
 const HINT_ID = 'wish-photos-hint';
+const REORDER_HINT_ID = 'wish-photos-reorder-hint';
+const MINIMUM_SORTABLE_PHOTOS = 2;
 
 export const photoFailureText = (
     LL: AppTranslator,
@@ -109,6 +125,85 @@ const PendingTile = ({
     );
 };
 
+interface SortableControls {
+    enabled: boolean;
+    onKeyMove: (event: KeyboardEvent) => void;
+    onMakeFirst: () => void;
+}
+
+const UploadedTile = ({
+    image,
+    index,
+    label,
+    lifted,
+    removing,
+    sortable,
+    onRemove
+}: {
+    image: ApiImage;
+    index: number;
+    label: string;
+    lifted: boolean;
+    removing: boolean;
+    sortable: SortableControls | null;
+    onRemove: () => void;
+}) => {
+    const LL = useLL();
+    const texts = LL.photos.reorder;
+    const tileClass = [
+        'photo-tile',
+        sortable === null ? '' : 'photo-tile-sortable',
+        lifted ? 'photo-tile-lifted' : ''
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const slotAttributes = {
+        [PHOTO_SLOT_ATTRIBUTE]: String(index),
+        [PHOTO_HASH_ATTRIBUTE]: image.hash
+    };
+
+    return (
+        <li class={tileClass} {...slotAttributes}>
+            <div class='photo-tile-body'>
+                <PhotoFrame src={image.url} alt={label} />
+                <button
+                    type='button'
+                    class='photo-remove'
+                    aria-label={`${LL.photos.remove()}: ${label}`}
+                    disabled={removing}
+                    onClick={onRemove}
+                >
+                    <span aria-hidden='true'>×</span>
+                </button>
+                {sortable === null ? null : (
+                    <button
+                        type='button'
+                        class='photo-handle'
+                        aria-label={`${texts.handle()}: ${label}`}
+                        aria-describedby={REORDER_HINT_ID}
+                        disabled={!sortable.enabled}
+                        onKeyDown={sortable.onKeyMove}
+                        {...{ [PHOTO_HANDLE_ATTRIBUTE]: '' }}
+                    >
+                        <Icon icon={GripVertical} />
+                    </button>
+                )}
+                {sortable === null || index === 0 ? null : (
+                    <button
+                        type='button'
+                        class='photo-first'
+                        aria-label={`${texts.makeFirst()}: ${label}`}
+                        disabled={!sortable.enabled}
+                        onClick={sortable.onMakeFirst}
+                    >
+                        <Icon icon={ArrowUpLeft} />
+                    </button>
+                )}
+            </div>
+        </li>
+    );
+};
+
 /** The editor's photo grid: uploaded photos, local tiles with their upload state, the add tile and the chat fallback. */
 export const PhotoPicker = ({
     title,
@@ -123,13 +218,90 @@ export const PhotoPicker = ({
     onRemoveAll,
     onRetry,
     onDiscard,
-    onChatFallback
+    onChatFallback,
+    reorderDisabled = false,
+    onReorder
 }: PhotoPickerProps) => {
     const LL = useLL();
     const shown = images.length + pending.length;
     const photoLabel = (index: number) => {
         return LL.a11y.photo({ index: index + 1, total: shown, title });
     };
+    const sortable =
+        onReorder !== undefined && images.length >= MINIMUM_SORTABLE_PHOTOS;
+    const canReorder = sortable && !reorderDisabled;
+    const [announcement, setAnnouncement] = useState('');
+    const [focusHash, setFocusHash] = useState<string | null>(null);
+    const hashes = images.map(image => image.hash);
+    const reorder = (from: number, to: number) => {
+        const moved = images[from];
+
+        if (onReorder === undefined || moved === undefined || from === to) {
+            return null;
+        }
+
+        onReorder(reorderHashes(images, from, to));
+        setAnnouncement(
+            LL.photos.reorder.moved({ position: to + 1, total: images.length })
+        );
+
+        return moved.hash;
+    };
+    const photoDrag = usePhotoDrag({
+        hashes,
+        disabled: !canReorder,
+        onDrop: (from, to) => {
+            reorder(from, to);
+        }
+    });
+    const { drag } = photoDrag;
+    const displayed =
+        drag === null ? images : moveItem(images, drag.from, drag.target);
+    const moveFromControl = (from: number, to: number) => {
+        const moved = reorder(from, to);
+
+        if (moved !== null) {
+            haptics.selection();
+            setFocusHash(moved);
+        }
+    };
+    const controlsFor = (index: number): SortableControls | null => {
+        if (!sortable) {
+            return null;
+        }
+
+        return {
+            enabled: canReorder && drag === null,
+            onKeyMove: (event: KeyboardEvent) => {
+                const target = keyboardTargetIndex(
+                    event.key,
+                    index,
+                    images.length
+                );
+
+                if (target !== null) {
+                    event.preventDefault();
+                    moveFromControl(index, target);
+                }
+            },
+            onMakeFirst: () => {
+                moveFromControl(index, 0);
+            }
+        };
+    };
+
+    useEffect(() => {
+        if (focusHash === null) {
+            return;
+        }
+
+        photoDrag.gridRef.current
+            ?.querySelector<HTMLElement>(
+                `[${PHOTO_HASH_ATTRIBUTE}="${focusHash}"] [${PHOTO_HANDLE_ATTRIBUTE}]`
+            )
+            ?.focus();
+        setFocusHash(null);
+    }, [focusHash, hashes.join()]);
 
     return (
         <section class='photos' aria-labelledby={TITLE_ID}>
@@ -146,26 +318,30 @@ export const PhotoPicker = ({
                     ? LL.photos.queued()
                     : LL.photos.hint({ max })}
             </p>
-            <ul class='photo-grid' aria-describedby={HINT_ID}>
-                {images.map((image, index) => {
+            <ul
+                ref={photoDrag.gridRef}
+                class={
+                    drag === null
+                        ? 'photo-grid'
+                        : 'photo-grid photo-grid-dragging'
+                }
+                aria-describedby={HINT_ID}
+                {...photoDrag.gridEvents}
+            >
+                {displayed.map((image, index) => {
                     return (
-                        <li key={image.hash} class='photo-tile'>
-                            <PhotoFrame
-                                src={image.url}
-                                alt={photoLabel(index)}
-                            />
-                            <button
-                                type='button'
-                                class='photo-remove'
-                                aria-label={`${LL.photos.remove()}: ${photoLabel(index)}`}
-                                disabled={removing}
-                                onClick={() => {
-                                    onRemove(index, image);
-                                }}
-                            >
-                                <span aria-hidden='true'>×</span>
-                            </button>
-                        </li>
+                        <UploadedTile
+                            key={image.hash}
+                            image={image}
+                            index={index}
+                            label={photoLabel(index)}
+                            lifted={drag?.hash === image.hash}
+                            removing={removing || drag !== null}
+                            sortable={controlsFor(index)}
+                            onRemove={() => {
+                                onRemove(index, image);
+                            }}
+                        />
                     );
                 })}
                 {pending.map((tile, index) => {
@@ -215,6 +391,14 @@ export const PhotoPicker = ({
                 {progress === null
                     ? ''
                     : `${LL.photos.uploading()} ${LL.photos.progress(progress)}`}
+            </p>
+            {sortable ? (
+                <p id={REORDER_HINT_ID} class='field-hint photos-reorder-hint'>
+                    {LL.photos.reorder.instructions()}
+                </p>
+            ) : null}
+            <p class='sr-only' role='status'>
+                {announcement}
             </p>
             {images.length > 1 || onChatFallback !== undefined ? (
                 <div class='photos-actions'>

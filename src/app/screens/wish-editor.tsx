@@ -15,6 +15,7 @@ import {
     getLinkHost
 } from '../logic/format';
 import { runOptimistic } from '../logic/optimistic';
+import { createOrderQueue, orderImagesByHashes } from '../logic/reorder';
 import {
     checkDraftForSubmit,
     countFreePhotoSlots,
@@ -374,6 +375,85 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
     };
 };
 
+/** Saves photo order changes one request at a time; a burst of moves collapses into the newest order and a failure restores the last order the server confirmed. */
+const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
+    const services = useApp();
+    const LL = useLL();
+    const [reordering, setReordering] = useState(false);
+    const latest = useLatest({ wish, onReload });
+    const [state] = useState(() => {
+        const { api, cache, toast } = services;
+        const box: { confirmed: ApiImage[] | null } = { confirmed: null };
+        const currentWish = () => {
+            const { wish: base } = latest.current;
+
+            return base === null
+                ? null
+                : (readCachedWish(cache, base.id) ?? base);
+        };
+        const finish = () => {
+            box.confirmed = null;
+            setReordering(false);
+        };
+
+        const queue = createOrderQueue<OwnWishDto>({
+            commit(hashes) {
+                return api.request('reorderWishImages', {
+                    params: { id: latest.current.wish?.id ?? 0 },
+                    body: { hashes: [...hashes] }
+                });
+            },
+            committed(updated, isLatest) {
+                box.confirmed = updated.images;
+
+                if (isLatest) {
+                    storeWish(cache, updated);
+                    finish();
+                    toast.show(LL.photos.reorder.saved(), 'success');
+                }
+            },
+            failed(error) {
+                const shown = currentWish();
+                const failure = toFailure(error);
+
+                if (shown !== null && box.confirmed !== null) {
+                    storeWish(cache, { ...shown, images: box.confirmed });
+                }
+
+                finish();
+                haptics.error();
+
+                if (hasErrorCode(failure, 'imageChanged', 'notFound')) {
+                    toast.show(LL.photos.reorder.conflict(), 'error');
+                    latest.current.onReload();
+                } else {
+                    toast.failure(failure);
+                }
+            }
+        });
+
+        return {
+            submit(hashes: readonly string[]) {
+                const shown = currentWish();
+
+                if (shown === null) {
+                    return;
+                }
+
+                box.confirmed ??= shown.images;
+                storeWish(cache, {
+                    ...shown,
+                    images: orderImagesByHashes(shown.images, hashes)
+                });
+                setReordering(true);
+                void queue.submit(hashes);
+            }
+        };
+    });
+
+    return { reordering, reorder: state.submit };
+};
+
 interface WishFormProps {
     wish: OwnWishDto | null;
     onCreated: (wish: OwnWishDto) => void;
@@ -402,6 +482,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     const [removing, setRemoving] = useState(false);
     const [removingPhoto, setRemovingPhoto] = useState(false);
     const photos = usePhotoUploads(wish);
+    const photoOrder = usePhotoReorder(wish, onReload);
     const current = useLatest({ baseline, draft });
 
     useEffect(() => {
@@ -879,7 +960,8 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     max={limits.images}
                     waitingForSave={wish === null}
                     progress={photos.progress}
-                    removing={removingPhoto}
+                    removing={removingPhoto || photoOrder.reordering}
+                    reorderDisabled={uploadsPending || removingPhoto}
                     onPick={photos.pick}
                     onRemove={removePhoto}
                     onRemoveAll={() => {
@@ -890,7 +972,8 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     {...(wish !== null && {
                         onChatFallback: () => {
                             void addPhotosInChat();
-                        }
+                        },
+                        onReorder: photoOrder.reorder
                     })}
                 />
             </Tag>
