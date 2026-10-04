@@ -1,0 +1,22 @@
+{
+    "jsonLd": [
+        "\n            {\n                \"@context\": \"https://schema.org/\",\n                \"@type\": \"Product\",\n                \"name\": \"Echo Dot (5th Gen, 2022 release) | International Version | smart speaker with Alexa | Charcoal : Amazon.de: Amazon Devices &amp; Accessories\",\n                \"description\": \"Echo Dot (5th Gen, 2022 release) | International Version | smart speaker with Alexa | Charcoal : Amazon.de: Amazon Devices &amp; Accessories\",\n                \"aggregateRating\": {\n                    \"@type\": \"AggregateRating\",\n                    \"ratingValue\": \"4.4\",\n                    \"reviewCount\": \"2946\"\n                }\n            }\n        "
+    ],
+    "meta": {
+        "description": [
+            "Echo Dot (5th Gen, 2022 release) | International Version | smart speaker with Alexa | Charcoal : Amazon.de: Amazon Devices &amp; Accessories"
+        ],
+        "og:title": ["Amazon"],
+        "og:image": [
+            "https://m.media-amazon.com/images/G/01/share-icons/previewdoh/amazon.png"
+        ],
+        "og:description": ["Amazon"],
+        "og:url": ["https://www.amazon.de/dp/B09B9CX8PW"],
+        "og:sitename": ["Amazon"]
+    },
+    "itemprops": [],
+    "canonical": "https://www.amazon.de/-/en/echo-dot/dp/B09B9CX8PW",
+    "titleTag": "\n            Echo Dot (5th Gen, 2022 release) | International Version | smart\n            speaker with Alexa | Charcoal : Amazon.de: Amazon Devices &amp;\n            Accessories\n        ",
+    "baseHref": null,
+    "truncated": false
+}

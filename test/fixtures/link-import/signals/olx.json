@@ -1,0 +1,22 @@
+{
+    "jsonLd": [
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"Product\",\n                \"name\": \"Багажнік на велосипед\",\n                \"image\": [\n                    \"https://ireland.apollo.olxcdn.com:443/v1/files/zocj5zirfm73-UA/image\",\n                    \"https://ireland.apollo.olxcdn.com:443/v1/files/k539y8w28l1a2-UA/image\"\n                ],\n                \"url\": \"https://www.olx.ua/d/uk/obyavlenie/bagazhnk-na-velosiped-ID11okGv.html\",\n                \"description\": \"Багажник на велосипед, залізний, в хорошому стані, на велосипед не ставили Відправка олх доставкою\",\n                \"category\": \"https://www.olx.ua/hobbi-otdyh-i-sport/velo/veloaksessuary/\",\n                \"sku\": \"936708556\",\n                \"offers\": {\n                    \"@type\": \"Offer\",\n                    \"availability\": \"https://schema.org/InStock\",\n                    \"areaServed\": { \"@type\": \"City\", \"name\": \"Чернівці\" },\n                    \"priceCurrency\": \"UAH\",\n                    \"price\": 250,\n                    \"shippingDetails\": {\n                        \"@type\": \"OfferShippingDetails\",\n                        \"shippingRate\": {\n                            \"@type\": \"MonetaryAmount\",\n                            \"currency\": \"UAH\"\n                        },\n                        \"shippingDestination\": {\n                            \"@type\": \"DefinedRegion\",\n                            \"addressCountry\": \"UA\"\n                        }\n                    },\n                    \"itemCondition\": \"https://schema.org/UsedCondition\"\n                }\n            }\n        "
+    ],
+    "meta": {
+        "og:type": ["website"],
+        "og:title": [
+            "Багажнік на велосипед: 250 грн. - Велоаксесуари Чернівці на Olx"
+        ],
+        "description": [
+            "250 грн.: Багажник на велосипед, залізний, в хорошому стані, на велосипед не ставили\nВідправка олх доставкою"
+        ],
+        "og:image": [
+            "https://ireland.apollo.olxcdn.com:443/v1/files/zocj5zirfm73-UA/image;s=1200x0"
+        ]
+    },
+    "itemprops": [],
+    "canonical": "https://www.olx.ua/d/uk/obyavlenie/bagazhnk-na-velosiped-ID11okGv.html",
+    "titleTag": "\n            Багажнік на велосипед: 250 грн. - Велоаксесуари Чернівці на Olx\n        ",
+    "baseHref": null,
+    "truncated": false
+}
