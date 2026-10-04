@@ -1782,6 +1782,16 @@ type RootTranslation = {
 			 */
 			photo: RequiredParams<'index' | 'total'>
 			/**
+			 * Ф​о​т​о​,​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			photos: RequiredParams<'count'>
+			/**
+			 * {​c​o​u​n​t​}​ ​{​{​ф​о​т​о​|​ф​о​т​о​|​ф​о​т​о​|​ф​о​т​о​}​}
+			 * @param {number} count
+			 */
+			photoCount: RequiredParams<'count'>
+			/**
 			 * Д​е​т​а​л​ь​н​і​ш​е
 			 */
 			details: string
@@ -2274,6 +2284,11 @@ type RootTranslation = {
 			 * @param {number} total
 			 */
 			photo: RequiredParams<'index' | 'title' | 'total'>
+			/**
+			 * Ф​о​т​о​,​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			photos: RequiredParams<'count'>
 			/**
 			 * Ф​о​т​о​ ​н​е​м​а​є
 			 */
@@ -6249,6 +6264,14 @@ export type TranslationFunctions = {
 			 */
 			photo: (arg: { index: number, total: number }) => LocalizedString
 			/**
+			 * Фото, {count}
+			 */
+			photos: (arg: { count: number }) => LocalizedString
+			/**
+			 * {count} {{фото|фото|фото|фото}}
+			 */
+			photoCount: (arg: { count: number }) => LocalizedString
+			/**
 			 * Детальніше
 			 */
 			details: () => LocalizedString
@@ -6726,6 +6749,10 @@ export type TranslationFunctions = {
 			 * Фото {index} з {total}: {title}
 			 */
 			photo: (arg: { index: number, title: string, total: number }) => LocalizedString
+			/**
+			 * Фото, {count}
+			 */
+			photos: (arg: { count: number }) => LocalizedString
 			/**
 			 * Фото немає
 			 */

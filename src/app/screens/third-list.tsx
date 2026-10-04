@@ -393,7 +393,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
         )
     ];
 
-    const renderWish = (wish: ThirdWishDto | SharedWishDto) => {
+    const renderWish = (wish: ThirdWishDto | SharedWishDto, index: number) => {
         const givers =
             'givers' in wish && wish.gifted !== true ? wish.givers : null;
 
@@ -401,6 +401,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             <WishTag
                 key={wish.id}
                 wish={wish}
+                index={index}
                 badges={
                     <>
                         {wish.description === null ? null : (
@@ -500,8 +501,15 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                     ) : null}
                     {visibleItems.length > 0 || shownGifted.length > 0 ? (
                         <WishGrid label={LL.third.title()}>
-                            {visibleItems.map(renderWish)}
-                            {shownGifted.map(renderWish)}
+                            {visibleItems.map((wish, index) => {
+                                return renderWish(wish, index);
+                            })}
+                            {shownGifted.map((wish, index) => {
+                                return renderWish(
+                                    wish,
+                                    visibleItems.length + index
+                                );
+                            })}
                         </WishGrid>
                     ) : null}
                     {visibleItems.length === 0 &&

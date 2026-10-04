@@ -273,11 +273,12 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
             ) : (
                 <>
                     <WishGrid label={LL.gives.title()}>
-                        {items.map(entry => {
+                        {items.map((entry, index) => {
                             return (
                                 <WishTag
                                     key={entry.wish.id}
                                     wish={entry.wish}
+                                    index={index}
                                     badges={<GiveBadges entry={entry} />}
                                     actions={
                                         <button

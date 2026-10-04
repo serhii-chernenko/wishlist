@@ -206,10 +206,11 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                             <HeartStickerDefs />
                         ) : null}
                         <ul class='wishes'>
-                            {[...model.wishes, ...gifted].map(wish => {
+                            {[...model.wishes, ...gifted].map((wish, index) => {
                                 return (
                                     <WishCard
                                         wish={wish}
+                                        index={index}
                                         language={model.language}
                                         displayCurrency={model.displayCurrency}
                                         rates={model.rates}

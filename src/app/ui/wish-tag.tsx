@@ -3,10 +3,12 @@ import type { Child } from 'hono/jsx';
 import type { ApiImage, WishPriority } from '../../shared/app-api';
 import type { Currency } from '../../shared/money';
 import { isBadgePriority } from '../../shared/priority-badge';
+import { EAGER_CARD_COUNT, getPhotoLoading } from '../../shared/photo-loading';
 import { getLinkHost } from '../logic/format';
 import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
 import { HeartSticker } from './heart';
+import { PhotoCarousel } from './photo-carousel';
 import { PhotoFrame } from './photo-frame';
 import { PriceChip } from './price-chip';
 import { PriorityBadge } from './priority-badge';
@@ -26,6 +28,7 @@ export interface WishTagModel {
 
 export interface WishTagProps {
     wish: WishTagModel;
+    index?: number;
     onOpen?: () => void;
     badges?: Child;
     actions?: Child;
@@ -34,11 +37,15 @@ export interface WishTagProps {
 const WishCover = ({
     images,
     title,
-    band
+    band,
+    index,
+    onOpen
 }: {
     images: readonly ApiImage[];
     title: string;
     band: string | undefined;
+    index: number;
+    onOpen: (() => void) | undefined;
 }) => {
     const LL = useLL();
     const [cover] = images;
@@ -47,25 +54,43 @@ const WishCover = ({
         return <div class='wish-photo' data-band={band} />;
     }
 
-    const morePhotos = images.length - 1;
+    const describeSlide = (slideIndex: number) => {
+        return LL.a11y.photo({
+            index: slideIndex + 1,
+            total: images.length,
+            title
+        });
+    };
 
     return (
         <div class='wish-photo' data-band={band}>
-            <PhotoFrame
-                src={cover.url}
-                alt={LL.a11y.photo({ index: 1, total: images.length, title })}
-            />
-            {morePhotos > 0 ? (
-                <span class='wish-photo-count' aria-hidden='true'>
-                    +{morePhotos}
-                </span>
-            ) : null}
+            {images.length > 1 ? (
+                <PhotoCarousel
+                    images={images}
+                    label={LL.a11y.photos({ count: images.length })}
+                    describeSlide={describeSlide}
+                    cardIndex={index}
+                    {...(onOpen !== undefined && { onOpen })}
+                />
+            ) : (
+                <PhotoFrame
+                    src={cover.url}
+                    alt={describeSlide(0)}
+                    loading={getPhotoLoading(index, 0)}
+                />
+            )}
         </div>
     );
 };
 
 /** The compact gift-tag card shared with the share page markup (`.wish` / `.wish-tag`). */
-export const WishTag = ({ wish, onOpen, badges, actions }: WishTagProps) => {
+export const WishTag = ({
+    wish,
+    index = EAGER_CARD_COUNT,
+    onOpen,
+    badges,
+    actions
+}: WishTagProps) => {
     const LL = useLL();
     const host = wish.linkHost ?? getLinkHost(wish.link);
     const gifted = wish.gifted === true;
@@ -95,6 +120,8 @@ export const WishTag = ({ wish, onOpen, badges, actions }: WishTagProps) => {
                     images={wish.images}
                     title={wish.title}
                     band={gifted ? LL.gifted.band() : undefined}
+                    index={index}
+                    onOpen={onOpen}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge priority={wish.priority} />

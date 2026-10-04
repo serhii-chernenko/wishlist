@@ -7,6 +7,7 @@ import {
     type Currency,
     type ExchangeRates
 } from '../../../shared/money';
+import { getPhotoLoading } from '../../../shared/photo-loading';
 import { isBadgePriority } from '../../../shared/priority-badge';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
@@ -74,10 +75,16 @@ export const isHighPriorityWish = (wish: Pick<ShareWishView, 'priority'>) => {
 
 const WishCover = ({
     photos,
-    band
+    band,
+    label,
+    countLabel,
+    index
 }: {
     photos: readonly ShareWishPhoto[];
     band: string | undefined;
+    label: string;
+    countLabel: string;
+    index: number;
 }) => {
     const [cover] = photos;
 
@@ -85,16 +92,36 @@ const WishCover = ({
         return <div class='wish-photo' data-band={band} />;
     }
 
-    const morePhotos = photos.length - 1;
+    if (photos.length === 1) {
+        return (
+            <div class='wish-photo' data-band={band}>
+                <img
+                    src={cover.url}
+                    alt={cover.alt}
+                    {...getPhotoLoading(index, 0)}
+                />
+            </div>
+        );
+    }
 
     return (
-        <div class='wish-photo' data-band={band}>
-            <img src={cover.url} alt={cover.alt} loading='lazy' />
-            {morePhotos > 0 ? (
-                <span class='wish-photo-count' aria-hidden='true'>
-                    +{morePhotos}
-                </span>
-            ) : null}
+        <div class='wish-photo' data-band={band} data-count={countLabel}>
+            <div
+                class='carousel wish-carousel'
+                role='group'
+                tabindex={0}
+                aria-label={label}
+            >
+                {photos.map((photo, slideIndex) => {
+                    return (
+                        <img
+                            src={photo.url}
+                            alt={photo.alt}
+                            {...getPhotoLoading(index, slideIndex)}
+                        />
+                    );
+                })}
+            </div>
         </div>
     );
 };
@@ -103,9 +130,11 @@ export const WishCard = ({
     wish,
     language,
     displayCurrency,
-    rates
+    rates,
+    index
 }: {
     wish: ShareWishView;
+    index: number;
     language: AppLocale;
     displayCurrency: Currency;
     rates: ExchangeRates;
@@ -128,6 +157,13 @@ export const WishCard = ({
                 <WishCover
                     photos={wish.photos ?? NO_PHOTOS}
                     band={gifted ? LL.web.wish.gifted() : undefined}
+                    label={LL.web.wish.photos({
+                        count: wish.photos?.length ?? 0
+                    })}
+                    countLabel={LL.web.wish.photoCount({
+                        count: wish.photos?.length ?? 0
+                    })}
+                    index={index}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge
