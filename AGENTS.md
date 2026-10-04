@@ -80,6 +80,14 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 - Business rules stay in `src/bot/services` and `src/bot/input`; the API and the bot call the same code. A new feature needs both a bot change and an app change.
 - `.gitignore` is an allowlist: a new top-level source directory must be added there.
 
+## Contact Details
+
+- The phone number and the delivery address are never rendered on share pages or in any other web response (including `404`, `410`, `HEAD` and cached copies). The share page gets only the boolean delivery hint.
+- Never put the phone number or the delivery address into a share page fingerprint, the Cache API, telemetry attributes or logs. Telemetry for these features uses closed labels only (`field` and `on` or `off`).
+- Contact details reach a viewer only through `resolveOwnerContact` (registered, non-blocked, non-owner viewer, first page only), and the address only together with a visible phone. The bot and the API call the same code.
+- Escape the address in bot HTML with the existing `escapeHtml` helper; never re-implement escaping.
+- Never persist `me`, contact details, the delivery address or the masked phone client-side: no `sessionStorage`, `localStorage`, Telegram CloudStorage, IndexedDB or cookies. `test/app-contact-storage.test.ts` allows storage access only in `src/app/nav/persistence.ts` and `src/app/telegram/theme.ts`; extend that allowlist only after review.
+
 ## Releases
 
 - `CHANGELOG.md` is the human-owned release history.

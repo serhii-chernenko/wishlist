@@ -23,12 +23,15 @@ The bot answers only in private chats.
 
 ### Main menu
 
-- **Wishlist.** Add wishes with a title, description, up to 9 photos, a link and a price. Edit or remove them, mark a wish as a priority, hide it, filter the list by price, and clean the whole list after a confirmation. Long lists are paginated. Prices show in the currency of the chosen language (hryvnia in Ukrainian, euro in English, złoty in Polish), converted approximately at the daily National Bank of Ukraine rate.
+- **Wishlist.** Add wishes with a title, description, up to 9 photos, a link, a price and its currency (hryvnia, dollar, euro or złoty). Edit or remove them, give a wish a priority (none, low, medium or high, shown as a colored badge), hide it, reorder its photos (pick which one goes first), filter the list by price, and clean the whole list after a confirmation. Long lists are paginated. Wishes you remove as already given are kept at the end of the list as gifted, and you can hide them one by one. Prices show in your own currency setting (by default hryvnia in Ukrainian, euro in English, złoty in Polish), converted approximately at the daily National Bank of Ukraine rate.
 - **Give list.** The wishes of other people that you plan to give. Add and remove entries and clean the list.
 - **Find a wish list.** Search by `@username` or by phone number. Third-party lists can be filtered by price, and you can mark a wish as "I want to give".
 - **Visibility.** Choose whether others can find you by username, by phone number, or both.
-- **Payments requisites.** Add details (a Monobank jar, a card number, a PayPal contact, a Buymeacoffee link) for people who cannot give you a gift and would rather send money.
-- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results.
+- **Payment info.** Add details (a Monobank jar, a card number, a PayPal contact, a Buymeacoffee link) for people who cannot give you a gift and would rather send money.
+- **Delivery address.** Add an address (up to 6 lines) for the people who want to send you a gift.
+- **What others see.** Switch on or off whether your payment info, your phone number and your delivery address are shown to people who open your list. The phone and the address are shown only in Telegram, only to registered users, and never on the web page; the address needs the phone to be shown as well. Each switch on asks for a confirmation.
+- **Settings.** The currency, the delivery address and the other preferences in one place.
+- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results; a switch lets you ask search engines not to index the page. Visitors can switch the price currency on the page, and you can choose to show your gifted wishes there.
 - **Stats.** Active users, wishes created and wishes fulfilled all time.
 - **Donate.** Ways to support the project: Monobank, Ko-fi, PayPal and Revolut.
 - **Feedback.** Send a message to the author.
@@ -36,7 +39,7 @@ The bot answers only in private chats.
 
 ### Mini App
 
-Everything the chat does is also available in a Telegram Mini App with the same data: wishes with up to 9 photos, the give list, search and other people's lists, share settings, payments, visibility, language, feedback, stats, donate, release notes and about. The chat bot keeps working as before.
+Everything the chat does is also available in a Telegram Mini App with the same data: wishes with up to 9 photos (drag and drop, keyboard or "Make first" to reorder them), per-wish currency and priority levels, the give list, search and other people's lists, share settings, "What others see", payments, delivery address, visibility, language, currency, feedback, stats, donate, release notes and about. The chat bot keeps working as before. The Mini App needs iOS 16.4 or newer on iPhone; the bot works everywhere.
 
 - **Open it** from the "Open the app" buttons in the bot, from the bot's profile (`https://t.me/wishlist_ua_bot?startapp`) or with the `/app` command. Share pages also link to it.
 - **How it works.** `GET /app` serves a small HTML shell, the client (`hono/jsx/dom`, Tailwind CSS 4 and daisyUI 5 with the gift-tag design) is bundled into the committed files `public/app/app.js` and `public/app/app.css`, and it calls a JSON API under `/api/app/*` authenticated with Telegram `initData`. Photos are uploaded through the bot's own chat, stored as Telegram `file_id`s, and served through an image proxy with an R2 cache, also on public share pages.
@@ -123,42 +126,42 @@ The `.dev.vars*` and `env/*` files hold secrets and are never committed. See the
 
 ## Scripts
 
-| Script                                                                           | Purpose                                                                        |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `start`, `dev`, `worker:dev`                                                     | Local Worker with the tunnel and webhook automation                            |
-| `worker:dev:raw`, `worker:dev:production`                                        | Plain `wrangler dev`, and `wrangler dev` with the production environment       |
-| `cloudflared:dev`                                                                | Run the Cloudflare tunnel alone                                                |
-| `worker:preview`                                                                 | Create or update a Worker Preview (`pnpm worker:preview --name preview`)       |
-| `worker:deploy`, `worker:deploy:prod`                                            | Manual production deploy, a fallback when Workers Builds is down               |
-| `worker:tail:prod`                                                               | Tail production logs                                                           |
-| `cf-typegen`                                                                     | Regenerate `worker-configuration.d.ts`                                         |
-| `db:generate`                                                                    | Generate a Drizzle migration into `drizzle/`                                   |
-| `db:migrate:local`, `db:migrate:preview`, `db:migrate:prod`                      | Apply migrations by hand                                                       |
-| `db:migrate:ci`                                                                  | Apply migrations inside Workers Builds                                         |
-| `db:query:local`, `db:query:preview`, `db:query:prod`                            | Run SQL (`--command "..."`) against local, preview or production D1            |
-| `db:import:prepare`, `db:import:prepare:github`                                  | Validate and report a Mongo export without writing                             |
-| `db:import:local`, `db:import:preview`, `db:import:prod`                         | One-time import of the legacy Mongo export into D1                             |
-| `db:reconcile:preview`, `db:reconcile:prod`                                      | Compare imported D1 data with the Mongo export                                 |
-| `db:copy:production-to-preview`                                                  | Copy production data into preview (needs `--confirm-overwrite-preview`)        |
-| `telegram:webhook:set:{local,preview,prod}`                                      | Set the Telegram webhook                                                       |
-| `telegram:webhook:info:{local,preview,prod}`                                     | Show the sanitized webhook info                                                |
-| `telegram:webhook:delete:{local,preview,prod}`                                   | Delete the webhook                                                             |
-| `telegram:commands:set:{preview,prod}`                                           | Register the bot command list with Telegram                                    |
-| `preview:url`, `preview:wait`, `preview:point`, `preview:smoke`, `preview:reset` | Point the preview bot (and the admin menu button) at a branch preview and back |
-| `app:build`, `app:check`                                                         | Build `public/app/app.js` with esbuild; rebuild and fail on drift              |
-| `app:smoke`                                                                      | Headless Chrome screenshots of every Mini App screen (not run in CI)           |
-| `css:build`, `css:build:share`, `css:build:app`, `css:check`                     | Build the share and app stylesheets; `css:check` fails on drift                |
-| `i18n:generate`, `typesafe-i18n`                                                 | Generate typesafe-i18n types                                                   |
-| `changeset:add`, `changeset:status`, `changeset:validate`                        | Create, inspect and validate release notes                                     |
-| `changeset:version`                                                              | Cut a release: validate, version, stamp the changelog, sync the manifest       |
-| `releases:sync`                                                                  | Regenerate `releases.generated.json` from `CHANGELOG.md`                       |
-| `releases:github`                                                                | Publish missing GitHub Releases (run by CI)                                    |
-| `releases:broadcast:prod`                                                        | Trigger the release announcement broadcast on production                       |
-| `lint`, `lint:fix`                                                               | oxlint                                                                         |
-| `format`, `format:check`                                                         | oxfmt                                                                          |
-| `typecheck`                                                                      | Generate i18n types, then `tsgo --noEmit` for the Worker and the app           |
-| `test`                                                                           | Run all tests                                                                  |
-| `check`                                                                          | Full validation used before every push and in CI                               |
+| Script                                                                           | Purpose                                                                                                                                                |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `start`, `dev`, `worker:dev`                                                     | Local Worker with the tunnel and webhook automation                                                                                                    |
+| `worker:dev:raw`, `worker:dev:production`                                        | Plain `wrangler dev`, and `wrangler dev` with the production environment                                                                               |
+| `cloudflared:dev`                                                                | Run the Cloudflare tunnel alone                                                                                                                        |
+| `worker:preview`                                                                 | Create or update a Worker Preview (`pnpm worker:preview --name preview`)                                                                               |
+| `worker:deploy`, `worker:deploy:prod`                                            | Manual production deploy, a fallback when Workers Builds is down                                                                                       |
+| `worker:tail:prod`                                                               | Tail production logs                                                                                                                                   |
+| `cf-typegen`                                                                     | Regenerate `worker-configuration.d.ts`                                                                                                                 |
+| `db:generate`                                                                    | Generate a Drizzle migration into `drizzle/`                                                                                                           |
+| `db:migrate:local`, `db:migrate:preview`, `db:migrate:prod`                      | Apply migrations by hand                                                                                                                               |
+| `db:migrate:ci`                                                                  | Apply migrations inside Workers Builds                                                                                                                 |
+| `db:query:local`, `db:query:preview`, `db:query:prod`                            | Run SQL (`--command "..."`) against local, preview or production D1                                                                                    |
+| `db:import:prepare`, `db:import:prepare:github`                                  | Validate and report a Mongo export without writing                                                                                                     |
+| `db:import:local`, `db:import:preview`, `db:import:prod`                         | One-time import of the legacy Mongo export into D1                                                                                                     |
+| `db:reconcile:preview`, `db:reconcile:prod`                                      | Compare imported D1 data with the Mongo export                                                                                                         |
+| `db:copy:production-to-preview`                                                  | Copy production data into preview (needs `--confirm-overwrite-preview`)                                                                                |
+| `telegram:webhook:set:{local,preview,prod}`                                      | Set the Telegram webhook                                                                                                                               |
+| `telegram:webhook:info:{local,preview,prod}`                                     | Show the sanitized webhook info                                                                                                                        |
+| `telegram:webhook:delete:{local,preview,prod}`                                   | Delete the webhook                                                                                                                                     |
+| `telegram:commands:set:{preview,prod}`                                           | Register the bot command list with Telegram                                                                                                            |
+| `preview:url`, `preview:wait`, `preview:point`, `preview:smoke`, `preview:reset` | Point the preview bot (and the admin menu button) at a branch preview and back                                                                         |
+| `app:build`, `app:check`                                                         | Build `public/app/app.js` with esbuild; rebuild and fail on drift                                                                                      |
+| `app:smoke`                                                                      | Headless Chrome screenshots of every Mini App screen (not run in CI); with `--check-alignment --shots <dir>` it also measures icon and title alignment |
+| `css:build`, `css:build:share`, `css:build:app`, `css:check`                     | Build the share and app stylesheets; `css:check` fails on drift                                                                                        |
+| `i18n:generate`, `typesafe-i18n`                                                 | Generate typesafe-i18n types                                                                                                                           |
+| `changeset:add`, `changeset:status`, `changeset:validate`                        | Create, inspect and validate release notes                                                                                                             |
+| `changeset:version`                                                              | Cut a release: validate, version, stamp the changelog, sync the manifest                                                                               |
+| `releases:sync`                                                                  | Regenerate `releases.generated.json` from `CHANGELOG.md`                                                                                               |
+| `releases:github`                                                                | Publish missing GitHub Releases (run by CI)                                                                                                            |
+| `releases:broadcast:prod`                                                        | Trigger the release announcement broadcast on production                                                                                               |
+| `lint`, `lint:fix`                                                               | oxlint                                                                                                                                                 |
+| `format`, `format:check`                                                         | oxfmt                                                                                                                                                  |
+| `typecheck`                                                                      | Generate i18n types, then `tsgo --noEmit` for the Worker and the app                                                                                   |
+| `test`                                                                           | Run all tests                                                                                                                                          |
+| `check`                                                                          | Full validation used before every push and in CI                                                                                                       |
 
 ## Project layout
 
