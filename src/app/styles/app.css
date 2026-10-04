@@ -93,6 +93,8 @@
     --divider: color-mix(in srgb, var(--ink) 18%, var(--tag));
     --scrim: color-mix(in srgb, var(--paper) 70%, transparent);
     --scrim-soft: color-mix(in srgb, var(--paper) 60%, transparent);
+    --toggle-off-track: color-mix(in srgb, var(--ink) 28%, var(--tag));
+    --toggle-off-border: color-mix(in srgb, var(--ink) 55%, var(--tag));
 }
 
 :root {
@@ -125,6 +127,11 @@
     --row-badge-size-compact: 2rem;
     --row-chevron-size: 1.25rem;
     --row-radio-size: 1.5rem;
+    --optical-shift-sans: 0.085;
+    --optical-shift-display: 0.045;
+    --field-max-rows: 12;
+    --field-pad-block: 0.5rem;
+    --field-chrome: calc(2 * var(--field-pad-block) + 2 * var(--border-thin));
     --hero-hole-clearance: 2.25rem;
     --opacity-muted: 0.6;
     --motion-switch: 120ms ease-out;
@@ -374,6 +381,22 @@
         font-size: 1rem;
     }
 
+    .field-row .field-control {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .textarea.field-control {
+        max-block-size: calc(var(--field-max-rows) * 1lh + var(--field-chrome));
+        overflow-y: auto;
+    }
+
+    @supports (field-sizing: content) {
+        .textarea.field-control:not([data-autosize='rows']) {
+            field-sizing: content;
+        }
+    }
+
     .field-row {
         display: flex;
         align-items: center;
@@ -420,12 +443,12 @@
 
     .toggle-button {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 0.75rem;
         min-height: var(--tap-size);
         width: 100%;
-        padding: 0.375rem 0.25rem;
+        padding: calc((var(--tap-size) - var(--row-title-line)) / 2) 0.25rem;
         font: inherit;
         font-weight: 600;
         color: var(--text);
@@ -445,10 +468,12 @@
         flex: none;
         width: 2.75rem;
         height: 1.625rem;
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
+        background: var(--toggle-off-track);
+        border: var(--border-regular) solid var(--toggle-off-border);
         border-radius: var(--radius-pill);
-        transition: background-color var(--motion-switch);
+        transition:
+            background-color var(--motion-switch),
+            border-color var(--motion-switch);
     }
 
     .toggle-switch::after {
@@ -466,6 +491,7 @@
 
     .toggle-button[aria-pressed='true'] .toggle-switch {
         background: var(--heart);
+        border-color: var(--ink);
     }
 
     .toggle-button[aria-pressed='true'] .toggle-switch::after {
@@ -1384,6 +1410,34 @@
         height: 2rem;
     }
 
+    .menu-list-pairs .menu-row-label {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .menu-group:has(> .menu-list-pairs) {
+        container: menu-pairs / inline-size;
+    }
+
+    @container menu-pairs (max-width: 20rem) {
+        .menu-list-pairs {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .menu-list-pairs > li:nth-child(2)::before {
+            content: '';
+        }
+
+        .menu-list-pairs > li:nth-child(odd):not(:last-child)::after {
+            content: none;
+        }
+
+        .menu-list-pairs > li:last-child:nth-child(odd) {
+            grid-column: auto;
+        }
+    }
+
     .home-steps {
         margin-top: 2.5rem;
     }
@@ -1697,14 +1751,20 @@
     }
 
     .field-mark {
+        --mark-size: 0.8125rem;
         margin-inline-start: 0.5rem;
         text-transform: lowercase;
-        font-size: 0.8125rem;
+        font-size: var(--mark-size);
         font-weight: 500;
     }
 
     .field-mark-required {
-        padding: 0 0.4375rem;
+        --mark-shift: calc(var(--mark-size) * var(--optical-shift-sans));
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 1;
+        padding: calc(0.25rem - var(--mark-shift)) 0.4375rem
+            calc(0.25rem + var(--mark-shift));
         font-weight: 600;
         color: var(--on-heart);
         background: var(--heart);
@@ -1888,10 +1948,30 @@
         );
     }
 
+    .menu-row,
+    .choice-card,
+    .toggle-button {
+        --row-title-size: 1rem;
+        --optical-shift: calc(
+            var(--row-title-size) * var(--optical-shift-sans)
+        );
+    }
+
+    .menu-list-pairs .menu-row {
+        --row-title-size: 0.9375rem;
+    }
+
+    .menu-list-primary .menu-row {
+        --optical-shift: calc(
+            var(--row-title-size) * var(--optical-shift-display)
+        );
+    }
+
     .menu-row-label,
     .row-label,
     .row-value,
-    .choice-title {
+    .choice-title,
+    .toggle-label {
         line-height: var(--row-title-line);
     }
 
@@ -1899,11 +1979,17 @@
     .row-icon,
     .menu-row-chevron,
     .row-trailing,
+    .toggle-switch,
     .choice-card .choice-radio,
     .choice-group-list .choice-radio {
         flex: none;
         align-self: flex-start;
         margin-block: calc((var(--row-title-line) - var(--row-lead-size)) / 2);
+        translate: 0 var(--optical-shift);
+    }
+
+    .toggle-switch {
+        --row-lead-size: 1.625rem;
     }
 
     .menu-icon {
@@ -1966,6 +2052,52 @@
         .hero-theme:active {
             translate: none;
         }
+    }
+}
+
+@layer utilities {
+    .input.field-control,
+    .textarea.field-control,
+    .select.field-control {
+        width: 100%;
+        max-width: 100%;
+        font-size: 1rem;
+    }
+
+    .textarea.field-control {
+        padding-block: var(--field-pad-block);
+    }
+
+    .textarea.field-control[rows='1'] {
+        min-height: calc(1 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='2'] {
+        min-height: calc(2 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='3'] {
+        min-height: calc(3 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='4'] {
+        min-height: calc(4 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='5'] {
+        min-height: calc(5 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='6'] {
+        min-height: calc(6 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='7'] {
+        min-height: calc(7 * 1lh + var(--field-chrome));
+    }
+
+    .textarea.field-control[rows='8'] {
+        min-height: calc(8 * 1lh + var(--field-chrome));
     }
 }
 

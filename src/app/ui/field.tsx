@@ -1,6 +1,8 @@
 import type { Child } from 'hono/jsx';
+import { useLayoutEffect, useRef, useState } from 'hono/jsx/dom';
 
 import { cutText } from '../../bot/input/limits';
+import { computeAutoRows } from '../logic/autosize';
 import { countCharacters, isNearLimit } from '../logic/format';
 import { useLL } from '../state/context';
 
@@ -29,6 +31,30 @@ export interface FieldProps {
     after?: Child;
     onBlur?: () => void;
 }
+
+const supportsFieldSizing =
+    typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
+
+const measureAutoRows = (element: HTMLTextAreaElement, minRows: number) => {
+    const renderedRows = element.rows;
+
+    element.rows = minRows;
+
+    const computed = getComputedStyle(element);
+    const contentHeight =
+        element.scrollHeight -
+        parseFloat(computed.paddingTop) -
+        parseFloat(computed.paddingBottom);
+    const rows = computeAutoRows({
+        contentHeight,
+        lineHeight: parseFloat(computed.lineHeight),
+        minRows
+    });
+
+    element.rows = renderedRows;
+
+    return rows;
+};
 
 const joinIds = (ids: Array<string | null>) => {
     const present = ids.filter((id): id is string => id !== null);
@@ -99,6 +125,17 @@ export const Field = ({
         showCounter && maxLength !== undefined ? `${id}-counter` : null;
     const describedBy = joinIds([errorId, hintId, counterId]);
 
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [grownRows, setGrownRows] = useState(rows);
+
+    useLayoutEffect(() => {
+        const element = textareaRef.current;
+
+        if (multiline && !supportsFieldSizing && element !== null) {
+            setGrownRows(measureAutoRows(element, rows));
+        }
+    }, [value, multiline, rows]);
+
     const handleInput = (event: Event) => {
         const target = event.currentTarget as
             | HTMLInputElement
@@ -148,7 +185,12 @@ export const Field = ({
                 ) : null}
             </label>
             {multiline ? (
-                <textarea {...shared} rows={rows} />
+                <textarea
+                    {...shared}
+                    ref={textareaRef}
+                    rows={supportsFieldSizing ? rows : grownRows}
+                    data-autosize={supportsFieldSizing ? undefined : 'rows'}
+                />
             ) : (
                 <div
                     class={

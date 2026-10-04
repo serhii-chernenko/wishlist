@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from 'lucide';
+import { Moon, Sun, SunMoon } from 'lucide';
 
 import {
     nextThemePreference,
@@ -11,7 +11,7 @@ import { setThemePreference, themePreference } from '../telegram/theme';
 import { Icon, type IconNode } from './icon';
 
 export const THEME_ICONS = {
-    system: Monitor,
+    system: SunMoon,
     light: Sun,
     dark: Moon
 } as const satisfies Record<ThemePreference, IconNode>;

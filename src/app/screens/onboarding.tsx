@@ -10,6 +10,7 @@ import {
 } from 'lucide';
 
 import type { Route, ScreenId, ScreenProps } from '../nav/routes';
+import type { AppTranslator } from '../i18n/i18n';
 import { routesAfterRegistration } from '../logic/nav';
 import { useApp, useLL, useNav, useSession } from '../state/context';
 import { useBottomButton } from '../telegram/buttons';
@@ -62,6 +63,7 @@ export interface MenuEntry {
     screen: MenuScreen;
     icon: IconNode;
     tone?: 'heart' | 'box';
+    label?: (LL: AppTranslator) => string;
 }
 
 /** A bot-like menu section: full-width rows with an icon and a chevron, or compact two-up cells for secondary screens. */
@@ -117,7 +119,9 @@ export const MenuSection = ({
                                     <Icon icon={entry.icon} />
                                 </span>
                                 <span class='menu-row-label'>
-                                    {LL.nav[entry.screen]()}
+                                    {entry.label === undefined
+                                        ? LL.nav[entry.screen]()
+                                        : entry.label(LL)}
                                 </span>
                                 {layout === 'rows' ? (
                                     <Icon
@@ -139,10 +143,14 @@ const GUEST_SETTINGS: readonly MenuEntry[] = [
 ];
 
 const GUEST_ABOUT: readonly MenuEntry[] = [
-    { screen: 'stats', icon: ChartColumn },
-    { screen: 'donate', icon: HandHeart },
-    { screen: 'feedback', icon: MessageSquare },
-    { screen: 'about', icon: Info }
+    { screen: 'stats', icon: ChartColumn, label: LL => LL.home.pairs.stats() },
+    { screen: 'donate', icon: HandHeart, label: LL => LL.home.pairs.donate() },
+    {
+        screen: 'feedback',
+        icon: MessageSquare,
+        label: LL => LL.home.pairs.feedback()
+    },
+    { screen: 'about', icon: Info, label: LL => LL.home.pairs.about() }
 ];
 
 /** What a guest sees at the root: the pitch, the three steps and the screens that work without a list. */

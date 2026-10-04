@@ -42,11 +42,19 @@ const SETTINGS_MENU: readonly MenuEntry[] = [
 ];
 
 const ABOUT_MENU: readonly MenuEntry[] = [
-    { screen: 'stats', icon: ChartColumn },
-    { screen: 'donate', icon: HandHeart },
-    { screen: 'feedback', icon: MessageSquare },
-    { screen: 'releases', icon: Sparkles },
-    { screen: 'about', icon: Info }
+    { screen: 'stats', icon: ChartColumn, label: LL => LL.home.pairs.stats() },
+    { screen: 'donate', icon: HandHeart, label: LL => LL.home.pairs.donate() },
+    {
+        screen: 'feedback',
+        icon: MessageSquare,
+        label: LL => LL.home.pairs.feedback()
+    },
+    {
+        screen: 'releases',
+        icon: Sparkles,
+        label: LL => LL.home.pairs.releases()
+    },
+    { screen: 'about', icon: Info, label: LL => LL.home.pairs.about() }
 ];
 
 const UserHome = () => {
