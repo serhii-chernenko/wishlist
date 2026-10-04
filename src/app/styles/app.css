@@ -293,6 +293,10 @@
         padding-bottom: 0.75rem;
     }
 
+    .wish-link + .wish-actions {
+        margin-top: 0;
+    }
+
     .wish-tag > :last-child:not(.wish-actions) {
         margin-bottom: 0.75rem;
     }

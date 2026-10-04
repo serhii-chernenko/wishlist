@@ -390,3 +390,15 @@ test('the sticky list header respects the safe area, compacts its chips and hono
     );
     assert.match(APP_SOURCE, /--motion-collapse: 150ms ease-out;/);
 });
+
+test('the link button sits at the bottom of the card and the action row follows it without a second auto margin', () => {
+    assert.match(
+        GIFT_TAG_SOURCE,
+        /\.wish-link,\s*:not\(\.wish-link\) \+ \.wish-details \{\s*margin-top: auto;/
+    );
+    assert.match(APP_SOURCE, /\.wish-actions \{[^}]*margin-top: auto;/);
+    assert.match(
+        APP_SOURCE,
+        /\.wish-link \+ \.wish-actions \{\s*margin-top: 0;\s*\}/
+    );
+});
