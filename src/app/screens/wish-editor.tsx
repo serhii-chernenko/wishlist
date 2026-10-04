@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'hono/jsx/dom';
 
-import type {
-    ApiImage,
-    FieldErrorCode,
-    OwnWishDto
+import {
+    WISH_PRIORITIES,
+    type ApiImage,
+    type FieldErrorCode,
+    type OwnWishDto,
+    type WishPriority
 } from '../../shared/app-api';
 import { getCurrencySymbol } from '../../shared/money';
 import type { AppTranslator } from '../i18n/i18n';
@@ -22,8 +24,6 @@ import {
     createPhotoQueue,
     draftFromWish,
     createEmptyDraft,
-    isHighPriority,
-    toToggledPriority,
     enqueuePhotos,
     failQueuedPhotos,
     isDraftDirty,
@@ -39,7 +39,6 @@ import {
     visibleDraftErrors,
     withFlags,
     type DraftErrors,
-    type DraftFlag,
     type DraftTextField,
     type PhotoFailureKind,
     type PhotoQueue,
@@ -70,6 +69,7 @@ import {
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
+import { Segmented, type SegmentedOption } from '../ui/segmented';
 import { Toggle } from '../ui/toggle';
 import { ErrorState } from '../ui/error-state';
 import {
@@ -78,6 +78,7 @@ import {
     storeWish,
     updateCounts,
     useWishFlagToggle,
+    useWishPriorityChange,
     WISHES_LIST_KEY,
     wishItemKey
 } from './wishes';
@@ -85,6 +86,17 @@ import {
 const FIELD_ID_PREFIX = 'wish-';
 const REMOVE_DONE = 'done';
 const REMOVE_NOT_DONE = 'notDone';
+
+const buildPriorityOptions = (
+    LL: AppTranslator
+): ReadonlyArray<SegmentedOption<WishPriority>> => {
+    return WISH_PRIORITIES.map(priority => {
+        return {
+            value: priority,
+            label: LL.editor.priority.levels[priority]()
+        };
+    });
+};
 
 interface UploadSource {
     file: Blob;
@@ -387,6 +399,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     const { me, config, locale } = useSession();
     const entryKey = useEntryKey();
     const toggleFlag = useWishFlagToggle();
+    const changePriority = useWishPriorityChange();
     const limits = config.limits;
     const [baseline, setBaseline] = useState<WishDraft>(() => {
         return wish === null
@@ -467,18 +480,28 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
         };
     };
 
-    const setFlag = (flag: DraftFlag, value: boolean) => {
+    const setHidden = (value: boolean) => {
         if (wish === null) {
             setDraft(previous => {
-                return flag === 'priority'
-                    ? { ...previous, priority: toToggledPriority(value) }
-                    : { ...previous, hidden: value };
+                return { ...previous, hidden: value };
             });
 
             return;
         }
 
-        toggleFlag(wish, flag, value);
+        toggleFlag(wish, 'hidden', value);
+    };
+
+    const setPriority = (priority: WishPriority) => {
+        if (wish === null) {
+            setDraft(previous => {
+                return { ...previous, priority };
+            });
+
+            return;
+        }
+
+        changePriority(wish, priority);
     };
 
     const showServerErrors = (errors: DraftErrors) => {
@@ -895,22 +918,29 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                 />
             </Tag>
             <Tag class='editor-sheet'>
-                <Toggle
-                    id='wish-priority'
-                    label={LL.editor.priority.label()}
-                    hint={LL.editor.priority.hint()}
-                    pressed={isHighPriority(draft.priority)}
-                    onToggle={next => {
-                        setFlag('priority', next);
-                    }}
-                />
+                <div class='priority-field'>
+                    <p class='priority-field-label' id='wish-priority-label'>
+                        {LL.editor.priority.label()}
+                    </p>
+                    <Segmented
+                        name='wish-priority'
+                        legend={LL.editor.priority.label()}
+                        options={buildPriorityOptions(LL)}
+                        value={draft.priority}
+                        onChange={setPriority}
+                        describedBy='wish-priority-hint'
+                    />
+                    <p id='wish-priority-hint' class='field-hint'>
+                        {LL.editor.priority.hint()}
+                    </p>
+                </div>
                 <Toggle
                     id='wish-hidden'
                     label={LL.editor.hidden.label()}
                     hint={LL.editor.hidden.hint()}
                     pressed={draft.hidden}
                     onToggle={next => {
-                        setFlag('hidden', next);
+                        setHidden(next);
                     }}
                 />
             </Tag>

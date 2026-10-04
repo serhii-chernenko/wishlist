@@ -532,14 +532,14 @@ describe('Bot flows through the Worker on D1', () => {
 
             const wish = await createWishViaChat('Bicycle');
 
-            await tap(alice, `w:pm:${wish.id}`);
+            await tap(alice, `w:pl:${wish.id}:3`);
             await tap(alice, `w:v:${wish.id}`);
 
             assert.equal((await ownWishes(alice))[0]?.priority, 1);
             assert.equal((await ownWishes(alice))[0]?.priority_level, 3);
             assert.equal((await ownWishes(alice))[0]?.hidden, 1);
 
-            await tap(alice, `w:pm:${wish.id}`);
+            await tap(alice, `w:pl:${wish.id}:0`);
             await tap(alice, `w:v:${wish.id}`);
 
             assert.equal((await ownWishes(alice))[0]?.priority, 0);

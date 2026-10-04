@@ -157,7 +157,9 @@ test('every font face is self hosted from a committed woff2 file', () => {
         match => {
             return match[1] ?? '';
         }
-    );
+    ).filter(url => {
+        return !url.startsWith('/icons/');
+    });
 
     assert.equal(fontUrls.length, 7);
 

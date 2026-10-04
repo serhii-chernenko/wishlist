@@ -1,0 +1,15 @@
+@layer components {
+    .priority-field {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .priority-field:first-child {
+        margin-top: 0;
+    }
+
+    .priority-field-label {
+        font-weight: 600;
+    }
+}

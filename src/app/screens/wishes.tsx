@@ -3,7 +3,8 @@ import { useEffect, useState } from 'hono/jsx/dom';
 import type {
     OwnWishDto,
     WishFilterValue,
-    WishListDto
+    WishListDto,
+    WishPriority
 } from '../../shared/app-api';
 import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
@@ -201,17 +202,16 @@ const trackFlagWrite = (id: number, delta: number) => {
     return next;
 };
 
-/** Optimistic priority and hidden switches shared by the cards and the editor. */
-export const useWishFlagToggle = () => {
+const useOptimisticFlagPatch = () => {
     const services = useApp();
-    const LL = useLL();
 
-    return (wish: OwnWishDto, flag: DraftFlag, value: boolean) => {
+    return (
+        wish: OwnWishDto,
+        flag: DraftFlag,
+        applied: Partial<OwnWishDto>,
+        message: string | null
+    ) => {
         const { api, cache, toast } = services;
-        const applied: Partial<OwnWishDto> =
-            flag === 'priority'
-                ? { priority: toToggledPriority(value) }
-                : { hidden: value };
         const previous = pickFields(wish, [flag]);
 
         void runOptimistic({
@@ -235,7 +235,9 @@ export const useWishFlagToggle = () => {
                     refreshWishList(api, cache);
                 }
 
-                toast.show(flagToast(LL, flag, value), 'success');
+                if (message !== null) {
+                    toast.show(message, 'success');
+                }
             },
             fail(error) {
                 const failure = toFailure(error);
@@ -247,6 +249,32 @@ export const useWishFlagToggle = () => {
                 toast.failure(failure);
             }
         });
+    };
+};
+
+/** Optimistic priority (high or none) and hidden switches shared by the cards and the editor. */
+export const useWishFlagToggle = () => {
+    const LL = useLL();
+    const patchFlag = useOptimisticFlagPatch();
+
+    return (wish: OwnWishDto, flag: DraftFlag, value: boolean) => {
+        const applied: Partial<OwnWishDto> =
+            flag === 'priority'
+                ? { priority: toToggledPriority(value) }
+                : { hidden: value };
+
+        patchFlag(wish, flag, applied, flagToast(LL, flag, value));
+    };
+};
+
+/** Optimistic move to any priority level; the editor's segmented control is its own feedback, so no toast. */
+export const useWishPriorityChange = () => {
+    const patchFlag = useOptimisticFlagPatch();
+
+    return (wish: OwnWishDto, priority: WishPriority) => {
+        if (priority !== wish.priority) {
+            patchFlag(wish, 'priority', { priority }, null);
+        }
     };
 };
 

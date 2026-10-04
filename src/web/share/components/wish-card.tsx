@@ -7,15 +7,14 @@ import {
     type Currency,
     type ExchangeRates
 } from '../../../shared/money';
+import { isBadgePriority } from '../../../shared/priority-badge';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
-import { HERO_LOGO_ID_PREFIX } from './hero';
 import { InlineContent, OWNER_LINK_REL } from './inline-content';
-import { heartSymbolId } from './logo';
+import { HeartSticker } from './heart-sticker';
+import { PriorityBadge } from './priority-badge';
 
 const WWW_PREFIX = /^www\./;
-const HEART_HREF = `#${heartSymbolId(HERO_LOGO_ID_PREFIX)}`;
-const STICKER_VIEW_BOX = '-125 -124 250 206';
 const NO_PHOTOS: readonly ShareWishPhoto[] = [];
 
 export const getLinkHostname = (link: string) => {
@@ -69,13 +68,8 @@ const WishPrice = ({
     );
 };
 
-const HeartSticker = () => {
-    return (
-        <svg class='wish-heart' viewBox={STICKER_VIEW_BOX} aria-hidden='true'>
-            <use href={HEART_HREF} class='heart-halo' />
-            <use href={HEART_HREF} class='heart-fill' />
-        </svg>
-    );
+export const isHighPriorityWish = (wish: Pick<ShareWishView, 'priority'>) => {
+    return wish.priority === 'high';
 };
 
 const WishCover = ({ photos }: { photos: readonly ShareWishPhoto[] }) => {
@@ -119,12 +113,15 @@ export const WishCard = ({
 
     return (
         <li class='wish'>
-            {wish.priority === 'high' ? <HeartSticker /> : null}
+            {isHighPriorityWish(wish) ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
                 <WishCover photos={wish.photos ?? NO_PHOTOS} />
-                {wish.priority === 'high' ? (
-                    <p class='sr-only'>{LL.web.wish.priority.high()}</p>
+                {isBadgePriority(wish.priority) ? (
+                    <PriorityBadge
+                        priority={wish.priority}
+                        label={LL.web.wish.priority[wish.priority]()}
+                    />
                 ) : null}
                 {wish.price > 0 ? (
                     <WishPrice
