@@ -14,6 +14,12 @@ import type {
 } from './types';
 import { resolveLateAlbumInput } from './album';
 import { clearPendingInput } from './context';
+import {
+    getBareLink,
+    getMessageText,
+    isLinkImportAvailable,
+    offerLinkImport
+} from './link-offer';
 import { getMessageContact } from '../utils/telegram';
 
 export const PENDING_INPUT_SCREENS = {
@@ -205,6 +211,17 @@ export const createRouter = (modules: readonly ScreenExports[]): Router => {
             resolveLateAlbumInput(req.session, message);
 
         if (pending === null) {
+            const link = getBareLink(getMessageText(message));
+
+            if (
+                link !== null &&
+                req.user !== null &&
+                isLinkImportAvailable(req)
+            ) {
+                await offerLinkImport(req, link);
+                return;
+            }
+
             await renderScreen(req, 'home');
             return;
         }

@@ -1,9 +1,11 @@
 import { Effect } from 'effect';
 
 import type { AppLocale } from '../i18n';
+import { isRenderableLink } from '../input/link';
 import type {
     AlbumState,
     FindState,
+    LinkOffer,
     PendingInput,
     Repositories,
     SessionState,
@@ -59,6 +61,10 @@ const decoded = <T>(value: T): Decoded<T> => {
 
 const INVALID = { ok: false } as const;
 
+const isLink = (value: unknown): value is string => {
+    return typeof value === 'string' && isRenderableLink(value);
+};
+
 const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
     if (value === null || value === undefined) {
         return decoded(null);
@@ -70,6 +76,13 @@ const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
 
     switch (value.kind) {
         case 'wishTitleNew':
+            return decoded({
+                kind: 'wishTitleNew',
+                ...(isLink(value.link) ? { link: value.link } : {}),
+                ...(isPositiveInteger(value.importMarker)
+                    ? { importMarker: value.importMarker }
+                    : {})
+            });
         case 'findQuery':
         case 'feedback':
         case 'payments':
@@ -144,6 +157,18 @@ const decodeAlbumState = (value: unknown): Decoded<AlbumState | null> => {
     });
 };
 
+const decodeLinkOffer = (value: unknown): LinkOffer | null => {
+    if (
+        !isObject(value) ||
+        !isLink(value.url) ||
+        !isPositiveInteger(value.createdAt)
+    ) {
+        return null;
+    }
+
+    return { url: value.url, createdAt: value.createdAt };
+};
+
 const parseJson = (raw: string): unknown => {
     try {
         return JSON.parse(raw);
@@ -172,6 +197,7 @@ export const decodeSessionState = (
     const pendingInput = decodePendingInput(value.pendingInput);
     const find = decodeFindState(value.find);
     const album = decodeAlbumState(value.album);
+    const linkOffer = decodeLinkOffer(value.linkOffer);
 
     if (!pendingInput.ok || !find.ok || !album.ok) {
         return createDefaultSessionState();
@@ -181,7 +207,8 @@ export const decodeSessionState = (
         v: SESSION_VERSION,
         pendingInput: pendingInput.value,
         find: find.value,
-        ...(album.value === null ? {} : { album: album.value })
+        ...(album.value === null ? {} : { album: album.value }),
+        ...(linkOffer === null ? {} : { linkOffer })
     };
 };
 
@@ -190,7 +217,8 @@ export const encodeSessionState = (state: SessionState) => {
         v: state.v,
         pendingInput: state.pendingInput,
         find: state.find,
-        ...(state.album === undefined ? {} : { album: state.album })
+        ...(state.album === undefined ? {} : { album: state.album }),
+        ...(state.linkOffer === undefined ? {} : { linkOffer: state.linkOffer })
     });
 };
 
@@ -243,4 +271,46 @@ export const saveSessionIfChanged = async (
     );
 
     return true;
+};
+
+export const claimLinkImport = async (
+    repos: Pick<Repositories, 'sessions'>,
+    telegramUserId: number,
+    marker: number,
+    nextPendingInput: PendingInput | null,
+    now: Date
+) => {
+    const { state } = await loadSession(repos, telegramUserId);
+    const pending = state.pendingInput;
+
+    if (pending?.kind !== 'wishTitleNew' || pending.importMarker !== marker) {
+        return false;
+    }
+
+    await Effect.runPromise(
+        repos.sessions.saveState(
+            telegramUserId,
+            encodeSessionState({ ...state, pendingInput: nextPendingInput }),
+            now
+        )
+    );
+
+    return true;
+};
+
+export const savePendingInput = async (
+    repos: Pick<Repositories, 'sessions'>,
+    telegramUserId: number,
+    pendingInput: PendingInput | null,
+    now: Date
+) => {
+    const { state } = await loadSession(repos, telegramUserId);
+
+    await Effect.runPromise(
+        repos.sessions.saveState(
+            telegramUserId,
+            encodeSessionState({ ...state, pendingInput }),
+            now
+        )
+    );
 };
