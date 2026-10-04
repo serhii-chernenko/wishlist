@@ -286,6 +286,10 @@
         padding-bottom: 0.75rem;
     }
 
+    .wish-tag > :last-child:not(.wish-actions) {
+        margin-bottom: 0.75rem;
+    }
+
     .screen-header {
         display: grid;
         gap: 0.5rem;
