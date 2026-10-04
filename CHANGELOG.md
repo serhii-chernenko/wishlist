@@ -17,9 +17,9 @@
       🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
       🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
 
-- [added] Бажання можна додати за посиланням: встав посилання на товар у застосунку або надішли його боту, і назва, опис, ціна та фото заповняться самі. Працює з більшістю магазинів, як-от Rozetka, Prom, OLX чи IKEA, а якщо сайт не віддає дані, решту можна заповнити вручну.
-    - en: Add a wish from a link: paste a product link in the app or send it to the bot, and the title, description, price, and photos fill in automatically. It works with most stores, like Rozetka, Prom, OLX, or IKEA, and if a site doesn't share its data, you can fill in the rest yourself.
-    - pl: Życzenie dodasz z linku: wklej link do produktu w aplikacji albo wyślij go botowi, a nazwa, opis, cena i zdjęcia uzupełnią się same. Działa z większością sklepów, np. Rozetka, Prom, OLX czy IKEA, a jeśli strona nie udostępnia danych, resztę uzupełnisz ręcznie.
+- [added] Бажання можна додати за посиланням: встав посилання на товар у застосунку або надішли його боту, і назва, опис, ціна та фото заповняться самі. Працює з більшістю магазинів, а решту завжди можна заповнити вручну.
+    - en: Add a wish from a link: paste a product link in the app or send it to the bot, and the title, description, price, and photos fill in automatically. It works with most stores, and you can always fill in the rest yourself.
+    - pl: Życzenie dodasz z linku: wklej link do produktu w aplikacji albo wyślij go botowi, a nazwa, opis, cena i zdjęcia uzupełnią się same. Działa z większością sklepów, a resztę zawsze uzupełnisz ręcznie.
 - [added] Валюту тепер можна обрати в налаштуваннях: гривня, долар, євро або злотий. Кожне бажання зберігає валюту, в якій вказана ціна, а друзі бачать суму у своїй валюті, орієнтовно за щоденним курсом НБУ. На сторінці листа бажань валюту можна перемкнути вгорі.
     - en: You can now pick your currency in Settings: hryvnia, US dollar, euro, or złoty. Each wish keeps the currency it was priced in, and friends see the amount in their own currency, converted approximately at the official daily rate. The wish list page has a currency switcher at the top.
     - pl: Walutę możesz teraz wybrać w ustawieniach: hrywna, dolar amerykański, euro lub złoty. Każde życzenie zachowuje walutę, w której podano cenę, a znajomi widzą kwotę w swojej walucie, przeliczoną orientacyjnie po oficjalnym dziennym kursie. Na stronie listy życzeń walutę przełączysz u góry.
@@ -45,12 +45,9 @@
 - [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і бронювати бажання. Чат-бот працює як раніше, а дані спільні.
     - en: Wishlist now has an app right inside Telegram: open it with the "Open app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.
     - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne.
-- [added] Фото бажань тепер видно й на публічній сторінці листа бажань, а якщо їх кілька, їх можна гортати свайпом прямо в картці, як і в застосунку.
-    - en: Wish photos now appear on the public wish list page too, and when there are several, you can swipe through them right in the card, just like in the app.
-    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń, a jeśli jest ich kilka, możesz je przewijać palcem prosto w karcie, tak jak w aplikacji.
-- [added] Зі сторінки листа бажань можна одразу відкрити його в Телеграмі й забронювати бажання.
-    - en: From a wish list page you can open the list in Telegram right away and reserve a wish.
-    - pl: Ze strony listy życzeń możesz od razu otworzyć listę w Telegramie i zarezerwować życzenie.
+- [added] Фото бажань тепер видно й на публічній сторінці листа бажань і їх можна гортати свайпом, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.
+    - en: Wish photos now appear on the public wish list page too, and you can swipe through them. From the page you can also open the list in Telegram right away and reserve a wish.
+    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń i można je przewijać palcem, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie.
 - [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
     - en: You can now support the author via Monobank, Ko-fi, PayPal, or Revolut.
     - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.
