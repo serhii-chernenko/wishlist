@@ -256,3 +256,88 @@ test('an invalid auth type still resets the session even with via', () => {
         DEFAULT_STATE
     );
 });
+
+test('the title prompt keeps its link and import marker through a round trip', () => {
+    const states: SessionState[] = [
+        {
+            v: 1,
+            pendingInput: {
+                kind: 'wishTitleNew',
+                link: 'https://shop.test/p/1'
+            },
+            find: null
+        },
+        {
+            v: 1,
+            pendingInput: { kind: 'wishTitleNew', importMarker: 4021 },
+            find: null
+        }
+    ];
+
+    for (const state of states) {
+        assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
+    }
+});
+
+test('the old title prompt shape still decodes and invalid link fields are dropped', () => {
+    assert.deepEqual(
+        decodeSessionState(
+            '{"v":1,"pendingInput":{"kind":"wishTitleNew"},"find":null}'
+        ).pendingInput,
+        { kind: 'wishTitleNew' }
+    );
+
+    for (const extra of [
+        '"link":"ftp://shop.test"',
+        '"link":42',
+        '"link":"not a link"',
+        '"importMarker":0',
+        '"importMarker":"7"',
+        '"importMarker":1.5'
+    ]) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":{"kind":"wishTitleNew",${extra}},"find":null}`
+            ).pendingInput,
+            { kind: 'wishTitleNew' },
+            extra
+        );
+    }
+});
+
+test('the link offer survives a round trip and an invalid one is dropped without resetting the session', () => {
+    const state: SessionState = {
+        v: 1,
+        pendingInput: { kind: 'feedback' },
+        find: null,
+        linkOffer: {
+            url: 'https://shop.test/p/1',
+            createdAt: 1_790_000_000_000
+        }
+    };
+
+    assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
+
+    for (const offer of [
+        '{"url":"https://shop.test","createdAt":0}',
+        '{"url":"javascript:alert(1)","createdAt":5}',
+        '{"url":7,"createdAt":5}',
+        '"x"'
+    ]) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":{"kind":"feedback"},"find":null,"linkOffer":${offer}}`
+            ),
+            { v: 1, pendingInput: { kind: 'feedback' }, find: null },
+            offer
+        );
+    }
+});
+
+test('a session written by the old decoder shape has no link offer', () => {
+    assert.equal(
+        encodeSessionState(DEFAULT_STATE),
+        '{"v":1,"pendingInput":null,"find":null}'
+    );
+    assert.equal(decodeSessionState('{"v":1}').linkOffer, undefined);
+});

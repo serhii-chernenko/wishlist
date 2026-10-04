@@ -67,6 +67,11 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishFieldPrompt', wishId: 3, field: 'price' }, 'w:f:p:3'],
     [{ type: 'wishBack', wishId: 3 }, 'w:back:3'],
     [{ type: 'wishAdd' }, 'w:add'],
+    [{ type: 'wishAddNoLink' }, 'w:add:nl'],
+    [
+        { type: 'linkOfferAccept', createdAt: 1_790_000_000_000 },
+        'w:add:lk:1790000000000'
+    ],
     [{ type: 'thirdPage', ownerId: 5, offset: 10 }, 't:p:5:10'],
     [{ type: 'thirdGive', wishId: 9 }, 't:g:9'],
     [{ type: 'thirdTake', wishId: 9 }, 't:t:9'],
@@ -101,6 +106,7 @@ const WORST_CASE_VARIANTS: readonly EncodableCallbackAction[] = [
     { type: 'wishFieldPrompt', wishId: MAX_ID, field: 'description' },
     { type: 'wishRemoveConfirm', wishId: MAX_ID, done: true },
     { type: 'wishBack', wishId: MAX_ID },
+    { type: 'linkOfferAccept', createdAt: MAX_ID },
     { type: 'wishlistPage', offset: MAX_OFFSET },
     { type: 'giveListPage', offset: MAX_OFFSET }
 ];
@@ -195,6 +201,11 @@ test('malformed new-style data decodes as outdated', () => {
         'w:f:q:5',
         'w:f:t',
         'w:add:1',
+        'w:add:nl:1',
+        'w:add:lk',
+        'w:add:lk:0',
+        'w:add:lk:abc',
+        'w:add:lk:5:6',
         'wl:f:7',
         'wl:p:-1',
         'wl:p:01',
@@ -243,6 +254,11 @@ test('callback categories are closed and never contain ids', () => {
     assert.equal(getCallbackCategory('cur:EUR'), 'currency');
     assert.equal(getCallbackCategory('dsc:h:y'), 'disclosure:confirm');
     assert.equal(getCallbackCategory('x'), 'noop');
+    assert.equal(getCallbackCategory('w:add:nl'), 'wish:addNoLink');
+    assert.equal(
+        getCallbackCategory('w:add:lk:1790000000000'),
+        'wish:linkOffer'
+    );
     assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
     assert.equal(
         getCallbackCategory('wl:share:stop:y'),

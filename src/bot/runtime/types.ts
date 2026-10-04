@@ -17,6 +17,18 @@ import type {
     ContactDisclosureField,
     WishPriorityLevel
 } from '../../shared/app-api';
+import type {
+    LinkImportDeps,
+    LinkImportOutcome,
+    LinkImportShop,
+    LinkImportSource,
+    LinkImportTransform,
+    LoadStagedImage,
+    RunLinkImport,
+    SendImportPreview,
+    StageImages,
+    ToImportedDraft
+} from '../services/link-import/types';
 import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
@@ -86,7 +98,7 @@ export type ConfirmableDisclosureField = Exclude<
 >;
 
 export type PendingInput =
-    | { kind: 'wishTitleNew' }
+    | { kind: 'wishTitleNew'; link?: string; importMarker?: number }
     | { kind: 'wishField'; wishId: number; field: WishField }
     | { kind: 'findQuery' }
     | { kind: 'feedback' }
@@ -112,11 +124,17 @@ export interface AlbumState {
     wishId: number;
 }
 
+export interface LinkOffer {
+    url: string;
+    createdAt: number;
+}
+
 export interface SessionState {
     v: 1;
     pendingInput: PendingInput | null;
     find: FindState | null;
     album?: AlbumState;
+    linkOffer?: LinkOffer;
 }
 
 export type CallbackAction =
@@ -152,6 +170,8 @@ export type CallbackAction =
     | { type: 'wishFieldPrompt'; wishId: number; field: WishField }
     | { type: 'wishBack'; wishId: number }
     | { type: 'wishAdd' }
+    | { type: 'wishAddNoLink' }
+    | { type: 'linkOfferAccept'; createdAt: number }
     | { type: 'thirdPage'; ownerId: number; offset: number }
     | { type: 'thirdGive'; wishId: number }
     | { type: 'thirdTake'; wishId: number }
@@ -246,6 +266,17 @@ export type WishlistShareChangeResult = 'success' | 'failed';
 
 export type WishlistShareUsernameResult = 'on' | 'off' | 'failed';
 
+export interface LinkImportCompletedInput {
+    result: LinkImportOutcome;
+    source: LinkImportSource | null;
+    shop: LinkImportShop;
+    cacheOutcome: 'hit' | 'miss';
+    imagesStaged: number;
+    imagesIngested: number;
+    elapsedMs: number;
+    transform: LinkImportTransform;
+}
+
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {
         action: BotActionName;
@@ -256,11 +287,23 @@ export interface WishlistBotTelemetry {
         event: InternalFailureEvent;
         errorType: string;
     }): void;
+    linkImportCompleted?(input: LinkImportCompletedInput): void;
+    importRateLimiterGap?(result: 'missing' | 'error'): void;
+}
+
+export interface BotLinkImport {
+    run: RunLinkImport;
+    stageImages: StageImages;
+    loadStagedImage: LoadStagedImage;
+    toDraft: ToImportedDraft;
+    sendPreview: SendImportPreview;
+    deps?: Omit<LinkImportDeps, 'env'>;
 }
 
 export interface BotServices {
     users: UserService;
     stats: StatsService;
+    linkImport?: BotLinkImport;
 }
 
 export interface BotRequest {

@@ -50,6 +50,11 @@ export interface WishEditParams {
     wishId: number;
 }
 
+export interface WishEditMenuParams extends WishEditParams {
+    notice?: string;
+    withCancel?: boolean;
+}
+
 type WishFieldInput = Extract<PendingInput, { kind: 'wishField' }>;
 
 export const ALBUM_DEBOUNCE_MS = 1500;
@@ -62,7 +67,11 @@ export const renderStaleWish = async (req: BotRequest) => {
     await wishlistScreen.render(req, undefined);
 };
 
-const buildEditMenu = (req: BotRequest, wish: WishRecord) => {
+const buildEditMenu = (
+    req: BotRequest,
+    wish: WishRecord,
+    withCancel: boolean
+) => {
     const { LL } = req;
     const actions = LL.wishlist.edit.actions;
     const imageCount = parseWishImages(wish.images).length;
@@ -113,6 +122,13 @@ const buildEditMenu = (req: BotRequest, wish: WishRecord) => {
         ),
         callbackButton(LL.wishlist.add.title(), { type: 'wishAdd' }),
         appEntryButton(req, `w_${wish.id}`),
+        withCancel
+            ? callbackButton(LL.wishlist.add.import.cancel(), {
+                  type: 'wishRemoveConfirm',
+                  wishId: wish.id,
+                  done: false
+              })
+            : null,
         callbackButton(LL.actions.back(), {
             type: 'wishBack',
             wishId: wish.id
@@ -148,7 +164,31 @@ const renderEdit = async (req: BotRequest, params: WishEditParams) => {
     );
     await req.send.text(
         LL.wishlist.edit.description(),
-        buildEditMenu(req, wish)
+        buildEditMenu(req, wish, false)
+    );
+};
+
+export const renderEditMenuOnly = async (
+    req: BotRequest,
+    params: WishEditMenuParams
+) => {
+    const user = requireUser(req);
+    const { wishes } = createWishScreenServices(req);
+    const wish = await wishes.findOwned(params.wishId, user.id);
+
+    if (wish === null) {
+        await renderStaleWish(req);
+
+        return;
+    }
+
+    const description = req.LL.wishlist.edit.description();
+
+    await req.send.text(
+        params.notice === undefined
+            ? description
+            : `${params.notice}\n\n${description}`,
+        buildEditMenu(req, wish, params.withCancel ?? false)
     );
 };
 

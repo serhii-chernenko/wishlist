@@ -207,6 +207,10 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `w:back:${action.wishId}`;
         case 'wishAdd':
             return 'w:add';
+        case 'wishAddNoLink':
+            return 'w:add:nl';
+        case 'linkOfferAccept':
+            return `w:add:lk:${action.createdAt}`;
         case 'thirdPage':
             return `t:p:${action.ownerId}:${action.offset}`;
         case 'thirdGive':
@@ -425,6 +429,28 @@ const decodeWishImageFirst = (parts: readonly string[]): CallbackAction => {
     });
 };
 
+const decodeWishAdd = (
+    variant: string | undefined,
+    argument: string | undefined,
+    rest: readonly string[]
+): CallbackAction => {
+    if (variant === undefined) {
+        return { type: 'wishAdd' };
+    }
+
+    if (variant === 'nl' && argument === undefined) {
+        return { type: 'wishAddNoLink' };
+    }
+
+    const createdAt = parseEntityId(argument);
+
+    if (variant === 'lk' && createdAt !== null && rest.length === 0) {
+        return { type: 'linkOfferAccept', createdAt };
+    }
+
+    return OUTDATED;
+};
+
 const WISH_DECODERS_BY_COMMAND: Readonly<
     Record<string, (parts: readonly string[]) => CallbackAction>
 > = {
@@ -444,7 +470,7 @@ const decodeWish = (parts: readonly string[]): CallbackAction => {
     }
 
     if (command === 'add') {
-        return first === undefined ? { type: 'wishAdd' } : OUTDATED;
+        return decodeWishAdd(first, second, rest);
     }
 
     if (command === 'f') {
@@ -736,6 +762,8 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishFieldPrompt: 'wish:field',
     wishBack: 'wish:back',
     wishAdd: 'wish:add',
+    wishAddNoLink: 'wish:addNoLink',
+    linkOfferAccept: 'wish:linkOffer',
     thirdPage: 'third:page',
     thirdGive: 'third:give',
     thirdTake: 'third:take',

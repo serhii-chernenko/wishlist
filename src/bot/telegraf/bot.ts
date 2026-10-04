@@ -47,6 +47,7 @@ import {
 import { createSender, type RuntimeSender } from '../runtime/send';
 import { loadSession, saveSessionIfChanged } from '../runtime/session-store';
 import type {
+    BotLinkImport,
     BotRequest,
     BotServices,
     CallbackAction,
@@ -98,6 +99,7 @@ export interface WishlistBotDependencies {
     sleep?: Sleep | undefined;
     repositories?: Repositories | undefined;
     publicOrigin?: string | undefined;
+    linkImport?: BotLinkImport | undefined;
 }
 
 const SCREEN_MODULES: readonly ScreenExports[] = [
@@ -164,10 +166,14 @@ interface UpdateScope {
     deferQueue: DeferQueue | null;
 }
 
-const createServices = (repos: Repositories): BotServices => {
+const createServices = (
+    repos: Repositories,
+    linkImport: BotLinkImport | undefined
+): BotServices => {
     return {
         users: createUserService({ repos }),
-        stats: createStatsService({ repos })
+        stats: createStatsService({ repos }),
+        ...(linkImport === undefined ? {} : { linkImport })
     };
 };
 
@@ -432,7 +438,7 @@ const handlePrivateUpdate = async (ctx: Context, runtime: UpdateRuntime) => {
     const repos =
         runtime.deps.repositories ??
         createRepositories(createDb({ DB: runtime.env.DB }));
-    const services = createServices(repos);
+    const services = createServices(repos, runtime.deps.linkImport);
 
     if (ctx.myChatMember) {
         await handleMyChatMember(ctx, services);
