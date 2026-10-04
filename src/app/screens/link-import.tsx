@@ -12,7 +12,12 @@ import {
     type ImportTarget
 } from '../logic/link-import';
 import type { ScreenProps } from '../nav/routes';
-import { useApp, useLL, useSession } from '../state/context';
+import { useApp, useEntryKey, useLL, useSession } from '../state/context';
+import {
+    handOffImport,
+    readLinkStepText,
+    rememberLinkStepText
+} from '../state/import-handoff';
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -22,19 +27,16 @@ import { Icon } from '../ui/icon';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
-import { WishEditorView } from './wish-editor';
 
 const URL_FIELD_ID = 'link-import-url';
 
-interface LinkStepProps {
-    onOpenEditor: (start: ImportStart | null) => void;
-}
-
-const LinkStep = ({ onOpenEditor }: LinkStepProps) => {
+/** First step of adding a wish: paste a product link to prefill the editor, or skip to an empty one. The editor opens as its own entry, so Back returns here with the link still filled in. */
+export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
     const LL = useLL();
-    const { api, reportEvent, toast } = useApp();
+    const { api, nav, reportEvent, toast } = useApp();
     const { me, config } = useSession();
-    const [text, setText] = useState('');
+    const entryKey = useEntryKey();
+    const [text, setText] = useState(() => readLinkStepText(entryKey));
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<ImportTarget | null>(null);
     const [lifecycle] = useState(() => {
@@ -48,6 +50,23 @@ const LinkStep = ({ onOpenEditor }: LinkStepProps) => {
             lifecycle.controller?.abort();
         };
     }, []);
+
+    const onOpenEditor = (start: ImportStart | null) => {
+        rememberLinkStepText(entryKey, text);
+
+        if (start === null) {
+            nav.push({ screen: 'wishEditor', wishId: null });
+
+            return;
+        }
+
+        handOffImport(start.draft.link, start);
+        nav.push({
+            screen: 'wishEditor',
+            wishId: null,
+            importLink: start.draft.link
+        });
+    };
 
     const openLinkOnly = (link: string, reason: ImportFailureReason | null) => {
         onOpenEditor(linkOnlyStart(link, me.currency, reason));
@@ -220,40 +239,5 @@ const LinkStep = ({ onOpenEditor }: LinkStepProps) => {
                 </div>
             </form>
         </ScreenLayout>
-    );
-};
-
-/** First step of adding a wish: paste a product link to prefill the editor, or skip to an empty one. */
-export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
-    const { reportEvent } = useApp();
-    const [editor, setEditor] = useState<{ start: ImportStart | null } | null>(
-        null
-    );
-
-    useEffect(() => {
-        if (editor !== null) {
-            document
-                .querySelector<HTMLElement>('main h1')
-                ?.focus({ preventScroll: true });
-        }
-    }, [editor !== null]);
-
-    return (
-        <div class='link-import-host'>
-            {editor === null ? (
-                <LinkStep
-                    onOpenEditor={start => {
-                        reportEvent('screenView', 'wishEditor');
-                        setEditor({ start });
-                    }}
-                />
-            ) : (
-                <WishEditorView
-                    layoutId='linkImport'
-                    wishId={null}
-                    importStart={editor.start}
-                />
-            )}
-        </div>
     );
 };

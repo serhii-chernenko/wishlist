@@ -5,15 +5,12 @@ import {
     canGoBack,
     createNavState,
     currentEntry,
-    popRoute,
-    popToScreen,
-    pushRoute,
-    replaceRoute,
-    resetRoutes,
+    rootRoute,
     toClientScreen,
     type NavState,
     type Route
 } from '../logic/nav';
+import { createNavigatorCore } from '../logic/navigator';
 import { SCREENS, type ScreenProps } from '../screens';
 import {
     EntryContext,
@@ -23,7 +20,7 @@ import {
 } from '../state/context';
 import { dismissibleLayers, dismissTopLayer } from '../state/layers';
 import { createStore, useStore, type Store } from '../state/store';
-import { useBackButton } from '../telegram/buttons';
+import { useBackButton, useHomeButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
 import { confirmAction } from '../telegram/popups';
 import { ErrorState } from '../ui/error-state';
@@ -53,57 +50,15 @@ export const createNavigator = (
     session: Store<Session>
 ): NavigatorHandle => {
     const state = createStore(createNavState(initial));
-    const dirtyEntries = new Set<number>();
     const scrollPositions = new Map<number, number>();
-
-    const rememberScroll = () => {
-        scrollPositions.set(currentEntry(state.get()).key, window.scrollY);
-    };
-
-    const isCurrentDirty = () => {
-        return dirtyEntries.has(currentEntry(state.get()).key);
-    };
-
-    const navigator: Navigator = {
-        push(route) {
-            rememberScroll();
-            state.set(current => pushRoute(current, route));
-        },
-        replace(route) {
-            state.set(current => replaceRoute(current, route));
-        },
-        reset(routes) {
-            dirtyEntries.clear();
-            state.set(current => resetRoutes(current, routes));
-        },
-        popTo(screen) {
-            state.set(current => popToScreen(current, screen));
-        },
-        async back() {
-            if (!canGoBack(state.get())) {
-                return false;
-            }
-
-            if (isCurrentDirty() && !(await confirmDiscard(session.get()))) {
-                return false;
-            }
-
-            dirtyEntries.delete(currentEntry(state.get()).key);
-            state.set(popRoute);
-
-            return true;
-        },
-        canGoBack() {
-            return canGoBack(state.get());
-        },
-        setDirty(entryKey, dirty) {
-            if (dirty) {
-                dirtyEntries.add(entryKey);
-            } else {
-                dirtyEntries.delete(entryKey);
-            }
+    const navigator = createNavigatorCore({
+        state,
+        confirmDiscard: () => confirmDiscard(session.get()),
+        rootRoutes: () => [rootRoute(session.get().me.registered)],
+        rememberScroll: entryKey => {
+            scrollPositions.set(entryKey, window.scrollY);
         }
-    };
+    });
 
     return { state, navigator, scrollPositions };
 };
@@ -148,7 +103,8 @@ export const Router = ({ handle }: { handle: NavigatorHandle }) => {
         ScreenProps<Route['screen']>
     >;
     const { scrollPositions } = handle;
-    const { reportEvent } = useApp();
+    const { reportEvent, session } = useApp();
+    const { LL } = useStore(session);
     const layers = useStore(dismissibleLayers);
 
     useBackButton(canGoBack(nav) || layers.length > 0, () => {
@@ -157,6 +113,10 @@ export const Router = ({ handle }: { handle: NavigatorHandle }) => {
         if (!dismissTopLayer()) {
             void handle.navigator.back();
         }
+    });
+    useHomeButton(canGoBack(nav), LL.common.toHome(), () => {
+        haptics.selection();
+        void handle.navigator.home();
     });
 
     useEffect(() => {

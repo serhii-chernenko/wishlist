@@ -25,10 +25,6 @@
         border-style: dashed;
     }
 
-    .link-import-host {
-        display: contents;
-    }
-
     .import-loading {
         margin-top: 1.5rem;
         font-weight: 600;

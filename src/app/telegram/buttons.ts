@@ -103,6 +103,68 @@ export const useBottomButton = (config: BottomButtonConfig | null) => {
     });
 };
 
+const getNativeSecondaryButton = (): WebAppBottomButton | null => {
+    const { webApp } = getLaunchContext();
+
+    return webApp !== null && supportsNative('bottomButton')
+        ? (webApp.SecondaryButton ?? null)
+        : null;
+};
+
+export const isNativeHomeButton = () => {
+    return getNativeSecondaryButton() !== null;
+};
+
+/** Shows the native SecondaryButton as a "Home" shortcut while `visible`; one stable click handler for the app's lifetime, removed and hidden on unmount. */
+export const useHomeButton = (
+    visible: boolean,
+    text: string,
+    onHome: () => void
+) => {
+    const handler = useLatest(onHome);
+    const [click] = useState(() => {
+        return () => {
+            handler.current();
+        };
+    });
+
+    useEffect(() => {
+        const button = getNativeSecondaryButton();
+
+        if (button === null) {
+            return undefined;
+        }
+
+        callSafely(() => {
+            button.onClick(click);
+        });
+
+        return () => {
+            callSafely(() => {
+                button.offClick(click);
+                button.hide();
+            });
+        };
+    }, []);
+
+    useEffect(() => {
+        const button = getNativeSecondaryButton();
+
+        if (button === null) {
+            return;
+        }
+
+        callSafely(() => {
+            button.setParams({
+                text,
+                position: 'left',
+                is_active: true,
+                is_visible: visible
+            });
+        });
+    }, [visible, text]);
+};
+
 const getNativeHeaderButton = (
     kind: 'backButton' | 'settingsButton'
 ): WebAppHeaderButton | null => {
@@ -145,6 +207,10 @@ const bindHeaderButton = (
     return () => {
         callSafely(() => {
             button.offClick(onClick);
+
+            if (visible) {
+                button.hide();
+            }
         });
     };
 };

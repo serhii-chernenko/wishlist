@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'hono/jsx/dom';
-import { Trash2 } from 'lucide';
+import { Share2, Trash2 } from 'lucide';
 
 import type {
     OwnWishDto,
@@ -837,34 +837,55 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
         <ScreenLayout
             id='wishes'
             title={LL.wishes.title()}
+            sticky
             busy={page === undefined && list.failure === null}
             {...(page !== undefined &&
                 page.total > 0 && {
                     lead: LL.wishes.count({ count: page.total })
                 })}
+            {...(page !== undefined &&
+                (items.length > 0 || filter !== null) && {
+                    toolbar: (
+                        <div class='filter-row'>
+                            <ChipGroup
+                                label={LL.filters.title()}
+                                options={filterOptions}
+                                value={filter}
+                                onChange={selectFilter}
+                            />
+                        </div>
+                    )
+                })}
             actions={
-                <OverflowMenu
-                    label={LL.common.moreActions()}
-                    items={[
-                        {
-                            id: 'share',
-                            label: LL.wishes.menu.share(),
-                            onSelect: () => {
-                                nav.push({ screen: 'share' });
-                            }
-                        },
-                        {
-                            id: 'clean',
-                            label: LL.wishes.menu.clean(),
-                            destructive: true,
-                            onSelect: () => {
-                                if (!cleaning) {
-                                    void clean();
+                <>
+                    <button
+                        type='button'
+                        class='header-icon-button'
+                        aria-label={LL.nav.share()}
+                        title={LL.nav.share()}
+                        onClick={() => {
+                            haptics.selection();
+                            void nav.navigateTo('share');
+                        }}
+                    >
+                        <Icon icon={Share2} />
+                    </button>
+                    <OverflowMenu
+                        label={LL.common.moreActions()}
+                        items={[
+                            {
+                                id: 'clean',
+                                label: LL.wishes.menu.clean(),
+                                destructive: true,
+                                onSelect: () => {
+                                    if (!cleaning) {
+                                        void clean();
+                                    }
                                 }
                             }
-                        }
-                    ]}
-                />
+                        ]}
+                    />
+                </>
             }
         >
             {page === undefined ? (
@@ -876,16 +897,6 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                 />
             ) : (
                 <>
-                    {items.length > 0 || filter !== null ? (
-                        <div class='filter-row'>
-                            <ChipGroup
-                                label={LL.filters.title()}
-                                options={filterOptions}
-                                value={filter}
-                                onChange={selectFilter}
-                            />
-                        </div>
-                    ) : null}
                     {activeItems.length > 0 ? null : nothingAtAll ? (
                         <EmptyState
                             title={LL.wishes.empty.title()}

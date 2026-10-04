@@ -161,8 +161,10 @@ export const WishGrid = ({
     label?: string;
 }) => {
     return (
-        <ul class='wish-grid' aria-label={label}>
-            {children}
-        </ul>
+        <div class='wish-grid-frame'>
+            <ul class='wish-grid' aria-label={label}>
+                {children}
+            </ul>
+        </div>
     );
 };

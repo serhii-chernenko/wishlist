@@ -9,7 +9,7 @@ export type Route =
     | { screen: 'home' }
     | { screen: 'onboarding' }
     | { screen: 'wishes' }
-    | { screen: 'wishEditor'; wishId: number | null }
+    | { screen: 'wishEditor'; wishId: number | null; importLink?: string }
     | { screen: 'linkImport' }
     | { screen: 'gives' }
     | { screen: 'find' }
@@ -28,6 +28,10 @@ export type Route =
     | { screen: 'about' };
 
 export type ScreenId = Route['screen'];
+
+export type PlainScreenId = Exclude<ScreenId, 'wishEditor' | 'thirdList'>;
+
+export type MissingScreenFallback = 'push' | 'replace';
 
 export type RouteOf<Screen extends ScreenId> = Extract<
     Route,
@@ -240,14 +244,67 @@ export const resetRoutes = (
     };
 };
 
-export const popToScreen = (state: NavState, screen: ScreenId): NavState => {
-    const index = state.entries
-        .map(entry => entry.route.screen)
-        .lastIndexOf(screen);
+const lastIndexOfScreen = (state: NavState, screen: ScreenId) => {
+    return state.entries.map(entry => entry.route.screen).lastIndexOf(screen);
+};
 
-    return index === -1
+export const hasScreen = (state: NavState, screen: ScreenId) => {
+    return lastIndexOfScreen(state, screen) !== -1;
+};
+
+export const popToScreen = (state: NavState, screen: ScreenId): NavState => {
+    const index = lastIndexOfScreen(state, screen);
+
+    return index === -1 || index === state.entries.length - 1
         ? state
         : { ...state, entries: state.entries.slice(0, index + 1) };
+};
+
+export const entriesAboveScreen = (
+    state: NavState,
+    screen: ScreenId
+): NavEntry[] => {
+    const index = lastIndexOfScreen(state, screen);
+
+    return index === -1 ? [] : state.entries.slice(index + 1);
+};
+
+export const plainRoute = (screen: PlainScreenId): Route => {
+    return { screen } as Route;
+};
+
+/** Goes back to the screen when it is already in the stack, so links between screens never grow it in cycles; otherwise pushes it (or replaces the current entry). */
+export const navigateToScreen = (
+    state: NavState,
+    screen: PlainScreenId,
+    fallback: MissingScreenFallback = 'push'
+): NavState => {
+    if (hasScreen(state, screen)) {
+        return popToScreen(state, screen);
+    }
+
+    return fallback === 'push'
+        ? pushRoute(state, plainRoute(screen))
+        : replaceRoute(state, plainRoute(screen));
+};
+
+/** Swaps the current route in place (same entry key, so the screen keeps its state) and drops the entry right below it when that is `dropBelow`. */
+export const retargetCurrent = (
+    state: NavState,
+    route: Route,
+    dropBelow?: ScreenId
+): NavState => {
+    const { key } = currentEntry(state);
+    const below = state.entries.slice(0, -1);
+    const dropsBelow =
+        dropBelow !== undefined &&
+        below.length > 1 &&
+        below[below.length - 1]?.route.screen === dropBelow;
+
+    return {
+        ...state,
+        entries: [...(dropsBelow ? below.slice(0, -1) : below), { key, route }]
+    };
 };
 
 export const toClientScreen = (route: Route): ClientScreen => {

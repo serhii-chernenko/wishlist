@@ -709,6 +709,7 @@ const uk: BaseTranslation = {
             remove: 'Видалити',
             close: 'Закрити',
             back: 'Назад',
+            toHome: 'На головну',
             done: 'Готово',
             confirm: 'Підтвердити',
             yes: 'Так',
@@ -990,7 +991,6 @@ const uk: BaseTranslation = {
             photoCount: 'Фото: {count:number}',
             edit: 'Редагувати',
             menu: {
-                share: 'Поділитися листом',
                 clean: 'Очистити лист'
             },
             clean: {

@@ -702,6 +702,7 @@ const en: Translation = {
             remove: 'Remove',
             close: 'Close',
             back: 'Back',
+            toHome: 'Home',
             done: 'Done',
             confirm: 'Confirm',
             yes: 'Yes',
@@ -981,7 +982,6 @@ const en: Translation = {
             photoCount: 'Photos: {count}',
             edit: 'Edit',
             menu: {
-                share: 'Share list',
                 clean: 'Clear list'
             },
             clean: {

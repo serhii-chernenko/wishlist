@@ -1,3 +1,4 @@
+import { LINK_MAX_LENGTH } from '../../bot/input/limits';
 import type { OwnerDto } from '../../shared/app-api';
 import { parseStartParam } from '../../shared/app-links';
 import {
@@ -10,15 +11,15 @@ import {
     type ScreenId
 } from './nav';
 
-export const NAV_STORAGE_KEY = 'wl.nav.v1';
-export const NAV_SNAPSHOT_VERSION = 1;
+export const NAV_STORAGE_KEY = 'wl.nav.v2';
+export const NAV_SNAPSHOT_VERSION = 2;
 export const NAV_SNAPSHOT_MAX_ROUTES = 24;
 
 type StoredOwner = Omit<OwnerDto, 'payments' | 'contact'>;
 
 type StoredRoute =
     | { screen: Exclude<ScreenId, 'wishEditor' | 'thirdList'> }
-    | { screen: 'wishEditor'; wishId: number | null }
+    | { screen: 'wishEditor'; wishId: number | null; importLink?: string }
     | {
           screen: 'thirdList';
           source:
@@ -141,6 +142,31 @@ const isWishId = (value: unknown): value is number | null => {
     );
 };
 
+const isImportLink = (value: unknown): value is string => {
+    return (
+        typeof value === 'string' &&
+        value !== '' &&
+        value.length <= LINK_MAX_LENGTH
+    );
+};
+
+const parseWishEditor = (
+    wishId: unknown,
+    importLink: unknown
+): Route | null => {
+    if (!isWishId(wishId)) {
+        return null;
+    }
+
+    if (importLink === undefined) {
+        return { screen: 'wishEditor', wishId };
+    }
+
+    return wishId === null && isImportLink(importLink)
+        ? { screen: 'wishEditor', wishId, importLink }
+        : null;
+};
+
 /** Rebuilds one stored route, or null when its screen or params no longer match a known shape. */
 export const parseStoredRoute = (value: unknown): Route | null => {
     if (!isRecord(value) || typeof value.screen !== 'string') {
@@ -148,9 +174,7 @@ export const parseStoredRoute = (value: unknown): Route | null => {
     }
 
     if (value.screen === 'wishEditor') {
-        return isWishId(value.wishId)
-            ? { screen: 'wishEditor', wishId: value.wishId }
-            : null;
+        return parseWishEditor(value.wishId, value.importLink);
     }
 
     if (value.screen === 'thirdList') {

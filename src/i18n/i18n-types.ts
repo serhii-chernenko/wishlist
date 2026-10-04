@@ -2184,6 +2184,10 @@ type RootTranslation = {
 			 */
 			back: string
 			/**
+			 * Н​а​ ​г​о​л​о​в​н​у
+			 */
+			toHome: string
+			/**
 			 * Г​о​т​о​в​о
 			 */
 			done: string
@@ -3013,10 +3017,6 @@ type RootTranslation = {
 			 */
 			edit: string
 			menu: {
-				/**
-				 * П​о​д​і​л​и​т​и​с​я​ ​л​и​с​т​о​м
-				 */
-				share: string
 				/**
 				 * О​ч​и​с​т​и​т​и​ ​л​и​с​т
 				 */
@@ -6660,6 +6660,10 @@ export type TranslationFunctions = {
 			 */
 			back: () => LocalizedString
 			/**
+			 * На головну
+			 */
+			toHome: () => LocalizedString
+			/**
 			 * Готово
 			 */
 			done: () => LocalizedString
@@ -7474,10 +7478,6 @@ export type TranslationFunctions = {
 			 */
 			edit: () => LocalizedString
 			menu: {
-				/**
-				 * Поділитися листом
-				 */
-				share: () => LocalizedString
 				/**
 				 * Очистити лист
 				 */

@@ -110,7 +110,7 @@ const ThirdFailure = ({
                     type='button'
                     class='btn btn-primary'
                     onClick={() => {
-                        nav.replace({ screen: 'find' });
+                        void nav.navigateTo('find', 'replace');
                     }}
                 >
                     {LL.third.searchAgain()}
@@ -448,7 +448,28 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const shownGifted = nextOffset === null ? giftedItems : NO_GIFTED;
 
     return (
-        <ScreenLayout id='thirdList' title={LL.third.title()} busy={pending}>
+        <ScreenLayout
+            id='thirdList'
+            title={LL.third.title()}
+            busy={pending}
+            sticky={owner !== null}
+            {...(owner !== null && {
+                summary: <OwnerHeader owner={owner} total={total} />
+            })}
+            {...(owner !== null &&
+                !viewOnly && {
+                    toolbar: (
+                        <div class='filter-row'>
+                            <ChipGroup
+                                label={LL.filters.title()}
+                                options={filterOptions}
+                                value={filter}
+                                onChange={setFilter}
+                            />
+                        </div>
+                    )
+                })}
+        >
             {headerFailure !== null ? (
                 <ThirdFailure
                     failure={headerFailure}
@@ -463,7 +484,6 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                 ) : null
             ) : (
                 <>
-                    <OwnerHeader owner={owner} total={total} />
                     <OwnerEnvelope payments={payments} contact={contact} />
                     {viewOnly ? (
                         <Tag class='third-view-only'>
@@ -472,20 +492,13 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                                 type='button'
                                 class='btn'
                                 onClick={() => {
-                                    nav.push({ screen: 'find' });
+                                    void nav.navigateTo('find');
                                 }}
                             >
                                 {LL.third.searchAgain()}
                             </button>
                         </Tag>
-                    ) : (
-                        <ChipGroup
-                            label={LL.filters.title()}
-                            options={filterOptions}
-                            value={filter}
-                            onChange={setFilter}
-                        />
-                    )}
+                    ) : null}
                     {listFailure !== null && list.data === undefined ? (
                         <ThirdFailure
                             failure={listFailure}

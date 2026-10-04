@@ -266,7 +266,7 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                     action={{
                         label: LL.gives.empty.cta(),
                         onClick: () => {
-                            nav.push({ screen: 'find' });
+                            void nav.navigateTo('find');
                         }
                     }}
                 />

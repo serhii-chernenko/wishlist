@@ -37,8 +37,11 @@ export interface PopupParams {
     buttons?: PopupButton[];
 }
 
+export type SecondaryButtonPosition = 'left' | 'right' | 'top' | 'bottom';
+
 export interface BottomButtonParams {
     text?: string;
+    position?: SecondaryButtonPosition;
     color?: string;
     text_color?: string;
     is_active?: boolean;
@@ -118,6 +121,7 @@ export interface WebApp {
     BackButton: WebAppHeaderButton;
     MainButton: WebAppBottomButton;
     BottomButton?: WebAppBottomButton;
+    SecondaryButton?: WebAppBottomButton;
     SettingsButton?: WebAppHeaderButton;
     HapticFeedback: WebAppHapticFeedback;
     CloudStorage?: WebAppCloudStorage;

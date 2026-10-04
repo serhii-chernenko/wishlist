@@ -13,7 +13,7 @@ import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
 import type { UndoableAction } from '../logic/countdown';
 import type { AppFailure } from '../logic/errors';
-import type { Route, ScreenId } from '../logic/nav';
+import type { Navigator } from '../logic/navigator';
 import type { LaunchContext } from '../telegram/sdk';
 import {
     useResource,
@@ -34,15 +34,7 @@ export interface Session {
 
 export type ClientEventDetails = Pick<ClientEventInput, 'field' | 'code'>;
 
-export interface Navigator {
-    push(route: Route): void;
-    replace(route: Route): void;
-    reset(routes: readonly Route[]): void;
-    popTo(screen: ScreenId): void;
-    back(): Promise<boolean>;
-    canGoBack(): boolean;
-    setDirty(entryKey: number, dirty: boolean): void;
-}
+export type { Navigator };
 
 export type ToastTone = 'info' | 'success' | 'error';
 

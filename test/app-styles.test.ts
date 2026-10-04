@@ -271,8 +271,13 @@ test('safe areas, reduced motion and the compact grid are in the source', () => 
     );
     assert.match(
         APP_SOURCE,
-        /@media \(min-width: 26rem\) \{\s*\.wish-grid \{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
+        /\.wish-grid-frame \{\s*container: wish-list \/ inline-size;/
     );
+    assert.match(
+        APP_SOURCE,
+        /@container wish-list \(min-width: 20rem\) \{\s*\.wish-grid \{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
+    );
+    assert.doesNotMatch(APP_SOURCE, /@media \(min-width: 26rem\)/);
 });
 
 test('the source and the committed stylesheet load nothing from the network', () => {
@@ -338,4 +343,50 @@ test('the gifted band sits on the paper in light and on the card colour in dark'
     for (const block of darkBlocks) {
         assert.match(block, /--gifted-band: var\(--tag\);/);
     }
+});
+
+const STICKY_HEADER_SOURCE = readFileSync(
+    new URL('../src/app/styles/sticky-header.css', import.meta.url),
+    'utf8'
+);
+
+test('toasts sit 1rem above the safe area and clear the in-page bar only when it is mounted', () => {
+    assert.match(
+        APP_SOURCE,
+        /\.toast-host \{[^}]*padding: 0 var\(--gutter-right\) calc\(var\(--safe-bottom\) \+ 1rem\)/
+    );
+    assert.match(
+        APP_SOURCE,
+        /:root:has\(\.bottom-bar\) \.toast-host \{\s*padding-bottom: calc\(var\(--safe-bottom\) \+ 5rem\);/
+    );
+    assert.ok(
+        APP_SOURCE.indexOf(':root:has(.bottom-bar) .toast-host') >
+            APP_SOURCE.indexOf('.toast-host {')
+    );
+});
+
+test('the sticky list header respects the safe area, compacts its chips and honours reduced motion', () => {
+    assert.match(APP_SOURCE, /@import '\.\/sticky-header\.css';/);
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\.screen-header-sticky \{[^}]*position: sticky;[^}]*top: var\(--safe-top\);/
+    );
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\.sticky-sentinel \{[^}]*top: calc\(var\(--safe-top\) \* -1\);/
+    );
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\[data-stuck\] \{[^}]*border-bottom-color: var\(--ink\);/
+    );
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\[data-stuck\] \.filter-row \.chip \{[^}]*min-height: 2rem;/
+    );
+    assert.match(STICKY_HEADER_SOURCE, /overscroll-behavior-x: contain;/);
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /@media \(prefers-reduced-motion: no-preference\) \{[^@]*var\(--motion-collapse\)/
+    );
+    assert.match(APP_SOURCE, /--motion-collapse: 150ms ease-out;/);
 });

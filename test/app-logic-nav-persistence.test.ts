@@ -5,6 +5,8 @@ import type { Route } from '../src/app/logic/nav';
 import {
     getLaunchIdentity,
     NAV_SNAPSHOT_MAX_ROUTES,
+    NAV_SNAPSHOT_VERSION,
+    NAV_STORAGE_KEY,
     parseStoredRoute,
     resolveInitialRoutes,
     restoreRoutes,
@@ -92,8 +94,9 @@ test('a missing, broken or foreign-version snapshot falls back to start routing'
         null,
         '{',
         '[]',
-        JSON.stringify({ v: 2, launch: LAUNCH, routes: [] }),
-        JSON.stringify({ v: 1, launch: LAUNCH, routes: 'home' })
+        JSON.stringify({ v: 1, launch: LAUNCH, routes: [] }),
+        JSON.stringify({ v: 3, launch: LAUNCH, routes: [] }),
+        JSON.stringify({ v: 2, launch: LAUNCH, routes: 'home' })
     ]) {
         assert.deepEqual(
             screensOf(
@@ -273,4 +276,64 @@ test('a reload on the link step reopens the link step above the wish list', () =
         }),
         [{ screen: 'onboarding' }]
     );
+});
+
+test('the snapshot moved to v2 when the editor route gained the import link', () => {
+    assert.equal(NAV_STORAGE_KEY, 'wl.nav.v2');
+    assert.equal(NAV_SNAPSHOT_VERSION, 2);
+    assert.equal(
+        JSON.parse(serializeNavSnapshot([{ screen: 'home' }], LAUNCH)).v,
+        2
+    );
+});
+
+test('an imported editor keeps only its link across a reload', () => {
+    const link = 'https://example.com/grinder';
+    const stack: Route[] = [
+        { screen: 'home' },
+        { screen: 'wishes' },
+        { screen: 'linkImport' },
+        { screen: 'wishEditor', wishId: null, importLink: link }
+    ];
+    const stored = serializeNavSnapshot(stack, LAUNCH);
+
+    assert.doesNotMatch(stored, /importToken/);
+    assert.deepEqual(
+        resolveInitialRoutes({
+            stored,
+            initData: INIT_DATA,
+            startParam: null,
+            registered: true,
+            linkImportEnabled: true
+        }),
+        stack
+    );
+});
+
+test('the import link is validated with the editor route', () => {
+    assert.deepEqual(
+        parseStoredRoute({
+            screen: 'wishEditor',
+            wishId: null,
+            importLink: 'https://example.com/x'
+        }),
+        {
+            screen: 'wishEditor',
+            wishId: null,
+            importLink: 'https://example.com/x'
+        }
+    );
+
+    for (const invalid of [
+        { screen: 'wishEditor', wishId: 5, importLink: 'https://example.com' },
+        { screen: 'wishEditor', wishId: null, importLink: '' },
+        { screen: 'wishEditor', wishId: null, importLink: 42 },
+        {
+            screen: 'wishEditor',
+            wishId: null,
+            importLink: `https://example.com/${'x'.repeat(2100)}`
+        }
+    ]) {
+        assert.equal(parseStoredRoute(invalid), null, JSON.stringify(invalid));
+    }
 });

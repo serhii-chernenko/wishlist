@@ -119,6 +119,23 @@ export const ALIGNMENT_PROBE_SOURCE = String.raw`
         }
     }
 
+    for (const heading of document.querySelectorAll('.screen-header-sticky .screen-heading')) {
+        const title = heading.querySelector('.screen-title');
+        const textNode = title === null ? null : firstTextNode(title);
+
+        if (textNode === null || heading.getClientRects().length === 0) {
+            continue;
+        }
+
+        const metrics = await readTextMetrics(textNode);
+        const stuck = heading.closest('[data-stuck]') === null ? 'header' : 'stuck header';
+        const rowName = stuck + ': ' + textNode.textContent.trim().slice(0, 30);
+
+        for (const item of heading.querySelectorAll('.header-icon-button, .overflow-toggle')) {
+            record(rowName, item, metrics);
+        }
+    }
+
     for (const label of document.querySelectorAll('.field-label')) {
         const textNode = firstTextNode(label);
         const mark = label.querySelector('.field-mark-required');

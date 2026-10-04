@@ -712,6 +712,7 @@ const pl: Translation = {
             remove: 'Usuń',
             close: 'Zamknij',
             back: 'Wstecz',
+            toHome: 'Strona główna',
             done: 'Gotowe',
             confirm: 'Potwierdź',
             yes: 'Tak',
@@ -995,7 +996,6 @@ const pl: Translation = {
             photoCount: 'Zdjęcia: {count}',
             edit: 'Edytuj',
             menu: {
-                share: 'Udostępnij listę',
                 clean: 'Wyczyść listę'
             },
             clean: {

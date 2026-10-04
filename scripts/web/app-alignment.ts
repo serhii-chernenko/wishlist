@@ -8,6 +8,7 @@ import {
     type AlignmentReport,
     type AlignmentSample
 } from './alignment-probe';
+import { APP_API_PREFIX } from '../../src/shared/app-api';
 import {
     assertLocalBase,
     buildAppUrl,
@@ -371,6 +372,257 @@ const checkTextareaGrowth = async (
     return failures;
 };
 
+const STUCK_HEADER_MAX_PX = 92;
+const COMPACT_CHIP_MAX_PX = 33;
+const LIST_SCROLL_PX = 600;
+const LIST_WIDTHS = [360, 390] as const;
+const COLLAPSE_SETTLE_MS = 400;
+const LIST_FIXTURE_TITLES = [
+    'Настільна гра «Каркасон»',
+    'Кавомолка ручна з керамічними жорнами',
+    'Konstruktor LEGO Technic Porsche 911 GT3 RS',
+    'Навушники',
+    'Superdługaczęśćzamówieniabeztwardejspacji',
+    'Термочашка',
+    'Плед',
+    'Сертифікат у книгарню'
+];
+
+const listFixtureWishes = () => {
+    return LIST_FIXTURE_TITLES.map((title, index) => {
+        return {
+            id: 9_000 + index,
+            title,
+            description: null,
+            link: index === 1 ? 'https://example.com/grinder' : null,
+            linkHost: index === 1 ? 'example.com' : null,
+            price: index % 3 === 2 ? 0 : 999_999 - index * 13_750,
+            currency: 'UAH',
+            priority: index % 2 === 0 ? 'high' : 'none',
+            hidden: index % 4 === 0,
+            gifted: false,
+            images: [],
+            createdAt: '2026-09-01T10:00:00.000Z',
+            updatedAt: '2026-09-01T10:00:00.000Z'
+        };
+    });
+};
+
+const listFixtureRule = ({ url, method }: { url: URL; method: string }) => {
+    if (method !== 'GET' || url.pathname !== `${APP_API_PREFIX}/wishes`) {
+        return null;
+    }
+
+    const items = listFixtureWishes();
+
+    return {
+        status: 200,
+        body: {
+            items,
+            total: items.length,
+            nextOffset: null,
+            filter: null,
+            giftedTotal: 0
+        }
+    };
+};
+
+interface StickyHeaderMeasure {
+    stuck: boolean;
+    height: number;
+    titleLines: number;
+    chipHeight: number;
+}
+
+const STICKY_HEADER_MEASURE = `(() => {
+    const header = document.querySelector('.screen-header-sticky');
+    const title = header.querySelector('.screen-title');
+    const range = document.createRange();
+
+    range.selectNodeContents(title);
+
+    const chip = header.querySelector('.filter-row .chip');
+
+    return {
+        stuck: header.hasAttribute('data-stuck'),
+        height: header.getBoundingClientRect().height,
+        titleLines: new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size,
+        chipHeight: chip === null ? 0 : chip.getBoundingClientRect().height
+    };
+})()`;
+
+const CARD_OVERFLOW_PROBE = `(() => {
+    const problems = [];
+    const cards = [...document.querySelectorAll('.wish-grid .wish-tag')];
+
+    for (const card of cards) {
+        const box = card.getBoundingClientRect();
+        const name = (card.querySelector('.wish-title')?.textContent ?? '').trim().slice(0, 24);
+
+        for (const part of card.querySelectorAll('.wish-title, .wish-badge, .priority-badge, .price, .wish-link, .wish-actions > *')) {
+            const rect = part.getBoundingClientRect();
+            const label = [...part.classList][0] ?? part.tagName.toLowerCase();
+
+            if (rect.width === 0) {
+                continue;
+            }
+
+            if (rect.right > box.right + 0.5 || rect.left < box.left - 0.5 || part.scrollWidth > part.clientWidth + 1) {
+                problems.push(name + ': ' + label + ' overflows the card');
+            }
+
+            if (part.classList.contains('price')) {
+                const style = getComputedStyle(part);
+                const textHeight = part.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+
+                if (textHeight > parseFloat(style.lineHeight) * 1.5) {
+                    problems.push(name + ': price wraps');
+                }
+            }
+        }
+    }
+
+    return {
+        problems,
+        cardWidth: cards.length === 0 ? 0 : cards[0].getBoundingClientRect().width
+    };
+})()`;
+
+const checkListScreen = async (
+    cdp: CdpConnection,
+    credentials: SmokeCredentials,
+    context: {
+        baseUrl: string;
+        width: number;
+        locale: Locale;
+        start: string;
+        screen: string;
+        shotsDirectory: string | undefined;
+    }
+) => {
+    const { baseUrl, width, locale, start, screen, shotsDirectory } = context;
+    const page = await SmokePage.open(cdp, width);
+    const failures: string[] = [];
+    const label = `w${width} ${locale} ${screen} list`;
+    let samples: AlignmentSample[] = [];
+
+    try {
+        await page.intercept(listFixtureRule, 'Request');
+
+        for (let attempt = 1; attempt <= OPEN_ATTEMPTS; attempt += 1) {
+            await page.navigate(
+                buildAppUrl(
+                    baseUrl,
+                    signInitData(credentials, start),
+                    SHOT_THEME,
+                    start
+                )
+            );
+
+            if (await waitForScreen(page, screen)) {
+                break;
+            }
+        }
+
+        await page.waitFor('.screen-header-sticky .filter-row');
+        await page.settle();
+        await wait(COLLAPSE_SETTLE_MS);
+
+        const unstuck = await page.evaluate<AlignmentReport>(
+            ALIGNMENT_PROBE_SOURCE
+        );
+        const cards = await page.evaluate<{
+            problems: string[];
+            cardWidth: number;
+        }>(CARD_OVERFLOW_PROBE);
+
+        failures.push(
+            ...cards.problems.map(problem => {
+                return `${label} (card ${cards.cardWidth.toFixed(0)}px): ${problem}`;
+            })
+        );
+
+        await page.evaluate(`window.scrollTo(0, ${LIST_SCROLL_PX})`);
+        await wait(COLLAPSE_SETTLE_MS);
+        await page.settle();
+
+        const header = await page.evaluate<StickyHeaderMeasure>(
+            STICKY_HEADER_MEASURE
+        );
+        const stuck = await page.evaluate<AlignmentReport>(
+            ALIGNMENT_PROBE_SOURCE
+        );
+
+        samples = [...unstuck.samples, ...stuck.samples].filter(sample => {
+            return sample.row.includes('header');
+        });
+
+        if (!header.stuck) {
+            failures.push(`${label}: header is not stuck after scrolling`);
+        } else {
+            if (header.height > STUCK_HEADER_MAX_PX) {
+                failures.push(
+                    `${label}: stuck header is ${header.height.toFixed(1)}px, over ${STUCK_HEADER_MAX_PX}px`
+                );
+            }
+
+            if (header.titleLines > 1) {
+                failures.push(`${label}: stuck title wraps`);
+            }
+
+            if (header.chipHeight > COMPACT_CHIP_MAX_PX) {
+                failures.push(
+                    `${label}: compact chips are ${header.chipHeight.toFixed(1)}px tall`
+                );
+            }
+        }
+
+        for (const sample of samples) {
+            if (Math.abs(sample.delta) > ALIGNMENT_TOLERANCE_PX) {
+                failures.push(`${label}: ${formatSample(sample)}`);
+            }
+        }
+
+        if (shotsDirectory !== undefined && locale === SHOT_LOCALE) {
+            await page.screenshot(
+                path.join(shotsDirectory, `${screen}-stuck-w${width}.png`)
+            );
+        }
+    } catch (error) {
+        failures.push(`${label}: ${String(error)}`);
+    }
+
+    failures.push(
+        ...page.errors.map(message => {
+            return `${label}: ${message}`;
+        })
+    );
+    await page.close();
+
+    return { failures, samples };
+};
+
+const readSharePublicId = async (
+    baseUrl: string,
+    credentials: SmokeCredentials
+) => {
+    const share = await callApi(
+        baseUrl,
+        signInitData(credentials, null),
+        'GET',
+        '/share'
+    );
+    const url =
+        typeof share.payload === 'object' &&
+        share.payload !== null &&
+        'url' in share.payload &&
+        typeof share.payload.url === 'string'
+            ? share.payload.url
+            : '';
+
+    return url.split('/w/')[1] ?? null;
+};
+
 const setLocale = async (
     baseUrl: string,
     credentials: SmokeCredentials,
@@ -438,6 +690,37 @@ export const runAlignmentCheck = async (options: AlignmentOptions) => {
                         for (const sample of result.samples) {
                             widest = Math.max(widest, Math.abs(sample.delta));
                         }
+                    }
+                }
+            }
+
+            const publicId = await readSharePublicId(
+                options.baseUrl,
+                credentials
+            );
+            const lists = [
+                { start: 'wishes', screen: 'wishes' },
+                ...(publicId === null
+                    ? []
+                    : [{ start: `s_${publicId}`, screen: 'thirdList' }])
+            ];
+
+            for (const width of LIST_WIDTHS) {
+                for (const list of lists) {
+                    const result = await checkListScreen(cdp, credentials, {
+                        baseUrl: options.baseUrl,
+                        width,
+                        locale,
+                        start: list.start,
+                        screen: list.screen,
+                        shotsDirectory: options.shotsDirectory
+                    });
+
+                    failures.push(...result.failures);
+                    measured += result.samples.length;
+
+                    for (const sample of result.samples) {
+                        widest = Math.max(widest, Math.abs(sample.delta));
                     }
                 }
             }

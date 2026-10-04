@@ -187,7 +187,7 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
                         class='text-button'
                         onClick={() => {
                             haptics.selection();
-                            nav.push({ screen: 'share' });
+                            void nav.navigateTo('share');
                         }}
                     >
                         {LL.share.details.title()}

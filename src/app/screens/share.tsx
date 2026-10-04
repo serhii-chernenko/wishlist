@@ -109,7 +109,7 @@ const DetailsNoticeView = ({ notice }: { notice: DetailsNotice }) => {
                     class='text-button'
                     onClick={() => {
                         haptics.selection();
-                        nav.push({ screen: target.screen });
+                        void nav.navigateTo(target.screen);
                     }}
                 >
                     {target.label}

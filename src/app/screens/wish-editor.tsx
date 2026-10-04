@@ -20,6 +20,7 @@ import {
 } from '../logic/format';
 import {
     formatSourcePrice,
+    linkOnlyStart,
     type ImportImageSource,
     type ImportStart
 } from '../logic/link-import';
@@ -63,6 +64,7 @@ import {
     useSession,
     type AppServices
 } from '../state/context';
+import { findHandedOffImport } from '../state/import-handoff';
 import { toFailure, useLatest } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -1169,17 +1171,14 @@ const WishForm = ({
     );
 };
 
-export interface WishEditorViewProps {
-    layoutId: 'wishEditor' | 'linkImport';
+interface WishEditorViewProps {
     wishId: number | null;
-    importStart?: ImportStart | null;
+    importStart: ImportStart | null;
 }
 
-/** The create/edit form with its loading and error states; the link step reuses it for the prefilled editor. */
-export const WishEditorView = ({
-    layoutId,
+const WishEditorView = ({
     wishId: initialWishId,
-    importStart = null
+    importStart
 }: WishEditorViewProps) => {
     const services = useApp();
     const LL = useLL();
@@ -1210,7 +1209,7 @@ export const WishEditorView = ({
 
     return (
         <ScreenLayout
-            id={layoutId}
+            id='wishEditor'
             title={
                 wishId === null
                     ? LL.editor.createTitle()
@@ -1239,6 +1238,10 @@ export const WishEditorView = ({
                             () => created
                         );
                         setWishId(created.id);
+                        services.nav.retarget(
+                            { screen: 'wishEditor', wishId: created.id },
+                            'linkImport'
+                        );
                     }}
                     onReload={() => {
                         void resource.reload();
@@ -1250,5 +1253,18 @@ export const WishEditorView = ({
 };
 
 export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
-    return <WishEditorView layoutId='wishEditor' wishId={route.wishId} />;
+    const { me } = useSession();
+    const [importStart] = useState<ImportStart | null>(() => {
+        const link = route.importLink;
+
+        if (link === undefined) {
+            return null;
+        }
+
+        return (
+            findHandedOffImport(link) ?? linkOnlyStart(link, me.currency, null)
+        );
+    });
+
+    return <WishEditorView wishId={route.wishId} importStart={importStart} />;
 };
