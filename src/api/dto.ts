@@ -11,6 +11,7 @@ import {
 import { isRenderableLink } from '../bot/input/link';
 import { parseWishImages } from '../bot/input/wish-images';
 import type { GiverSummary } from '../bot/services/give-service';
+import { isGiftedWish } from '../bot/services/gifted-service';
 import { canShowPublicUsername } from '../bot/services/share-service';
 import {
     getStoredLanguageChoice,
@@ -167,7 +168,8 @@ export const toOwnWishDto = (
         hidden: wish.hidden,
         images,
         createdAt: wish.createdAt.toISOString(),
-        updatedAt: wish.updatedAt.toISOString()
+        updatedAt: wish.updatedAt.toISOString(),
+        ...(isGiftedWish(wish) && { gifted: true })
     };
 };
 
@@ -268,7 +270,8 @@ export const toMeDto = (input: {
         locale: input.locale,
         wishlistFilter: toWishFilter(user?.wishlistFilter),
         canShowPublicUsername:
-            user === null ? false : canShowPublicUsername(user)
+            user === null ? false : canShowPublicUsername(user),
+        showGifted: user?.showGifted ?? false
     };
 };
 

@@ -253,7 +253,8 @@ describe('Mini App API account, share, feedback and info', () => {
                 languageChoice: 'auto',
                 locale: 'en',
                 wishlistFilter: null,
-                canShowPublicUsername: false
+                canShowPublicUsername: false,
+                showGifted: false
             });
 
             await registerUser(OWNER);

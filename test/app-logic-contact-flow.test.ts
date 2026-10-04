@@ -33,7 +33,8 @@ const createMe = (visibility: MeDto['visibility']): MeDto => {
         languageChoice: 'auto',
         locale: 'en',
         wishlistFilter: null,
-        canShowPublicUsername: true
+        canShowPublicUsername: true,
+        showGifted: false
     };
 };
 

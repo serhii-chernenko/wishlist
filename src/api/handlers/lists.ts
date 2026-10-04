@@ -8,11 +8,13 @@ import {
     summarizeGivers
 } from '../../bot/services/give-service';
 import { resolveOwnerContact } from '../../bot/services/contact-service';
+import { createGiftedService } from '../../bot/services/gifted-service';
 import { createWishService } from '../../bot/services/wish-service';
 import { isFindableOwner } from '../../bot/services/wish-screen-context';
 import type { UserRecord, WishRecord } from '../../db/repositories';
 import {
     APP_PAGE_SIZE,
+    type PageDto,
     type OwnerWishListDto,
     type SharedListDto,
     type SharedWishDto,
@@ -20,7 +22,11 @@ import {
 } from '../../shared/app-api';
 import { buildShareImagePath } from '../../web/image-proxy/share-photos';
 import { normalizeSharePublicId } from '../../web/share/public-id';
-import { resolveDisplayCurrency, resolvePriceBounds } from '../../shared/money';
+import {
+    resolveDisplayCurrency,
+    resolvePriceBounds,
+    type PriceBoundsByCurrency
+} from '../../shared/money';
 import {
     getSigner,
     readExchangeRates,
@@ -100,6 +106,23 @@ const loadAvailableOwner = async (
     }
 
     return owner;
+};
+
+const loadGiftedOnLastPage = async (
+    c: ApiContext,
+    owner: UserRecord,
+    page: Pick<PageDto<unknown>, 'nextOffset'>,
+    priceBounds: PriceBoundsByCurrency | null
+): Promise<WishRecord[]> => {
+    if (page.nextOffset !== null) {
+        return [];
+    }
+
+    return createGiftedService(c.var.repos).listVisibleOf(owner, priceBounds);
+};
+
+const withGifted = <Item>(gifted: Item[]) => {
+    return gifted.length > 0 ? { gifted } : {};
 };
 
 const toShareLabel = (input: {
@@ -183,10 +206,17 @@ export const openSharedList: ApiHandler = async c => {
             limit: APP_PAGE_SIZE
         })
     );
+    const mintingContext = getImageMintingContext(c);
     const items = await toSharedWishItems(
-        getImageMintingContext(c),
+        mintingContext,
         share.publicId,
         page.items
+    );
+    const preview = toPageDto(items, page.total, offset);
+    const gifted = await toSharedWishItems(
+        mintingContext,
+        share.publicId,
+        await loadGiftedOnLastPage(c, owner, preview, null)
     );
     const body: SharedListDto = {
         owner: toOwnerDto({
@@ -200,7 +230,8 @@ export const openSharedList: ApiHandler = async c => {
             source: 'share',
             contact: resolveOwnerContact({ owner, viewer, offset })
         }),
-        preview: toPageDto(items, page.total, offset)
+        preview,
+        ...withGifted(gifted)
     };
 
     return c.json(body);
@@ -256,15 +287,28 @@ export const listOwnerWishes: ApiHandler = async c => {
             return wish.id;
         })
     );
+    const mintingContext = getImageMintingContext(c);
     const items = await toThirdWishItems(
-        getImageMintingContext(c),
+        mintingContext,
         viewer.id,
         page.items,
         giversByWish
     );
+    const pageDto = toPageDto(items, page.total, offset);
+    const gifted = await Promise.all(
+        (await loadGiftedOnLastPage(c, owner, pageDto, priceBounds)).map(
+            async wish => {
+                return toVisibleWishDto(
+                    wish,
+                    await mintWishImages(mintingContext, wish)
+                );
+            }
+        )
+    );
     const username = getPublicOwnerUsername(owner);
     const body: OwnerWishListDto = {
-        ...toPageDto(items, page.total, offset),
+        ...pageDto,
+        ...withGifted(gifted),
         owner: toOwnerDto({
             owner,
             token: c.req.param('token') ?? null,

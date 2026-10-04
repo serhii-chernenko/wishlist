@@ -21,6 +21,7 @@ export interface WishTagModel {
     link: string | null;
     linkHost: string | null;
     hidden?: boolean;
+    gifted?: boolean;
 }
 
 export interface WishTagProps {
@@ -33,22 +34,24 @@ export interface WishTagProps {
 
 const WishCover = ({
     images,
-    title
+    title,
+    band
 }: {
     images: readonly ApiImage[];
     title: string;
+    band: string | undefined;
 }) => {
     const LL = useLL();
     const [cover] = images;
 
     if (cover === undefined) {
-        return <div class='wish-photo' />;
+        return <div class='wish-photo' data-band={band} />;
     }
 
     const morePhotos = images.length - 1;
 
     return (
-        <div class='wish-photo'>
+        <div class='wish-photo' data-band={band}>
             <PhotoFrame
                 src={cover.url}
                 alt={LL.a11y.photo({ index: 1, total: images.length, title })}
@@ -66,10 +69,15 @@ const WishCover = ({
 export const WishTag = ({ wish, onOpen, badges, actions }: WishTagProps) => {
     const LL = useLL();
     const host = wish.linkHost ?? getLinkHost(wish.link);
+    const gifted = wish.gifted === true;
+    const wanted = wish.priority === 'high' && !gifted;
 
     return (
-        <li class='wish' data-wish-id={String(wish.id)}>
-            {wish.priority === 'high' ? <HeartSticker /> : null}
+        <li
+            class={gifted ? 'wish wish-gifted' : 'wish'}
+            data-wish-id={String(wish.id)}
+        >
+            {wanted ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>
                     {onOpen === undefined ? (
@@ -84,11 +92,15 @@ export const WishTag = ({ wish, onOpen, badges, actions }: WishTagProps) => {
                         </button>
                     )}
                 </h2>
-                <WishCover images={wish.images} title={wish.title} />
-                {isBadgePriority(wish.priority) ? (
+                <WishCover
+                    images={wish.images}
+                    title={wish.title}
+                    band={gifted ? LL.gifted.band() : undefined}
+                />
+                {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge priority={wish.priority} />
                 ) : null}
-                {wish.hidden ? (
+                {wish.hidden && !gifted ? (
                     <p class='wish-badge'>{LL.wishes.hiddenBadge()}</p>
                 ) : null}
                 {badges}

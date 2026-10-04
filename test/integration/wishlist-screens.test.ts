@@ -714,6 +714,7 @@ describe('wishlist screens on D1', () => {
                 );
                 assert.deepEqual(callbackDataOf(link.keyboard), [
                     'n:dsc',
+                    'wl:share:g',
                     'wl:share:new',
                     'wl:share:stop',
                     'n:wl'
@@ -816,6 +817,7 @@ describe('wishlist screens on D1', () => {
             assert.deepEqual(callbackDataOf(lastText(events).keyboard), [
                 'wl:share:u',
                 'n:dsc',
+                'wl:share:g',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'
@@ -894,6 +896,71 @@ describe('wishlist screens on D1', () => {
                 { action: 'wishlist_share_username_toggled', result: 'on' },
                 { action: 'wishlist_share_username_toggled', result: 'off' }
             ]);
+        });
+
+        it('toggles showing gifted wishes from the share menu and records the result', async () => {
+            const owner = await createSearchableSharingOwner();
+            const texts = getMessages('uk').wishlist.share;
+            const giftedToggleTextOf = (keyboard: unknown) => {
+                return buttonsOf(keyboard).find(button => {
+                    return (
+                        'callback_data' in button &&
+                        button.callback_data === 'wl:share:g'
+                    );
+                })?.text;
+            };
+            const readShowGifted = async () => {
+                const row = await harness.env.DB.prepare(
+                    'SELECT show_gifted FROM users WHERE id = ?'
+                )
+                    .bind(owner.id)
+                    .first<{ show_gifted: number }>();
+
+                return row?.show_gifted;
+            };
+            const publishing = createRequest(owner, { publicOrigin: ORIGIN });
+
+            await dispatch(publishing.request, 'wl:share:y');
+            assert.equal(
+                giftedToggleTextOf(lastText(publishing.events).keyboard),
+                texts.actions.showGifted()
+            );
+
+            const enabling = createRequest(owner, { publicOrigin: ORIGIN });
+
+            await dispatch(enabling.request, 'wl:share:g');
+            assert.equal(await readShowGifted(), 1);
+            assert.ok(
+                enabling.events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html === texts.gifted.shown()
+                    );
+                })
+            );
+            assert.equal(
+                giftedToggleTextOf(lastText(enabling.events).keyboard),
+                texts.actions.hideGifted()
+            );
+
+            const disabling = createRequest(
+                { ...owner, showGifted: true },
+                { publicOrigin: ORIGIN }
+            );
+
+            await dispatch(disabling.request, 'wl:share:g');
+            assert.equal(await readShowGifted(), 0);
+            assert.equal(
+                giftedToggleTextOf(lastText(disabling.events).keyboard),
+                texts.actions.showGifted()
+            );
+            assert.deepEqual(
+                [...enabling.telemetry, ...disabling.telemetry],
+                [
+                    { action: 'show_gifted_changed', result: 'on' },
+                    { action: 'show_gifted_changed', result: 'off' }
+                ]
+            );
         });
 
         it('keeps the chosen username state when the share is pressed again', async () => {
@@ -1601,7 +1668,7 @@ describe('wishlist screens on D1', () => {
             assert.equal(await countRows(harness, 'wishes'), 501);
         });
 
-        it('deletes the R2 objects after the confirmed wish removal, keeping objects another wish uses', async () => {
+        it('deletes the R2 objects after a not-gifted removal, keeping objects another wish uses', async () => {
             const owner = await createUser();
             const wish = await seedWishWithImages(owner.id, ['gone', 'kept']);
 
@@ -1609,11 +1676,21 @@ describe('wishlist screens on D1', () => {
 
             const confirm = withImages(createRequest(owner));
 
-            await dispatch(confirm.request, `w:r:y:${wish.id}`);
+            await dispatch(confirm.request, `w:r:n:${wish.id}`);
             assert.equal(confirm.deferred.length, 1);
             await flushDeferred(confirm);
             assert.equal(await hasObject('gone'), false);
             assert.equal(await hasObject('kept'), true);
+        });
+
+        it('keeps the R2 objects of a wish removed as gifted, because the gifted card still shows them', async () => {
+            const owner = await createUser();
+            const wish = await seedWishWithImages(owner.id, ['gifted-photo']);
+            const confirm = withImages(createRequest(owner));
+
+            await dispatch(confirm.request, `w:r:y:${wish.id}`);
+            await flushDeferred(confirm);
+            assert.equal(await hasObject('gifted-photo'), true);
         });
 
         it('deletes the R2 objects of every wish when the list is cleaned', async () => {

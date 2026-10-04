@@ -44,6 +44,7 @@ import {
     canShowPublicUsername,
     resolvePublicOrigin
 } from '../services/share-service';
+import { createGiftedService } from '../services/gifted-service';
 
 export interface WishlistParams {
     offset?: number;
@@ -224,6 +225,7 @@ type ShareActionName = Extract<
     | 'wishlist_share_stopped'
     | 'wishlist_share_rotated'
     | 'wishlist_share_username_toggled'
+    | 'show_gifted_changed'
 >;
 
 interface ShareLinks {
@@ -275,6 +277,17 @@ const buildUsernameToggleButton = (
     );
 };
 
+const buildShowGiftedToggleButton = (req: BotRequest) => {
+    const { actions } = req.LL.wishlist.share;
+
+    return callbackButton(
+        req.user?.showGifted === true
+            ? actions.hideGifted()
+            : actions.showGifted(),
+        { type: 'wishlistShareGifted' }
+    );
+};
+
 const buildShareLinkKeyboard = (
     req: BotRequest,
     share: Pick<ShareRecord, 'showUsername'>,
@@ -290,6 +303,7 @@ const buildShareLinkKeyboard = (
         appEntryButton(req, 'share'),
         buildUsernameToggleButton(req, share),
         navigationButton(LL.disclosure.title(), 'disclosure'),
+        buildShowGiftedToggleButton(req),
         callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
         callbackButton(actions.stop(), { type: 'wishlistShareStop' }),
         navigationButton(LL.actions.back(), 'wishlist')
@@ -511,6 +525,55 @@ const toggleShareUsername = async (req: BotRequest) => {
     });
 };
 
+const toggleShowGifted = async (req: BotRequest) => {
+    const user = requireUser(req);
+    const { share } = createWishScreenServices(req);
+    const show = !user.showGifted;
+    const attempt = await attemptShare(req, 'show_gifted_changed', async () => {
+        const current = await share.getShare(user.id);
+
+        if (current === null) {
+            return null;
+        }
+
+        const outcome = await createGiftedService(req.repos).setShowGifted(
+            user,
+            show
+        );
+
+        return outcome === null ? null : { share: current, ...outcome };
+    });
+
+    if (!attempt.ok) {
+        return;
+    }
+
+    if (attempt.value === null) {
+        await openShare(req);
+
+        return;
+    }
+
+    const { share: current, user: updated, changed } = attempt.value;
+    const { gifted } = req.LL.wishlist.share;
+
+    if (changed) {
+        req.telemetry.botActionCompleted({
+            action: 'show_gifted_changed',
+            result: show ? 'on' : 'off'
+        });
+    }
+
+    await req.send.text(show ? gifted.shown() : gifted.hidden());
+    await renderShareLink(
+        deriveRequest(req, { user: updated }),
+        current,
+        links => {
+            return req.LL.wishlist.share.ready(links);
+        }
+    );
+};
+
 export const callbacks: CallbackTable = {
     wishlistPage: async (req, action) => {
         await render(req, { offset: action.offset });
@@ -564,6 +627,9 @@ export const callbacks: CallbackTable = {
     },
     wishlistShareUsername: async req => {
         await toggleShareUsername(req);
+    },
+    wishlistShareGifted: async req => {
+        await toggleShowGifted(req);
     },
     wishlistFilterMenu: async req => {
         requireUser(req);

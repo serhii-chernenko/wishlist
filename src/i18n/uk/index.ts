@@ -258,7 +258,13 @@ const uk: BaseTranslation = {
                 stop: '🚫 Припинити ділитися',
                 newLink: '🔄 Нове посилання',
                 showUsername: '👤 Показувати мій @username',
-                hideUsername: '🙈 Не показувати @username'
+                hideUsername: '🙈 Не показувати @username',
+                showGifted: '🎁 Показувати подаровані',
+                hideGifted: '🙈 Не показувати подаровані'
+            },
+            gifted: {
+                shown: '🎁 Тепер друзі побачать, що тобі вже подарували, в кінці списку.',
+                hidden: '🙈 Друзі більше не бачать подарованих бажань.'
             }
         }
     },
@@ -540,7 +546,8 @@ const uk: BaseTranslation = {
             photo: 'Фото {index:number} з {total:number}',
             details: 'Детальніше',
             created: 'Додано {date:string}',
-            updated: 'Додано {created:string}, оновлено {updated:string}'
+            updated: 'Додано {created:string}, оновлено {updated:string}',
+            gifted: 'Подароване'
         },
         empty: 'Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.',
         truncated: 'Показано перші {limit:number} бажань зі списку.',
@@ -965,6 +972,17 @@ const uk: BaseTranslation = {
                 shown: 'Тепер це бажання бачать інші'
             }
         },
+        gifted: {
+            band: 'Подароване',
+            date: 'Подаровано {date:string}',
+            restore: 'Повернути в мої бажання',
+            hide: 'Приховати назавжди для всіх',
+            hideHint:
+                'Його не побачиш ні ти, ні друзі. У статистиці залишиться.',
+            restored: 'Бажання знову у списку',
+            hidden: 'Приховано',
+            undo: 'Скасувати'
+        },
         money: {
             approx: '≈ {amount:string}',
             original: '(початкова ціна {amount:string})'
@@ -1238,6 +1256,12 @@ const uk: BaseTranslation = {
                 hint: 'Друзі зможуть написати тобі в Телеграмі.',
                 shown: '@username тепер видно на сторінці',
                 hidden: '@username більше не видно на сторінці'
+            },
+            gifted: {
+                label: 'Показувати подаровані бажання',
+                hint: 'Друзі побачать, що тобі вже подарували, в кінці списку',
+                shown: 'Подаровані бажання тепер видно друзям',
+                hidden: 'Друзі більше не бачать подарованих бажань'
             },
             rotate: {
                 action: 'Нове посилання',

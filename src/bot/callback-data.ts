@@ -177,6 +177,8 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'wl:share:u';
         case 'wishlistShareIndexing':
             return 'wl:share:idx';
+        case 'wishlistShareGifted':
+            return 'wl:share:g';
         case 'wishlistFilterMenu':
             return 'wl:f';
         case 'wishlistFilter':
@@ -286,7 +288,8 @@ const SHARE_ACTIONS_BY_SUFFIX: ReadonlyMap<string, CallbackAction> = new Map([
     ['new', { type: 'wishlistShareRotate' }],
     ['new:y', { type: 'wishlistShareRotateConfirm' }],
     ['u', { type: 'wishlistShareUsername' }],
-    ['idx', { type: 'wishlistShareIndexing' }]
+    ['idx', { type: 'wishlistShareIndexing' }],
+    ['g', { type: 'wishlistShareGifted' }]
 ]);
 
 const decodeWishlistShare = (suffixParts: readonly string[]) => {
@@ -718,6 +721,7 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishlistShareRotateConfirm: 'wishlist:shareRotateConfirm',
     wishlistShareUsername: 'wishlist:shareUsername',
     wishlistShareIndexing: 'wishlist:shareIndexing',
+    wishlistShareGifted: 'wishlist:shareGifted',
     wishlistFilterMenu: 'wishlist:filterMenu',
     wishlistFilter: 'wishlist:filter',
     wishEdit: 'wish:edit',

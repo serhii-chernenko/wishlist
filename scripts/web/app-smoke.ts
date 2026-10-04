@@ -629,7 +629,8 @@ const createWishFixtureRule = () => {
                 items: wishes,
                 total: wishes.length,
                 nextOffset: null,
-                filter: null
+                filter: null,
+                giftedTotal: 0
             };
 
             return { status: 200, body };

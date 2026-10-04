@@ -45,8 +45,13 @@ export interface Navigator {
 
 export type ToastTone = 'info' | 'success' | 'error';
 
+export interface ToastAction {
+    label: string;
+    onSelect: () => void;
+}
+
 export interface Toaster {
-    show(message: string, tone?: ToastTone): void;
+    show(message: string, tone?: ToastTone, action?: ToastAction): void;
     failure(failure: AppFailure): void;
 }
 

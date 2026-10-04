@@ -70,7 +70,10 @@ export type TelemetryAction =
     | 'wish_images_reordered'
     | 'contact_disclosure_changed'
     | 'delivery_address_updated'
-    | 'delivery_address_removed';
+    | 'delivery_address_removed'
+    | 'wish_restored'
+    | 'gifted_hidden'
+    | 'show_gifted_changed';
 
 export type SharePageCurrencySource = 'cookie' | 'language';
 

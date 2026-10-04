@@ -126,6 +126,9 @@ describe('share page disclosure inputs', () => {
             telegramLanguageCode: null,
             visibleCount: 1,
             lastUpdatedAt: null,
+            showGifted: false,
+            giftedCount: 0,
+            giftedLastUpdatedAt: null,
             ...overrides
         };
     };

@@ -72,17 +72,23 @@ export const isHighPriorityWish = (wish: Pick<ShareWishView, 'priority'>) => {
     return wish.priority === 'high';
 };
 
-const WishCover = ({ photos }: { photos: readonly ShareWishPhoto[] }) => {
+const WishCover = ({
+    photos,
+    band
+}: {
+    photos: readonly ShareWishPhoto[];
+    band: string | undefined;
+}) => {
     const [cover] = photos;
 
     if (cover === undefined) {
-        return <div class='wish-photo' />;
+        return <div class='wish-photo' data-band={band} />;
     }
 
     const morePhotos = photos.length - 1;
 
     return (
-        <div class='wish-photo'>
+        <div class='wish-photo' data-band={band}>
             <img src={cover.url} alt={cover.alt} loading='lazy' />
             {morePhotos > 0 ? (
                 <span class='wish-photo-count' aria-hidden='true'>
@@ -107,17 +113,23 @@ export const WishCard = ({
     const LL = getTranslator(language);
     const created = formatDate(wish.createdAt, language);
     const updated = formatDate(wish.updatedAt, language);
-    const hostname = isRenderableLink(wish.link)
-        ? getLinkHostname(wish.link)
-        : null;
+    const gifted = wish.gifted === true;
+    const hostname =
+        !gifted && isRenderableLink(wish.link)
+            ? getLinkHostname(wish.link)
+            : null;
+    const wanted = wish.priority === 'high' && !gifted;
 
     return (
-        <li class='wish'>
-            {isHighPriorityWish(wish) ? <HeartSticker /> : null}
+        <li class={gifted ? 'wish wish-gifted' : 'wish'}>
+            {wanted ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
-                <WishCover photos={wish.photos ?? NO_PHOTOS} />
-                {isBadgePriority(wish.priority) ? (
+                <WishCover
+                    photos={wish.photos ?? NO_PHOTOS}
+                    band={gifted ? LL.web.wish.gifted() : undefined}
+                />
+                {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge
                         priority={wish.priority}
                         label={LL.web.wish.priority[wish.priority]()}
@@ -142,24 +154,26 @@ export const WishCard = ({
                         {LL.web.wish.link({ host: hostname })}
                     </a>
                 ) : null}
-                <details class='wish-details'>
-                    <summary>{LL.web.wish.details()}</summary>
-                    {wish.description ? (
-                        <p class='wish-text'>
-                            <InlineContent
-                                nodes={inlineMarkup(
-                                    cutDescription(wish.description),
-                                    { emphasis: false }
-                                )}
-                            />
+                {gifted ? null : (
+                    <details class='wish-details'>
+                        <summary>{LL.web.wish.details()}</summary>
+                        {wish.description ? (
+                            <p class='wish-text'>
+                                <InlineContent
+                                    nodes={inlineMarkup(
+                                        cutDescription(wish.description),
+                                        { emphasis: false }
+                                    )}
+                                />
+                            </p>
+                        ) : null}
+                        <p class='wish-dates'>
+                            {created === updated
+                                ? LL.web.wish.created({ date: created })
+                                : LL.web.wish.updated({ created, updated })}
                         </p>
-                    ) : null}
-                    <p class='wish-dates'>
-                        {created === updated
-                            ? LL.web.wish.created({ date: created })
-                            : LL.web.wish.updated({ created, updated })}
-                    </p>
-                </details>
+                    </details>
+                )}
             </article>
         </li>
     );

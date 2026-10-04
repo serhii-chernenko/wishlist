@@ -29,6 +29,7 @@ import {
 } from './handlers/contact';
 import { setCurrency } from './handlers/currency';
 import { cleanGives, listGives, removeGive } from './handlers/gives';
+import { hideGiftedWish, restoreWish, setShowGifted } from './handlers/gifted';
 import {
     clearWishImages,
     removeWishImage,
@@ -80,6 +81,7 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     setDeliveryAddress,
     removeDeliveryAddress,
     setContactDisclosure,
+    setShowGifted,
     listWishes,
     setWishFilter,
     createWish,
@@ -87,6 +89,8 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     updateWish,
     removeWish,
     cleanWishes,
+    restoreWish,
+    hideGiftedWish,
     uploadWishImage,
     removeWishImage,
     clearWishImages,

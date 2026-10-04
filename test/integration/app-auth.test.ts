@@ -373,7 +373,8 @@ describe('Mini App API auth and bootstrap', () => {
             languageChoice: 'auto',
             locale: 'en',
             wishlistFilter: null,
-            canShowPublicUsername: false
+            canShowPublicUsername: false,
+            showGifted: false
         });
         assert.equal(body.counts, null);
         assert.equal(body.messages.common.retry, 'Try again');

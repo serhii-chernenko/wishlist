@@ -31,6 +31,7 @@ export const users = snakeCase.table(
         showPayments: integer({ mode: 'boolean' }).notNull().default(true),
         showPhone: integer({ mode: 'boolean' }).notNull().default(false),
         showAddress: integer({ mode: 'boolean' }).notNull().default(false),
+        showGifted: integer({ mode: 'boolean' }).notNull().default(false),
         wishlistFilter: integer(),
         releaseVersion: text().notNull().default('0.0.0'),
         blockedAt: integer({ mode: 'timestamp_ms' }),

@@ -258,7 +258,13 @@ const pl: Translation = {
                 stop: '🚫 Wyłącz udostępnianie',
                 newLink: '🔄 Nowy link',
                 showUsername: '👤 Pokazuj mój @username',
-                hideUsername: '🙈 Nie pokazuj @username'
+                hideUsername: '🙈 Nie pokazuj @username',
+                showGifted: '🎁 Pokazuj podarowane życzenia',
+                hideGifted: '🙈 Nie pokazuj podarowanych'
+            },
+            gifted: {
+                shown: '🎁 Na końcu listy znajomi zobaczą, co już zostało ci podarowane.',
+                hidden: '🙈 Znajomi nie widzą już podarowanych życzeń.'
             }
         }
     },
@@ -542,7 +548,8 @@ const pl: Translation = {
             photo: 'Zdjęcie {index} z {total}',
             details: 'Szczegóły',
             created: 'Dodano {date}',
-            updated: 'Dodano {created}, zaktualizowano {updated}'
+            updated: 'Dodano {created}, zaktualizowano {updated}',
+            gifted: 'Podarowane'
         },
         empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
         truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
@@ -970,6 +977,17 @@ const pl: Translation = {
                 shown: 'Teraz to życzenie widzą inni'
             }
         },
+        gifted: {
+            band: 'Podarowane',
+            date: 'Podarowane {date}',
+            restore: 'Przywróć do moich życzeń',
+            hide: 'Ukryj na zawsze dla wszystkich',
+            hideHint:
+                'Nie zobaczysz go ani ty, ani znajomi. Zostanie w statystykach.',
+            restored: 'Życzenie znów jest na liście',
+            hidden: 'Ukryto',
+            undo: 'Cofnij'
+        },
         money: {
             approx: '≈ {amount}',
             original: '(cena pierwotna {amount})'
@@ -1246,6 +1264,12 @@ const pl: Translation = {
                 hint: 'Znajomi będą mogli napisać do ciebie w Telegramie.',
                 shown: 'Twój @username jest teraz na stronie',
                 hidden: 'Twojego @username nie ma już na stronie'
+            },
+            gifted: {
+                label: 'Pokazuj podarowane życzenia',
+                hint: 'Na końcu listy znajomi zobaczą, co już zostało ci podarowane',
+                shown: 'Znajomi widzą teraz podarowane życzenia',
+                hidden: 'Znajomi nie widzą już podarowanych życzeń'
             },
             rotate: {
                 action: 'Nowy link',

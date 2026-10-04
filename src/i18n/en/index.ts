@@ -252,7 +252,13 @@ const en: Translation = {
                 stop: '🚫 Stop sharing',
                 newLink: '🔄 New link',
                 showUsername: '👤 Show my @username',
-                hideUsername: '🙈 Hide my @username'
+                hideUsername: '🙈 Hide my @username',
+                showGifted: '🎁 Show gifted wishes',
+                hideGifted: '🙈 Hide gifted wishes'
+            },
+            gifted: {
+                shown: '🎁 Friends will now see what you’ve already been given at the end of your list.',
+                hidden: '🙈 Friends no longer see your gifted wishes.'
             }
         }
     },
@@ -530,7 +536,8 @@ const en: Translation = {
             photo: 'Photo {index} of {total}',
             details: 'More details',
             created: 'Added {date}',
-            updated: 'Added {created}, updated {updated}'
+            updated: 'Added {created}, updated {updated}',
+            gifted: 'Gifted'
         },
         empty: 'Nothing here yet. Wishes will appear as soon as they are added to the list.',
         truncated: 'Showing the first {limit} wishes of the list.',
@@ -955,6 +962,17 @@ const en: Translation = {
                 shown: 'Now others can see this wish'
             }
         },
+        gifted: {
+            band: 'Gifted',
+            date: 'Gifted on {date}',
+            restore: 'Back to my wishes',
+            hide: 'Hide forever for everyone',
+            hideHint:
+                'Neither you nor your friends will see it. It still counts in your stats.',
+            restored: 'The wish is back on your list',
+            hidden: 'Hidden',
+            undo: 'Undo'
+        },
         money: {
             approx: '≈ {amount}',
             original: '(original price {amount})'
@@ -1231,6 +1249,12 @@ const en: Translation = {
                 hint: 'Friends will be able to message you on Telegram.',
                 shown: 'Your @username is now on the page',
                 hidden: 'Your @username is no longer on the page'
+            },
+            gifted: {
+                label: 'Show gifted wishes',
+                hint: 'Friends will see what you’ve already been given at the end of your list',
+                shown: 'Friends can now see your gifted wishes',
+                hidden: 'Friends no longer see your gifted wishes'
             },
             rotate: {
                 action: 'New link',

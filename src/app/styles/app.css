@@ -2107,3 +2107,5 @@
 @import './currency.css';
 @import './contact.css';
 @import './photo-reorder.css';
+@import '../../web/styles/gifted.css';
+@import './gifted.css';

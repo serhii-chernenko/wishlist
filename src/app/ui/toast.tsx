@@ -1,7 +1,7 @@
 import { failureMessage } from '../i18n/messages';
 import type { AppTranslator } from '../i18n/i18n';
 import type { AppFailure } from '../logic/errors';
-import type { Toaster, ToastTone } from '../state/context';
+import type { ToastAction, Toaster, ToastTone } from '../state/context';
 import { createStore, useStore, type Store } from '../state/store';
 import { haptics } from '../telegram/haptics';
 
@@ -9,6 +9,7 @@ export interface ToastItem {
     id: number;
     message: string;
     tone: ToastTone;
+    action?: ToastAction;
 }
 
 export const TOAST_DURATION_MS = 4000;
@@ -23,12 +24,22 @@ const dismissToast = (id: number) => {
 };
 
 export const createToaster = (getLL: () => AppTranslator): Toaster => {
-    const show = (message: string, tone: ToastTone = 'info') => {
+    const show = (
+        message: string,
+        tone: ToastTone = 'info',
+        action?: ToastAction
+    ) => {
         const id = nextToastId;
+        const item: ToastItem = {
+            id,
+            message,
+            tone,
+            ...(action !== undefined && { action })
+        };
 
         nextToastId += 1;
         toastStore.set(items => {
-            return [...items, { id, message, tone }].slice(-MAX_VISIBLE_TOASTS);
+            return [...items, item].slice(-MAX_VISIBLE_TOASTS);
         });
         setTimeout(() => {
             dismissToast(id);
@@ -58,6 +69,18 @@ export const ToastHost = ({ closeLabel }: { closeLabel: string }) => {
                 return (
                     <div key={item.id} class={`toast-item toast-${item.tone}`}>
                         <p class='toast-text'>{item.message}</p>
+                        {item.action === undefined ? null : (
+                            <button
+                                type='button'
+                                class='toast-action'
+                                onClick={() => {
+                                    dismissToast(item.id);
+                                    item.action?.onSelect();
+                                }}
+                            >
+                                {item.action.label}
+                            </button>
+                        )}
                         <button
                             type='button'
                             class='toast-close'

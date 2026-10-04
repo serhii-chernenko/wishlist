@@ -81,6 +81,7 @@ export const APP_CONTACT_POLL_TIMEOUT_MS = 15_000;
 export const APP_UPLOAD_LONGEST_EDGE_PX = 1600;
 export const APP_UPLOAD_JPEG_QUALITY = 0.85;
 export const APP_THIRD_PARTY_PAYMENTS_MAX_LENGTH = 1000;
+export const APP_THIRD_PARTY_GIFTED_LIMIT = 30;
 export const APP_IMAGE_HASH_LENGTH = 16;
 export const APP_IMAGE_PATH_PREFIX = '/img/w';
 export const SHARE_IMAGE_PATH_PREFIX = '/img/s';
@@ -283,6 +284,7 @@ export type OwnWishDto = {
     images: ApiImage[];
     createdAt: string;
     updatedAt: string;
+    gifted?: boolean;
 };
 
 export type GiverSummaryDto = {
@@ -322,6 +324,7 @@ export type MeDto = {
     locale: AppLocale;
     wishlistFilter: WishFilterValue | null;
     canShowPublicUsername: boolean;
+    showGifted: boolean;
 };
 
 export type ShareDto = {
@@ -376,6 +379,7 @@ export type PageDto<Item> = {
 
 export type WishListDto = PageDto<OwnWishDto> & {
     filter: WishFilterValue | null;
+    giftedTotal: number;
 };
 
 export type WishFilterInput = { filter: WishFilterValue | null };
@@ -399,9 +403,13 @@ export type SharedWishDto = Omit<ThirdWishDto, 'givers'>;
 export type SharedListDto = {
     owner: OwnerDto;
     preview: PageDto<SharedWishDto> | null;
+    gifted?: SharedWishDto[];
 };
 
-export type OwnerWishListDto = PageDto<ThirdWishDto> & { owner: OwnerDto };
+export type OwnerWishListDto = PageDto<ThirdWishDto> & {
+    owner: OwnerDto;
+    gifted?: SharedWishDto[];
+};
 
 export type VisibilityInput = { type: 'username' };
 
@@ -424,6 +432,10 @@ export type ReorderImagesInput = { hashes: string[] };
 export type ShareUsernameInput = { show: boolean };
 
 export type ShareIndexingInput = { allowIndexing: boolean };
+
+export type ShowGiftedInput = { show: boolean };
+
+export type GiftedHiddenInput = { hidden: boolean };
 
 export type FeedbackInput = { text: string };
 
@@ -584,6 +596,14 @@ export const APP_API_ROUTES = {
         body: 'json',
         status: 200
     },
+    setShowGifted: {
+        method: 'PUT',
+        path: '/me/show-gifted',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 200
+    },
     listWishes: {
         method: 'GET',
         path: '/wishes',
@@ -639,6 +659,22 @@ export const APP_API_ROUTES = {
         bucket: 'sensitive',
         body: 'none',
         status: 200
+    },
+    restoreWish: {
+        method: 'POST',
+        path: '/wishes/:id/restore',
+        access: 'user',
+        bucket: 'api',
+        body: 'none',
+        status: 200
+    },
+    hideGiftedWish: {
+        method: 'PUT',
+        path: '/wishes/:id/gifted-hidden',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 204
     },
     uploadWishImage: {
         method: 'POST',
@@ -851,6 +887,7 @@ export interface AppApiEndpoints {
         body: ContactDisclosureInput;
         response: MeDto;
     };
+    setShowGifted: { query: null; body: ShowGiftedInput; response: MeDto };
     listWishes: { query: OffsetQuery; body: null; response: WishListDto };
     setWishFilter: {
         query: null;
@@ -862,6 +899,12 @@ export interface AppApiEndpoints {
     updateWish: { query: null; body: WishPatchInput; response: OwnWishDto };
     removeWish: { query: null; body: RemoveWishInput; response: NoContent };
     cleanWishes: { query: null; body: null; response: RemovedCountDto };
+    restoreWish: { query: null; body: null; response: OwnWishDto };
+    hideGiftedWish: {
+        query: null;
+        body: GiftedHiddenInput;
+        response: NoContent;
+    };
     uploadWishImage: { query: null; body: Blob; response: OwnWishDto };
     removeWishImage: {
         query: RemoveImageQuery;
