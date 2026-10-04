@@ -1,0 +1,1 @@
+ALTER TABLE `wishlist_shares` ADD `show_username` integer DEFAULT false NOT NULL;

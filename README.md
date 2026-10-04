@@ -1,408 +1,221 @@
-# Wishlist<br/>Лист бажань
-Telegram bot<br/>Телеграм бот 
-<hr/>
+# Wishlist
 
-## Prepare to use<br/>Підготуй до використання
+> Operators: read [docs/OPERATIONS.md](./docs/OPERATIONS.md) first. It is the runbook for deploys, migrations, previews, data copies, the Mongo to D1 cutover and releases.
 
-There's only one thing that you need in your OS is Docker.<br/>Єдине, що тобі потрібно встановити до ОС - це Docker.
+Wishlist is a Telegram bot and Mini App for keeping a personal wish list, sharing it, finding the lists of friends and marking the gifts you plan to give. It speaks Ukrainian, English and Polish.
 
-Open the link below and follow instructions:<br/>
-Відкрий посилання та слідуй інструкціям:
-https://docs.docker.com/get-docker/
+Bot: [@wishlist_ua_bot](https://t.me/wishlist_ua_bot)
 
-## How to run<br/>Як запустити
+The bot runs on Cloudflare Workers with Cloudflare D1 as of version 2.0.0. The previous version (1.7.1, Node.js long polling, MongoDB, Docker and Ansible on a VPS) is kept only in git history under the tag `legacy-1.7.1`. See [MIGRATION_STATUS.md](./MIGRATION_STATUS.md) for the migration progress.
 
-### Clone current repo<br/>Клонувати поточну репу
+## What the bot does
 
-Run the command in your terminal.<br/>
-Виконай команду в терміналі.
+### Commands
 
-```shell
-cd /path/to/directory/with/projects
-git clone git@github.com:serhii-chernenko/wishlist.git
-cd wishlist
+| Command                        | What it does                                                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `/start`                       | Opens the main menu and cancels any half-finished input                                                                            |
+| `/lang [uk\|ua\|en\|pl\|auto]` | Without an argument shows the language screen. With one, sets the interface language. `auto` follows the language of your Telegram |
+| `/releases`                    | Shows the release notes of the bot                                                                                                 |
+| `/app`                         | Replies with a button that opens the Mini App                                                                                      |
+
+The bot answers only in private chats.
+
+### Main menu
+
+- **Wishlist.** Add wishes with a title, description, up to 9 photos, a link and a price. Edit or remove them, mark a wish as a priority, hide it, filter the list by price, and clean the whole list after a confirmation. Long lists are paginated. Prices show in the currency of the chosen language (hryvnia in Ukrainian, euro in English, złoty in Polish), converted approximately at the daily National Bank of Ukraine rate.
+- **Give list.** The wishes of other people that you plan to give. Add and remove entries and clean the list.
+- **Find a wish list.** Search by `@username` or by phone number. Third-party lists can be filtered by price, and you can mark a wish as "I want to give".
+- **Visibility.** Choose whether others can find you by username, by phone number, or both.
+- **Payments requisites.** Add details (a Monobank jar, a card number, a PayPal contact, a Buymeacoffee link) for people who cannot give you a gift and would rather send money.
+- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results.
+- **Stats.** Active users, wishes created and wishes fulfilled all time.
+- **Donate.** Ways to support the project: Monobank, Ko-fi, PayPal and Revolut.
+- **Feedback.** Send a message to the author.
+- **Language.** Ukrainian, English, Polish or Auto.
+
+### Mini App
+
+Everything the chat does is also available in a Telegram Mini App with the same data: wishes with up to 9 photos, the give list, search and other people's lists, share settings, payments, visibility, language, feedback, stats, donate, release notes and about. The chat bot keeps working as before.
+
+- **Open it** from the "Open the app" buttons in the bot, from the bot's profile (`https://t.me/wishlist_ua_bot?startapp`) or with the `/app` command. Share pages also link to it.
+- **How it works.** `GET /app` serves a small HTML shell, the client (`hono/jsx/dom`, Tailwind CSS 4 and daisyUI 5 with the gift-tag design) is bundled into the committed files `public/app/app.js` and `public/app/app.css`, and it calls a JSON API under `/api/app/*` authenticated with Telegram `initData`. Photos are uploaded through the bot's own chat, stored as Telegram `file_id`s, and served through an image proxy with an R2 cache, also on public share pages.
+- **Switches.** The `MINI_APP_ENABLED` variable turns the whole app off; the architecture, security rules, rollout and troubleshooting are in [docs/OPERATIONS.md](./docs/OPERATIONS.md#17-telegram-mini-app), and the plan is in [docs/plans/mini-app.md](./docs/plans/mini-app.md).
+- **Generated files.** `public/app/*` and `public/styles/share.css` are built with `pnpm run app:build` and `pnpm run css:build` and checked for drift in CI. Do not edit them by hand.
+
+## Tech stack
+
+- Cloudflare Workers (Hono, with Hono JSX for the public share pages and the Mini App shell)
+- Telegram Mini App client in `hono/jsx/dom`, bundled with esbuild, styled with Tailwind CSS 4 and daisyUI 5
+- Telegraf as the update parser and Telegram API client, with a hand-written stateless router
+- Cloudflare D1 with Drizzle ORM (sessions, users, wishes, gives, shares, update ledger, announcements)
+- Cloudflare Queues for release announcements, Cron Triggers for maintenance and the daily exchange rates refresh
+- Cloudflare R2 as a durable image cache and Cloudflare rate-limit bindings for the Mini App API
+- Effect for repositories, typesafe-i18n for the `uk`, `en` and `pl` locales
+- evlog telemetry sent to New Relic in production
+- Changesets for release notes, Workers Builds for deploys
+- Strict TypeScript, oxlint, oxfmt, `tsx --test`
+
+## Requirements
+
+- Node.js 22 or newer
+- pnpm 10.33.0 (pinned in `package.json`)
+- a Telegram bot token from [@BotFather](https://t.me/BotFather)
+- a Cloudflare account with Workers and D1 enabled
+
+## Development
+
+1. Install dependencies:
+
+    ```sh
+    pnpm install
+    ```
+
+2. Create the git-ignored env files from the committed examples:
+
+    ```sh
+    cp .dev.vars.example .dev.vars
+    cp .dev.vars.production.example .dev.vars.production
+    cp .dev.vars.preview.example .dev.vars.preview
+    cp env/.env.d1.example env/.env.d1
+    ```
+
+    Fill at least the values of `.dev.vars`:
+
+    ```dotenv
+    ADMIN_ID="123456789"
+    BOT_TOKEN="123456:telegram-bot-token"
+    TELEGRAM_WEBHOOK_SECRET="replace-with-a-secret-token"
+    TELEGRAM_WEBHOOK_PATH="/telegram/wishlist-dev"
+    WORKER_BASE_URL="https://wishlist-dev.chernenko.dev"
+    ```
+
+3. Apply the local D1 migrations:
+
+    ```sh
+    pnpm db:migrate:local
+    ```
+
+4. For real Telegram delivery into the local Worker, create the Cloudflare tunnel config and follow the comments in it:
+
+    ```sh
+    cp cloudflared.example.yml cloudflared.yml
+    ```
+
+5. Start the Worker:
+
+    ```sh
+    pnpm run dev
+    ```
+
+    `pnpm run dev` (alias of `pnpm run worker:dev`) starts `wrangler dev`, starts the `cloudflared` tunnel when `cloudflared.yml` exists, sets the local webhook once the Worker is ready, and deletes it on shutdown. Use `pnpm run worker:dev:raw` for plain `wrangler dev` without the tunnel and webhook automation.
+
+6. Run the tests and the full validation:
+
+    ```sh
+    pnpm test
+    pnpm run check
+    ```
+
+    `pnpm run check` runs the changeset validation, lint, format check, typecheck, the release manifest sync and the tests. CI runs the same command.
+
+The `.dev.vars*` and `env/*` files hold secrets and are never committed. See the [secrets section of the runbook](./docs/OPERATIONS.md#3-secrets-and-environments) for the variable names.
+
+## Scripts
+
+| Script                                                                           | Purpose                                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `start`, `dev`, `worker:dev`                                                     | Local Worker with the tunnel and webhook automation                            |
+| `worker:dev:raw`, `worker:dev:production`                                        | Plain `wrangler dev`, and `wrangler dev` with the production environment       |
+| `cloudflared:dev`                                                                | Run the Cloudflare tunnel alone                                                |
+| `worker:preview`                                                                 | Create or update a Worker Preview (`pnpm worker:preview --name preview`)       |
+| `worker:deploy`, `worker:deploy:prod`                                            | Manual production deploy, a fallback when Workers Builds is down               |
+| `worker:tail:prod`                                                               | Tail production logs                                                           |
+| `cf-typegen`                                                                     | Regenerate `worker-configuration.d.ts`                                         |
+| `db:generate`                                                                    | Generate a Drizzle migration into `drizzle/`                                   |
+| `db:migrate:local`, `db:migrate:preview`, `db:migrate:prod`                      | Apply migrations by hand                                                       |
+| `db:migrate:ci`                                                                  | Apply migrations inside Workers Builds                                         |
+| `db:query:local`, `db:query:preview`, `db:query:prod`                            | Run SQL (`--command "..."`) against local, preview or production D1            |
+| `db:import:prepare`, `db:import:prepare:github`                                  | Validate and report a Mongo export without writing                             |
+| `db:import:local`, `db:import:preview`, `db:import:prod`                         | One-time import of the legacy Mongo export into D1                             |
+| `db:reconcile:preview`, `db:reconcile:prod`                                      | Compare imported D1 data with the Mongo export                                 |
+| `db:copy:production-to-preview`                                                  | Copy production data into preview (needs `--confirm-overwrite-preview`)        |
+| `telegram:webhook:set:{local,preview,prod}`                                      | Set the Telegram webhook                                                       |
+| `telegram:webhook:info:{local,preview,prod}`                                     | Show the sanitized webhook info                                                |
+| `telegram:webhook:delete:{local,preview,prod}`                                   | Delete the webhook                                                             |
+| `telegram:commands:set:{preview,prod}`                                           | Register the bot command list with Telegram                                    |
+| `preview:url`, `preview:wait`, `preview:point`, `preview:smoke`, `preview:reset` | Point the preview bot (and the admin menu button) at a branch preview and back |
+| `app:build`, `app:check`                                                         | Build `public/app/app.js` with esbuild; rebuild and fail on drift              |
+| `app:smoke`                                                                      | Headless Chrome screenshots of every Mini App screen (not run in CI)           |
+| `css:build`, `css:build:share`, `css:build:app`, `css:check`                     | Build the share and app stylesheets; `css:check` fails on drift                |
+| `i18n:generate`, `typesafe-i18n`                                                 | Generate typesafe-i18n types                                                   |
+| `changeset:add`, `changeset:status`, `changeset:validate`                        | Create, inspect and validate release notes                                     |
+| `changeset:version`                                                              | Cut a release: validate, version, stamp the changelog, sync the manifest       |
+| `releases:sync`                                                                  | Regenerate `releases.generated.json` from `CHANGELOG.md`                       |
+| `releases:github`                                                                | Publish missing GitHub Releases (run by CI)                                    |
+| `releases:broadcast:prod`                                                        | Trigger the release announcement broadcast on production                       |
+| `lint`, `lint:fix`                                                               | oxlint                                                                         |
+| `format`, `format:check`                                                         | oxfmt                                                                          |
+| `typecheck`                                                                      | Generate i18n types, then `tsgo --noEmit` for the Worker and the app           |
+| `test`                                                                           | Run all tests                                                                  |
+| `check`                                                                          | Full validation used before every push and in CI                               |
+
+## Project layout
+
+```
+src/
+  worker/      Hono app, webhook route, status, health and admin routes, queues, cron tasks, telemetry
+  web/         Public home and share pages (Hono JSX): routes, rendering, sitemap, page cache, fingerprint, Tailwind source in styles/;
+               the Mini App shell (app-shell/) and the image proxy (image-proxy/)
+  api/         Mini App JSON API (/api/app): initData auth, rate limits, owner and image signing, handlers, photo upload
+  app/         Mini App client (hono/jsx/dom): screens, UI, navigation, Telegram SDK wrappers, DOM-free logic/, styles
+  shared/      Contract code imported by both the Worker and the client: API types, limits, startapp links
+  bot/         Telegraf bot composition, router runtime, callback_data, screens, services,
+               input validators, content (keyboards, markup, filters, support links)
+  db/          Drizzle client, schemas (one file per table), repositories
+  i18n/        typesafe-i18n sources for uk, en and pl
+scripts/
+  cloudflare/  deploy and local dev helpers
+  db/          migrations, Mongo import and reconciliation, production to preview copy
+  releases/    changeset validation, changelog stamping, manifest sync, GitHub releases, broadcast trigger
+  telegram/    webhook, bot commands and preview bot helpers
+public/        static assets served by the Worker (favicon, apple touch icon, OG image, generated styles/share.css and app/app.{js,css})
+drizzle/       generated migrations
+docs/          OPERATIONS.md, plans/ and the New Relic dashboard template
+test/          unit and D1 integration tests
+.changeset/    pending release notes
+.github/       CI workflows (validate and publish GitHub Releases; they never deploy)
 ```
 
-### Create your own bot in Telegram<br>Створити власного бота в Телеграмі
+## Releases
 
-Now you have to create a new bot to get an API bot token.<br/>
-Зараз тобі потрібно буде створити нового бота, щоб отримати АПІ токен боту.
+Release notes are written in `.changeset/*.md`. Every bullet is in Ukrainian and carries nested translation lines:
 
-Open the chat:<br/>
-Відкрий чат:<br/>
-https://t.me/BotFather
-
-Send the command message to the bot:<br/>
-Відправ боту команду:
-```shell
-/newbot
+```md
+- [added] Український текст.
+    - en: English text.
+    - pl: Polski tekst.
 ```
 
-And follow instructions<br/>
-Та слідуй інструкціям.
+`pnpm run changeset:version` produces `CHANGELOG.md` and the generated `releases.generated.json`, which feeds `/releases` and the announcement sent to users after a deploy. Details are in the [runbook](./docs/OPERATIONS.md#11-releases-and-announcements).
 
-Also, at current step I recommend you to create second bot, 'cause you will have 2 environments:<br/>
-Також на цьому етапі я хотів би порадити тобі створити ще одного бота, бо в тебе буде 2 оточення:
-   - `dev`
-   - `production`
+## Documentation
 
-It includes different docker containers and different databases. In this case, better to have 2 different bots with different tokens to run them separately.<br/>
-Я маю на увазі різні докер контейнери та бази даних. В цьому випадку краще мати 2-х різних ботів з різними токенами, щоб запускати їх окремо.
+- [docs/OPERATIONS.md](./docs/OPERATIONS.md): deploys, migrations, previews, data copy, the Mongo to D1 cutover, rollback, releases, observability and troubleshooting.
+- [docs/plans/mini-app.md](./docs/plans/mini-app.md): the Mini App plan and decisions.
+- [MIGRATION_STATUS.md](./MIGRATION_STATUS.md): migration architecture and progress.
+- [AGENTS.md](./AGENTS.md): rules for contributors and coding agents.
+- [CHANGELOG.md](./CHANGELOG.md): release history.
 
-### Prepare .env file<br/>Підготуй .env файл
+## Links
 
-In the new `wishlist` directory you can find the directory `env` with the file `.env.example`.<br/>
-В новій директорії `wishlist` ти можеш знайти ще одну директорію `env` з файлом `.env.example`.
+- GitHub: [serhii-chernenko/wishlist](https://github.com/serhii-chernenko/wishlist)
+- Telegram channel: [t.me/serhii_chernenko](https://t.me/serhii_chernenko)
+- YouTube: [youtube.com/@serhii.chernenko](https://youtube.com/@serhii.chernenko)
+- X: [x.com/serhiichernenko](https://x.com/serhiichernenko)
+- Support the author: [Monobank](https://send.monobank.ua/jar/4ZGhPQqyMh), [Ko-fi](https://ko-fi.com/serhiichernenko), [PayPal](https://www.paypal.me/chernenkoserhii), [Revolut](https://revolut.me/serhiichernenko)
+- Princess bot, the author's other Telegram bot: [@ixPrincessBot](https://t.me/ixPrincessBot)
 
-First of all copy and rename this file to 2 different files such as: `.env.dev` and `.env.production`.<br/>
-Для початку, зроби 2 копії цього файлу та перейменуй його в `.env.dev` та `.env.production`.
+## License
 
-```shell
-cp env/.env.example env/.env.dev
-cp env/.env.example env/.env.production
-```
-
-### Set the token<br/>Вказати токен
-
-Open both files and set the tokens as values of the `BOT_TOKEN` variable.<br/>
-Відкрий обидва файли та вкажи отримані токени, як значення для змінної `BOT_TOKEN`.
-
-```dotenv
-BOT_TOKEN="xxxxx:xxxxx..."
-```
-
-Don't forget that better to use different bots with different tokens for `dev` and `production` modes.<br/>
-Не забудь, що краще використовувати різних ботів з різними токенами для `dev` та `production` режимів.
-
-### Run docker containers in the developer mode<br/>Запусти докер контейнери в режимі розробника
-
-```shell
-npm run docker:dev
-```
-
-The command `docker:dev` and other you can find in the `package.json` file.<br/>
-Команду `docker:dev` та інші ти можеш знайти у файлі `package.json`. 
-
-### Get and set your Telegram ID<br/>Отримай та вкажи твій Телеграм ID
-
-When the bot is run, try to have chat with it. Send the message:<br/>
-Коли бот запущений, спробуй написати йому. Відправ наступне повідомлення:
-```shell
-/start
-```
-
-Go back to the terminal, and you have to see telegram logs. There has to be a JSON object that has to contain sender data. Get your ID from there.<br/>
-Повернись до терміналу, зараз ти повинен побачити телеграм логи. Там повинен бути JSON обʼєкт, в якому буде знаходитися інформація по відправнику. Знайти свій ID.
-```json
-{
-  "message": {
-      "from": {
-          "id": 123456789
-      }
-  }
-}
-```
-
-Copy the ID and open both `.env.dev` and `.env.production` files again. Replace the value of the `ADMIN_TELEGRAM_ID` with your real ID.<br/>
-Скопіюй ID та відкрий обидва файли знову: `.env.dev` та `.env.production`. Заміни значення змінної `ADMIN_TELEGRAM_ID` на твій реальний ID.
-```dotenv
-ADMIN_TELEGRAM_ID=123456789
-```
-
-There's required to have feedbacks from users to your chat with the bot!<br/>
-Це обовʼязково, щоб відгуки від користувачів потряпляли саме до тебе!
-
-After that re-run the bot.<br/>
-Після цього перезапусти бота.
-
-Interrupt the process by hotkey `Ctrl/CMD + C` or `Shift + Ctrl/CMD + C` (that depends on terminal preferences).<br/>
-Перерви поточний процес за допомогою горячих клавіш `Ctrl/CMD + C` чи `Shift + Ctrl/CMD + C` (це залежить від налаштувань терміналу).
-
-Run the command again:<br/>
-Запусти команду знову:
-```shell
-npm run docker:dev
-```
-
-### Run the bot in the production mode<br/>Запусти бота в продакшн режимі
-
-When you run the bot in the developer mode you can't run docker containers in a background, and you see a lot of logs from telegram updates. You can prevent this. Feel free to run the bot in background mode without any logs of telegram updates by the command:<br/>
-Коли ти запускаєш бота в режимі розробника, ти не можеш запустити докер контейнери у фоні, а також ти бачиш багато логів після кожного оновлення в чаті з ботом. Ти можеш цьому зарадити. Запустити бота у фоні без логів можна за допомогою команди: 
-```shell
-npm run docker:start
-```
-
-Additional commands:<br/>
-Додаткові команди:
-```shell
-npm run docker:start
-npm run docker:stop
-npm run docker:restart
-```
-
-## Connect to database<br/>Підключитися до бази даних
-
-Make sure that docker containers are active.<br/>
-Переконайся, що контейнери запущені.
-
-Run the command to check:<br/>
-Введи команду, щоб перевірити:
-
-```shell
-docker ps
-```
-
-You have to see 2 containers.<br/>
-Ти маєш побачити 2 контейнери
-1. For the developer mode<br/>Для режиму розробника<br/>`docker:dev`:
-   1. `wishlist_db_dev`
-   2. `wishlist_app_dev`
-2. For the production mode<br/>Для продакшн режиму<br/>`docker:start`:
-    1. `wishlist_db_production`
-    2. `wishlist_app_production`
-
-You always will have 2 different databases for developer and production mode to not have a bad habit to work with an actual (production) DB in the developer mode.<br/>
-Ти завжди будеш мати 2 різні бази даних для режимів розробника та продакшену, щоб не мати поганої звички розробляти на основі реальної бази даних в режимі розробника.
-
-### Via Terminal<br/>В терміналі
-
-Connect to a docker container (depends on chosen mode):<br/>
-Підключись до докер контейнеру (залежить від обраного режиму):
-
-```shell
-# Developer mode
-# Режим розробника
-docker exec -ti wishlist_db_dev bash
-# Production mode
-# Продакшн режим
-docker exec -ti wishlist_db_production bash
-```
-
-Connect to MongoDB:<br/>
-Підключись до MongoDB:
-```shell
-mongosh
-```
-
-Run some commands there:<br/>
-Виконай деякі команди:
-
-```shell
-# See all databases
-# Показати всі бази
-show dbs 
-# Choose a DB of the developer mode
-# Обрати базу даних в режимі розробника
-use wishlist_dev
-# Choose a DB of the production mode
-# Обрати базу даних в продакшн режимі
-use wishlist_production
-# Show collections
-# Показати колекції
-show collections
-# Show all users
-# Показати всіх користувачів
-db.users.find()
-# Show all wishes and make the output prettier
-# Показати всі бажання в зручному для ока форматі
-db.wishes.find().pretty()
-# Count users
-# Порахувати кількість користувачів
-db.users.find().count()
-```
-
-More commands see there:<br/>
-Більше команд дивись тут:
-https://www.mongodb.com/docs/manual/reference/method/
-
-To exit from the DB close the terminal tab or run commands below:<br/>
-Щоб вийти з бази, закрий термінал чи виконай наступні команди:
-```shell
-# Exit from the mongosh service
-# Вийти з сервісу mongosh
-exit
-# Exit from the docker container
-# Вийти з докер контейнеру
-exit
-```
-
-### Via GUI tools<br/>В десктопному застосунку
-
-I prefer to use [TablePlus](https://tableplus.com/) but feel free to use any known tools.<br/>
-Я переважно використовую [TablePlus](https://tableplus.com/), але ти можеш використовувати будь який відомий тобі застосунок.
-
-1. Create a new connection to MongoDB.<br/>Створи нове зʼєдання до MongoDB. 
-2. Use the URL connection:<br/>Використай зʼєднання по URL:
-   - mongodb://localhost:27027
-
-### Synchronization<br/>Синхронізація
-
-Files from the docker container of DB will be duplicated on local side. When containers will be run, you will be able to see new directories:<br/>
-Файли з докер контейнеру бази даних будуть дубльовані в твоїй системі. Коли контейнери запущені, ти побачиш наступні директорії:
-1. `.mongo/dev`<br/>- for a container in developer mode<br/>- для контейнеру в режимі розробника 
-2. `.mongo/production`<br/>- for a container in production mode<br/>- для контейнеру в продакшн режимі
-
-### Import/Export DB<br/>Імпорт та експорт бази даних
-
-#### Export database<br/>Експорт бази даних
-
-Disclaimer<br/>Дисклеймер
-
-There will be some examples with a files naming as:<br/>
-Далі будуть деякі приклади з найменуванням файлів:
-```shell
-wishlist_dev_`date "+%Y-%m-%d"`.gz
-```
-
-The file will have a name as:<br/>
-В результаті отримаємо файл:
-```shell
-wishlist_dev_2023_01_01.gz
-```
-
-Because that's a useful way to give name with a current date. But feel free to replace the name with any other, such as:<br/>
-Тому що зручно мати дамп з датою створення у назві. Але ти можеш змінити формат в наступних командах на будь який зручний для тебе, наприклад:
-```shell
-wishlist.gz
-wishlist_dev.gz
-wishlist_production.gz
-wishlist_dev_2022_12_31.gz
-wishlist_production_2022_12_31.gz
-```
-
-Developer mode:<br/>
-Режим розробника:
-```shell
-# Create a dump
-# Створити дамп
-docker exec -ti wishlist_db_dev mongodump -d wishlist_dev --gzip --archive=wishlist_dev_`date "+%Y-%m-%d"`.gz
-# Copy the dump from the container to local files
-# Скопіювати дамп з контейнеру до системи
-docker cp wishlist_db_dev:/wishlist_dev_`date "+%Y-%m-%d"`.gz .backups/wishlist_dev_`date "+%Y-%m-%d"`.gz
-# Remove the dump from the container
-# Видалити дамп всередині контейнеру
-docker exec -ti wishlist_db_dev rm /wishlist_dev_`date "+%Y-%m-%d"`.gz
-```
-
-Production mode:<br/>
-Продакшн режим:
-```shell
-# Create a dump
-# Створити дамп
-docker exec -ti wishlist_db_production mongodump -d wishlist_production --gzip --archive=wishlist_production_`date "+%Y-%m-%d"`.gz
-# Copy the dump from the container to local files
-# Скопіювати дамп з контейнеру до системи
-docker cp wishlist_db_production:/wishlist_production_`date "+%Y-%m-%d"`.gz .backups/wishlist_production_`date "+%Y-%m-%d"`.gz
-# Remove the dump from the container
-# Видалити дамп всередині контейнеру
-docker exec -ti wishlist_db_production rm /wishlist_production_`date "+%Y-%m-%d"`.gz
-```
-
-#### Import database<br/>Імпортувати базу даних
-
-Developer mode:<br/>
-Режим розробника:
-```shell
-# Copy a local dump to the container
-# Скопіювати локальний дамп в контейнер
-docker cp .backups/wishlist_dev_`date "+%Y-%m-%d"`.gz wishlist_db_dev:/wishlist_dev_`date "+%Y-%m-%d"`.gz``
-# Import dump
-# Імпортувати дамп
-docker exec -ti wishlist_db_dev mongorestore -d wishlist_dev --gzip --archive=wishlist_dev_`date "+%Y-%m-%d"`.gz
-# Remove the dump from the container
-# Видалити дамп всередині контейнеру
-docker exec -ti wishlist_db_dev rm /wishlist_dev_`date "+%Y-%m-%d"`.gz
-```
-
-Production mode:<br/>
-Продакшн режим:
-```shell
-# Copy a local dump to the container
-# Скопіювати локальний дамп в контейнер
-docker cp .backups/wishlist_production_`date "+%Y-%m-%d"`.gz wishlist_db_production:/wishlist_production_`date "+%Y-%m-%d"`.gz``
-# Import dump
-# Імпортувати дамп
-docker exec -ti wishlist_db_production mongorestore -d wishlist_production --gzip --archive=wishlist_production_`date "+%Y-%m-%d"`.gz
-# Remove the dump from the container
-# Видалити дамп всередині контейнеру
-docker exec -ti wishlist_db_production rm /wishlist_production_`date "+%Y-%m-%d"`.gz
-```
-
-#### Drop database<br/>Видалити базу даних
-
-```shell
-# Developer mode
-# Режим розробника
-docker exec -ti wishlist_db_dev mongosh wishlist_dev --eval "db.dropDatabase()"
-# Production mode
-# Продакшн режим
-docker exec -ti wishlist_db_production mongosh wishlist_production --eval "db.dropDatabase()"
-```
-
-## Time to make changes<br/>Час вносити зміни
-
-### Editing<br/>Редагування
-
-Run the bot in the developer mode:<br/>
-Запусти бот в режимі розробника:
-```shell
-npm run docker:dev
-```
-
-Next feel free to edit any files in the `bot` directory.<br/>
-Далі зміни будь який файл в директорії `bot`.
-
-### Local NPM packages<br/>Локальні NPM пакети
-
-Before go next steps, you have to install NPM packages to your local machine too.<br/>
-Перед тим, як рухатися далі, ти маєш встановити NPM пакети локально також.
-
-If you don't have Node.js locally, please visit the [site](https://nodejs.org/en/).<br/>
-Якщо в тебе немає Node.js локально, відвідай цей [сайт](https://nodejs.org/uk/).
-
-Next just install NPM packages to the project directory.<br/>
-Далі просто встанови NPM пакети в директорію проєкту.
-```shell
-npm i
-```
-
-### Code inspecting<br/>Перевірка коду
-
-There is the `.eslintrc.js` file in the project to present rules for [ESLint](https://eslint.org/).<br/>
-В проєкті є `.eslintrc.js` файл з правилами для [ESLint](https://eslint.org/).
-
-Configure your code editor to follow rules:<br/>
-Налаштуй свій редактор коду під вказані правила:
-   - [VSCode](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-   - [PHPStorm](https://www.jetbrains.com/help/phpstorm/eslint.html)
-
-### Code formatting<br/>Форматування коду
-
-There is the `.prettierrc.js` file in the project to preset rules for [Prettier](https://prettier.io/).<br/>
-В проєкті є `.prettierrc.js` файл з правилами для [Prettier](https://prettier.io/).
-
-Configure your code editor to follow rules:<br/>
-Налаштуй свій редактор коду під вказані правила:
-   - [VSCode](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-   - PHPStorm:
-     - [Plugin / Плагін](https://plugins.jetbrains.com/plugin/10456-prettier)
-     - [Configuration / Налаштування](https://www.jetbrains.com/help/phpstorm/prettier.html)
-
-## Contributing<br/>Долучитися до проєкту
-
-I'm really excited if you are interested in the improving of my project. Thanks so much!<br/>
-Я дійсно в захваті, що ти зацікавився покращенням мого проєкту. Дуже тобі вдячний!
-
-There are some steps how you can do that:<br/>
-Тут декілька кроків, що потрібно зробини для цього:
-1. Fork my repository.<br/>Зроби форк мого репозиторію.
-2. Deploy the project locally (follow instructions above).<br/>Розгорни проєкт локально, слідуючи інструкціям вище.
-3. Make your changes.<br/>Внеси свої зміни.
-4. Make sure that your changes have been self-checked by you.<br/>Обовʼязково перевір свої зміни власноруч.
-5. Make sure that you followed rules of ESLint and Prettier. I can't merge your changes if you'll ignore this point.<br/>Переконайся, що в тебе налаштовані ESLint та Prettier. Без них я не прийму твій код.
-6. Create a new PR (Pull Request) from your repo to mine.<br/>Зроби новий ПР (запит на внесення коду) з твоєї репи до моєї.
-7. Wait while I'll check that.<br/>Очікуй, поки я не перевірю.
-8. If I don't agree with your changes, be absolutely sure that I'll write a comment why I think so.<br/>Якщо я не згодний зі змінами, будь певний, я обовʼязково відпишу чому.
-9. If I want to see your changes in the project:<br/>Якщо мені подобаються твої зміни:
-   - I'll merge the PR if everything is fine.<br/>Я внесу їх, якщо все добре.
-   - I'll ask you to do some fixes if something will be wrong.<br/>Я попрошу тебе зробити певні правки, якщо щось буде не так.
+[AGPL-3.0-only](./LICENSE)

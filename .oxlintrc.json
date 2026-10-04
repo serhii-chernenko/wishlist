@@ -1,0 +1,24 @@
+{
+    "ignorePatterns": ["public/**"],
+    "jsPlugins": ["./tools/oxlint/arrow-body-plugin.mjs"],
+    "env": {
+        "node": true
+    },
+    "overrides": [
+        {
+            "files": ["src/app/**"],
+            "env": {
+                "browser": true
+            }
+        }
+    ],
+    "rules": {
+        "arrow-body/explicit-return-for-wrapped-arrow": [
+            "error",
+            {
+                "maxLen": 80
+            }
+        ],
+        "no-var": "error"
+    }
+}

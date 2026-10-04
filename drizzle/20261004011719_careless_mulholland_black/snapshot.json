@@ -1,0 +1,1197 @@
+{
+    "version": "7",
+    "dialect": "sqlite",
+    "id": "2d7d013b-4d9b-49c2-8038-848d38fe9930",
+    "prevIds": ["6b871d3d-7d5b-4d0d-b7a3-0fe343f5cb3e"],
+    "ddl": [
+        {
+            "name": "exchange_rates",
+            "entityType": "tables"
+        },
+        {
+            "name": "gives",
+            "entityType": "tables"
+        },
+        {
+            "name": "release_announcements",
+            "entityType": "tables"
+        },
+        {
+            "name": "sessions",
+            "entityType": "tables"
+        },
+        {
+            "name": "telegram_updates",
+            "entityType": "tables"
+        },
+        {
+            "name": "users",
+            "entityType": "tables"
+        },
+        {
+            "name": "wishes",
+            "entityType": "tables"
+        },
+        {
+            "name": "wishlist_shares",
+            "entityType": "tables"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "currency",
+            "entityType": "columns",
+            "table": "exchange_rates"
+        },
+        {
+            "type": "real",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "uah_per_unit",
+            "entityType": "columns",
+            "table": "exchange_rates"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "rate_date",
+            "entityType": "columns",
+            "table": "exchange_rates"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "fetched_at",
+            "entityType": "columns",
+            "table": "exchange_rates"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": true,
+            "default": null,
+            "generated": null,
+            "name": "id",
+            "entityType": "columns",
+            "table": "gives"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "mongo_id",
+            "entityType": "columns",
+            "table": "gives"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "user_id",
+            "entityType": "columns",
+            "table": "gives"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "wish_id",
+            "entityType": "columns",
+            "table": "gives"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "created_at",
+            "entityType": "columns",
+            "table": "gives"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": true,
+            "default": null,
+            "generated": null,
+            "name": "id",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "release_version",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "user_id",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "status",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "0",
+            "generated": null,
+            "name": "attempts",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "last_error_code",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "created_at",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "updated_at",
+            "entityType": "columns",
+            "table": "release_announcements"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "telegram_user_id",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "language",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "'{\"v\":1}'",
+            "generated": null,
+            "name": "state",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "media_group_id",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "media_group_marker",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "updated_at",
+            "entityType": "columns",
+            "table": "sessions"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "bot_key",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "update_id",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "status",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "lease_id",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "started_at",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "processed_at",
+            "entityType": "columns",
+            "table": "telegram_updates"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": true,
+            "default": null,
+            "generated": null,
+            "name": "id",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "mongo_id",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "telegram_id",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "username",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "username_searchable",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "phone",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "phone_digits",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "language",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "telegram_language_code",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "'UAH'",
+            "generated": null,
+            "name": "currency",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "telegraph_access_token",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "payments",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "wishlist_filter",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "'0.0.0'",
+            "generated": null,
+            "name": "release_version",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "blocked_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "last_seen_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "last_bot_seen_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "last_app_seen_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "created_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "updated_at",
+            "entityType": "columns",
+            "table": "users"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": true,
+            "default": null,
+            "generated": null,
+            "name": "id",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "mongo_id",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "user_id",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "title",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "description",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "link",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "'[]'",
+            "generated": null,
+            "name": "images",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "priority",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "hidden",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "removed",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "done",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "0",
+            "generated": null,
+            "name": "price",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "created_at",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "updated_at",
+            "entityType": "columns",
+            "table": "wishes"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "user_id",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "text",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "public_id",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "text",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "display_name",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": "false",
+            "generated": null,
+            "name": "show_username",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "integer",
+            "notNull": false,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "revoked_at",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "created_at",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "type": "integer",
+            "notNull": true,
+            "autoincrement": false,
+            "default": null,
+            "generated": null,
+            "name": "updated_at",
+            "entityType": "columns",
+            "table": "wishlist_shares"
+        },
+        {
+            "columns": ["user_id"],
+            "tableTo": "users",
+            "columnsTo": ["id"],
+            "onUpdate": "NO ACTION",
+            "onDelete": "CASCADE",
+            "nameExplicit": false,
+            "name": "fk_gives_user_id_users_id_fk",
+            "entityType": "fks",
+            "table": "gives"
+        },
+        {
+            "columns": ["wish_id"],
+            "tableTo": "wishes",
+            "columnsTo": ["id"],
+            "onUpdate": "NO ACTION",
+            "onDelete": "CASCADE",
+            "nameExplicit": false,
+            "name": "fk_gives_wish_id_wishes_id_fk",
+            "entityType": "fks",
+            "table": "gives"
+        },
+        {
+            "columns": ["user_id"],
+            "tableTo": "users",
+            "columnsTo": ["id"],
+            "onUpdate": "NO ACTION",
+            "onDelete": "CASCADE",
+            "nameExplicit": false,
+            "name": "fk_release_announcements_user_id_users_id_fk",
+            "entityType": "fks",
+            "table": "release_announcements"
+        },
+        {
+            "columns": ["user_id"],
+            "tableTo": "users",
+            "columnsTo": ["id"],
+            "onUpdate": "NO ACTION",
+            "onDelete": "SET NULL",
+            "nameExplicit": false,
+            "name": "fk_wishes_user_id_users_id_fk",
+            "entityType": "fks",
+            "table": "wishes"
+        },
+        {
+            "columns": ["user_id"],
+            "tableTo": "users",
+            "columnsTo": ["id"],
+            "onUpdate": "NO ACTION",
+            "onDelete": "CASCADE",
+            "nameExplicit": false,
+            "name": "fk_wishlist_shares_user_id_users_id_fk",
+            "entityType": "fks",
+            "table": "wishlist_shares"
+        },
+        {
+            "columns": ["currency"],
+            "nameExplicit": false,
+            "name": "exchange_rates_pk",
+            "table": "exchange_rates",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["id"],
+            "nameExplicit": false,
+            "name": "gives_pk",
+            "table": "gives",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["id"],
+            "nameExplicit": false,
+            "name": "release_announcements_pk",
+            "table": "release_announcements",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["telegram_user_id"],
+            "nameExplicit": false,
+            "name": "sessions_pk",
+            "table": "sessions",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["id"],
+            "nameExplicit": false,
+            "name": "users_pk",
+            "table": "users",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["id"],
+            "nameExplicit": false,
+            "name": "wishes_pk",
+            "table": "wishes",
+            "entityType": "pks"
+        },
+        {
+            "columns": ["user_id"],
+            "nameExplicit": false,
+            "name": "wishlist_shares_pk",
+            "table": "wishlist_shares",
+            "entityType": "pks"
+        },
+        {
+            "columns": [
+                {
+                    "value": "mongo_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "gives_mongo_id_unique",
+            "entityType": "indexes",
+            "table": "gives"
+        },
+        {
+            "columns": [
+                {
+                    "value": "user_id",
+                    "isExpression": false
+                },
+                {
+                    "value": "wish_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "gives_user_wish_unique",
+            "entityType": "indexes",
+            "table": "gives"
+        },
+        {
+            "columns": [
+                {
+                    "value": "wish_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "gives_wish_index",
+            "entityType": "indexes",
+            "table": "gives"
+        },
+        {
+            "columns": [
+                {
+                    "value": "release_version",
+                    "isExpression": false
+                },
+                {
+                    "value": "user_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "release_announcements_version_user_unique",
+            "entityType": "indexes",
+            "table": "release_announcements"
+        },
+        {
+            "columns": [
+                {
+                    "value": "user_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "release_announcements_user_id_index",
+            "entityType": "indexes",
+            "table": "release_announcements"
+        },
+        {
+            "columns": [
+                {
+                    "value": "updated_at",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "sessions_updated_at_index",
+            "entityType": "indexes",
+            "table": "sessions"
+        },
+        {
+            "columns": [
+                {
+                    "value": "bot_key",
+                    "isExpression": false
+                },
+                {
+                    "value": "update_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "telegram_updates_bot_update_unique",
+            "entityType": "indexes",
+            "table": "telegram_updates"
+        },
+        {
+            "columns": [
+                {
+                    "value": "status",
+                    "isExpression": false
+                },
+                {
+                    "value": "processed_at",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "telegram_updates_cleanup_index",
+            "entityType": "indexes",
+            "table": "telegram_updates"
+        },
+        {
+            "columns": [
+                {
+                    "value": "mongo_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "users_mongo_id_unique",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "telegram_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "users_telegram_id_unique",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "phone",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "users_phone_unique",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "lower(\"username\")",
+                    "isExpression": true
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "users_username_lower_unique",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "phone_digits",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "users_phone_digits_index",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "blocked_at",
+                    "isExpression": false
+                },
+                {
+                    "value": "release_version",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "users_release_index",
+            "entityType": "indexes",
+            "table": "users"
+        },
+        {
+            "columns": [
+                {
+                    "value": "mongo_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "wishes_mongo_id_unique",
+            "entityType": "indexes",
+            "table": "wishes"
+        },
+        {
+            "columns": [
+                {
+                    "value": "user_id",
+                    "isExpression": false
+                },
+                {
+                    "value": "removed",
+                    "isExpression": false
+                },
+                {
+                    "value": "priority",
+                    "isExpression": false
+                },
+                {
+                    "value": "updated_at",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "wishes_owner_list_index",
+            "entityType": "indexes",
+            "table": "wishes"
+        },
+        {
+            "columns": [
+                {
+                    "value": "user_id",
+                    "isExpression": false
+                },
+                {
+                    "value": "removed",
+                    "isExpression": false
+                },
+                {
+                    "value": "hidden",
+                    "isExpression": false
+                },
+                {
+                    "value": "updated_at",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "wishes_share_fingerprint_index",
+            "entityType": "indexes",
+            "table": "wishes"
+        },
+        {
+            "columns": [
+                {
+                    "value": "done",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": false,
+            "where": null,
+            "origin": "manual",
+            "name": "wishes_done_index",
+            "entityType": "indexes",
+            "table": "wishes"
+        },
+        {
+            "columns": [
+                {
+                    "value": "public_id",
+                    "isExpression": false
+                }
+            ],
+            "isUnique": true,
+            "where": null,
+            "origin": "manual",
+            "name": "wishlist_shares_public_id_unique",
+            "entityType": "indexes",
+            "table": "wishlist_shares"
+        },
+        {
+            "value": "\"status\" in ('queued', 'sending', 'sent', 'skipped', 'failed')",
+            "name": "release_announcements_status_check",
+            "entityType": "checks",
+            "table": "release_announcements"
+        },
+        {
+            "value": "\"language\" is null or \"language\" in ('uk', 'en', 'pl')",
+            "name": "sessions_language_check",
+            "entityType": "checks",
+            "table": "sessions"
+        },
+        {
+            "value": "\"status\" in ('processing', 'processed')",
+            "name": "telegram_updates_status_check",
+            "entityType": "checks",
+            "table": "telegram_updates"
+        },
+        {
+            "value": "\"language\" is null or \"language\" in ('uk', 'en', 'pl')",
+            "name": "users_language_check",
+            "entityType": "checks",
+            "table": "users"
+        },
+        {
+            "value": "\"wishlist_filter\" is null or \"wishlist_filter\" between 0 and 4",
+            "name": "users_wishlist_filter_check",
+            "entityType": "checks",
+            "table": "users"
+        },
+        {
+            "value": "\"price\" >= 0",
+            "name": "wishes_price_check",
+            "entityType": "checks",
+            "table": "wishes"
+        },
+        {
+            "value": "json_valid(\"images\") and json_array_length(\"images\") <= 9",
+            "name": "wishes_images_check",
+            "entityType": "checks",
+            "table": "wishes"
+        }
+    ],
+    "renames": []
+}
