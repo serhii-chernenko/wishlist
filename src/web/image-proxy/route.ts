@@ -24,9 +24,20 @@ import {
     selectBoundLimiter
 } from '../../api/rate-limit';
 import type { TelegramApi } from '../../api/telegram-api';
+import { createImportSigner } from '../../api/auth/import-signing';
+import {
+    isStagedImageIndex,
+    readStagedImage
+} from '../../bot/services/link-import/stage-images';
+import type {
+    LinkImportDeps,
+    LoadStagedImage
+} from '../../bot/services/link-import/types';
 import { createWishService } from '../../bot/services/wish-service';
 import {
     APP_IMAGE_PATH_PREFIX,
+    LINK_IMAGE_PATH_PREFIX,
+    LINK_IMPORT_URL_HASH_LENGTH,
     SHARE_IMAGE_PATH_PREFIX
 } from '../../shared/app-api';
 import { buildPhotoPlaceholderSvg } from '../../shared/photo-placeholder';
@@ -45,6 +56,7 @@ import { buildCachedImage, buildImageCacheKey, getImageCache } from './cache';
 
 export interface ImageProxyRouteDependencies extends AppApiDependencies {
     cache?: CacheLike;
+    loadStagedImage?: LoadStagedImage;
 }
 
 type ProxyContext = Context<{ Bindings: WorkerBindings }>;
@@ -54,13 +66,19 @@ type Rejection = {
     status: 403 | 404 | 410;
 };
 
-type ProxyDeps = ApiDeps & { cache?: CacheLike };
+type ProxyDeps = ApiDeps & {
+    cache?: CacheLike;
+    loadStagedImage: LoadStagedImage;
+};
 
 type Authorization = { fileId: string; hash: string } | Rejection;
 
 const WISH_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const INDEX_PATTERN = /^(?:0|[1-9]\d{0,3})$/;
 const EXPIRY_PATTERN = /^\d{1,12}$/;
+const URL_HASH_PATTERN = new RegExp(
+    `^[0-9a-f]{${LINK_IMPORT_URL_HASH_LENGTH}}$`
+);
 const INTERNAL_ERROR_STATUS = 500;
 const TOO_MANY_REQUESTS_STATUS = 429;
 
@@ -115,7 +133,7 @@ const buildImageResponse = (
         'Cache-Control': cacheControl
     });
 
-    if (scope === 'app') {
+    if (scope !== 'share') {
         headers.set('Cross-Origin-Resource-Policy', 'same-origin');
     }
 
@@ -385,42 +403,148 @@ const resolveImage = async (
     return { response: imageResponse(scope, fetched), result: 'miss' };
 };
 
-const serve = async (
+type ImageResponder = (
     c: ProxyContext,
-    deps: ProxyDeps,
+    deps: ProxyDeps
+) => Promise<ServedImage>;
+
+const rateLimitedResponse = (): ServedImage => {
+    return {
+        response: errorResponse(TOO_MANY_REQUESTS_STATUS, {
+            'Retry-After': String(RATE_LIMIT_RETRY_AFTER_SECONDS)
+        }),
+        result: 'rateLimited'
+    };
+};
+
+const rejectionResponse = (rejection: Rejection): ServedImage => {
+    return {
+        response: errorResponse(rejection.status),
+        result: rejection.result
+    };
+};
+
+const serveTelegramImage = (
     scope: ImageProxyScope,
     authorize: (c: ProxyContext, deps: ProxyDeps) => Promise<Authorization>
-): Promise<ServedImage> => {
-    if (await enforceClientLimit(c, deps)) {
+): ImageResponder => {
+    return async (c, deps) => {
+        const authorization = await authorize(c, deps);
+
+        return isRejection(authorization)
+            ? rejectionResponse(authorization)
+            : resolveImage(c, deps, scope, authorization.fileId);
+    };
+};
+
+const authorizeImportImage = async (
+    c: ProxyContext,
+    deps: ProxyDeps
+): Promise<{ urlHash: string; index: number } | Rejection> => {
+    const urlHash = readParam(c, 'urlHash');
+    const index = readParam(c, 'index');
+    const expiry = c.req.query('e') ?? '';
+    const signature = c.req.query('s') ?? '';
+
+    if (
+        !URL_HASH_PATTERN.test(urlHash) ||
+        !INDEX_PATTERN.test(index) ||
+        !isStagedImageIndex(Number(index))
+    ) {
+        return NOT_FOUND;
+    }
+
+    if (!EXPIRY_PATTERN.test(expiry)) {
+        return FORBIDDEN;
+    }
+
+    const reference = { urlHash, index: Number(index) };
+    const verification = await createImportSigner({
+        botToken: c.env.BOT_TOKEN,
+        environment: c.env.BOT_ENVIRONMENT,
+        crypto: deps.crypto
+    }).verifyImportImage(
+        reference,
+        { expiresAt: Number(expiry), signature },
+        deps.now()
+    );
+
+    if (!verification.ok) {
+        return verification.reason === 'expired' ? EXPIRED : FORBIDDEN;
+    }
+
+    return reference;
+};
+
+const toLinkImportDeps = (c: ProxyContext, deps: ProxyDeps): LinkImportDeps => {
+    const context = getTelemetryContext(c);
+
+    return {
+        env: c.env,
+        now: () => deps.now().getTime(),
+        ...(context === undefined
+            ? {}
+            : {
+                  waitUntil: (promise: Promise<unknown>) => {
+                      context.waitUntil(promise);
+                  }
+              })
+    };
+};
+
+const serveImportImage: ImageResponder = async (c, deps) => {
+    const authorization = await authorizeImportImage(c, deps);
+
+    if ('status' in authorization) {
+        return rejectionResponse(authorization);
+    }
+
+    const stored = await readStagedImage(
+        c.env.IMAGES,
+        authorization.urlHash,
+        authorization.index
+    );
+
+    if (stored !== null) {
         return {
-            response: errorResponse(TOO_MANY_REQUESTS_STATUS, {
-                'Retry-After': String(RATE_LIMIT_RETRY_AFTER_SECONDS)
-            }),
-            result: 'rateLimited'
+            response: imageResponse('import', stored),
+            result: 'hit'
         };
     }
 
-    const authorization = await authorize(c, deps);
+    const restaged = await deps.loadStagedImage(
+        toLinkImportDeps(c, deps),
+        authorization
+    );
 
-    return isRejection(authorization)
-        ? {
-              response: errorResponse(authorization.status),
-              result: authorization.result
-          }
-        : resolveImage(c, deps, scope, authorization.fileId);
+    return restaged === null
+        ? { response: placeholderResponse('import'), result: 'placeholder' }
+        : { response: imageResponse('import', restaged), result: 'miss' };
+};
+
+const serve = async (
+    c: ProxyContext,
+    deps: ProxyDeps,
+    respond: ImageResponder
+): Promise<ServedImage> => {
+    if (await enforceClientLimit(c, deps)) {
+        return rateLimitedResponse();
+    }
+
+    return respond(c, deps);
 };
 
 const createImageHandler = (
     scope: ImageProxyScope,
     deps: ProxyDeps,
-    authorize: (c: ProxyContext, deps: ProxyDeps) => Promise<Authorization>
+    respond: ImageResponder
 ) => {
     return async (c: ProxyContext) => {
         const startedAt = deps.now().getTime();
         let served: ServedImage;
 
         try {
-            served = await serve(c, deps, scope, authorize);
+            served = await serve(c, deps, respond);
         } catch (error) {
             console.error(
                 JSON.stringify({
@@ -450,6 +574,10 @@ const createImageHandler = (
     };
 };
 
+const readStagedImageOnly: LoadStagedImage = (deps, input) => {
+    return readStagedImage(deps.env.IMAGES, input.urlHash, input.index);
+};
+
 const notFoundHandler = () => errorResponse(NOT_FOUND.status);
 
 export const registerImageProxyRoutes = (
@@ -460,17 +588,31 @@ export const registerImageProxyRoutes = (
         ...resolveApiDeps(dependencies),
         ...(dependencies.cache === undefined
             ? {}
-            : { cache: dependencies.cache })
+            : { cache: dependencies.cache }),
+        loadStagedImage: dependencies.loadStagedImage ?? readStagedImageOnly
     };
 
     app.get(
         `${APP_IMAGE_PATH_PREFIX}/:wishId/:index/:hash`,
-        createImageHandler('app', deps, authorizeAppImage)
+        createImageHandler(
+            'app',
+            deps,
+            serveTelegramImage('app', authorizeAppImage)
+        )
     );
     app.get(
         `${SHARE_IMAGE_PATH_PREFIX}/:publicId/:wishId/:index/:hash`,
-        createImageHandler('share', deps, authorizeShareImage)
+        createImageHandler(
+            'share',
+            deps,
+            serveTelegramImage('share', authorizeShareImage)
+        )
+    );
+    app.get(
+        `${LINK_IMAGE_PATH_PREFIX}/:urlHash/:index`,
+        createImageHandler('import', deps, serveImportImage)
     );
     app.get(`${APP_IMAGE_PATH_PREFIX}/*`, notFoundHandler);
     app.get(`${SHARE_IMAGE_PATH_PREFIX}/*`, notFoundHandler);
+    app.get(`${LINK_IMAGE_PATH_PREFIX}/*`, notFoundHandler);
 };

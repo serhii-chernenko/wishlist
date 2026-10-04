@@ -59,6 +59,9 @@ const createFakeTelegram = (): FakeTelegram => {
         async sendPhoto() {
             throw new Error('unexpected sendPhoto');
         },
+        async sendMediaGroup() {
+            throw new Error('unexpected sendMediaGroup');
+        },
         async deleteMessage() {
             throw new Error('unexpected deleteMessage');
         },

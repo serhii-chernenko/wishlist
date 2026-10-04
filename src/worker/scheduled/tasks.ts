@@ -6,6 +6,7 @@ import {
     telegramAbandonedUpdateRetentionMilliseconds,
     telegramUpdateRetentionMilliseconds
 } from '../../db/repositories/telegram-update-repository';
+import { createLinkImportCache } from '../../bot/services/link-import/result-cache';
 import type {
     RatesRefreshFailureReason,
     RatesRefreshResult
@@ -60,6 +61,10 @@ interface ScheduledTaskDependencies {
         asOf: Date
     ) => Promise<BotStateSnapshot>;
     refreshExchangeRates?: (env: WorkerBindings) => Promise<RatesRefreshResult>;
+    purgeLinkImportCache?: (
+        env: WorkerBindings,
+        now: number
+    ) => Promise<number>;
 }
 
 export interface ScheduledTasksSummary {
@@ -113,8 +118,40 @@ const pruneSessions = (env: WorkerBindings, updatedBefore: Date) => {
     return Effect.runPromise(repository.pruneUpdatedBefore(updatedBefore));
 };
 
+const purgeLinkImportCache = (env: WorkerBindings, now: number) => {
+    return createLinkImportCache(env.IMAGES).purgeExpired(now);
+};
+
 const getErrorType = (error: unknown) => {
     return error instanceof Error ? error.name : typeof error;
+};
+
+const runLinkImportPurge = async (
+    controller: ScheduledController,
+    env: WorkerBindings,
+    purge: (env: WorkerBindings, now: number) => Promise<number>
+) => {
+    try {
+        const purgedLinkImportObjects = await purge(env, Date.now());
+
+        console.log(
+            JSON.stringify({
+                event: 'link_import_cache_purged',
+                botEnvironment: env.BOT_ENVIRONMENT,
+                cron: controller.cron,
+                purgedLinkImportObjects
+            })
+        );
+    } catch (error) {
+        console.error(
+            JSON.stringify({
+                event: 'link_import_cache_purge_failed',
+                botEnvironment: env.BOT_ENVIRONMENT,
+                cron: controller.cron,
+                errorType: getErrorType(error)
+            })
+        );
+    }
 };
 
 export const runScheduledTasks = async (
@@ -223,6 +260,14 @@ export const runScheduledTasks = async (
                 errorType: getErrorType(error)
             });
         }
+    }
+
+    if (taskNames.includes(TASKS.prune)) {
+        await runLinkImportPurge(
+            controller,
+            env,
+            dependencies.purgeLinkImportCache ?? purgeLinkImportCache
+        );
     }
 
     if (

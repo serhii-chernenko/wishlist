@@ -107,6 +107,9 @@ describe('Mini App API account, share, feedback and info', () => {
             async sendPhoto() {
                 throw new Error('sendPhoto is not expected');
             },
+            async sendMediaGroup() {
+                throw new Error('sendMediaGroup is not expected');
+            },
             async deleteMessage() {
                 throw new Error('deleteMessage is not expected');
             },

@@ -1,4 +1,5 @@
 import type { Repositories } from '../../db/repositories';
+import { LINK_IMPORT_R2_PREFIX } from '../../bot/services/link-import/types';
 import { createWishService } from '../../bot/services/wish-service';
 import { getRuntimeCrypto, type ApiCrypto } from '../auth/crypto';
 import { runInBackground, type ApiContext } from '../context';
@@ -10,6 +11,10 @@ export interface ImageCleanupDependencies {
     bucket: R2Bucket | undefined;
     crypto?: ApiCrypto;
 }
+
+const isWishImageKey = (key: string) => {
+    return !key.startsWith(LINK_IMPORT_R2_PREFIX);
+};
 
 const getErrorType = (error: unknown) => {
     return error instanceof Error ? error.name : typeof error;
@@ -45,7 +50,9 @@ export const releaseOrphanedImages = async (
                 })
         );
 
-        await createImageStore(dependencies.bucket).deleteMany(orphanedKeys);
+        await createImageStore(dependencies.bucket).deleteMany(
+            orphanedKeys.filter(isWishImageKey)
+        );
     } catch (error) {
         console.warn(
             JSON.stringify({
