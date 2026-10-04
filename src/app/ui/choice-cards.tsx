@@ -6,6 +6,7 @@ export interface ChoiceOption<Value extends string> {
     title: string;
     icon?: IconNode;
     glyph?: string;
+    marker?: string;
     hint?: string;
     disabled?: boolean;
 }
@@ -19,6 +20,7 @@ export interface ChoiceCardsProps<Value extends string> {
     variant?: 'cards' | 'list';
     disabled?: boolean;
     describedBy?: string | undefined;
+    groupDescribedBy?: string | undefined;
 }
 
 const joinIds = (ids: Array<string | null>) => {
@@ -36,7 +38,8 @@ export const ChoiceCards = <Value extends string>({
     onChange,
     variant = 'cards',
     disabled = false,
-    describedBy
+    describedBy,
+    groupDescribedBy
 }: ChoiceCardsProps<Value>) => {
     return (
         <fieldset
@@ -46,6 +49,7 @@ export const ChoiceCards = <Value extends string>({
                     : 'choice-group'
             }
             disabled={disabled}
+            aria-describedby={groupDescribedBy}
         >
             <legend class='sr-only'>{legend}</legend>
             {options.map(option => {
@@ -67,6 +71,12 @@ export const ChoiceCards = <Value extends string>({
                             <span class='row-icon row-glyph' aria-hidden='true'>
                                 {option.glyph}
                             </span>
+                        ) : option.marker !== undefined ? (
+                            <span
+                                class='row-icon row-marker'
+                                data-level={option.marker}
+                                aria-hidden='true'
+                            />
                         ) : null}
                         <span class='choice-body'>
                             <span class='choice-title'>{option.title}</span>

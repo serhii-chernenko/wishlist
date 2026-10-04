@@ -1,36 +1,4 @@
 @layer components {
-    .currency-switch ul {
-        display: inline-flex;
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-pill);
-        overflow: hidden;
-    }
-
-    .currency-switch a,
-    .currency-switch span {
-        display: inline-grid;
-        place-items: center;
-        min-width: 2.5rem;
-        min-height: 2.25rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text);
-        text-decoration: none;
-    }
-
-    .currency-switch li + li {
-        border-left: var(--border-regular) solid var(--ink);
-    }
-
-    .currency-switch a:focus-visible {
-        outline-offset: var(--focus-offset-inset);
-    }
-
-    .currency-switch [aria-current] {
-        background: var(--button);
-        color: var(--on-button);
-    }
-
     .currency-icon {
         width: 1.125rem;
         height: 1.125rem;

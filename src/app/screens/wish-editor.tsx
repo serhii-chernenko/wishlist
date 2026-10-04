@@ -68,6 +68,7 @@ import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
 import { openTelegramLink, requestWriteAccess } from '../telegram/links';
 import { confirmAction, showPopup } from '../telegram/popups';
+import { ChoiceCards, type ChoiceOption } from '../ui/choice-cards';
 import { Field } from '../ui/field';
 import { Icon } from '../ui/icon';
 import { ImportNoteBanner } from '../ui/import-note';
@@ -80,7 +81,6 @@ import { CurrencyPicker } from '../ui/currency-picker';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
-import { Segmented, type SegmentedOption } from '../ui/segmented';
 import { Toggle } from '../ui/toggle';
 import { ErrorState } from '../ui/error-state';
 import {
@@ -101,11 +101,12 @@ const REMOVE_NOT_DONE = 'notDone';
 
 const buildPriorityOptions = (
     LL: AppTranslator
-): ReadonlyArray<SegmentedOption<WishPriority>> => {
+): ReadonlyArray<ChoiceOption<WishPriority>> => {
     return WISH_PRIORITIES.map(priority => {
         return {
             value: priority,
-            label: LL.editor.priority.levels[priority]()
+            title: LL.editor.priority.levels[priority](),
+            marker: priority
         };
     });
 };
@@ -1114,13 +1115,14 @@ const WishForm = ({
                     <p class='priority-field-label' id='wish-priority-label'>
                         {LL.editor.priority.label()}
                     </p>
-                    <Segmented
+                    <ChoiceCards
                         name='wish-priority'
                         legend={LL.editor.priority.label()}
                         options={buildPriorityOptions(LL)}
                         value={draft.priority}
+                        variant='list'
                         onChange={setPriority}
-                        describedBy='wish-priority-hint'
+                        groupDescribedBy='wish-priority-hint'
                     />
                     <p id='wish-priority-hint' class='field-hint'>
                         {LL.editor.priority.hint()}

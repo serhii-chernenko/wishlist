@@ -14,6 +14,7 @@ export interface AlignmentSample {
 export interface AlignmentReport {
     samples: AlignmentSample[];
     pairLabelsWrapped: string[];
+    segmentedLabelsWrapped: string[];
     narrowControls: string[];
 }
 
@@ -164,6 +165,21 @@ export const ALIGNMENT_PROBE_SOURCE = String.raw`
         }
     }
 
-    return { samples, pairLabelsWrapped, narrowControls };
+    const segmentedLabelsWrapped = [];
+
+    for (const label of document.querySelectorAll('.segmented-label, .priority-field .choice-title')) {
+        const range = document.createRange();
+
+        range.selectNodeContents(label);
+
+        const tops = new Set([...range.getClientRects()].map(rect => Math.round(rect.top)));
+        const clipped = label.scrollWidth > label.clientWidth + 1;
+
+        if (tops.size > 1 || clipped) {
+            segmentedLabelsWrapped.push(label.textContent.trim());
+        }
+    }
+
+    return { samples, pairLabelsWrapped, segmentedLabelsWrapped, narrowControls };
 })()
 `;

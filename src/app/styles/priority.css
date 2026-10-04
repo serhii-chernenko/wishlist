@@ -12,4 +12,34 @@
     .priority-field-label {
         font-weight: 600;
     }
+
+    .priority-field .choice-group {
+        margin-top: 0;
+    }
+
+    .row-marker {
+        display: inline-grid;
+        place-items: center;
+    }
+
+    .row-marker::before {
+        content: '';
+        inline-size: 1rem;
+        block-size: 1rem;
+        background: var(--marker-fill, transparent);
+        border: var(--border-thin) solid var(--ink);
+        border-radius: var(--radius-round);
+    }
+
+    .row-marker[data-level='low'] {
+        --marker-fill: var(--prio-low);
+    }
+
+    .row-marker[data-level='medium'] {
+        --marker-fill: var(--prio-medium);
+    }
+
+    .row-marker[data-level='high'] {
+        --marker-fill: var(--prio-high);
+    }
 }

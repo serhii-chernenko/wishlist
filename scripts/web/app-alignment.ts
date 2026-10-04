@@ -218,6 +218,12 @@ const checkScreen = async (
             failures.push(`${label}: pairs label wraps: ${wrapped}`);
         }
 
+        for (const wrapped of report.segmentedLabelsWrapped) {
+            failures.push(
+                `${label}: segmented label wraps or is clipped: ${wrapped}`
+            );
+        }
+
         if (
             shotsDirectory !== undefined &&
             width === SHOT_WIDTH &&

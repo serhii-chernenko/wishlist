@@ -136,7 +136,6 @@
     --field-chrome: calc(2 * var(--field-pad-block) + 2 * var(--border-thin));
     --hero-hole-clearance: 2.25rem;
     --opacity-muted: 0.6;
-    --motion-switch: 120ms ease-out;
     --countdown-duration: 5s;
     --countdown-bar-height: 0.25rem;
     --z-bar: 10;
@@ -201,11 +200,6 @@
 
     .chip {
         min-height: var(--tap-size);
-    }
-
-    .chip[aria-pressed='true'] {
-        color: var(--on-button);
-        background: var(--button);
     }
 
     .boot {
@@ -1184,11 +1178,6 @@
         margin-top: 1rem;
     }
 
-    .chip-group .chip[aria-pressed='true'] {
-        color: var(--on-button);
-        background: var(--button);
-    }
-
     .payments-remove {
         margin-top: 1.5rem;
     }
@@ -2101,6 +2090,7 @@
 
 @import '../../web/styles/priority.css';
 @import './segmented.css';
+@import './switch.css';
 @import './priority.css';
 @import './currency.css';
 @import './contact.css';

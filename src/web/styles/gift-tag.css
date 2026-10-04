@@ -16,6 +16,8 @@
         --underline-thickness: 1.5px;
         --underline-offset: 3px;
         --motion-press: 80ms ease-out;
+        --motion-switch: 120ms ease-out;
+        --switch-lift: 2px;
         --tap-size: 2.75rem;
         --measure: 65ch;
         --page-width: 36rem;

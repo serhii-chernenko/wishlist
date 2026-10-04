@@ -99,42 +99,15 @@
         justify-content: flex-end;
     }
 
-    .lang-switch ul {
-        display: inline-flex;
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-pill);
-        overflow: hidden;
-    }
-
     .lang-switch a,
     .lang-switch span {
-        display: inline-flex;
-        align-items: center;
-        min-height: 2.25rem;
-        padding-inline: 0.875rem;
-        font-size: 0.875rem;
-        font-weight: 600;
+        padding-inline: 0.5rem;
         letter-spacing: 0.02em;
-        color: var(--text);
-        text-decoration: none;
-    }
-
-    .lang-switch li + li {
-        border-left: var(--border-regular) solid var(--ink);
     }
 
     .lang-switch a:hover {
         text-decoration: underline;
         text-underline-offset: var(--underline-offset);
-    }
-
-    .lang-switch a:focus-visible {
-        outline-offset: var(--focus-offset-inset);
-    }
-
-    .lang-switch [aria-current] {
-        background: var(--button);
-        color: var(--on-button);
     }
 
     .top-bar {
@@ -143,35 +116,6 @@
         align-items: center;
         justify-content: flex-end;
         gap: 0.5rem;
-    }
-
-    .theme-switch ul {
-        display: inline-flex;
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-pill);
-        overflow: hidden;
-    }
-
-    .theme-switch a,
-    .theme-switch span {
-        display: inline-grid;
-        place-items: center;
-        min-width: 2.5rem;
-        min-height: 2.25rem;
-        color: var(--text);
-    }
-
-    .theme-switch li + li {
-        border-left: var(--border-regular) solid var(--ink);
-    }
-
-    .theme-switch a:focus-visible {
-        outline-offset: var(--focus-offset-inset);
-    }
-
-    .theme-switch [aria-current] {
-        background: var(--button);
-        color: var(--on-button);
     }
 
     .theme-icon {
@@ -460,6 +404,7 @@
 }
 
 @import './priority.css';
+@import './switch.css';
 @import './currency-switch.css';
 @import './contact.css';
 @import './gifted.css';
