@@ -1,0 +1,40 @@
+@layer components {
+    .wish-grid .wish-photo {
+        pointer-events: none;
+    }
+
+    .wish-grid .wish-carousel {
+        position: relative;
+        z-index: var(--z-raised);
+        pointer-events: auto;
+    }
+
+    .photo-dots {
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0.5rem;
+        z-index: calc(var(--z-raised) + 1);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.375rem;
+        padding-inline: 0.5rem;
+        pointer-events: none;
+    }
+
+    .photo-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        background: var(--tag);
+        border: var(--border-thin) solid var(--ink);
+        border-radius: var(--radius-round);
+    }
+
+    .photo-dot-active {
+        background: var(--heart);
+    }
+
+    .wish-gifted .photo-dots {
+        bottom: 2.75rem;
+    }
+}

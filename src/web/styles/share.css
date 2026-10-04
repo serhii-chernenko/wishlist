@@ -2,7 +2,13 @@
 @source '../**/*.tsx';
 @source '../**/*.ts';
 @import './fonts.css';
+@plugin 'daisyui' {
+    themes: false;
+    logs: false;
+    include: carousel;
+}
 @import './gift-tag.css';
+@import './carousel.css';
 
 :root {
     color-scheme: light;

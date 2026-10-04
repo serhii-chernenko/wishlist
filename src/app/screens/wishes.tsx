@@ -921,11 +921,12 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             aria-busy={String(refreshing)}
                         >
                             <WishGrid label={LL.wishes.title()}>
-                                {activeItems.map(wish => {
+                                {activeItems.map((wish, index) => {
                                     return (
                                         <WishTag
                                             key={wish.id}
                                             wish={wish}
+                                            index={index}
                                             onOpen={() => {
                                                 nav.push({
                                                     screen: 'wishEditor',
@@ -938,11 +939,12 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                                         />
                                     );
                                 })}
-                                {giftedItems.map(wish => {
+                                {giftedItems.map((wish, index) => {
                                     return (
                                         <WishTag
                                             key={wish.id}
                                             wish={wish}
+                                            index={activeItems.length + index}
                                             onOpen={() => {
                                                 setGiftedSheetWish(wish);
                                             }}

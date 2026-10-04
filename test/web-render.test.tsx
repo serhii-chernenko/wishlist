@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -347,32 +348,149 @@ test('wishes without photos show the heart placeholder instead of an image', () 
         html,
         /<h2 class="wish-title">Coffee machine<\/h2><div class="wish-photo"><\/div>/
     );
-    assert.doesNotMatch(html, /<img\b|wish-photo-count/);
+    assert.doesNotMatch(html, /<img\b|carousel/);
 });
 
-test('the first photo is a lazy cover and the rest are counted on a badge', () => {
-    const photos = ['a', 'b', 'c'].map((hash, index) => {
+const buildPhotos = (count: number, prefix = 'p') => {
+    return Array.from({ length: count }, (_, index) => {
         return {
-            url: `/img/s/${hash}`,
-            alt: `Photo ${index + 1} of 3: "Coffee" <machine>`
+            url: `/img/s/${prefix}${index}`,
+            alt: `Photo ${index + 1} of ${count}: "Coffee" <machine>`
         };
     });
+};
+
+const readImages = (html: string) => {
+    return Array.from(html.matchAll(/<img\b[^>]*>/g), match => {
+        return match[0];
+    });
+};
+
+test('a wish with several photos renders a scroll-snap carousel without scripts or anchors', () => {
     const html = renderSharePage(
         buildModel({
             wishes: [
-                buildWish({ photos }),
-                buildWish({ title: 'Single', photos: photos.slice(0, 1) })
+                buildWish({ photos: buildPhotos(3) }),
+                buildWish({ title: 'Single', photos: buildPhotos(1, 's') })
             ]
         })
     );
 
-    assert.equal(html.match(/<img\b/g)?.length, 2);
+    assert.equal(
+        html.match(
+            /<div class="carousel wish-carousel" role="group" tabindex="0" aria-label="Photos, 3">/g
+        )?.length,
+        1
+    );
     assert.match(
         html,
-        /<div class="wish-photo"><img src="\/img\/s\/a" alt="Photo 1 of 3: &quot;Coffee&quot; &lt;machine&gt;" loading="lazy"\/><span class="wish-photo-count" aria-hidden="true">\+2<\/span><\/div>/
+        /<div class="wish-photo" data-count="3 photos"><div class="carousel wish-carousel"/
     );
-    assert.equal(html.match(/wish-photo-count/g)?.length, 1);
-    assert.doesNotMatch(html, /\/img\/s\/[bc]|wish-photo-empty/);
+    assert.match(
+        html,
+        /<img src="\/img\/s\/p0" alt="Photo 1 of 3: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><img src="\/img\/s\/p1"/
+    );
+    assert.equal(html.match(/data-count=/g)?.length, 1);
+    assert.equal(html.match(/<img\b/g)?.length, 4);
+    assert.doesNotMatch(html, /<a\b[^>]*href="#|<script|\sonscroll=/);
+    assert.doesNotMatch(html, /wish-photo-empty/);
+});
+
+test('a single photo stays a plain cover without carousel markup', () => {
+    const html = renderSharePage(
+        buildModel({
+            wishes: [buildWish({ photos: buildPhotos(1) })]
+        })
+    );
+
+    assert.match(
+        html,
+        /<div class="wish-photo"><img src="\/img\/s\/p0" alt="Photo 1 of 1: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><\/div>/
+    );
+    assert.doesNotMatch(html, /carousel|data-count|tabindex/);
+});
+
+test('the carousel label is localized', () => {
+    const labels = {
+        uk: 'aria-label="Фото, 2"',
+        en: 'aria-label="Photos, 2"',
+        pl: 'aria-label="Zdjęcia, 2"'
+    };
+
+    for (const [language, label] of Object.entries(labels)) {
+        const html = renderSharePage(
+            buildModel({
+                language: language as SharePageModel['language'],
+                wishes: [buildWish({ photos: buildPhotos(2) })]
+            })
+        );
+
+        assert.ok(html.includes(label), language);
+    }
+});
+
+test('only the first photo of the first four cards is eager and only the very first is high priority', () => {
+    const wishes = Array.from({ length: 6 }, (_, index) => {
+        return buildWish({
+            title: `Wish ${index}`,
+            photos: buildPhotos(3, `w${index}-`)
+        });
+    });
+    const images = readImages(
+        renderSharePage(buildModel({ wishes, visibleCount: 6 }))
+    );
+
+    assert.equal(images.length, 18);
+
+    images.forEach((image, position) => {
+        const card = Math.floor(position / 3);
+        const slide = position % 3;
+        const eager = card < 4 && slide === 0;
+
+        assert.match(image, /decoding="async"/);
+        assert.match(
+            image,
+            eager ? /loading="eager"/ : /loading="lazy"/,
+            `card ${card} slide ${slide}`
+        );
+        assert.equal(
+            image.includes('fetchpriority="high"'),
+            card === 0 && slide === 0,
+            `card ${card} slide ${slide}`
+        );
+    });
+});
+
+test('gifted cards continue the card numbering after the open wishes', () => {
+    const wishes = Array.from({ length: 4 }, (_, index) => {
+        return buildWish({ photos: buildPhotos(1, `o${index}-`) });
+    });
+    const gifted = [
+        buildWish({
+            title: 'Gifted',
+            gifted: true,
+            photos: buildPhotos(2, 'g')
+        })
+    ];
+    const images = readImages(
+        renderSharePage(buildModel({ wishes, gifted, visibleCount: 4 }))
+    );
+    const giftedImages = images.filter(image => {
+        return image.includes('/img/s/g');
+    });
+
+    assert.equal(giftedImages.length, 2);
+    assert.ok(
+        giftedImages.every(image => {
+            return image.includes('loading="lazy"');
+        })
+    );
+    assert.equal(
+        images.filter(image => {
+            return image.includes('loading="eager"');
+        }).length,
+        4
+    );
 });
 
 test('description and dates fold into a localized details disclosure', () => {
@@ -602,6 +720,8 @@ test('the page has a doctype, no scripts and no external resources', () => {
 const STRESS_PRIORITIES = ['high', 'low', 'high', 'medium'] as const;
 const MAX_RAW_SHARE_BYTES = 100_000;
 const MAX_GZIP_SHARE_BYTES = 20_000;
+const MAX_GZIP_SHARE_CAROUSEL_BYTES = 26_000;
+const MAX_WISH_PHOTOS = 9;
 const STRESS_ALPHABET = 'абвгґдеєжзиіїйклмнопрстуфхцчшщьюя ';
 
 const createStressText = (seed: number) => {
@@ -616,12 +736,22 @@ const createStressText = (seed: number) => {
     };
 };
 
-const assertShareBudget = (html: string) => {
+const assertShareBudget = (
+    html: string,
+    maxGzipBytes: number = MAX_GZIP_SHARE_BYTES
+) => {
     const raw = Buffer.byteLength(html);
     const compressed = gzipSync(html).byteLength;
 
     assert.ok(raw < MAX_RAW_SHARE_BYTES, `raw ${raw}`);
-    assert.ok(compressed < MAX_GZIP_SHARE_BYTES, `gzip ${compressed}`);
+    assert.ok(compressed < maxGzipBytes, `gzip ${compressed}`);
+};
+
+const buildImageHash = (wish: number, photo: number) => {
+    return createHash('sha256')
+        .update(`${wish}:${photo}`)
+        .digest('hex')
+        .slice(0, 16);
 };
 
 test('twenty maximum size wishes stay within the share page budget', () => {
@@ -653,17 +783,20 @@ test('twenty maximum size wishes stay within the share page budget', () => {
             wishes: wishes.map((wish, index) => {
                 return {
                     ...wish,
-                    photos: Array.from({ length: 9 }, (_, photo) => {
-                        return {
-                            url: buildShareImagePath(
-                                PUBLIC_ID,
-                                100_000 + index,
-                                photo,
-                                'f'.repeat(16)
-                            ),
-                            alt: `Фото ${photo + 1} з 9, ${index}`
-                        };
-                    })
+                    photos: Array.from(
+                        { length: MAX_WISH_PHOTOS },
+                        (_, photo) => {
+                            return {
+                                url: buildShareImagePath(
+                                    PUBLIC_ID,
+                                    100_000 + index,
+                                    photo,
+                                    buildImageHash(index, photo)
+                                ),
+                                alt: `Фото ${photo + 1} з ${MAX_WISH_PHOTOS}`
+                            };
+                        }
+                    )
                 };
             }),
             visibleCount: 20,
@@ -671,7 +804,7 @@ test('twenty maximum size wishes stay within the share page budget', () => {
         })
     );
 
-    assertShareBudget(withPhotos);
+    assertShareBudget(withPhotos, MAX_GZIP_SHARE_CAROUSEL_BYTES);
 });
 
 test('the gifted section at its cap stays within the share page budget', () => {

@@ -1449,7 +1449,7 @@ describe('share page routes', () => {
         );
     });
 
-    it('renders lazy cover photos with share image URLs and an open in Telegram link', async () => {
+    it('renders every photo with share image URLs and an open in Telegram link', async () => {
         const owner = await createOwner({ language: 'en' });
         const wish = await createWish(owner.id, 'Camera');
         const publicId = await publish(owner.id);
@@ -1476,7 +1476,7 @@ describe('share page routes', () => {
         assert.match(
             body,
             new RegExp(
-                `<img src="/img/s/${publicId}/${wish.id}/0/${hash}" alt="Photo 1 of 3" loading="lazy"/>`
+                `<img src="/img/s/${publicId}/${wish.id}/0/${hash}" alt="Photo 1 of 3" loading="eager" decoding="async" fetchpriority="high"/>`
             )
         );
         assert.doesNotMatch(body, /alt="[^"]*Camera/);
@@ -1514,7 +1514,7 @@ describe('share page routes', () => {
 
         const body = await (await request(`/ua/w/${publicId}`)).text();
 
-        assert.equal(body.match(/<img /g)?.length, 20);
+        assert.equal(body.match(/<img /g)?.length, 180);
         assert.ok(
             Buffer.byteLength(body) < 60_000,
             `${Buffer.byteLength(body)}`
