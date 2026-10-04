@@ -1489,6 +1489,42 @@ describe('share page routes', () => {
         );
     });
 
+    it('tells the image proxy the chosen page theme on every photo and adds nothing for the system theme', async () => {
+        const owner = await createOwner({ language: 'en' });
+        const wish = await createWish(owner.id, 'Camera');
+        const publicId = await publish(owner.id);
+
+        await run(
+            repositories.wishes.appendImage(
+                wish.id,
+                owner.id,
+                'file-one',
+                nextNow()
+            )
+        );
+
+        const hash = (await sha256Hex(getRuntimeCrypto(), 'file-one')).slice(
+            0,
+            16
+        );
+        const path = `/img/s/${publicId}/${wish.id}/0/${hash}`;
+
+        for (const theme of ['dark', 'light'] as const) {
+            const themed = await request(`/en/w/${publicId}`, {
+                headers: { Cookie: `theme=${theme}` }
+            });
+
+            assert.ok(
+                (await themed.text()).includes(`src="${path}?t=${theme}"`)
+            );
+        }
+
+        const system = await (await request(`/en/w/${publicId}`)).text();
+
+        assert.ok(system.includes(`src="${path}"`));
+        assert.doesNotMatch(system, /\?t=/);
+    });
+
     it('keeps twenty wishes with nine photos each below 60 KB', async () => {
         const owner = await createOwner({ language: 'uk' });
         const publicId = await publish(owner.id);

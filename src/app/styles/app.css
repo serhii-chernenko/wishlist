@@ -546,7 +546,7 @@
         overflow: hidden;
         font-size: 0;
         color: transparent;
-        background: var(--photo-placeholder-bg);
+        background: var(--photo-placeholder);
         object-fit: cover;
     }
 
@@ -1554,18 +1554,6 @@
         width: 1.375rem;
         height: 1.375rem;
         overflow: visible;
-    }
-
-    .icon-toggle-heart .icon-toggle-glyph {
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 20;
-        stroke-linejoin: round;
-    }
-
-    .icon-toggle-heart[aria-pressed='true'] .icon-toggle-glyph {
-        fill: var(--heart);
-        stroke: var(--ink);
     }
 
     .icon-toggle-eye {

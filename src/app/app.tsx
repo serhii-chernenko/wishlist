@@ -24,7 +24,6 @@ import {
 } from './state/store';
 import type { LaunchContext } from './telegram/sdk';
 import { BottomBarFallback } from './ui/bottom-bar';
-import { HeartDefs } from './ui/heart';
 import { OfflineBanner } from './ui/offline-banner';
 import { PopupHost } from './ui/popup-host';
 import { createToaster, ToastHost } from './ui/toast';
@@ -146,7 +145,6 @@ export const App = ({
 }) => {
     return (
         <AppContext.Provider value={services}>
-            <HeartDefs />
             <OfflineBanner />
             <Router handle={navigation} />
             <BottomBarFallback />

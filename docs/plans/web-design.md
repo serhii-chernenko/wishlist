@@ -8,7 +8,7 @@ Visual source: the bot avatar (scratchpad/assets/bot-avatar-640.jpg): flat fills
 - --paper #F1E3FB lavender page background (light)
 - --ink #000000 outlines + text (pure black, not near-black)
 - --tag #FFFFFF tag surfaces
-- --heart #F57AA6 priority sticker, primary CTA fill (black text on it)
+- --heart #F57AA6 primary CTA fill (black text on it); the high priority badge shares this pink
 - --box #2AABE2 money/payments envelope fill (black text on it)
 - --heart-ink #7A1040 links on light surfaces (AAA)
   Dark (prefers-color-scheme): page #1A1220, tag #261B2E, ink/outline #F1E3FB (lavender outlines instead of black), text #FBF4FF; heart/box fills keep black text. All text pairs ≥ 7:1 (keep the existing contrast test, update values).
@@ -39,7 +39,7 @@ Visual source: the bot avatar (scratchpad/assets/bot-avatar-640.jpg): flat fills
  ♥┌────────────────────────────────┐  wish tags: white, 2.5px border, 3px shadow, NOT rotated, notched top-right corner
   │ Клавіатура NuPhy Halo75 V2      │  (clip-path or an ink-bordered corner cutout like a luggage tag).
   │ [6 400 ₴]  price tag chip        │  Price = small tag chip: heart pink fill? NO — keep price on white with ink border and a tiny hole dot (tag motif), Unbounded 700.
-  │ description (pre-line)          │  Priority wishes: a pink heart sticker (the avatar heart as inline SVG, ink outline) overlapping the top-left corner + visually-hidden text "дуже хоче"; non-priority have none.
+  │ description (pre-line)          │  Priority wishes carry a text badge (low, medium, high) with a signal icon under the photo; wishes without priority have none. No heart on cards: a heart reads as a favorite.
   │ [ Відкрити на nuphy.com ]       │  Link button: ink fill, white text (dark: lavender fill, black text), 10px radius, press = translate(2px,2px) + shadow 0 (only motion on page; disable transition under prefers-reduced-motion).
   │ Додано 7 червня 2024 (оновлено …)│  Dates one short sentence, meta size.
   └────────────────────────────────┘
@@ -54,6 +54,6 @@ Empty / 404 / 410 pages reuse the hero tag with a clear one-line direction (e.g.
 
 1. One bold thing: the hero gift tag with hole + string. Everything else quiet and disciplined.
 2. Outlines and hard shadows come from the avatar's sticker art — never soft grey shadows, never gradients.
-3. Structure = information: the heart sticker appears only on priority wishes; the price chip only when price > 0; dates only as needed.
+3. Structure = information: the priority badge appears only on low, medium and high wishes and is the single priority signal; the price chip only when price > 0; dates only as needed.
 4. Zero JS, semantic HTML (header, main, ul/li of articles, footer), visible focus ring (3px heart-pink outline + 2px offset), keyboard friendly, reduced motion respected.
 5. Budget: HTML < 60 KB for 20 wishes; fonts self-hosted woff2, subset files only; CSP: font-src 'self', style-src 'self', img-src 'self' data: only if needed for SVG (prefer inline SVG elements, which need no img-src).

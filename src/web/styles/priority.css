@@ -52,22 +52,4 @@
             mask: var(--prio-icon) center / contain no-repeat;
         }
     }
-
-    .sticker {
-        overflow: visible;
-    }
-
-    .sticker-halo {
-        fill: var(--paper);
-        stroke: var(--paper);
-        stroke-width: 44;
-        stroke-linejoin: round;
-    }
-
-    .sticker-fill {
-        fill: var(--heart);
-        stroke: var(--ink);
-        stroke-width: 20;
-        stroke-linejoin: round;
-    }
 }

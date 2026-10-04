@@ -52,14 +52,6 @@ export const createEmptyDraft = (currency: Currency): WishDraft => {
 
 export const EMPTY_DRAFT: WishDraft = createEmptyDraft(DEFAULT_CURRENCY);
 
-export const isHighPriority = (priority: WishPriority) => {
-    return priority === 'high';
-};
-
-export const toToggledPriority = (pressed: boolean): WishPriority => {
-    return pressed ? 'high' : 'none';
-};
-
 const IMMEDIATE_ERROR_CODES: ReadonlySet<FieldErrorCode> = new Set([
     'tooLong',
     'containsLink'

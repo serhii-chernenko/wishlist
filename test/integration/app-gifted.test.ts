@@ -895,7 +895,7 @@ describe('gifted wishes', () => {
             );
             assert.doesNotMatch(
                 shown.html.slice(shown.html.indexOf('wish-gifted')),
-                /wish-heart/
+                /priority-badge/
             );
 
             await run(

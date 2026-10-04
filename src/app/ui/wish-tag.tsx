@@ -7,7 +7,6 @@ import { EAGER_CARD_COUNT, getPhotoLoading } from '../../shared/photo-loading';
 import { getLinkHost } from '../logic/format';
 import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
-import { HeartSticker } from './heart';
 import { PhotoCarousel } from './photo-carousel';
 import { PhotoFrame } from './photo-frame';
 import { PriceChip } from './price-chip';
@@ -94,14 +93,12 @@ export const WishTag = ({
     const LL = useLL();
     const host = wish.linkHost ?? getLinkHost(wish.link);
     const gifted = wish.gifted === true;
-    const wanted = wish.priority === 'high' && !gifted;
 
     return (
         <li
             class={gifted ? 'wish wish-gifted' : 'wish'}
             data-wish-id={String(wish.id)}
         >
-            {wanted ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>
                     {onOpen === undefined ? (

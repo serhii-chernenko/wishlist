@@ -12,6 +12,7 @@ const SEGMENTED_SOURCE = readSource('src/app/styles/segmented.css');
 const APP_PRIORITY_SOURCE = readSource('src/app/styles/priority.css');
 const WEB_PRIORITY_SOURCE = readSource('src/web/styles/priority.css');
 const EDITOR_SOURCE = readSource('src/app/screens/wish-editor.tsx');
+const PRIORITY_CHOICE_SOURCE = readSource('src/app/ui/priority-choice.tsx');
 
 test('segmented labels stay on one line and truncate instead of wrapping', () => {
     assert.match(
@@ -31,8 +32,8 @@ test('the alignment probe reports wrapped or clipped segmented labels', () => {
 });
 
 test('the wish editor picks priority from a list, not a segmented control', () => {
-    assert.match(EDITOR_SOURCE, /<ChoiceCards[^>]*name='wish-priority'/);
-    assert.match(EDITOR_SOURCE, /variant='list'/);
+    assert.match(EDITOR_SOURCE, /<PriorityChoice[^>]*name='wish-priority'/);
+    assert.match(PRIORITY_CHOICE_SOURCE, /<ChoiceCards[\s\S]*variant='list'/);
     assert.doesNotMatch(EDITOR_SOURCE, /<Segmented\b[^>]*wish-priority/);
 });
 

@@ -1,6 +1,8 @@
 import { useState } from 'hono/jsx/dom';
 
+import { withImageTheme } from '../../shared/image-theme';
 import type { PhotoLoadingAttributes } from '../../shared/photo-loading';
+import { getEffectiveScheme } from '../telegram/theme';
 import { PhotoPlaceholder } from './photo-placeholder';
 
 const DEFAULT_LOADING: PhotoLoadingAttributes = {
@@ -8,7 +10,7 @@ const DEFAULT_LOADING: PhotoLoadingAttributes = {
     decoding: 'async'
 };
 
-/** A wish photo that swaps itself for the grey placeholder when the image cannot be loaded. */
+/** A wish photo that swaps itself for the grey placeholder when the image cannot be loaded; the theme it was mounted with rides on the proxy URL so the proxy's own fallback matches. */
 export const PhotoFrame = ({
     src,
     alt,
@@ -19,12 +21,13 @@ export const PhotoFrame = ({
     loading?: PhotoLoadingAttributes;
 }) => {
     const [failedSrc, setFailedSrc] = useState<string | null>(null);
+    const [scheme] = useState(getEffectiveScheme);
 
     return failedSrc === src ? (
         <PhotoPlaceholder label={alt} />
     ) : (
         <img
-            src={src}
+            src={withImageTheme(src, scheme)}
             alt={alt}
             {...loading}
             onError={() => {

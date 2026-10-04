@@ -124,7 +124,7 @@ test('the badge outline and fill both stand out from the card in light and dark'
     }
 });
 
-test('the high badge uses the same pink as the heart sticker in both themes', () => {
+test('the high badge uses the same pink as the brand heart token in both themes', () => {
     const high = getToken(PRIORITY_TOKENS, 'prio-high');
 
     for (const names of Object.values(THEMES)) {
@@ -166,15 +166,36 @@ test('each signal icon file draws the matching lucide icon', () => {
     }
 });
 
-test('both stylesheets ship the badge and the sticker rules', () => {
+test('both stylesheets ship the badge rules and no heart sticker rules', () => {
     for (const stylesheet of [COMMITTED_SHARE, COMMITTED_APP]) {
         assert.match(stylesheet, /\.priority-badge\[data-level=high\]/);
         assert.match(stylesheet, /--prio-high:#f57aa6/);
     }
 
-    assert.match(COMMITTED_SHARE, /\.sticker-fill/);
+    for (const stylesheet of [COMMITTED_SHARE, COMMITTED_APP]) {
+        assert.doesNotMatch(
+            stylesheet,
+            /\.wish-heart|\.heart-halo|\.heart-fill|\.sticker-fill|\.sticker-halo|icon-toggle-heart/
+        );
+    }
+
+    assert.match(COMMITTED_APP, /\.icon-toggle\{/);
 });
 
 test('the badge never relies on inline styles or data URLs', () => {
     assert.doesNotMatch(PRIORITY_SOURCE, /data:|style=/);
+});
+
+test('the owner cards use a neutral signal button and a shared priority list instead of a heart', () => {
+    const wishes = readSource('../src/app/screens/wishes.tsx');
+    const editor = readSource('../src/app/screens/wish-editor.tsx');
+    const wishTag = readSource('../src/app/ui/wish-tag.tsx');
+
+    assert.match(wishes, /import \{[^}]*\bSignal\b[^}]*\} from 'lucide'/);
+    assert.match(wishes, /aria-label=\{LL\.wishes\.priorityButton\(\)\}/);
+    assert.match(wishes, /<PriorityChoice/);
+    assert.match(editor, /<PriorityChoice/);
+    assert.doesNotMatch(wishes, /Heart|aria-pressed=\{String\(isHighPriority/);
+    assert.doesNotMatch(wishTag, /Heart|wanted/);
+    assert.ok(!existsSync(new URL('../src/app/ui/heart.tsx', import.meta.url)));
 });

@@ -418,6 +418,7 @@ const servePage = async ({
                             crypto,
                             language,
                             publicId: share.publicId,
+                            theme,
                             wish
                         })
                     };
@@ -443,7 +444,8 @@ const servePage = async ({
                     repositories,
                     share,
                     crypto,
-                    language
+                    language,
+                    theme
                 }),
                 indexable,
                 botUrl: c.env.WISHLIST_TG_URL,
