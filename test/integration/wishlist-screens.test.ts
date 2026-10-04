@@ -713,6 +713,7 @@ describe('wishlist screens on D1', () => {
                     `${getMessages('uk').wishlist.share.ready(links)}\n\n${getMessages('uk').wishlist.share.pageEmpty()}`
                 );
                 assert.deepEqual(callbackDataOf(link.keyboard), [
+                    'n:dsc',
                     'wl:share:new',
                     'wl:share:stop',
                     'n:wl'
@@ -814,6 +815,7 @@ describe('wishlist screens on D1', () => {
             assert.equal((await readShareRow(owner.id))?.show_username, 0);
             assert.deepEqual(callbackDataOf(lastText(events).keyboard), [
                 'wl:share:u',
+                'n:dsc',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'

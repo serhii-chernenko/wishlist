@@ -289,6 +289,7 @@ const buildShareLinkKeyboard = (
         urlButton(actions.send(), buildTelegramShareUrl(req, links)),
         appEntryButton(req, 'share'),
         buildUsernameToggleButton(req, share),
+        navigationButton(LL.disclosure.title(), 'disclosure'),
         callbackButton(actions.newLink(), { type: 'wishlistShareRotate' }),
         callbackButton(actions.stop(), { type: 'wishlistShareStop' }),
         navigationButton(LL.actions.back(), 'wishlist')

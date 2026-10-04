@@ -1,3 +1,5 @@
+import { Effect } from 'effect';
+
 import {
     buildAuthorName,
     canShowPublicUsername,
@@ -126,6 +128,28 @@ export const stopShare: ApiHandler = async c => {
     return respondWithShare(c, user);
 };
 
-export const setShareIndexing: ApiHandler = () => {
-    throw new ApiError('notImplemented');
+export const setShareIndexing: ApiHandler = async c => {
+    const user = requireUser(c);
+    const reader = createBodyReader(await readJsonBody(c));
+    const allowIndexing = reader.requiredBoolean('allowIndexing');
+
+    reader.finish();
+
+    if (allowIndexing === undefined) {
+        throw new ApiError('validation');
+    }
+
+    const updated = await Effect.runPromise(
+        c.var.repos.shares.setAllowIndexing(
+            user.id,
+            allowIndexing,
+            c.var.deps.now()
+        )
+    );
+
+    if (updated === null) {
+        throw new ApiError('notShared');
+    }
+
+    return respondWithShare(c, user);
 };

@@ -7,6 +7,7 @@ import {
     createGiveService,
     summarizeGivers
 } from '../../bot/services/give-service';
+import { resolveOwnerContact } from '../../bot/services/contact-service';
 import { createWishService } from '../../bot/services/wish-service';
 import { isFindableOwner } from '../../bot/services/wish-screen-context';
 import type { UserRecord, WishRecord } from '../../db/repositories';
@@ -197,7 +198,7 @@ export const openSharedList: ApiHandler = async c => {
                 owner
             }),
             source: 'share',
-            contact: null
+            contact: resolveOwnerContact({ owner, viewer, offset })
         }),
         preview: toPageDto(items, page.total, offset)
     };
@@ -269,7 +270,7 @@ export const listOwnerWishes: ApiHandler = async c => {
             token: c.req.param('token') ?? null,
             label: username === null ? '' : `@${username}`,
             source: 'search',
-            contact: null
+            contact: resolveOwnerContact({ owner, viewer, offset })
         })
     };
 
