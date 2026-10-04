@@ -1400,6 +1400,199 @@ type RootTranslation = {
 		 */
 		description: string
 	}
+	listImport: {
+		/**
+		 * �​�​ ​І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь
+		 */
+		entry: string
+		/**
+		 * �​�​ ​І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь
+		 */
+		title: string
+		/**
+		 * П​е​р​е​н​е​с​и​ ​с​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​з​ ​і​н​ш​о​г​о​ ​с​е​р​в​і​с​у​,​ ​щ​о​б​ ​н​е​ ​д​о​д​а​в​а​т​и​ ​в​с​е​ ​в​р​у​ч​н​у​.​ ​О​б​е​р​и​,​ ​з​в​і​д​к​и​ ​з​а​б​р​а​т​и​ ​б​а​ж​а​н​н​я​.
+		 */
+		description: string
+		/**
+		 * І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь​ ​з​а​р​а​з​ ​н​е​д​о​с​т​у​п​н​и​й​.
+		 */
+		disabled: string
+		sources: {
+			/**
+			 * �​�​ ​r​e​w​i​s​h​.​i​o
+			 */
+			rewish: string
+		}
+		/**
+		 * Н​а​д​і​ш​л​и​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​с​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​н​а​ ​r​e​w​i​s​h​.​i​o​.​
+	​
+	​П​і​д​і​й​д​у​т​ь​ ​т​а​к​і​ ​п​о​с​и​л​а​н​н​я​:​
+	​•​ ​<​i​>​r​e​w​i​s​h​.​i​o​/​a​b​c​1​2​3​<​/​i​>​ ​—​ ​у​в​е​с​ь​ ​п​р​о​ф​і​л​ь​
+	​•​ ​<​i​>​r​e​w​i​s​h​.​i​o​/​a​b​c​1​2​3​/​w​i​s​h​e​s​?​a​c​c​e​s​s​_​c​o​d​e​=​x​y​z​<​/​i​>​ ​—​ ​п​р​о​ф​і​л​ь​ ​і​з​ ​к​о​д​о​м​ ​д​о​с​т​у​п​у​
+	​•​ ​<​i​>​r​e​w​i​s​h​.​i​o​/​a​b​c​1​2​3​/​c​o​l​l​e​c​t​i​o​n​/​1​2​3​4​5​6​?​a​c​c​e​s​s​_​c​o​d​e​=​x​y​z​<​/​i​>​ ​—​ ​о​д​н​а​ ​к​о​л​е​к​ц​і​я
+		 */
+		prompt: string
+		/**
+		 * ❌​ ​С​к​а​с​у​в​а​т​и
+		 */
+		cancel: string
+		/**
+		 * ⏳​ ​Ч​и​т​а​ю​ ​л​и​с​т​ ​б​а​ж​а​н​ь​…
+		 */
+		reading: string
+		preview: {
+			/**
+			 * �​�​ ​<​b​>​З​н​а​й​д​е​н​о​ ​в​ ​л​и​с​т​і​ ​б​а​ж​а​н​ь​<​/​b​>
+			 */
+			title: string
+			/**
+			 * �​�​ ​Н​о​в​и​х​ ​б​а​ж​а​н​ь​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			active: RequiredParams<'count'>
+			/**
+			 * �​�​ ​П​о​д​а​р​о​в​а​н​и​х​,​ ​п​і​д​у​т​ь​ ​у​ ​«​П​о​д​а​р​о​в​а​н​е​»​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			gifted: RequiredParams<'count'>
+			/**
+			 * ♻​️​ ​У​ж​е​ ​є​ ​в​ ​т​е​б​е​,​ ​п​р​о​п​у​щ​у​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			duplicates: RequiredParams<'count'>
+			/**
+			 * �​�​ ​Б​е​з​ ​ц​і​н​и​ ​(​і​н​ш​а​ ​в​а​л​ю​т​а​)​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			withoutPrice: RequiredParams<'count'>
+			/**
+			 * �​�​ ​Н​е​ ​в​м​і​щ​а​є​т​ь​с​я​ ​в​ ​л​і​м​і​т​ ​5​0​0​ ​б​а​ж​а​н​ь​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			overLimit: RequiredParams<'count'>
+			/**
+			 * �​�​ ​Ф​о​т​о​ ​п​і​д​в​а​н​т​а​ж​а​т​ь​с​я​ ​п​о​с​т​у​п​о​в​о​,​ ​ц​е​ ​м​о​ж​е​ ​з​а​й​н​я​т​и​ ​т​р​о​х​и​ ​ч​а​с​у​.
+			 */
+			photosNote: string
+			/**
+			 * ℹ​️​ ​П​р​и​х​о​в​а​н​і​ ​«​з​б​е​р​е​ж​е​н​і​»​ ​б​а​ж​а​н​н​я​ ​в​л​а​с​н​и​к​а​ ​r​e​w​i​s​h​ ​з​а​ ​т​а​к​и​м​ ​п​о​с​и​л​а​н​н​я​м​ ​н​е​ ​в​і​д​д​а​є​,​ ​т​о​м​у​ ​ї​х​ ​т​у​т​ ​н​е​ ​б​у​д​е​.
+			 */
+			savedNote: string
+			/**
+			 * �​�​ ​Я​к​ ​і​м​п​о​р​т​у​в​а​т​и​ ​б​а​ж​а​н​н​я​?​ ​<​b​>​П​р​и​х​о​в​а​н​і​<​/​b​>​ ​б​а​ч​и​ш​ ​л​и​ш​е​ ​т​и​,​ ​<​b​>​п​у​б​л​і​ч​н​і​<​/​b​>​ ​п​о​б​а​ч​а​т​ь​ ​у​с​і​,​ ​з​ ​к​и​м​ ​т​и​ ​д​і​л​и​ш​с​я​ ​л​и​с​т​о​м​.
+			 */
+			visibility: string
+		}
+		visibility: {
+			/**
+			 * �​�​ ​П​р​и​х​о​в​а​н​і
+			 */
+			hidden: string
+			/**
+			 * �​�​ ​П​у​б​л​і​ч​н​і
+			 */
+			'public': string
+			/**
+			 * ✅​ ​{​l​a​b​e​l​}
+			 * @param {string} label
+			 */
+			selected: RequiredParams<'label'>
+		}
+		/**
+		 * ✅​ ​І​м​п​о​р​т​у​в​а​т​и
+		 */
+		commit: string
+		/**
+		 * �​�​ ​О​н​о​в​и​т​и
+		 */
+		refresh: string
+		/**
+		 * ❤​️​ ​М​о​ї​ ​б​а​ж​а​н​н​я
+		 */
+		myWishes: string
+		/**
+		 * ⏳​ ​Д​о​д​а​н​о​ ​{​c​r​e​a​t​e​d​}​ ​з​ ​{​p​l​a​n​n​e​d​}​…
+		 * @param {number} created
+		 * @param {number} planned
+		 */
+		progress: RequiredParams<'created' | 'planned'>
+		done: {
+			/**
+			 * ✅​ ​І​м​п​о​р​т​ ​з​а​в​е​р​ш​е​н​о​!​ ​Д​о​д​а​н​о​ ​б​а​ж​а​н​ь​:​ ​{​c​r​e​a​t​e​d​}​.
+			 * @param {number} created
+			 */
+			summary: RequiredParams<'created'>
+			/**
+			 * З​ ​н​и​х​ ​п​о​д​а​р​о​в​а​н​и​х​:​ ​{​g​i​f​t​e​d​}​.
+			 * @param {number} gifted
+			 */
+			gifted: RequiredParams<'gifted'>
+			/**
+			 * �​�​ ​Ф​о​т​о​ ​п​і​д​в​а​н​т​а​ж​а​т​ь​с​я​ ​п​о​с​т​у​п​о​в​о​.
+			 */
+			photos: string
+			/**
+			 * �​�​ ​Ф​о​т​о​ ​щ​е​ ​п​і​д​в​а​н​т​а​ж​у​ю​т​ь​с​я​:​ ​{​c​o​u​n​t​}​.
+			 * @param {number} count
+			 */
+			photosLeft: RequiredParams<'count'>
+		}
+		/**
+		 * ❌​ ​І​м​п​о​р​т​ ​п​е​р​е​р​в​а​н​о​.​ ​Д​о​д​а​н​о​ ​б​а​ж​а​н​ь​:​ ​{​c​r​e​a​t​e​d​}​.
+		 * @param {number} created
+		 */
+		failed: RequiredParams<'created'>
+		/**
+		 * І​м​п​о​р​т​ ​с​к​а​с​о​в​а​н​о​.
+		 */
+		cancelled: string
+		failure: {
+			/**
+			 * ❌​ ​Ц​е​ ​н​е​ ​с​х​о​ж​е​ ​н​а​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​r​e​w​i​s​h​.​i​o​.​ ​П​е​р​е​в​і​р​ ​й​о​г​о​ ​й​ ​н​а​д​і​ш​л​и​ ​щ​е​ ​р​а​з​.
+			 */
+			invalidUrl: string
+			/**
+			 * ❌​ ​Н​е​ ​з​н​а​й​ш​о​в​ ​т​а​к​о​г​о​ ​к​о​р​и​с​т​у​в​а​ч​а​ ​н​а​ ​r​e​w​i​s​h​.​i​o​.​ ​П​е​р​е​в​і​р​ ​п​о​с​и​л​а​н​н​я​.
+			 */
+			userNotFound: string
+			/**
+			 * �​�​ ​Ц​я​ ​к​о​л​е​к​ц​і​я​ ​з​а​к​р​и​т​а​.​ ​Д​о​д​а​й​ ​д​о​ ​п​о​с​и​л​а​н​н​я​ ​п​р​а​в​и​л​ь​н​и​й​ ​к​о​д​ ​д​о​с​т​у​п​у​ ​(​?​a​c​c​e​s​s​_​c​o​d​e​=​…​)​ ​і​ ​с​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+			 */
+			privateCollection: string
+			/**
+			 * ⚠​️​ ​С​х​о​ж​е​,​ ​r​e​w​i​s​h​.​i​o​ ​з​м​і​н​и​в​ ​с​в​і​й​ ​ф​о​р​м​а​т​,​ ​т​о​ж​ ​я​ ​п​о​к​и​ ​н​е​ ​м​о​ж​у​ ​п​р​о​ч​и​т​а​т​и​ ​л​и​с​т​.​ ​С​п​р​о​б​у​й​ ​т​р​о​х​и​ ​п​і​з​н​і​ш​е​.
+			 */
+			schemaChanged: string
+			/**
+			 * ⚠​️​ ​r​e​w​i​s​h​.​i​o​ ​з​а​р​а​з​ ​в​і​д​п​о​в​і​д​а​є​ ​з​ ​п​о​м​и​л​к​о​ю​.​ ​С​п​р​о​б​у​й​ ​т​р​о​х​и​ ​з​г​о​д​о​м​.
+			 */
+			upstream: string
+			/**
+			 * ⌛​ ​r​e​w​i​s​h​.​i​o​ ​в​і​д​п​о​в​і​д​а​є​ ​н​а​д​т​о​ ​д​о​в​г​о​.​ ​С​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​ ​т​р​о​х​и​ ​з​г​о​д​о​м​.
+			 */
+			timeout: string
+			/**
+			 * ⏳​ ​З​а​б​а​г​а​т​о​ ​з​а​п​и​т​і​в​ ​п​о​с​п​і​л​ь​.​ ​С​п​р​о​б​у​й​ ​з​а​ ​х​в​и​л​и​н​у​-​д​в​і​.
+			 */
+			rateLimited: string
+			/**
+			 * У​ ​ц​ь​о​м​у​ ​л​и​с​т​і​ ​н​е​м​а​є​ ​ж​о​д​н​о​г​о​ ​б​а​ж​а​н​н​я​,​ ​я​к​е​ ​м​о​ж​н​а​ ​і​м​п​о​р​т​у​в​а​т​и​.
+			 */
+			empty: string
+			/**
+			 * ⏳​ ​І​м​п​о​р​т​ ​у​ж​е​ ​т​р​и​в​а​є​.​ ​Д​о​ч​е​к​а​й​с​я​ ​з​а​в​е​р​ш​е​н​н​я​.
+			 */
+			busy: string
+			/**
+			 * ❌​ ​У​ ​л​и​с​т​і​ ​в​ж​е​ ​5​0​0​ ​б​а​ж​а​н​ь​,​ ​т​о​ж​ ​н​о​в​і​ ​д​о​д​а​т​и​ ​н​е​ ​в​и​й​д​е​.​ ​С​п​о​ч​а​т​к​у​ ​в​и​д​а​л​и​ ​к​і​л​ь​к​а​.
+			 */
+			limitReached: string
+			/**
+			 * Ц​е​й​ ​п​е​р​е​г​л​я​д​ ​у​ж​е​ ​з​а​с​т​а​р​і​в​.​ ​Н​а​д​і​ш​л​и​ ​п​о​с​и​л​а​н​н​я​ ​щ​е​ ​р​а​з​.
+			 */
+			expired: string
+		}
+	}
 	currency: {
 		/**
 		 * �​�​ ​В​а​л​ю​т​а
@@ -3581,6 +3774,222 @@ type RootTranslation = {
 				disabled: string
 			}
 		}
+		listImport: {
+			/**
+			 * І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь
+			 */
+			title: string
+			/**
+			 * П​е​р​е​н​е​с​и​ ​с​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​з​ ​і​н​ш​о​г​о​ ​с​е​р​в​і​с​у​,​ ​щ​о​б​ ​н​е​ ​д​о​д​а​в​а​т​и​ ​в​с​е​ ​в​р​у​ч​н​у​.
+			 */
+			hint: string
+			/**
+			 * З​в​і​д​к​и​ ​і​м​п​о​р​т​у​в​а​т​и
+			 */
+			sourceLabel: string
+			sources: {
+				/**
+				 * r​e​w​i​s​h​.​i​o
+				 */
+				rewish: string
+			}
+			/**
+			 * П​о​с​и​л​а​н​н​я​ ​н​а​ ​л​и​с​т​ ​б​а​ж​а​н​ь
+			 */
+			urlLabel: string
+			/**
+			 * h​t​t​p​s​:​/​/​r​e​w​i​s​h​.​i​o​/​…
+			 */
+			urlPlaceholder: string
+			/**
+			 * П​і​д​і​й​д​е​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​п​р​о​ф​і​л​ь​,​ ​н​а​ ​п​р​о​ф​і​л​ь​ ​і​з​ ​к​о​д​о​м​ ​д​о​с​т​у​п​у​ ​а​б​о​ ​н​а​ ​о​д​н​у​ ​к​о​л​е​к​ц​і​ю​.
+			 */
+			urlHint: string
+			/**
+			 * В​с​т​а​в​и​т​и
+			 */
+			paste: string
+			/**
+			 * П​р​о​д​о​в​ж​и​т​и
+			 */
+			'continue': string
+			/**
+			 * Ч​и​т​а​є​м​о​ ​л​и​с​т​ ​б​а​ж​а​н​ь​…
+			 */
+			loading: string
+			preview: {
+				/**
+				 * З​н​а​й​д​е​н​о​ ​в​ ​л​и​с​т​і​ ​б​а​ж​а​н​ь
+				 */
+				title: string
+				/**
+				 * Н​о​в​и​х​ ​б​а​ж​а​н​ь​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				active: RequiredParams<'count'>
+				/**
+				 * П​о​д​а​р​о​в​а​н​и​х​,​ ​п​і​д​у​т​ь​ ​у​ ​«​П​о​д​а​р​о​в​а​н​е​»​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				gifted: RequiredParams<'count'>
+				/**
+				 * У​ж​е​ ​є​ ​в​ ​т​е​б​е​,​ ​п​р​о​п​у​с​т​и​м​о​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				duplicates: RequiredParams<'count'>
+				/**
+				 * Б​е​з​ ​ц​і​н​и​ ​(​і​н​ш​а​ ​в​а​л​ю​т​а​)​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				withoutPrice: RequiredParams<'count'>
+				/**
+				 * Н​е​ ​в​м​і​щ​а​є​т​ь​с​я​ ​в​ ​л​і​м​і​т​ ​5​0​0​ ​б​а​ж​а​н​ь​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				overLimit: RequiredParams<'count'>
+				/**
+				 * Ф​о​т​о​ ​п​і​д​в​а​н​т​а​ж​а​т​ь​с​я​ ​п​о​с​т​у​п​о​в​о​,​ ​ц​е​ ​м​о​ж​е​ ​з​а​й​н​я​т​и​ ​т​р​о​х​и​ ​ч​а​с​у​.
+				 */
+				photosNote: string
+				/**
+				 * П​р​и​х​о​в​а​н​і​ ​«​з​б​е​р​е​ж​е​н​і​»​ ​б​а​ж​а​н​н​я​ ​в​л​а​с​н​и​к​а​ ​r​e​w​i​s​h​ ​з​а​ ​т​а​к​и​м​ ​п​о​с​и​л​а​н​н​я​м​ ​н​е​ ​в​і​д​д​а​є​,​ ​т​о​м​у​ ​ї​х​ ​т​у​т​ ​н​е​ ​б​у​д​е​.
+				 */
+				savedNote: string
+			}
+			visibility: {
+				/**
+				 * Я​к​ ​і​м​п​о​р​т​у​в​а​т​и​ ​б​а​ж​а​н​н​я
+				 */
+				label: string
+				/**
+				 * П​р​и​х​о​в​а​н​і
+				 */
+				hidden: string
+				/**
+				 * Б​а​ч​и​т​и​м​е​ш​ ​л​и​ш​е​ ​т​и​.
+				 */
+				hiddenHint: string
+				/**
+				 * П​у​б​л​і​ч​н​і
+				 */
+				'public': string
+				/**
+				 * П​о​б​а​ч​а​т​ь​ ​у​с​і​,​ ​з​ ​к​и​м​ ​т​и​ ​д​і​л​и​ш​с​я​ ​л​и​с​т​о​м​.
+				 */
+				publicHint: string
+			}
+			/**
+			 * І​м​п​о​р​т​у​в​а​т​и
+			 */
+			start: string
+			progress: {
+				/**
+				 * І​м​п​о​р​т​у​є​м​о​ ​б​а​ж​а​н​н​я
+				 */
+				title: string
+				/**
+				 * Д​о​д​а​н​о​ ​{​c​r​e​a​t​e​d​}​ ​з​ ​{​p​l​a​n​n​e​d​}
+				 * @param {number} created
+				 * @param {number} planned
+				 */
+				text: RequiredParams<'created' | 'planned'>
+				/**
+				 * Ф​о​т​о​ ​п​і​д​в​а​н​т​а​ж​а​т​ь​с​я​ ​п​о​с​т​у​п​о​в​о​.​ ​З​а​с​т​о​с​у​н​о​к​ ​м​о​ж​н​а​ ​з​а​к​р​и​т​и​,​ ​і​м​п​о​р​т​ ​т​р​и​в​а​т​и​м​е​.
+				 */
+				photos: string
+			}
+			done: {
+				/**
+				 * І​м​п​о​р​т​ ​з​а​в​е​р​ш​е​н​о
+				 */
+				title: string
+				/**
+				 * Д​о​д​а​н​о​ ​б​а​ж​а​н​ь​:​ ​{​c​r​e​a​t​e​d​}
+				 * @param {number} created
+				 */
+				text: RequiredParams<'created'>
+				/**
+				 * З​ ​н​и​х​ ​п​о​д​а​р​о​в​а​н​и​х​:​ ​{​g​i​f​t​e​d​}
+				 * @param {number} gifted
+				 */
+				gifted: RequiredParams<'gifted'>
+				/**
+				 * Ф​о​т​о​ ​щ​е​ ​п​і​д​в​а​н​т​а​ж​у​ю​т​ь​с​я​:​ ​{​c​o​u​n​t​}
+				 * @param {number} count
+				 */
+				photosLeft: RequiredParams<'count'>
+				/**
+				 * М​о​ї​ ​б​а​ж​а​н​н​я
+				 */
+				cta: string
+			}
+			failed: {
+				/**
+				 * І​м​п​о​р​т​ ​п​е​р​е​р​в​а​н​о
+				 */
+				title: string
+				/**
+				 * Д​о​д​а​н​о​ ​б​а​ж​а​н​ь​:​ ​{​c​r​e​a​t​e​d​}
+				 * @param {number} created
+				 */
+				text: RequiredParams<'created'>
+				/**
+				 * С​п​р​о​б​у​в​а​т​и​ ​щ​е​ ​р​а​з
+				 */
+				retry: string
+			}
+			/**
+			 * І​м​п​о​р​т​о​в​а​н​о​ ​б​а​ж​а​н​ь​:​ ​{​c​o​u​n​t​}
+			 * @param {number} count
+			 */
+			toast: RequiredParams<'count'>
+			failure: {
+				/**
+				 * Ц​е​ ​н​е​ ​с​х​о​ж​е​ ​н​а​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​r​e​w​i​s​h​.​i​o​.​ ​П​е​р​е​в​і​р​ ​й​о​г​о​ ​й​ ​с​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+				 */
+				invalidUrl: string
+				/**
+				 * Н​е​ ​з​н​а​й​ш​л​и​ ​т​а​к​о​г​о​ ​к​о​р​и​с​т​у​в​а​ч​а​ ​н​а​ ​r​e​w​i​s​h​.​i​o​.​ ​П​е​р​е​в​і​р​ ​п​о​с​и​л​а​н​н​я​.
+				 */
+				userNotFound: string
+				/**
+				 * Ц​я​ ​к​о​л​е​к​ц​і​я​ ​з​а​к​р​и​т​а​.​ ​Д​о​д​а​й​ ​д​о​ ​п​о​с​и​л​а​н​н​я​ ​п​р​а​в​и​л​ь​н​и​й​ ​к​о​д​ ​д​о​с​т​у​п​у​ ​(​?​a​c​c​e​s​s​_​c​o​d​e​=​…​)​ ​і​ ​с​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+				 */
+				privateCollection: string
+				/**
+				 * С​х​о​ж​е​,​ ​r​e​w​i​s​h​.​i​o​ ​з​м​і​н​и​в​ ​с​в​і​й​ ​ф​о​р​м​а​т​,​ ​т​о​ж​ ​м​и​ ​п​о​к​и​ ​н​е​ ​м​о​ж​е​м​о​ ​п​р​о​ч​и​т​а​т​и​ ​л​и​с​т​.​ ​С​п​р​о​б​у​й​ ​т​р​о​х​и​ ​п​і​з​н​і​ш​е​.
+				 */
+				schemaChanged: string
+				/**
+				 * r​e​w​i​s​h​.​i​o​ ​з​а​р​а​з​ ​в​і​д​п​о​в​і​д​а​є​ ​з​ ​п​о​м​и​л​к​о​ю​.​ ​С​п​р​о​б​у​й​ ​т​р​о​х​и​ ​з​г​о​д​о​м​.
+				 */
+				upstream: string
+				/**
+				 * r​e​w​i​s​h​.​i​o​ ​в​і​д​п​о​в​і​д​а​є​ ​н​а​д​т​о​ ​д​о​в​г​о​.​ ​С​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​ ​т​р​о​х​и​ ​з​г​о​д​о​м​.
+				 */
+				timeout: string
+				/**
+				 * З​а​б​а​г​а​т​о​ ​з​а​п​и​т​і​в​ ​п​о​с​п​і​л​ь​.​ ​С​п​р​о​б​у​й​ ​з​а​ ​х​в​и​л​и​н​у​-​д​в​і​.
+				 */
+				rateLimited: string
+				/**
+				 * У​ ​ц​ь​о​м​у​ ​л​и​с​т​і​ ​н​е​м​а​є​ ​ж​о​д​н​о​г​о​ ​б​а​ж​а​н​н​я​,​ ​я​к​е​ ​м​о​ж​н​а​ ​і​м​п​о​р​т​у​в​а​т​и​.
+				 */
+				empty: string
+				/**
+				 * І​м​п​о​р​т​ ​у​ж​е​ ​т​р​и​в​а​є​.​ ​Д​о​ч​е​к​а​й​с​я​ ​з​а​в​е​р​ш​е​н​н​я​.
+				 */
+				busy: string
+				/**
+				 * У​ ​л​и​с​т​і​ ​в​ж​е​ ​5​0​0​ ​б​а​ж​а​н​ь​,​ ​т​о​ж​ ​н​о​в​і​ ​д​о​д​а​т​и​ ​н​е​ ​в​и​й​д​е​.​ ​С​п​о​ч​а​т​к​у​ ​в​и​д​а​л​и​ ​к​і​л​ь​к​а​.
+				 */
+				limitReached: string
+				/**
+				 * Ц​е​й​ ​п​е​р​е​г​л​я​д​ ​у​ж​е​ ​з​а​с​т​а​р​і​в​.​ ​В​с​т​а​в​ ​п​о​с​и​л​а​н​н​я​ ​щ​е​ ​р​а​з​.
+				 */
+				expired: string
+			}
+		}
 		gives: {
 			/**
 			 * Х​о​ч​у​ ​п​о​д​а​р​у​в​а​т​и
@@ -4558,6 +4967,10 @@ type RootTranslation = {
 			 * Н​е​ ​в​к​а​з​а​н​о
 			 */
 			deliveryEmpty: string
+			/**
+			 * І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь
+			 */
+			listImport: string
 			theme: {
 				/**
 				 * Т​е​м​а
@@ -5909,6 +6322,187 @@ export type TranslationFunctions = {
 		 * Обери, що налаштувати: мову, валюту, реквізити, адресу доставки чи те, що бачать інші.
 		 */
 		description: () => LocalizedString
+	}
+	listImport: {
+		/**
+		 * 📥 Імпорт листа бажань
+		 */
+		entry: () => LocalizedString
+		/**
+		 * 📥 Імпорт листа бажань
+		 */
+		title: () => LocalizedString
+		/**
+		 * Перенеси свій лист бажань з іншого сервісу, щоб не додавати все вручну. Обери, звідки забрати бажання.
+		 */
+		description: () => LocalizedString
+		/**
+		 * Імпорт листа бажань зараз недоступний.
+		 */
+		disabled: () => LocalizedString
+		sources: {
+			/**
+			 * 🔗 rewish.io
+			 */
+			rewish: () => LocalizedString
+		}
+		/**
+		 * Надішли посилання на свій лист бажань на rewish.io.
+
+	Підійдуть такі посилання:
+	• <i>rewish.io/abc123</i> — увесь профіль
+	• <i>rewish.io/abc123/wishes?access_code=xyz</i> — профіль із кодом доступу
+	• <i>rewish.io/abc123/collection/123456?access_code=xyz</i> — одна колекція
+		 */
+		prompt: () => LocalizedString
+		/**
+		 * ❌ Скасувати
+		 */
+		cancel: () => LocalizedString
+		/**
+		 * ⏳ Читаю лист бажань…
+		 */
+		reading: () => LocalizedString
+		preview: {
+			/**
+			 * 📥 <b>Знайдено в листі бажань</b>
+			 */
+			title: () => LocalizedString
+			/**
+			 * 🎁 Нових бажань: {count}
+			 */
+			active: (arg: { count: number }) => LocalizedString
+			/**
+			 * 🎉 Подарованих, підуть у «Подароване»: {count}
+			 */
+			gifted: (arg: { count: number }) => LocalizedString
+			/**
+			 * ♻️ Уже є в тебе, пропущу: {count}
+			 */
+			duplicates: (arg: { count: number }) => LocalizedString
+			/**
+			 * 💸 Без ціни (інша валюта): {count}
+			 */
+			withoutPrice: (arg: { count: number }) => LocalizedString
+			/**
+			 * 🚫 Не вміщається в ліміт 500 бажань: {count}
+			 */
+			overLimit: (arg: { count: number }) => LocalizedString
+			/**
+			 * 🖼 Фото підвантажаться поступово, це може зайняти трохи часу.
+			 */
+			photosNote: () => LocalizedString
+			/**
+			 * ℹ️ Приховані «збережені» бажання власника rewish за таким посиланням не віддає, тому їх тут не буде.
+			 */
+			savedNote: () => LocalizedString
+			/**
+			 * 👀 Як імпортувати бажання? <b>Приховані</b> бачиш лише ти, <b>публічні</b> побачать усі, з ким ти ділишся листом.
+			 */
+			visibility: () => LocalizedString
+		}
+		visibility: {
+			/**
+			 * 🫣 Приховані
+			 */
+			hidden: () => LocalizedString
+			/**
+			 * 👀 Публічні
+			 */
+			'public': () => LocalizedString
+			/**
+			 * ✅ {label}
+			 */
+			selected: (arg: { label: string }) => LocalizedString
+		}
+		/**
+		 * ✅ Імпортувати
+		 */
+		commit: () => LocalizedString
+		/**
+		 * 🔄 Оновити
+		 */
+		refresh: () => LocalizedString
+		/**
+		 * ❤️ Мої бажання
+		 */
+		myWishes: () => LocalizedString
+		/**
+		 * ⏳ Додано {created} з {planned}…
+		 */
+		progress: (arg: { created: number, planned: number }) => LocalizedString
+		done: {
+			/**
+			 * ✅ Імпорт завершено! Додано бажань: {created}.
+			 */
+			summary: (arg: { created: number }) => LocalizedString
+			/**
+			 * З них подарованих: {gifted}.
+			 */
+			gifted: (arg: { gifted: number }) => LocalizedString
+			/**
+			 * 🖼 Фото підвантажаться поступово.
+			 */
+			photos: () => LocalizedString
+			/**
+			 * 🖼 Фото ще підвантажуються: {count}.
+			 */
+			photosLeft: (arg: { count: number }) => LocalizedString
+		}
+		/**
+		 * ❌ Імпорт перервано. Додано бажань: {created}.
+		 */
+		failed: (arg: { created: number }) => LocalizedString
+		/**
+		 * Імпорт скасовано.
+		 */
+		cancelled: () => LocalizedString
+		failure: {
+			/**
+			 * ❌ Це не схоже на посилання на лист бажань rewish.io. Перевір його й надішли ще раз.
+			 */
+			invalidUrl: () => LocalizedString
+			/**
+			 * ❌ Не знайшов такого користувача на rewish.io. Перевір посилання.
+			 */
+			userNotFound: () => LocalizedString
+			/**
+			 * 🔒 Ця колекція закрита. Додай до посилання правильний код доступу (?access_code=…) і спробуй ще раз.
+			 */
+			privateCollection: () => LocalizedString
+			/**
+			 * ⚠️ Схоже, rewish.io змінив свій формат, тож я поки не можу прочитати лист. Спробуй трохи пізніше.
+			 */
+			schemaChanged: () => LocalizedString
+			/**
+			 * ⚠️ rewish.io зараз відповідає з помилкою. Спробуй трохи згодом.
+			 */
+			upstream: () => LocalizedString
+			/**
+			 * ⌛ rewish.io відповідає надто довго. Спробуй ще раз трохи згодом.
+			 */
+			timeout: () => LocalizedString
+			/**
+			 * ⏳ Забагато запитів поспіль. Спробуй за хвилину-дві.
+			 */
+			rateLimited: () => LocalizedString
+			/**
+			 * У цьому листі немає жодного бажання, яке можна імпортувати.
+			 */
+			empty: () => LocalizedString
+			/**
+			 * ⏳ Імпорт уже триває. Дочекайся завершення.
+			 */
+			busy: () => LocalizedString
+			/**
+			 * ❌ У листі вже 500 бажань, тож нові додати не вийде. Спочатку видали кілька.
+			 */
+			limitReached: () => LocalizedString
+			/**
+			 * Цей перегляд уже застарів. Надішли посилання ще раз.
+			 */
+			expired: () => LocalizedString
+		}
 	}
 	currency: {
 		/**
@@ -8014,6 +8608,210 @@ export type TranslationFunctions = {
 				disabled: () => LocalizedString
 			}
 		}
+		listImport: {
+			/**
+			 * Імпорт листа бажань
+			 */
+			title: () => LocalizedString
+			/**
+			 * Перенеси свій лист бажань з іншого сервісу, щоб не додавати все вручну.
+			 */
+			hint: () => LocalizedString
+			/**
+			 * Звідки імпортувати
+			 */
+			sourceLabel: () => LocalizedString
+			sources: {
+				/**
+				 * rewish.io
+				 */
+				rewish: () => LocalizedString
+			}
+			/**
+			 * Посилання на лист бажань
+			 */
+			urlLabel: () => LocalizedString
+			/**
+			 * https://rewish.io/…
+			 */
+			urlPlaceholder: () => LocalizedString
+			/**
+			 * Підійде посилання на профіль, на профіль із кодом доступу або на одну колекцію.
+			 */
+			urlHint: () => LocalizedString
+			/**
+			 * Вставити
+			 */
+			paste: () => LocalizedString
+			/**
+			 * Продовжити
+			 */
+			'continue': () => LocalizedString
+			/**
+			 * Читаємо лист бажань…
+			 */
+			loading: () => LocalizedString
+			preview: {
+				/**
+				 * Знайдено в листі бажань
+				 */
+				title: () => LocalizedString
+				/**
+				 * Нових бажань: {count}
+				 */
+				active: (arg: { count: number }) => LocalizedString
+				/**
+				 * Подарованих, підуть у «Подароване»: {count}
+				 */
+				gifted: (arg: { count: number }) => LocalizedString
+				/**
+				 * Уже є в тебе, пропустимо: {count}
+				 */
+				duplicates: (arg: { count: number }) => LocalizedString
+				/**
+				 * Без ціни (інша валюта): {count}
+				 */
+				withoutPrice: (arg: { count: number }) => LocalizedString
+				/**
+				 * Не вміщається в ліміт 500 бажань: {count}
+				 */
+				overLimit: (arg: { count: number }) => LocalizedString
+				/**
+				 * Фото підвантажаться поступово, це може зайняти трохи часу.
+				 */
+				photosNote: () => LocalizedString
+				/**
+				 * Приховані «збережені» бажання власника rewish за таким посиланням не віддає, тому їх тут не буде.
+				 */
+				savedNote: () => LocalizedString
+			}
+			visibility: {
+				/**
+				 * Як імпортувати бажання
+				 */
+				label: () => LocalizedString
+				/**
+				 * Приховані
+				 */
+				hidden: () => LocalizedString
+				/**
+				 * Бачитимеш лише ти.
+				 */
+				hiddenHint: () => LocalizedString
+				/**
+				 * Публічні
+				 */
+				'public': () => LocalizedString
+				/**
+				 * Побачать усі, з ким ти ділишся листом.
+				 */
+				publicHint: () => LocalizedString
+			}
+			/**
+			 * Імпортувати
+			 */
+			start: () => LocalizedString
+			progress: {
+				/**
+				 * Імпортуємо бажання
+				 */
+				title: () => LocalizedString
+				/**
+				 * Додано {created} з {planned}
+				 */
+				text: (arg: { created: number, planned: number }) => LocalizedString
+				/**
+				 * Фото підвантажаться поступово. Застосунок можна закрити, імпорт триватиме.
+				 */
+				photos: () => LocalizedString
+			}
+			done: {
+				/**
+				 * Імпорт завершено
+				 */
+				title: () => LocalizedString
+				/**
+				 * Додано бажань: {created}
+				 */
+				text: (arg: { created: number }) => LocalizedString
+				/**
+				 * З них подарованих: {gifted}
+				 */
+				gifted: (arg: { gifted: number }) => LocalizedString
+				/**
+				 * Фото ще підвантажуються: {count}
+				 */
+				photosLeft: (arg: { count: number }) => LocalizedString
+				/**
+				 * Мої бажання
+				 */
+				cta: () => LocalizedString
+			}
+			failed: {
+				/**
+				 * Імпорт перервано
+				 */
+				title: () => LocalizedString
+				/**
+				 * Додано бажань: {created}
+				 */
+				text: (arg: { created: number }) => LocalizedString
+				/**
+				 * Спробувати ще раз
+				 */
+				retry: () => LocalizedString
+			}
+			/**
+			 * Імпортовано бажань: {count}
+			 */
+			toast: (arg: { count: number }) => LocalizedString
+			failure: {
+				/**
+				 * Це не схоже на посилання на лист бажань rewish.io. Перевір його й спробуй ще раз.
+				 */
+				invalidUrl: () => LocalizedString
+				/**
+				 * Не знайшли такого користувача на rewish.io. Перевір посилання.
+				 */
+				userNotFound: () => LocalizedString
+				/**
+				 * Ця колекція закрита. Додай до посилання правильний код доступу (?access_code=…) і спробуй ще раз.
+				 */
+				privateCollection: () => LocalizedString
+				/**
+				 * Схоже, rewish.io змінив свій формат, тож ми поки не можемо прочитати лист. Спробуй трохи пізніше.
+				 */
+				schemaChanged: () => LocalizedString
+				/**
+				 * rewish.io зараз відповідає з помилкою. Спробуй трохи згодом.
+				 */
+				upstream: () => LocalizedString
+				/**
+				 * rewish.io відповідає надто довго. Спробуй ще раз трохи згодом.
+				 */
+				timeout: () => LocalizedString
+				/**
+				 * Забагато запитів поспіль. Спробуй за хвилину-дві.
+				 */
+				rateLimited: () => LocalizedString
+				/**
+				 * У цьому листі немає жодного бажання, яке можна імпортувати.
+				 */
+				empty: () => LocalizedString
+				/**
+				 * Імпорт уже триває. Дочекайся завершення.
+				 */
+				busy: () => LocalizedString
+				/**
+				 * У листі вже 500 бажань, тож нові додати не вийде. Спочатку видали кілька.
+				 */
+				limitReached: () => LocalizedString
+				/**
+				 * Цей перегляд уже застарів. Встав посилання ще раз.
+				 */
+				expired: () => LocalizedString
+			}
+		}
 		gives: {
 			/**
 			 * Хочу подарувати
@@ -8971,6 +9769,10 @@ export type TranslationFunctions = {
 			 * Не вказано
 			 */
 			deliveryEmpty: () => LocalizedString
+			/**
+			 * Імпорт листа бажань
+			 */
+			listImport: () => LocalizedString
 			theme: {
 				/**
 				 * Тема

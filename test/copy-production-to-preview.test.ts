@@ -34,6 +34,7 @@ const allProductionTables = [
     '_cf_KV',
     'exchange_rates',
     'gives',
+    'list_imports',
     'release_announcements',
     'sessions',
     'sqlite_sequence',
@@ -192,6 +193,7 @@ test('table selection excludes bookkeeping and ledger tables and fails on drift'
     ]);
     assert.deepEqual(getPreviewWipeOrder(copiedTablesInInsertOrder), [
         'wishlist_shares',
+        'list_imports',
         'gives',
         'wishes',
         'users'
@@ -234,6 +236,7 @@ test('export and import commands are hard-wired production to preview', () => {
     assert.equal(exportArguments.includes('release_announcements'), false);
     assert.equal(exportArguments.includes('sessions'), false);
     assert.equal(exportArguments.includes('wishlist_shares'), false);
+    assert.equal(exportArguments.includes('list_imports'), false);
     assert.equal(exportArguments.includes('exchange_rates'), false);
     assert.deepEqual(getPreviewImportArguments(configPath, '/tmp/out.sql'), [
         'exec',
@@ -277,7 +280,7 @@ test('copy runs migrations check, wipe in FK order, import, verify, and cleans u
 
     assert.deepEqual(
         deleteCommands.map(command => command?.split('"')[1]),
-        ['wishlist_shares', 'gives', 'wishes', 'users']
+        ['wishlist_shares', 'list_imports', 'gives', 'wishes', 'users']
     );
     assert.deepEqual(
         fake.importedFiles.map(file => path.basename(file)),
@@ -332,7 +335,7 @@ test('insert statements are counted per table at line starts', () => {
 
 test('copy keeps deleting while chunks are full', () => {
     const fake = createFakeRunner({
-        deleteChanges: [0, deleteChunkSize, 4, 0, 0]
+        deleteChanges: [0, 0, deleteChunkSize, 4, 0, 0]
     });
 
     copyProductionToPreview({
@@ -346,7 +349,7 @@ test('copy keeps deleting while chunks are full', () => {
         return call[call.indexOf('--command') + 1]?.startsWith('DELETE');
     });
 
-    assert.equal(deleteCalls.length, 5);
+    assert.equal(deleteCalls.length, 6);
 });
 
 test('copy aborts before touching production or preview data when migrations differ', () => {

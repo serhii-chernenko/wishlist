@@ -31,9 +31,10 @@ export const excludedTableNames = [
     'telegram_updates',
     'release_announcements',
     'wishlist_shares',
-    'exchange_rates'
+    'exchange_rates',
+    'list_imports'
 ];
-export const previewOnlyWipeTables = ['wishlist_shares'];
+export const previewOnlyWipeTables = ['wishlist_shares', 'list_imports'];
 export const copiedTablesInInsertOrder = ['users', 'wishes', 'gives'];
 export const deleteChunkSize = 1000;
 

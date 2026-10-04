@@ -10,6 +10,7 @@ import type { WorkerApp } from '../app';
 import {
     getTelegramWebhookPath,
     hasRequiredWorkerConfiguration,
+    isListImportEnabled,
     type WorkerBindings
 } from '../env';
 import { readWorkerExchangeRates } from '../exchange-rates';
@@ -20,6 +21,7 @@ import {
     type SecretMatcher
 } from '../telegram-auth';
 import type { LinkImportServiceSet } from '../../bot/services/link-import/link-import-service';
+import type { ListImportService } from '../../bot/services/list-import/types';
 import { toBotLinkImport } from '../link-import';
 import {
     appRateLimiterMissingEvent,
@@ -28,6 +30,8 @@ import {
     getTelegramCommandCategory,
     getTelegramUpdateType,
     linkImportCompletedEvent,
+    listImportCompletedEvent,
+    listImportPreviewedEvent,
     type TelemetryContext
 } from '../telemetry';
 
@@ -52,6 +56,7 @@ export interface TelegramRouteDependencies {
     now?: () => Date;
     logWarning?: (message: string) => void;
     linkImport?: LinkImportServiceSet;
+    listImport?: ListImportService;
 }
 
 export interface TelegramUpdateLedger {
@@ -361,9 +366,11 @@ export const handleUpdateWithWishlistBot = async (
     ) => WishlistBot = createWishlistBot,
     context?: TelemetryContext,
     publicOrigin?: string,
-    linkImportServices?: LinkImportServiceSet
+    linkImportServices?: LinkImportServiceSet,
+    listImportService?: ListImportService
 ) => {
     const linkImport = toBotLinkImport(env, linkImportServices);
+    const listImport = isListImportEnabled(env) ? listImportService : undefined;
     const telemetry: WishlistBotTelemetry = {
         botActionCompleted(input) {
             emitTelemetryEvent(env, context, {
@@ -385,6 +392,20 @@ export const handleUpdateWithWishlistBot = async (
                 linkImportCompletedEvent({ ...input, channel: 'bot' })
             );
         },
+        listImportPreviewed(input) {
+            emitTelemetryEvent(
+                env,
+                context,
+                listImportPreviewedEvent({ ...input, channel: 'bot' })
+            );
+        },
+        listImportCompleted(input) {
+            emitTelemetryEvent(
+                env,
+                context,
+                listImportCompletedEvent({ ...input, channel: 'bot' })
+            );
+        },
         rateLimiterGap(bucket, result) {
             emitTelemetryEvent(
                 env,
@@ -396,6 +417,7 @@ export const handleUpdateWithWishlistBot = async (
     const bot = createBot(env, {
         telemetry,
         ...(linkImport === undefined ? {} : { linkImport }),
+        ...(listImport === undefined ? {} : { listImport }),
         readExchangeRates: repository => {
             return readWorkerExchangeRates(env, context, repository);
         },
@@ -444,7 +466,8 @@ export const registerTelegramRoutes = (
                 createWishlistBot,
                 context,
                 publicOrigin,
-                dependencies.linkImport
+                dependencies.linkImport,
+                dependencies.listImport
             );
         });
     const secretsMatch = dependencies.secretsMatch ?? compareSecrets;

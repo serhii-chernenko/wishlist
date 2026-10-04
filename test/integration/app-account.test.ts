@@ -110,6 +110,9 @@ describe('Mini App API account, share, feedback and info', () => {
             async sendMediaGroup() {
                 throw new Error('sendMediaGroup is not expected');
             },
+            async editMessageText() {
+                throw new Error('unexpected editMessageText');
+            },
             async deleteMessage() {
                 throw new Error('deleteMessage is not expected');
             },

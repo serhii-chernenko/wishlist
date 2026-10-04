@@ -2,6 +2,10 @@ import type { Context } from 'hono';
 import type { User } from 'telegraf/types';
 
 import type {
+    ListImportDeps,
+    ListImportService
+} from '../bot/services/list-import/types';
+import type {
     LinkImportDeps,
     LoadStagedImage,
     RunLinkImport,
@@ -56,6 +60,7 @@ export interface ApiDeps {
     emitTelemetry: TelemetryEmitter;
     readExchangeRates: ExchangeRatesSource;
     linkImport?: LinkImportServices;
+    listImport?: ListImportService;
 }
 
 export type AppApiDependencies = Partial<ApiDeps>;
@@ -78,7 +83,10 @@ export const resolveApiDeps = (dependencies: AppApiDependencies): ApiDeps => {
             dependencies.readExchangeRates ?? readWorkerExchangeRates,
         ...(dependencies.linkImport === undefined
             ? {}
-            : { linkImport: dependencies.linkImport })
+            : { linkImport: dependencies.linkImport }),
+        ...(dependencies.listImport === undefined
+            ? {}
+            : { listImport: dependencies.listImport })
     };
 };
 
@@ -165,6 +173,33 @@ export const requireLinkImportServices = (
     }
 
     return linkImport;
+};
+
+export const requireListImportService = (c: ApiContext): ListImportService => {
+    const { listImport } = c.var.deps;
+
+    if (listImport === undefined) {
+        throw new ApiError('notImplemented');
+    }
+
+    return listImport;
+};
+
+export const getListImportDeps = (c: ApiContext): ListImportDeps => {
+    const context = getTelemetryContext(c);
+
+    return {
+        env: c.env,
+        now: () => c.var.deps.now().getTime(),
+        telegram: getTelegramApi(c),
+        ...(context === undefined
+            ? {}
+            : {
+                  waitUntil: (promise: Promise<unknown>) => {
+                      context.waitUntil(promise);
+                  }
+              })
+    };
 };
 
 export const getLinkImportDeps = (c: ApiContext): LinkImportDeps => {

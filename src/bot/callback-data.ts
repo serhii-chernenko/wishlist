@@ -1,6 +1,8 @@
 import {
     WISH_PRIORITY_LEVELS,
     type ContactDisclosureField,
+    type ListImportSource,
+    type ListImportVisibility,
     type WishPriorityLevel
 } from '../shared/app-api';
 import { CURRENCIES, type Currency } from '../shared/money';
@@ -33,7 +35,8 @@ const NAVIGATION_CODES = {
     settings: 'set',
     currency: 'cur',
     delivery: 'dlv',
-    disclosure: 'dsc'
+    disclosure: 'dsc',
+    listImport: 'imp'
 } as const satisfies Record<NavigationScreenId, string>;
 
 const WISH_FIELD_CODES = {
@@ -55,6 +58,15 @@ const DISCLOSURE_FIELD_CODES = {
     phone: 'h',
     address: 'a'
 } as const satisfies Record<ContactDisclosureField, string>;
+
+const LIST_IMPORT_SOURCE_CODES = {
+    rewish: 'rw'
+} as const satisfies Record<ListImportSource, string>;
+
+const LIST_IMPORT_VISIBILITY_CODES = {
+    hidden: 'h',
+    public: 'p'
+} as const satisfies Record<ListImportVisibility, string>;
 
 const CONFIRM_SUFFIX = 'y';
 
@@ -91,6 +103,10 @@ const SCREEN_BY_NAVIGATION_CODE = invertRecord(NAVIGATION_CODES);
 const FIELD_BY_CODE = invertRecord(WISH_FIELD_CODES);
 const AUTH_TYPE_BY_CODE = invertRecord(AUTH_TYPE_CODES);
 const DISCLOSURE_FIELD_BY_CODE = invertRecord(DISCLOSURE_FIELD_CODES);
+const LIST_IMPORT_SOURCE_BY_CODE = invertRecord(LIST_IMPORT_SOURCE_CODES);
+const LIST_IMPORT_VISIBILITY_BY_CODE = invertRecord(
+    LIST_IMPORT_VISIBILITY_CODES
+);
 
 const ENTITY_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const OFFSET_PATTERN = /^(0|[1-9]\d{0,8})$/;
@@ -243,6 +259,16 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'dlv:rm';
         case 'language':
             return `l:${action.choice}`;
+        case 'listImportSource':
+            return `imp:s:${LIST_IMPORT_SOURCE_CODES[action.source]}`;
+        case 'listImportVisibility':
+            return `imp:v:${LIST_IMPORT_VISIBILITY_CODES[action.visibility]}:${action.jobId}`;
+        case 'listImportCommit':
+            return `imp:go:${action.jobId}`;
+        case 'listImportCancel':
+            return `imp:x:${action.jobId}`;
+        case 'listImportRefresh':
+            return `imp:r:${action.jobId}`;
         case 'noop':
             return 'x';
     }
@@ -262,6 +288,8 @@ const withWishId = (
 
     return wishId === null ? OUTDATED : build(wishId);
 };
+
+const withJobId = withWishId;
 
 const withOffset = (
     raw: string | undefined,
@@ -675,6 +703,61 @@ const decodeDelivery = (parts: readonly string[]): CallbackAction => {
         : OUTDATED;
 };
 
+const decodeListImport = (parts: readonly string[]): CallbackAction => {
+    const [, command, first, second, ...rest] = parts;
+
+    if (rest.length > 0) {
+        return OUTDATED;
+    }
+
+    if (command === 's') {
+        const source =
+            first === undefined
+                ? undefined
+                : LIST_IMPORT_SOURCE_BY_CODE.get(first);
+
+        return source === undefined || second !== undefined
+            ? OUTDATED
+            : { type: 'listImportSource', source };
+    }
+
+    if (command === 'v') {
+        const visibility =
+            first === undefined
+                ? undefined
+                : LIST_IMPORT_VISIBILITY_BY_CODE.get(first);
+
+        if (visibility === undefined) {
+            return OUTDATED;
+        }
+
+        return withJobId(second, jobId => {
+            return { type: 'listImportVisibility', jobId, visibility };
+        });
+    }
+
+    if (second !== undefined) {
+        return OUTDATED;
+    }
+
+    switch (command) {
+        case 'go':
+            return withJobId(first, jobId => {
+                return { type: 'listImportCommit', jobId };
+            });
+        case 'x':
+            return withJobId(first, jobId => {
+                return { type: 'listImportCancel', jobId };
+            });
+        case 'r':
+            return withJobId(first, jobId => {
+                return { type: 'listImportRefresh', jobId };
+            });
+        default:
+            return OUTDATED;
+    }
+};
+
 const DECODERS_BY_PREFIX: Readonly<
     Record<string, (parts: readonly string[]) => CallbackAction>
 > = {
@@ -688,7 +771,8 @@ const DECODERS_BY_PREFIX: Readonly<
     l: decodeLanguage,
     cur: decodeCurrency,
     dsc: decodeDisclosure,
-    dlv: decodeDelivery
+    dlv: decodeDelivery,
+    imp: decodeListImport
 };
 
 const decodeLegacyNavigation = (data: string): CallbackAction | null => {
@@ -780,6 +864,11 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     disclosureConfirm: 'disclosure:confirm',
     deliveryRemove: 'delivery:remove',
     language: 'language',
+    listImportSource: 'import:source',
+    listImportVisibility: 'import:visibility',
+    listImportCommit: 'import:commit',
+    listImportCancel: 'import:cancel',
+    listImportRefresh: 'import:refresh',
     noop: 'noop',
     outdated: 'invalid'
 } as const satisfies Record<CallbackAction['type'], string>;

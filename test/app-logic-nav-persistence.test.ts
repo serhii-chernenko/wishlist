@@ -337,3 +337,9 @@ test('the import link is validated with the editor route', () => {
         assert.equal(parseStoredRoute(invalid), null, JSON.stringify(invalid));
     }
 });
+
+test('the list import screen is restored as a parameterless route', () => {
+    assert.deepEqual(parseStoredRoute({ screen: 'listImport' }), {
+        screen: 'listImport'
+    });
+});

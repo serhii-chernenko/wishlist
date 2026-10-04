@@ -30,6 +30,8 @@ export const wishes = snakeCase.table(
         removed: integer({ mode: 'boolean' }).notNull().default(false),
         done: integer({ mode: 'boolean' }).notNull().default(false),
         giftedHidden: integer({ mode: 'boolean' }).notNull().default(false),
+        sourceRef: text(),
+        sourceImageUrl: text(),
         price: integer().notNull().default(0),
         currency: text().notNull().default('UAH'),
         createdAt: integer({ mode: 'timestamp_ms' })
@@ -61,6 +63,12 @@ export const wishes = snakeCase.table(
                 table.updatedAt
             ),
             index('wishes_done_index').on(table.done),
+            uniqueIndex('wishes_owner_source_ref_unique')
+                .on(table.userId, table.sourceRef)
+                .where(sql`${table.sourceRef} is not null`),
+            index('wishes_pending_photo_index')
+                .on(table.userId, table.id)
+                .where(sql`${table.sourceImageUrl} is not null`),
             check('wishes_price_check', sql`${table.price} >= 0`),
             check(
                 'wishes_images_check',

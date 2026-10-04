@@ -428,6 +428,70 @@ const en: Translation = {
         description:
             'Choose what to set up: language, currency, payment info, delivery address, or what others see.'
     },
+    listImport: {
+        entry: '📥 Import a wish list',
+        title: '📥 Import a wish list',
+        description:
+            'Bring your wish list over from another service so you don’t have to add everything by hand. Pick where to import from.',
+        disabled: 'Wish list import isn’t available right now.',
+        sources: {
+            rewish: '🔗 rewish.io'
+        },
+        prompt: 'Send a link to your wish list on rewish.io.\n\nThese links work:\n• <i>rewish.io/abc123</i> – a whole profile\n• <i>rewish.io/abc123/wishes?access_code=xyz</i> – a profile with an access code\n• <i>rewish.io/abc123/collection/123456?access_code=xyz</i> – one collection',
+        cancel: '❌ Cancel',
+        reading: '⏳ Reading the wish list…',
+        preview: {
+            title: '📥 <b>Found in the wish list</b>',
+            active: '🎁 New wishes: {count}',
+            gifted: '🎉 Gifted, going to “Gifted”: {count}',
+            duplicates: '♻️ Already in your list, skipped: {count}',
+            withoutPrice: '💸 No price (other currency): {count}',
+            overLimit: '🚫 Over the 500-wish limit: {count}',
+            photosNote: '🖼 Photos will load gradually, which can take a while.',
+            savedNote:
+                'ℹ️ rewish doesn’t return the owner’s hidden “saved” wishes for a link like this, so they won’t be included.',
+            visibility:
+                '👀 How should the wishes be imported? <b>Hidden</b> wishes are visible only to you, <b>public</b> ones are visible to everyone you share your list with.'
+        },
+        visibility: {
+            hidden: '🫣 Hidden',
+            public: '👀 Public',
+            selected: '✅ {label}'
+        },
+        commit: '✅ Import',
+        refresh: '🔄 Refresh',
+        myWishes: '❤️ My wishes',
+        progress: '⏳ Added {created} of {planned}…',
+        done: {
+            summary: '✅ Import finished! Wishes added: {created}.',
+            gifted: 'Of them gifted: {gifted}.',
+            photos: '🖼 Photos will load gradually.',
+            photosLeft: '🖼 Photos still loading: {count}.'
+        },
+        failed: '❌ The import was interrupted. Wishes added: {created}.',
+        cancelled: 'Import canceled.',
+        failure: {
+            invalidUrl:
+                '❌ That doesn’t look like a rewish.io wish list link. Check it and send it again.',
+            userNotFound:
+                '❌ I couldn’t find that user on rewish.io. Check the link.',
+            privateCollection:
+                '🔒 This collection is private. Add the right access code (?access_code=…) to the link and try again.',
+            schemaChanged:
+                '⚠️ rewish.io seems to have changed its format, so I can’t read the list for now. Try again a bit later.',
+            upstream:
+                '⚠️ rewish.io is returning errors right now. Try again in a little while.',
+            timeout:
+                '⌛ rewish.io is taking too long to respond. Try again in a little while.',
+            rateLimited:
+                '⏳ Too many requests in a row. Try again in a minute or two.',
+            empty: 'This list has no wishes that can be imported.',
+            busy: '⏳ An import is already running. Wait for it to finish.',
+            limitReached:
+                '❌ Your list already has 500 wishes, so new ones can’t be added. Remove a few first.',
+            expired: 'This preview has expired. Send the link again.'
+        }
+    },
     currency: {
         title: '💱 Currency',
         description:
@@ -1165,6 +1229,80 @@ const en: Translation = {
                     'Filling in from a link isn’t available right now. Fill in the wish manually.'
             }
         },
+        listImport: {
+            title: 'Import a wish list',
+            hint: 'Bring your wish list over from another service so you don’t have to add everything by hand.',
+            sourceLabel: 'Import from',
+            sources: {
+                rewish: 'rewish.io'
+            },
+            urlLabel: 'Wish list link',
+            urlPlaceholder: 'https://rewish.io/…',
+            urlHint:
+                'A profile link, a profile link with an access code, or a link to one collection all work.',
+            paste: 'Paste',
+            continue: 'Continue',
+            loading: 'Reading the wish list…',
+            preview: {
+                title: 'Found in the wish list',
+                active: 'New wishes: {count}',
+                gifted: 'Gifted, going to “Gifted”: {count}',
+                duplicates: 'Already in your list, skipped: {count}',
+                withoutPrice: 'No price (other currency): {count}',
+                overLimit: 'Over the 500-wish limit: {count}',
+                photosNote:
+                    'Photos will load gradually, which can take a while.',
+                savedNote:
+                    'rewish doesn’t return the owner’s hidden “saved” wishes for a link like this, so they won’t be included.'
+            },
+            visibility: {
+                label: 'How to import the wishes',
+                hidden: 'Hidden',
+                hiddenHint: 'Only you will see them.',
+                public: 'Public',
+                publicHint: 'Everyone you share your list with will see them.'
+            },
+            start: 'Import',
+            progress: {
+                title: 'Importing wishes',
+                text: 'Added {created} of {planned}',
+                photos: 'Photos will load gradually. You can close the app, the import keeps going.'
+            },
+            done: {
+                title: 'Import finished',
+                text: 'Wishes added: {created}',
+                gifted: 'Of them gifted: {gifted}',
+                photosLeft: 'Photos still loading: {count}',
+                cta: 'My wishes'
+            },
+            failed: {
+                title: 'Import interrupted',
+                text: 'Wishes added: {created}',
+                retry: 'Try again'
+            },
+            toast: 'Wishes imported: {count}',
+            failure: {
+                invalidUrl:
+                    'That doesn’t look like a rewish.io wish list link. Check it and try again.',
+                userNotFound:
+                    'We couldn’t find that user on rewish.io. Check the link.',
+                privateCollection:
+                    'This collection is private. Add the right access code (?access_code=…) to the link and try again.',
+                schemaChanged:
+                    'rewish.io seems to have changed its format, so we can’t read the list for now. Try again a bit later.',
+                upstream:
+                    'rewish.io is returning errors right now. Try again in a little while.',
+                timeout:
+                    'rewish.io is taking too long to respond. Try again in a little while.',
+                rateLimited:
+                    'Too many requests in a row. Try again in a minute or two.',
+                empty: 'This list has no wishes that can be imported.',
+                busy: 'An import is already running. Wait for it to finish.',
+                limitReached:
+                    'Your list already has 500 wishes, so new ones can’t be added. Remove a few first.',
+                expired: 'This preview has expired. Paste the link again.'
+            }
+        },
         gives: {
             title: 'Gifts to give',
             count: '{count} {{count:gift|gifts}}',
@@ -1491,6 +1629,7 @@ const en: Translation = {
             delivery: 'Delivery address',
             deliverySet: 'Added',
             deliveryEmpty: 'Not set',
+            listImport: 'Import a wish list',
             theme: {
                 title: 'Theme',
                 system: 'Match Telegram',

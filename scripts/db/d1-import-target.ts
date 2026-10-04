@@ -38,6 +38,7 @@ export const previewResetSql = [
     'DELETE FROM "sessions";',
     'DELETE FROM "telegram_updates";',
     'DELETE FROM "release_announcements";',
+    'DELETE FROM "list_imports";',
     'DELETE FROM "gives";',
     'DELETE FROM "wishes";',
     'DELETE FROM "wishlist_shares";',

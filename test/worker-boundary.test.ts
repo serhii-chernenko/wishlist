@@ -106,6 +106,7 @@ const createBindings = (
         MINI_APP_ENABLED: 'true',
         LINK_IMPORT_ENABLED: 'true',
         LINK_IMPORT_AI: 'false',
+        WISHLIST_IMPORT_ENABLED: 'false',
         AUTHOR_TWITTER_LINK: 'https://x.com/serhiichernenko',
         WISHLIST_TG_URL: 'https://t.me/wishlist_ua_bot',
         GITHUB_REPO_URL: 'https://github.com/serhii-chernenko/wishlist',

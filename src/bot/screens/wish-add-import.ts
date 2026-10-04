@@ -16,7 +16,7 @@ import { inlineKeyboard, removeReplyKeyboard } from '../content/keyboards';
 import { renderWishHtml } from '../content/wish-markup';
 import { cutDescription, cutTitle } from '../input/limits';
 import {
-    claimLinkImport,
+    claimPendingMarker,
     isSessionWrittenBefore,
     savePendingInput
 } from '../runtime/session-store';
@@ -63,9 +63,10 @@ const claimImport = async (
     nextPendingInput: PendingInput | null
 ) => {
     for (let attempt = 1; attempt <= CLAIM_ATTEMPTS; attempt += 1) {
-        const claimed = await claimLinkImport(
+        const claimed = await claimPendingMarker(
             req.repos,
             req.actor.id,
+            'wishTitleNew',
             marker,
             nextPendingInput,
             new Date()

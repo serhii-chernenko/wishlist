@@ -20,6 +20,10 @@ export const relations = defineRelations(schema, r => {
             share: r.one.wishlistShares({
                 from: r.users.id,
                 to: r.wishlistShares.userId
+            }),
+            listImports: r.many.listImports({
+                from: r.users.id,
+                to: r.listImports.userId
             })
         },
         wishes: {
@@ -55,6 +59,13 @@ export const relations = defineRelations(schema, r => {
         wishlistShares: {
             user: r.one.users({
                 from: r.wishlistShares.userId,
+                to: r.users.id,
+                optional: false
+            })
+        },
+        listImports: {
+            user: r.one.users({
+                from: r.listImports.userId,
                 to: r.users.id,
                 optional: false
             })

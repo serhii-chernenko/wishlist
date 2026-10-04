@@ -45,7 +45,11 @@ import {
     type ExchangeRates
 } from '../shared/money';
 import { toWishPriority } from '../shared/priority';
-import { isLinkImportEnabled, type WorkerBindings } from '../worker/env';
+import {
+    isLinkImportEnabled,
+    isListImportEnabled,
+    type WorkerBindings
+} from '../worker/env';
 import { sha256Hex, type ApiCrypto } from './auth/crypto';
 import type { ImageAudience, Signer } from './auth/signing';
 import { getNextOffset } from './validate';
@@ -343,6 +347,7 @@ export const buildAppConfig = (
         priceFilters: getPriceFiltersByCurrency(),
         supportLinks: getSupportLinks(env, getTranslator(locale)),
         links: getAppLinks(env),
-        linkImportEnabled: isLinkImportEnabled(env)
+        linkImportEnabled: isLinkImportEnabled(env),
+        listImportEnabled: isListImportEnabled(env)
     };
 };

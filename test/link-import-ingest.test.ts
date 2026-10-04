@@ -119,6 +119,9 @@ const createRecordingTelegram = (): RecordingTelegram => {
                 return photoMessage(`album-${index}`, 200 + index);
             });
         },
+        async editMessageText() {
+            throw new Error('unexpected editMessageText');
+        },
         async deleteMessage(_chatId, messageId) {
             fake.deleted.push(messageId);
 

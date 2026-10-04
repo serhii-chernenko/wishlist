@@ -40,6 +40,11 @@ import {
 } from './handlers/images';
 import { getStats, listReleases } from './handlers/info';
 import { importLink } from './handlers/link-import';
+import {
+    commitListImport,
+    getListImport,
+    previewListImport
+} from './handlers/list-import';
 import { giveWish, listOwnerWishes, openSharedList } from './handlers/lists';
 import {
     cancelContactIntent,
@@ -100,6 +105,9 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     reorderWishImages,
     startImageChatIntent,
     importLink,
+    previewListImport,
+    commitListImport,
+    getListImport,
     listGives,
     removeGive,
     cleanGives,

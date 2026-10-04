@@ -261,3 +261,8 @@ test('adding a wish skips the link step while link import is off', () => {
         wishId: null
     });
 });
+
+test('the list import screen is a registered-only screen without parameters', () => {
+    assert.ok(SCREEN_IDS.includes('listImport'));
+    assert.equal(requiresRegistration({ screen: 'listImport' }), true);
+});

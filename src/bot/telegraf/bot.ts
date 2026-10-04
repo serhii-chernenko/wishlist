@@ -67,6 +67,7 @@ import * as giveListScreen from '../screens/give-list';
 import * as homeScreen from '../screens/home';
 import { applyLanguageChoice } from '../screens/language';
 import * as languageScreen from '../screens/language';
+import * as listImportScreen from '../screens/list-import';
 import * as paymentsScreen from '../screens/payments';
 import * as privacyScreen from '../screens/privacy';
 import * as releasesScreen from '../screens/releases';
@@ -80,6 +81,7 @@ import * as wishPriorityScreen from '../screens/wish-priority';
 import * as wishRemoveScreen from '../screens/wish-remove';
 import * as wishlistScreen from '../screens/wishlist';
 import { readExchangeRates } from '../services/exchange-rate-service';
+import type { ListImportService } from '../services/list-import/types';
 import { createStatsService } from '../services/stats-service';
 import { createUserService } from '../services/user-service';
 import { escapeHtml } from '../utils/strings';
@@ -100,6 +102,7 @@ export interface WishlistBotDependencies {
     repositories?: Repositories | undefined;
     publicOrigin?: string | undefined;
     linkImport?: BotLinkImport | undefined;
+    listImport?: ListImportService | undefined;
 }
 
 const SCREEN_MODULES: readonly ScreenExports[] = [
@@ -124,7 +127,8 @@ const SCREEN_MODULES: readonly ScreenExports[] = [
     deliveryScreen,
     disclosureScreen,
     wishPriorityScreen,
-    wishImagesScreen
+    wishImagesScreen,
+    listImportScreen
 ];
 
 const noopTelemetry: WishlistBotTelemetry = {
@@ -168,12 +172,14 @@ interface UpdateScope {
 
 const createServices = (
     repos: Repositories,
-    linkImport: BotLinkImport | undefined
+    linkImport: BotLinkImport | undefined,
+    listImport: ListImportService | undefined
 ): BotServices => {
     return {
         users: createUserService({ repos }),
         stats: createStatsService({ repos }),
-        ...(linkImport === undefined ? {} : { linkImport })
+        ...(linkImport === undefined ? {} : { linkImport }),
+        ...(listImport === undefined ? {} : { listImport })
     };
 };
 
@@ -438,7 +444,11 @@ const handlePrivateUpdate = async (ctx: Context, runtime: UpdateRuntime) => {
     const repos =
         runtime.deps.repositories ??
         createRepositories(createDb({ DB: runtime.env.DB }));
-    const services = createServices(repos, runtime.deps.linkImport);
+    const services = createServices(
+        repos,
+        runtime.deps.linkImport,
+        runtime.deps.listImport
+    );
 
     if (ctx.myChatMember) {
         await handleMyChatMember(ctx, services);

@@ -1,5 +1,9 @@
 import { Effect } from 'effect';
 
+import {
+    LIST_IMPORT_SOURCES,
+    type ListImportSource
+} from '../../shared/app-api';
 import type { AppLocale } from '../i18n';
 import { isRenderableLink } from '../input/link';
 import type {
@@ -7,6 +11,7 @@ import type {
     FindState,
     LinkOffer,
     PendingInput,
+    PendingInputKind,
     Repositories,
     SessionState,
     WishField,
@@ -22,6 +27,11 @@ const WISH_FIELDS: readonly WishField[] = [
     'link',
     'price'
 ];
+
+export type MarkedPendingKind = Extract<
+    PendingInputKind,
+    'wishTitleNew' | 'listImportUrl'
+>;
 
 const SESSION_LANGUAGES: readonly AppLocale[] = ['uk', 'en', 'pl'];
 
@@ -61,6 +71,12 @@ const decoded = <T>(value: T): Decoded<T> => {
 
 const INVALID = { ok: false } as const;
 
+const isListImportSource = (value: unknown): value is ListImportSource => {
+    return LIST_IMPORT_SOURCES.some(source => {
+        return source === value;
+    });
+};
+
 const isLink = (value: unknown): value is string => {
     return typeof value === 'string' && isRenderableLink(value);
 };
@@ -83,6 +99,16 @@ const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
                     ? { importMarker: value.importMarker }
                     : {})
             });
+        case 'listImportUrl':
+            return isListImportSource(value.source)
+                ? decoded({
+                      kind: 'listImportUrl',
+                      source: value.source,
+                      ...(isPositiveInteger(value.importMarker)
+                          ? { importMarker: value.importMarker }
+                          : {})
+                  })
+                : INVALID;
         case 'findQuery':
         case 'feedback':
         case 'payments':
@@ -274,9 +300,10 @@ export const saveSessionIfChanged = async (
     return true;
 };
 
-export const claimLinkImport = async (
+export const claimPendingMarker = async (
     repos: Pick<Repositories, 'sessions'>,
     telegramUserId: number,
+    kind: MarkedPendingKind,
     marker: number,
     nextPendingInput: PendingInput | null,
     now: Date
@@ -284,7 +311,11 @@ export const claimLinkImport = async (
     const { state } = await loadSession(repos, telegramUserId);
     const pending = state.pendingInput;
 
-    if (pending?.kind !== 'wishTitleNew' || pending.importMarker !== marker) {
+    if (
+        pending?.kind !== kind ||
+        !('importMarker' in pending) ||
+        pending.importMarker !== marker
+    ) {
         return false;
     }
 

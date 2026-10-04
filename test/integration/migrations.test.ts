@@ -61,7 +61,8 @@ describe('D1 migrations', () => {
             'telegram_updates',
             'release_announcements',
             'wishlist_shares',
-            'exchange_rates'
+            'exchange_rates',
+            'list_imports'
         ]) {
             assert.equal(findObject(tableName)?.type, 'table', tableName);
         }
@@ -75,7 +76,9 @@ describe('D1 migrations', () => {
             'gives_user_wish_unique',
             'telegram_updates_bot_update_unique',
             'release_announcements_version_user_unique',
-            'wishlist_shares_public_id_unique'
+            'wishlist_shares_public_id_unique',
+            'wishes_owner_source_ref_unique',
+            'list_imports_one_active'
         ]) {
             assert.match(findObject(indexName)?.sql ?? '', /UNIQUE INDEX/);
         }
@@ -89,7 +92,9 @@ describe('D1 migrations', () => {
             'wishes_owner_priority_level_index',
             'gives_wish_index',
             'sessions_updated_at_index',
-            'release_announcements_user_id_index'
+            'release_announcements_user_id_index',
+            'wishes_pending_photo_index',
+            'list_imports_user_state_index'
         ]) {
             assert.equal(findObject(indexName)?.type, 'index', indexName);
         }
@@ -104,6 +109,22 @@ describe('D1 migrations', () => {
         );
         assert.match(findObject('wishes')?.sql ?? '', /ON DELETE SET NULL/);
         assert.match(findObject('gives')?.sql ?? '', /ON DELETE CASCADE/);
+        assert.match(
+            findObject('list_imports')?.sql ?? '',
+            /ON DELETE CASCADE/
+        );
+
+        for (const partialIndexName of [
+            'wishes_owner_source_ref_unique',
+            'wishes_pending_photo_index',
+            'list_imports_one_active'
+        ]) {
+            assert.match(
+                findObject(partialIndexName)?.sql ?? '',
+                /\sWHERE\s/,
+                partialIndexName
+            );
+        }
     });
 
     it('is a no-op when applied a second time', async () => {
@@ -225,6 +246,51 @@ describe('D1 migrations', () => {
                 ).run(),
                 /CHECK/
             );
+        });
+
+        it('enforces the partial unique indexes of the list import', async () => {
+            const { DB } = harness.env;
+
+            await DB.prepare(
+                'INSERT INTO users (telegram_id, created_at, updated_at) VALUES (1, 0, 0), (2, 0, 0)'
+            ).run();
+
+            const { results: userRows } = await DB.prepare(
+                'SELECT id FROM users ORDER BY telegram_id'
+            ).all<{ id: number }>();
+            const [first, second] = userRows.map(row => row.id);
+            const insertWish = (userId: number, sourceRef: string | null) => {
+                return DB.prepare(
+                    'INSERT INTO wishes (user_id, title, source_ref, created_at, updated_at) VALUES (?, ?, ?, 0, 0)'
+                )
+                    .bind(userId, 'wish', sourceRef)
+                    .run();
+            };
+            const insertJob = (userId: number, state: string) => {
+                return DB.prepare(
+                    "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'bot', ?, 'hidden', 0, 0)"
+                )
+                    .bind(userId, state)
+                    .run();
+            };
+
+            await insertWish(first!, 'rewish:wish:1');
+            await insertWish(second!, 'rewish:wish:1');
+            await insertWish(first!, null);
+            await insertWish(first!, null);
+            await assert.rejects(insertWish(first!, 'rewish:wish:1'), /UNIQUE/);
+
+            await insertJob(first!, 'committing');
+            await insertJob(first!, 'done');
+            await insertJob(first!, 'done');
+            await insertJob(second!, 'committing');
+            await assert.rejects(insertJob(first!, 'committing'), /UNIQUE/);
+            await assert.rejects(insertJob(first!, 'bogus'), /CHECK/);
+
+            await DB.prepare('DELETE FROM users WHERE id = ?')
+                .bind(first)
+                .run();
+            assert.equal(await countRows(harness, 'list_imports'), 1);
         });
 
         it('sets wish owners to NULL, cascades gives and rejects dangling references', async () => {

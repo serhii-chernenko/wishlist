@@ -6,6 +6,7 @@ import {
     decodeSessionLanguage,
     decodeSessionState,
     encodeSessionState,
+    claimPendingMarker,
     isSameSessionState,
     saveSessionIfChanged
 } from '../src/bot/runtime/session-store';
@@ -341,4 +342,167 @@ test('a session written by the old decoder shape has no link offer', () => {
         '{"v":1,"pendingInput":null,"find":null}'
     );
     assert.equal(decodeSessionState('{"v":1}').linkOffer, undefined);
+});
+
+test('the list import prompt keeps its source and import marker through a round trip', () => {
+    const states: SessionState[] = [
+        {
+            v: 1,
+            pendingInput: { kind: 'listImportUrl', source: 'rewish' },
+            find: null
+        },
+        {
+            v: 1,
+            pendingInput: {
+                kind: 'listImportUrl',
+                source: 'rewish',
+                importMarker: 4021
+            },
+            find: null
+        }
+    ];
+
+    for (const state of states) {
+        assert.deepEqual(decodeSessionState(encodeSessionState(state)), state);
+    }
+});
+
+test('an unknown list import source resets the session and a bad marker is dropped', () => {
+    for (const source of ['"other"', '42', 'null']) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":{"kind":"listImportUrl","source":${source}},"find":null}`
+            ),
+            DEFAULT_STATE,
+            source
+        );
+    }
+
+    assert.deepEqual(
+        decodeSessionState(
+            '{"v":1,"pendingInput":{"kind":"listImportUrl"},"find":null}'
+        ),
+        DEFAULT_STATE
+    );
+
+    for (const marker of ['0', '"7"', '1.5']) {
+        assert.deepEqual(
+            decodeSessionState(
+                `{"v":1,"pendingInput":{"kind":"listImportUrl","source":"rewish","importMarker":${marker}},"find":null}`
+            ).pendingInput,
+            { kind: 'listImportUrl', source: 'rewish' },
+            marker
+        );
+    }
+});
+
+const createClaimRepos = async (state: SessionState) => {
+    const { Effect } = await import('effect');
+    const saved: string[] = [];
+    const repos = {
+        sessions: {
+            get() {
+                return Effect.succeed({
+                    state: encodeSessionState(state),
+                    language: null,
+                    updatedAt: new Date(0)
+                });
+            },
+            saveState(_telegramUserId: number, next: string | object) {
+                saved.push(String(next));
+                return Effect.succeed(undefined);
+            }
+        }
+    } as unknown as Parameters<typeof claimPendingMarker>[0];
+
+    return { repos, saved };
+};
+
+test('a marker is claimed only by the pending kind that wrote it', async () => {
+    const listImport: SessionState = {
+        v: 1,
+        pendingInput: {
+            kind: 'listImportUrl',
+            source: 'rewish',
+            importMarker: 77
+        },
+        find: null
+    };
+    const titlePrompt: SessionState = {
+        v: 1,
+        pendingInput: { kind: 'wishTitleNew', importMarker: 77 },
+        find: null
+    };
+    const now = new Date();
+    const claimedList = await createClaimRepos(listImport);
+    const wrongKind = await createClaimRepos(listImport);
+    const wrongMarker = await createClaimRepos(listImport);
+    const claimedTitle = await createClaimRepos(titlePrompt);
+    const titleAsList = await createClaimRepos(titlePrompt);
+
+    assert.equal(
+        await claimPendingMarker(
+            claimedList.repos,
+            1,
+            'listImportUrl',
+            77,
+            null,
+            now
+        ),
+        true
+    );
+    assert.deepEqual(
+        claimedList.saved.map(value => {
+            return decodeSessionState(value).pendingInput;
+        }),
+        [null]
+    );
+    assert.equal(
+        await claimPendingMarker(
+            wrongKind.repos,
+            1,
+            'wishTitleNew',
+            77,
+            null,
+            now
+        ),
+        false
+    );
+    assert.equal(
+        await claimPendingMarker(
+            wrongMarker.repos,
+            1,
+            'listImportUrl',
+            78,
+            null,
+            now
+        ),
+        false
+    );
+    assert.equal(
+        await claimPendingMarker(
+            claimedTitle.repos,
+            1,
+            'wishTitleNew',
+            77,
+            { kind: 'wishTitleNew', link: 'https://shop.test/p/1' },
+            now
+        ),
+        true
+    );
+    assert.equal(
+        await claimPendingMarker(
+            titleAsList.repos,
+            1,
+            'listImportUrl',
+            77,
+            null,
+            now
+        ),
+        false
+    );
+    assert.deepEqual(
+        [wrongKind.saved, wrongMarker.saved, titleAsList.saved],
+        [[], [], []]
+    );
 });

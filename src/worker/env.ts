@@ -35,6 +35,12 @@ export const isLinkImportEnabled = (
     return env.LINK_IMPORT_ENABLED === 'true';
 };
 
+export const isListImportEnabled = (
+    env: Pick<WorkerBindings, 'WISHLIST_IMPORT_ENABLED'>
+) => {
+    return env.WISHLIST_IMPORT_ENABLED === 'true';
+};
+
 export const isLinkImportAiEnabled = (env: { LINK_IMPORT_AI?: string }) => {
     return env.LINK_IMPORT_AI === 'true';
 };

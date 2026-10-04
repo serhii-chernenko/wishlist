@@ -20,6 +20,11 @@ import {
     type LinkImportOutcome,
     type LinkImportShop,
     type LinkImportSource,
+    type ListImportFailure,
+    type ListImportKind,
+    type ListImportOutcome,
+    type ListImportSource,
+    type ListImportVisibility,
     type RateLimitBucket
 } from '../shared/app-api';
 import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
@@ -182,6 +187,47 @@ export const toLinkImportImageBucket = (
     return count <= IMAGE_BUCKET_FEW_MAX ? 'oneToFour' : 'fivePlus';
 };
 
+export const LIST_IMPORT_COUNT_BUCKETS = [
+    'none',
+    'oneToNine',
+    'tenToFortyNine',
+    'fiftyToTwoHundred',
+    'overTwoHundred'
+] as const;
+
+export type ListImportCountBucket = (typeof LIST_IMPORT_COUNT_BUCKETS)[number];
+
+const COUNT_BUCKET_UPPER_BOUNDS = [
+    [1, 'none'],
+    [10, 'oneToNine'],
+    [50, 'tenToFortyNine'],
+    [201, 'fiftyToTwoHundred']
+] as const satisfies readonly (readonly [number, ListImportCountBucket])[];
+
+export const toListImportCountBucket = (
+    count: number
+): ListImportCountBucket => {
+    const bucket = COUNT_BUCKET_UPPER_BOUNDS.find(([upperBound]) => {
+        return count < upperBound;
+    });
+
+    return bucket === undefined ? 'overTwoHundred' : bucket[1];
+};
+
+export const LIST_IMPORT_DRAIN_OUTCOMES = [
+    'drained',
+    'budget',
+    'rateLimited',
+    'idle'
+] as const;
+
+export type ListImportDrainOutcome =
+    (typeof LIST_IMPORT_DRAIN_OUTCOMES)[number];
+
+export type ListImportDrainTrigger = 'cron' | 'kick';
+
+export type ListImportCommitTrigger = 'request' | 'resume';
+
 export type ImageProxyResult =
     | 'hit'
     | 'miss'
@@ -268,18 +314,25 @@ export type TelemetryFields = {
     startKind?: StartKind;
     isGuest?: boolean;
     scope?: ImageProxyScope;
-    kind?: ClientEventKind;
+    kind?: ClientEventKind | ListImportKind;
     screen?: ClientScreen;
     code?: FieldErrorCode;
     theme?: AppTheme;
     displayCurrency?: Currency;
     currencySource?: SharePageCurrencySource;
-    source?: LinkImportSource;
+    source?: LinkImportSource | ListImportSource;
     shop?: LinkImportShop;
     imagesStaged?: LinkImportImageBucket;
     imagesSkipped?: LinkImportImageBucket;
     imagesIngested?: LinkImportImageBucket;
     elapsedBucket?: LinkImportElapsedBucket;
+    visibility?: ListImportVisibility;
+    itemsBucket?: ListImportCountBucket;
+    duplicatesBucket?: ListImportCountBucket;
+    createdBucket?: ListImportCountBucket;
+    giftedBucket?: ListImportCountBucket;
+    ingestedBucket?: ListImportCountBucket;
+    failedBucket?: ListImportCountBucket;
 };
 
 const knownPaths = new Set([
@@ -327,7 +380,14 @@ const labelFieldNames = [
     'imagesStaged',
     'imagesSkipped',
     'imagesIngested',
-    'elapsedBucket'
+    'elapsedBucket',
+    'visibility',
+    'itemsBucket',
+    'duplicatesBucket',
+    'createdBucket',
+    'giftedBucket',
+    'ingestedBucket',
+    'failedBucket'
 ] as const;
 
 const knownApiRoutes: ReadonlySet<string> = new Set([
@@ -359,7 +419,8 @@ const navigationScreens: Readonly<Record<string, string>> = {
     set: 'settings',
     cur: 'currency',
     dlv: 'delivery',
-    dsc: 'disclosure'
+    dsc: 'disclosure',
+    imp: 'listImport'
 };
 
 const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
@@ -406,6 +467,11 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^dsc:[ha]:y$/, 'disclosure:confirm'],
     [/^dlv:rm$/, 'delivery:remove'],
     [/^l:(?:uk|en|pl|auto)$/, 'language:set'],
+    [/^imp:s:rw$/, 'import:source'],
+    [/^imp:v:[hp]:\d{1,12}$/, 'import:visibility'],
+    [/^imp:go:\d{1,12}$/, 'import:commit'],
+    [/^imp:x:\d{1,12}$/, 'import:cancel'],
+    [/^imp:r:\d{1,12}$/, 'import:refresh'],
     [/^x$/, 'noop']
 ];
 
@@ -844,5 +910,110 @@ export const linkImportCompletedEvent = (
         imagesSkipped: toLinkImportImageBucket(input.imagesSkipped),
         imagesIngested: toLinkImportImageBucket(input.imagesIngested),
         elapsedBucket: toLinkImportElapsedBucket(input.elapsedMs)
+    };
+};
+
+const LIST_IMPORT_OUTCOME_LABELS = {
+    ok: 'success',
+    invalidUrl: 'rejected',
+    userNotFound: 'rejected',
+    privateCollection: 'rejected',
+    schemaChanged: 'error',
+    upstream: 'error',
+    timeout: 'error',
+    rateLimited: 'rejected',
+    empty: 'rejected',
+    busy: 'rejected',
+    limitReached: 'rejected',
+    expired: 'rejected'
+} as const satisfies Record<ListImportOutcome, string>;
+
+const LIST_IMPORT_DRAIN_OUTCOME_LABELS = {
+    drained: 'success',
+    budget: 'success',
+    idle: 'success',
+    rateLimited: 'rejected'
+} as const satisfies Record<ListImportDrainOutcome, string>;
+
+const toChannelPath = (channel: TelemetryChannel) => {
+    return channel === 'app'
+        ? APP_API_TELEMETRY_PATH
+        : TELEGRAM_WEBHOOK_TELEMETRY_PATH;
+};
+
+export interface ListImportPreviewedInput {
+    source: ListImportSource;
+    kind: ListImportKind | null;
+    result: ListImportOutcome;
+    items: number;
+    duplicates: number;
+    elapsedMs: number;
+}
+
+export const listImportPreviewedEvent = (
+    input: ListImportPreviewedInput & { channel: TelemetryChannel }
+): TelemetryFields => {
+    return {
+        event: 'list_import_previewed',
+        path: toChannelPath(input.channel),
+        outcome: LIST_IMPORT_OUTCOME_LABELS[input.result],
+        channel: input.channel,
+        result: input.result,
+        source: input.source,
+        ...(input.kind === null ? {} : { kind: input.kind }),
+        itemsBucket: toListImportCountBucket(input.items),
+        duplicatesBucket: toListImportCountBucket(input.duplicates),
+        elapsedBucket: toLinkImportElapsedBucket(input.elapsedMs)
+    };
+};
+
+export interface ListImportCompletedInput {
+    source: ListImportSource;
+    kind: ListImportKind;
+    visibility: ListImportVisibility;
+    trigger: ListImportCommitTrigger;
+    failure: ListImportFailure | null;
+    created: number;
+    gifted: number;
+}
+
+export const listImportCompletedEvent = (
+    input: ListImportCompletedInput & { channel: TelemetryChannel }
+): TelemetryFields => {
+    const failed = input.failure !== null;
+
+    return {
+        event: 'list_import_completed',
+        path: toChannelPath(input.channel),
+        outcome: failed ? 'error' : 'success',
+        channel: input.channel,
+        result: failed ? 'failed' : 'success',
+        ...(input.failure === null ? {} : { reason: input.failure }),
+        source: input.source,
+        kind: input.kind,
+        visibility: input.visibility,
+        trigger: input.trigger,
+        createdBucket: toListImportCountBucket(input.created),
+        giftedBucket: toListImportCountBucket(input.gifted)
+    };
+};
+
+export interface ListImportPhotosDrainedInput {
+    trigger: ListImportDrainTrigger;
+    result: ListImportDrainOutcome;
+    ingested: number;
+    failed: number;
+}
+
+export const listImportPhotosDrainedEvent = (
+    input: ListImportPhotosDrainedInput
+): TelemetryFields => {
+    return {
+        event: 'list_import_photos_drained',
+        outcome: LIST_IMPORT_DRAIN_OUTCOME_LABELS[input.result],
+        trigger: input.trigger,
+        result: input.result,
+        ingestedBucket: toListImportCountBucket(input.ingested),
+        failedBucket: toListImportCountBucket(input.failed)
     };
 };

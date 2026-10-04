@@ -433,6 +433,71 @@ const pl: Translation = {
         description:
             'Wybierz, co chcesz ustawić: język, walutę, dane płatnicze, adres dostawy albo to, co widzą inni.'
     },
+    listImport: {
+        entry: '📥 Import listy życzeń',
+        title: '📥 Import listy życzeń',
+        description:
+            'Przenieś swoją listę życzeń z innego serwisu, żeby nie dodawać wszystkiego ręcznie. Wybierz, skąd zaimportować życzenia.',
+        disabled: 'Import listy życzeń jest teraz niedostępny.',
+        sources: {
+            rewish: '🔗 rewish.io'
+        },
+        prompt: 'Wyślij link do swojej listy życzeń na rewish.io.\n\nPasują takie linki:\n• <i>rewish.io/abc123</i> – cały profil\n• <i>rewish.io/abc123/wishes?access_code=xyz</i> – profil z kodem dostępu\n• <i>rewish.io/abc123/collection/123456?access_code=xyz</i> – jedna kolekcja',
+        cancel: '❌ Anuluj',
+        reading: '⏳ Czytam listę życzeń…',
+        preview: {
+            title: '📥 <b>Znaleziono na liście życzeń</b>',
+            active: '🎁 Nowe życzenia: {count}',
+            gifted: '🎉 Podarowane, trafią do „Podarowane”: {count}',
+            duplicates: '♻️ Już je masz, pominę: {count}',
+            withoutPrice: '💸 Bez ceny (inna waluta): {count}',
+            overLimit: '🚫 Poza limitem 500 życzeń: {count}',
+            photosNote:
+                '🖼 Zdjęcia będą pojawiać się stopniowo, może to chwilę potrwać.',
+            savedNote:
+                'ℹ️ Ukryte „zapisane” życzenia właściciela rewish nie są dostępne pod takim linkiem, więc ich tu nie będzie.',
+            visibility:
+                '👀 Jak zaimportować życzenia? <b>Ukryte</b> widzisz tylko ty, <b>publiczne</b> zobaczą wszyscy, z którymi udostępniasz listę.'
+        },
+        visibility: {
+            hidden: '🫣 Ukryte',
+            public: '👀 Publiczne',
+            selected: '✅ {label}'
+        },
+        commit: '✅ Importuj',
+        refresh: '🔄 Odśwież',
+        myWishes: '❤️ Moje życzenia',
+        progress: '⏳ Dodano {created} z {planned}…',
+        done: {
+            summary: '✅ Import zakończony! Dodano życzeń: {created}.',
+            gifted: 'W tym podarowanych: {gifted}.',
+            photos: '🖼 Zdjęcia będą pojawiać się stopniowo.',
+            photosLeft: '🖼 Zdjęcia wciąż się wczytują: {count}.'
+        },
+        failed: '❌ Import został przerwany. Dodano życzeń: {created}.',
+        cancelled: 'Import anulowany.',
+        failure: {
+            invalidUrl:
+                '❌ To nie wygląda na link do listy życzeń na rewish.io. Sprawdź go i wyślij jeszcze raz.',
+            userNotFound:
+                '❌ Nie znalazłem takiego użytkownika na rewish.io. Sprawdź link.',
+            privateCollection:
+                '🔒 Ta kolekcja jest prywatna. Dodaj do linku właściwy kod dostępu (?access_code=…) i spróbuj ponownie.',
+            schemaChanged:
+                '⚠️ Wygląda na to, że rewish.io zmienił format, więc na razie nie mogę odczytać listy. Spróbuj trochę później.',
+            upstream: '⚠️ rewish.io zwraca teraz błędy. Spróbuj za chwilę.',
+            timeout:
+                '⌛ rewish.io odpowiada zbyt długo. Spróbuj ponownie za chwilę.',
+            rateLimited:
+                '⏳ Zbyt wiele zapytań z rzędu. Spróbuj za minutę lub dwie.',
+            empty: 'Na tej liście nie ma życzeń, które można zaimportować.',
+            busy: '⏳ Import już trwa. Poczekaj, aż się zakończy.',
+            limitReached:
+                '❌ Na liście jest już 500 życzeń, więc nie można dodać nowych. Najpierw usuń kilka.',
+            expired:
+                'Ten podgląd jest już nieaktualny. Wyślij link jeszcze raz.'
+        }
+    },
     currency: {
         title: '💱 Waluta',
         description:
@@ -1180,6 +1245,80 @@ const pl: Translation = {
                     'Uzupełnianie z linku jest teraz niedostępne. Uzupełnij życzenie ręcznie.'
             }
         },
+        listImport: {
+            title: 'Import listy życzeń',
+            hint: 'Przenieś swoją listę życzeń z innego serwisu, żeby nie dodawać wszystkiego ręcznie.',
+            sourceLabel: 'Skąd zaimportować',
+            sources: {
+                rewish: 'rewish.io'
+            },
+            urlLabel: 'Link do listy życzeń',
+            urlPlaceholder: 'https://rewish.io/…',
+            urlHint:
+                'Pasuje link do profilu, do profilu z kodem dostępu albo do jednej kolekcji.',
+            paste: 'Wklej',
+            continue: 'Dalej',
+            loading: 'Czytamy listę życzeń…',
+            preview: {
+                title: 'Znaleziono na liście życzeń',
+                active: 'Nowe życzenia: {count}',
+                gifted: 'Podarowane, trafią do „Podarowane”: {count}',
+                duplicates: 'Już je masz, pominiemy: {count}',
+                withoutPrice: 'Bez ceny (inna waluta): {count}',
+                overLimit: 'Poza limitem 500 życzeń: {count}',
+                photosNote:
+                    'Zdjęcia będą pojawiać się stopniowo, może to chwilę potrwać.',
+                savedNote:
+                    'Ukryte „zapisane” życzenia właściciela rewish nie są dostępne pod takim linkiem, więc ich tu nie będzie.'
+            },
+            visibility: {
+                label: 'Jak zaimportować życzenia',
+                hidden: 'Ukryte',
+                hiddenHint: 'Zobaczysz je tylko ty.',
+                public: 'Publiczne',
+                publicHint: 'Zobaczą je wszyscy, z którymi udostępniasz listę.'
+            },
+            start: 'Importuj',
+            progress: {
+                title: 'Importowanie życzeń',
+                text: 'Dodano {created} z {planned}',
+                photos: 'Zdjęcia będą pojawiać się stopniowo. Możesz zamknąć aplikację, import trwa dalej.'
+            },
+            done: {
+                title: 'Import zakończony',
+                text: 'Dodano życzeń: {created}',
+                gifted: 'W tym podarowanych: {gifted}',
+                photosLeft: 'Zdjęcia wciąż się wczytują: {count}',
+                cta: 'Moje życzenia'
+            },
+            failed: {
+                title: 'Import przerwany',
+                text: 'Dodano życzeń: {created}',
+                retry: 'Spróbuj ponownie'
+            },
+            toast: 'Zaimportowane życzenia: {count}',
+            failure: {
+                invalidUrl:
+                    'To nie wygląda na link do listy życzeń na rewish.io. Sprawdź go i spróbuj ponownie.',
+                userNotFound:
+                    'Nie znaleźliśmy takiego użytkownika na rewish.io. Sprawdź link.',
+                privateCollection:
+                    'Ta kolekcja jest prywatna. Dodaj do linku właściwy kod dostępu (?access_code=…) i spróbuj ponownie.',
+                schemaChanged:
+                    'Wygląda na to, że rewish.io zmienił format, więc na razie nie możemy odczytać listy. Spróbuj trochę później.',
+                upstream: 'rewish.io zwraca teraz błędy. Spróbuj za chwilę.',
+                timeout:
+                    'rewish.io odpowiada zbyt długo. Spróbuj ponownie za chwilę.',
+                rateLimited:
+                    'Zbyt wiele zapytań z rzędu. Spróbuj za minutę lub dwie.',
+                empty: 'Na tej liście nie ma życzeń, które można zaimportować.',
+                busy: 'Import już trwa. Poczekaj, aż się zakończy.',
+                limitReached:
+                    'Na liście jest już 500 życzeń, więc nie można dodać nowych. Najpierw usuń kilka.',
+                expired:
+                    'Ten podgląd jest już nieaktualny. Wklej link jeszcze raz.'
+            }
+        },
         gives: {
             title: 'Chcę podarować',
             count: '{count} {{count:|prezent||prezenty|prezentów|prezentu}}',
@@ -1508,6 +1647,7 @@ const pl: Translation = {
             delivery: 'Adres dostawy',
             deliverySet: 'Dodano',
             deliveryEmpty: 'Nie dodano',
+            listImport: 'Import listy życzeń',
             theme: {
                 title: 'Motyw',
                 system: 'Jak w Telegramie',

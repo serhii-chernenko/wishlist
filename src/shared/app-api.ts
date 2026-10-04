@@ -149,6 +149,72 @@ export type LinkImportShop = (typeof LINK_IMPORT_SHOPS)[number];
 
 export const LINK_IMPORT_URL_HASH_LENGTH = 32;
 
+export const LIST_IMPORT_SOURCES = ['rewish'] as const;
+
+export type ListImportSource = (typeof LIST_IMPORT_SOURCES)[number];
+
+export const LIST_IMPORT_KINDS = ['wishes', 'collection'] as const;
+
+export type ListImportKind = (typeof LIST_IMPORT_KINDS)[number];
+
+export const LIST_IMPORT_VISIBILITIES = ['hidden', 'public'] as const;
+
+export type ListImportVisibility = (typeof LIST_IMPORT_VISIBILITIES)[number];
+
+export const LIST_IMPORT_CHANNELS = ['bot', 'app'] as const;
+
+export type ListImportChannel = (typeof LIST_IMPORT_CHANNELS)[number];
+
+export const LIST_IMPORT_STATES = [
+    'previewed',
+    'committing',
+    'done',
+    'failed',
+    'expired',
+    'cancelled'
+] as const;
+
+export type ListImportState = (typeof LIST_IMPORT_STATES)[number];
+
+export const LIST_IMPORT_FAILURES = [
+    'invalidUrl',
+    'userNotFound',
+    'privateCollection',
+    'schemaChanged',
+    'upstream',
+    'timeout',
+    'rateLimited',
+    'empty',
+    'busy',
+    'limitReached',
+    'expired'
+] as const;
+
+export type ListImportFailure = (typeof LIST_IMPORT_FAILURES)[number];
+
+export type ListImportOutcome = 'ok' | ListImportFailure;
+
+export const LIST_IMPORT_MAX_ITEMS = 500;
+export const LIST_IMPORT_MAX_LISTS = 10;
+export const LIST_IMPORT_CALL_TIMEOUT_MS = 5000;
+export const LIST_IMPORT_FETCH_BUDGET_MS = 8000;
+export const LIST_IMPORT_CLIENT_TIMEOUT_MS = 10_000;
+export const LIST_IMPORT_JSON_MAX_BYTES = 2 * 1024 * 1024;
+export const LIST_IMPORT_PREVIEW_TTL_MS = 30 * 60 * 1000;
+export const LIST_IMPORT_LEASE_MS = 60 * 1000;
+export const LIST_IMPORT_MAX_ATTEMPTS = 3;
+export const LIST_IMPORT_PRUNE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
+export const LIST_IMPORT_INSERT_COLUMNS = 13;
+export const LIST_IMPORT_INSERT_ROWS_PER_STATEMENT = 7;
+export const LIST_IMPORT_INSERT_STATEMENTS_PER_BATCH = 7;
+export const LIST_IMPORT_PHOTO_PACE_MS = 1200;
+export const LIST_IMPORT_KICK_BUDGET_MS = 20_000;
+export const LIST_IMPORT_CRON_BUDGET_MS = 5 * 60 * 1000;
+export const LIST_IMPORT_PROGRESS_EDIT_INTERVAL_MS = 2000;
+export const LIST_IMPORT_POLL_COMMITTING_MS = 1500;
+export const LIST_IMPORT_POLL_PHOTOS_MS = 5000;
+export const LIST_IMPORT_POLL_TIMEOUT_MS = 2 * 60 * 1000;
+
 export const APP_UPLOAD_CONTENT_TYPES = [
     'image/jpeg',
     'image/png',
@@ -236,6 +302,7 @@ export const CLIENT_SCREENS = [
     'wishes',
     'wishEditor',
     'linkImport',
+    'listImport',
     'gives',
     'find',
     'thirdList',
@@ -362,6 +429,46 @@ export type LinkImportDto = {
 
 export type ImportWishImageInput = { importToken: string; index: number };
 
+export type ListImportPreviewInput = { url: string };
+
+export type ListImportCommitInput = { visibility: ListImportVisibility };
+
+/**
+ * `active` and `gifted` are the wishes that would be created; `gifted` ones
+ * land in the "Gifted" section. Everything the plan skips is counted in
+ * `duplicates` (already in the list) or `overLimit` (past the 500 caps), and
+ * `withoutPrice` and `withoutPhoto` count planned wishes that miss that field.
+ */
+export type ListImportCountsDto = {
+    found: number;
+    active: number;
+    gifted: number;
+    duplicates: number;
+    overLimit: number;
+    withoutPrice: number;
+    withoutPhoto: number;
+};
+
+export type ListImportPreviewDto = {
+    outcome: ListImportOutcome;
+    jobId: number | null;
+    kind: ListImportKind | null;
+    counts: ListImportCountsDto | null;
+    suggestedVisibility: ListImportVisibility;
+    savedWishesNote: boolean;
+};
+
+/** `created` counts every inserted wish, gifted ones included; `createdGifted` is the gifted part of it. */
+export type ListImportStatusDto = {
+    jobId: number;
+    state: ListImportState;
+    planned: number;
+    created: number;
+    createdGifted: number;
+    photosPending: number;
+    failure: ListImportFailure | null;
+};
+
 export type OwnWishDto = {
     id: number;
     title: string;
@@ -448,6 +555,7 @@ export type BootstrapDto = {
         supportLinks: SupportLinkDto[];
         links: Record<AppLinkId, string | null>;
         linkImportEnabled: boolean;
+        listImportEnabled: boolean;
     };
 };
 
@@ -836,6 +944,30 @@ export const APP_API_ROUTES = {
         body: 'json',
         status: 200
     },
+    previewListImport: {
+        method: 'POST',
+        path: '/list-import/preview',
+        access: 'user',
+        bucket: 'import',
+        body: 'json',
+        status: 200
+    },
+    commitListImport: {
+        method: 'POST',
+        path: '/list-import/:id/commit',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 200
+    },
+    getListImport: {
+        method: 'GET',
+        path: '/list-import/:id',
+        access: 'user',
+        bucket: 'api',
+        body: 'none',
+        status: 200
+    },
     listGives: {
         method: 'GET',
         path: '/gives',
@@ -1044,6 +1176,21 @@ export interface AppApiEndpoints {
     };
     startImageChatIntent: { query: null; body: null; response: NoContent };
     importLink: { query: null; body: LinkImportInput; response: LinkImportDto };
+    previewListImport: {
+        query: null;
+        body: ListImportPreviewInput;
+        response: ListImportPreviewDto;
+    };
+    commitListImport: {
+        query: null;
+        body: ListImportCommitInput;
+        response: ListImportStatusDto;
+    };
+    getListImport: {
+        query: null;
+        body: null;
+        response: ListImportStatusDto;
+    };
     listGives: { query: OffsetQuery; body: null; response: GiveListDto };
     removeGive: { query: null; body: null; response: NoContent };
     cleanGives: { query: null; body: null; response: RemovedCountDto };

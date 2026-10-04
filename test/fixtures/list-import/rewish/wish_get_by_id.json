@@ -1,0 +1,67 @@
+{
+    "value": {
+        "id": 6565464,
+        "user_id": "00000000-0000-0000-0000-000000000002",
+        "re_wish_id": 318652,
+        "user_code": "tESt01",
+        "title": "Перець  Red Kampot  з Камбоджі 50г, Terre Exotique - Купити за ціною 549 грн | Goodwine.com.ua",
+        "description": "",
+        "price": 550,
+        "wish_avatar_path": "https://storage.rewish.io/00000000-0000-0000-0000-00000000000c",
+        "user_avatar_path": "REDACTED",
+        "user_name": "",
+        "first_name": "REDACTED",
+        "last_name": "REDACTED",
+        "is_verified": false,
+        "is_online": false,
+        "last_activity_date": "2026-10-04T15:51:39",
+        "purchase_link": "https://goodwine.com.ua/ua/perec-red-kampot-z-kambodzhi-50g-terre-exotique-q3428/",
+        "banks_count": 1,
+        "wishes_count": 45,
+        "currency": 1,
+        "status": 1,
+        "has_current_user_mark_as_gifting": false,
+        "bank_id": 18743,
+        "bank_has_viewed": false,
+        "start_processing_days_ago": 0,
+        "start_processing_hours_ago": 0,
+        "start_processing_minutes_ago": 0,
+        "is_brand_profile_active": false,
+        "is_promoted": false,
+        "booked_user_id": null,
+        "booked_user_code": null,
+        "booked_user_first_name": null,
+        "booked_user_last_name": null,
+        "booked_user_avatar": null,
+        "is_booked_user_verified": false,
+        "booked_user_achievements": null,
+        "link_access": null,
+        "user_achievements": [
+            {
+                "is_active": false,
+                "type": 2
+            },
+            {
+                "is_active": true,
+                "type": 3
+            },
+            {
+                "is_active": false,
+                "type": 1
+            },
+            {
+                "is_active": false,
+                "type": 4
+            },
+            {
+                "is_active": false,
+                "type": 5
+            }
+        ],
+        "user_links": [],
+        "offer_link": null,
+        "domain": "goodwine.com.ua"
+    },
+    "is_success": true,
+    "errors": []
+}

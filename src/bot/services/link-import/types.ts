@@ -112,6 +112,11 @@ export interface SafeFetchOptions {
     maxBytes?: number;
 }
 
+export interface FetchJsonOptions extends SafeFetchOptions {
+    allowedHosts: readonly string[];
+    headers?: Readonly<Record<string, string>>;
+}
+
 export interface SafeFetcher {
     fetchPage(
         url: string,
@@ -121,6 +126,10 @@ export interface SafeFetcher {
         url: string,
         options?: SafeFetchOptions
     ): Promise<SafeFetchResult<FetchedImage>>;
+    fetchJson(
+        url: string,
+        options: FetchJsonOptions
+    ): Promise<SafeFetchResult<unknown>>;
 }
 
 export type CreateSafeFetcher = (fetchImpl?: typeof fetch) => SafeFetcher;

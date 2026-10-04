@@ -29,7 +29,8 @@ export const PENDING_INPUT_SCREENS = {
     feedback: 'feedback',
     payments: 'payments',
     deliveryAddress: 'delivery',
-    contact: 'auth'
+    contact: 'auth',
+    listImportUrl: 'listImport'
 } as const satisfies Record<PendingInputKind, ScreenId>;
 
 export const APP_CONTACT_PENDING_TTL_MS = 10 * 60 * 1000;
@@ -48,7 +49,8 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'delivery',
     'disclosure',
     'wishPriority',
-    'wishImages'
+    'wishImages',
+    'listImport'
 ]);
 
 const GUEST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([

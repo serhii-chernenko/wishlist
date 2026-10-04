@@ -54,6 +54,7 @@ export const createD1Harness = async (options: D1HarnessOptions = {}) => {
             await proxy.env.DB.batch([
                 proxy.env.DB.prepare('DELETE FROM wishlist_shares'),
                 proxy.env.DB.prepare('DELETE FROM release_announcements'),
+                proxy.env.DB.prepare('DELETE FROM list_imports'),
                 proxy.env.DB.prepare('DELETE FROM gives'),
                 proxy.env.DB.prepare('DELETE FROM wishes'),
                 proxy.env.DB.prepare('DELETE FROM users'),

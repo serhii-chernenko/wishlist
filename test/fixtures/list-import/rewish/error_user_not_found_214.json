@@ -1,0 +1,5 @@
+{
+    "value": null,
+    "is_success": false,
+    "errors": [{ "code": "214", "message": "User not found" }]
+}

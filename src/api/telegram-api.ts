@@ -33,6 +33,12 @@ export interface SendMessageExtra {
     link_preview_options?: { is_disabled?: boolean };
 }
 
+export interface EditMessageTextExtra {
+    parse_mode?: 'HTML';
+    reply_markup?: unknown;
+    link_preview_options?: { is_disabled?: boolean };
+}
+
 export interface SendPhotoExtra {
     caption?: string;
     parse_mode?: 'HTML';
@@ -70,6 +76,12 @@ export interface TelegramApi {
         photos: readonly MediaGroupPhoto[],
         extra?: SendMediaGroupExtra
     ): Promise<SentPhotoMessage[]>;
+    editMessageText(
+        chatId: number | string,
+        messageId: number,
+        text: string,
+        extra?: EditMessageTextExtra
+    ): Promise<Message.TextMessage | true>;
     deleteMessage(chatId: number | string, messageId: number): Promise<boolean>;
     getFile(fileId: string): Promise<File>;
     downloadFile(filePath: string): Promise<Response>;
@@ -236,6 +248,14 @@ export const createTelegramApi = (options: TelegramApiOptions): TelegramApi => {
             });
 
             return call<SentPhotoMessage[]>('sendMediaGroup', form);
+        },
+        editMessageText(chatId, messageId, text, extra = {}) {
+            return callJson<Message.TextMessage | true>('editMessageText', {
+                chat_id: chatId,
+                message_id: messageId,
+                text,
+                ...extra
+            });
         },
         deleteMessage(chatId, messageId) {
             return callJson<boolean>('deleteMessage', {

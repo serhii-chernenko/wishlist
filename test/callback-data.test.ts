@@ -30,6 +30,7 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'navigate', screen: 'currency' }, 'n:cur'],
     [{ type: 'navigate', screen: 'delivery' }, 'n:dlv'],
     [{ type: 'navigate', screen: 'disclosure' }, 'n:dsc'],
+    [{ type: 'navigate', screen: 'listImport' }, 'n:imp'],
     [{ type: 'wishlistPage', offset: 0 }, 'wl:p:0'],
     [{ type: 'wishlistPage', offset: 20 }, 'wl:p:20'],
     [{ type: 'wishlistClean' }, 'wl:clean'],
@@ -97,6 +98,18 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'language', choice: 'en' }, 'l:en'],
     [{ type: 'language', choice: 'pl' }, 'l:pl'],
     [{ type: 'language', choice: 'auto' }, 'l:auto'],
+    [{ type: 'listImportSource', source: 'rewish' }, 'imp:s:rw'],
+    [
+        { type: 'listImportVisibility', jobId: 42, visibility: 'hidden' },
+        'imp:v:h:42'
+    ],
+    [
+        { type: 'listImportVisibility', jobId: 42, visibility: 'public' },
+        'imp:v:p:42'
+    ],
+    [{ type: 'listImportCommit', jobId: 42 }, 'imp:go:42'],
+    [{ type: 'listImportCancel', jobId: 42 }, 'imp:x:42'],
+    [{ type: 'listImportRefresh', jobId: 42 }, 'imp:r:42'],
     [{ type: 'noop' }, 'x']
 ];
 
@@ -108,7 +121,11 @@ const WORST_CASE_VARIANTS: readonly EncodableCallbackAction[] = [
     { type: 'wishBack', wishId: MAX_ID },
     { type: 'linkOfferAccept', createdAt: MAX_ID },
     { type: 'wishlistPage', offset: MAX_OFFSET },
-    { type: 'giveListPage', offset: MAX_OFFSET }
+    { type: 'giveListPage', offset: MAX_OFFSET },
+    { type: 'listImportVisibility', jobId: MAX_ID, visibility: 'public' },
+    { type: 'listImportCommit', jobId: MAX_ID },
+    { type: 'listImportCancel', jobId: MAX_ID },
+    { type: 'listImportRefresh', jobId: MAX_ID }
 ];
 
 const byteLength = (value: string): number => {
@@ -234,6 +251,21 @@ test('malformed new-style data decodes as outdated', () => {
         'dsc:p:y',
         'dsc:x',
         'dlv:x',
+        'imp',
+        'imp:s',
+        'imp:s:xx',
+        'imp:s:rw:1',
+        'imp:v:h',
+        'imp:v:x:5',
+        'imp:v:h:0',
+        'imp:v:h:abc',
+        'imp:v:h:5:6',
+        'imp:go',
+        'imp:go:0',
+        'imp:go:5:6',
+        'imp:x:abc',
+        'imp:r:-1',
+        'imp:q:5',
         'zz:1'
     ];
 
@@ -254,6 +286,12 @@ test('callback categories are closed and never contain ids', () => {
     assert.equal(getCallbackCategory('cur:EUR'), 'currency');
     assert.equal(getCallbackCategory('dsc:h:y'), 'disclosure:confirm');
     assert.equal(getCallbackCategory('x'), 'noop');
+    assert.equal(getCallbackCategory('n:imp'), 'nav:listImport');
+    assert.equal(getCallbackCategory('imp:s:rw'), 'import:source');
+    assert.equal(getCallbackCategory('imp:v:h:12345'), 'import:visibility');
+    assert.equal(getCallbackCategory('imp:go:12345'), 'import:commit');
+    assert.equal(getCallbackCategory('imp:x:12345'), 'import:cancel');
+    assert.equal(getCallbackCategory('imp:r:12345'), 'import:refresh');
     assert.equal(getCallbackCategory('w:add:nl'), 'wish:addNoLink');
     assert.equal(
         getCallbackCategory('w:add:lk:1790000000000'),

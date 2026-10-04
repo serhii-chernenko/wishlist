@@ -128,7 +128,8 @@ const createFakeScreens = (
         'payments',
         'delivery',
         'language',
-        'releases'
+        'releases',
+        'listImport'
     ];
 
     return ids.map(id => {
@@ -294,7 +295,9 @@ test('input is routed by the pending input kind', async () => {
                 ? { kind, wishId: 1, field: 'title' }
                 : kind === 'contact'
                   ? { kind, authType: 'phone' }
-                  : { kind }
+                  : kind === 'listImportUrl'
+                    ? { kind, source: 'rewish' }
+                    : { kind }
         ) as PendingInput;
         const { req } = createRequest({
             user: REGISTERED_USER,

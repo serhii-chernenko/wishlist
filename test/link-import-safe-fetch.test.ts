@@ -479,3 +479,246 @@ describe('safe fetch: failures', () => {
         );
     });
 });
+
+const API_URL = 'https://rewish.io/public/api/user/by-code/tESt01';
+const ALLOWED_HOSTS = ['rewish.io'];
+const JSON_HEADERS = { 'X-Systemcode': 'ReWish-Web', 'X-Flow-Id': 'flow-1' };
+
+const json = (value: unknown, headers: Record<string, string> = {}) => {
+    return new Response(JSON.stringify(value), {
+        status: 200,
+        headers: {
+            'content-type': 'application/json; charset=utf-8',
+            ...headers
+        }
+    });
+};
+
+describe('safe fetch: JSON with a host allowlist', () => {
+    it('sends the caller headers with the honest User-Agent and parses the body', async () => {
+        const { fakeFetch, requests } = createFakeFetch(() => {
+            return json({ is_success: true, value: { id: 'u1' } });
+        });
+        const result = await createSafeFetcher(fakeFetch).fetchJson(API_URL, {
+            allowedHosts: ALLOWED_HOSTS,
+            headers: JSON_HEADERS
+        });
+        const headers = new Headers(requests[0]?.init.headers);
+
+        assert.deepEqual(result, {
+            ok: true,
+            value: { is_success: true, value: { id: 'u1' } }
+        });
+        assert.equal(requests[0]?.init.redirect, 'manual');
+        assert.equal(headers.get('x-systemcode'), 'ReWish-Web');
+        assert.equal(headers.get('x-flow-id'), 'flow-1');
+        assert.equal(headers.get('accept'), 'application/json');
+        assert.equal(headers.get('user-agent'), LINK_IMPORT_USER_AGENT);
+        assert.equal(headers.has('cookie'), false);
+    });
+
+    it('never lets the caller override the User-Agent or add credentials', async () => {
+        const { fakeFetch, requests } = createFakeFetch(() => {
+            return json({});
+        });
+
+        await createSafeFetcher(fakeFetch).fetchJson(API_URL, {
+            allowedHosts: ALLOWED_HOSTS,
+            headers: {
+                'User-Agent': 'Mozilla/5.0',
+                Cookie: 'session=1',
+                Authorization: 'Bearer token',
+                Host: 'evil.example'
+            }
+        });
+
+        const headers = new Headers(requests[0]?.init.headers);
+
+        assert.equal(headers.get('user-agent'), LINK_IMPORT_USER_AGENT);
+        assert.equal(headers.has('cookie'), false);
+        assert.equal(headers.has('authorization'), false);
+        assert.equal(headers.has('host'), false);
+    });
+
+    it('refuses a start host off the allowlist without sending a request or the headers', async () => {
+        const { fakeFetch, requests } = createFakeFetch(() => {
+            return json({});
+        });
+        const result = await createSafeFetcher(fakeFetch).fetchJson(
+            'https://evil.example/public/api',
+            { allowedHosts: ALLOWED_HOSTS, headers: JSON_HEADERS }
+        );
+
+        assert.deepEqual(result, {
+            ok: false,
+            failure: 'blockedHost',
+            status: null
+        });
+        assert.equal(requests.length, 0);
+    });
+
+    it('follows a redirect inside the allowlist and refuses one that leaves it', async () => {
+        const inside = createFakeFetch(url => {
+            return url === API_URL
+                ? redirect('https://rewish.io/public/api/v2/user')
+                : json({ moved: true });
+        });
+        const outside = createFakeFetch(() => {
+            return redirect('https://storage.rewish.io/leak');
+        });
+        const followed = await createSafeFetcher(inside.fakeFetch).fetchJson(
+            API_URL,
+            { allowedHosts: ALLOWED_HOSTS, headers: JSON_HEADERS }
+        );
+        const refused = await createSafeFetcher(outside.fakeFetch).fetchJson(
+            API_URL,
+            { allowedHosts: ALLOWED_HOSTS, headers: JSON_HEADERS }
+        );
+
+        assert.deepEqual(followed, { ok: true, value: { moved: true } });
+        assert.deepEqual(refused, {
+            ok: false,
+            failure: 'blockedHost',
+            status: 302
+        });
+        assert.equal(outside.requests.length, 1);
+    });
+
+    it('rejects a redirect to a private host even when it is allowlisted', async () => {
+        const { fakeFetch } = createFakeFetch(() => {
+            return redirect('https://127.0.0.1/admin');
+        });
+        const result = await createSafeFetcher(fakeFetch).fetchJson(API_URL, {
+            allowedHosts: ['rewish.io', '127.0.0.1']
+        });
+
+        assert.equal(result.ok, false);
+        assert.equal(!result.ok && result.failure, 'blockedHost');
+    });
+
+    it('accepts +json media types and rejects other content types', async () => {
+        const problem = createFakeFetch(() => {
+            return new Response('{"a":1}', {
+                status: 200,
+                headers: { 'content-type': 'application/problem+json' }
+            });
+        });
+        const page = createFakeFetch(() => {
+            return html('{"a":1}');
+        });
+
+        assert.deepEqual(
+            await createSafeFetcher(problem.fakeFetch).fetchJson(API_URL, {
+                allowedHosts: ALLOWED_HOSTS
+            }),
+            { ok: true, value: { a: 1 } }
+        );
+        assert.deepEqual(
+            await createSafeFetcher(page.fakeFetch).fetchJson(API_URL, {
+                allowedHosts: ALLOWED_HOSTS
+            }),
+            { ok: false, failure: 'badContentType', status: 200 }
+        );
+    });
+
+    it('fails with badContentType when the body is not JSON', async () => {
+        const { fakeFetch } = createFakeFetch(() => {
+            return new Response('<html>', {
+                status: 200,
+                headers: { 'content-type': 'application/json' }
+            });
+        });
+        const result = await createSafeFetcher(fakeFetch).fetchJson(API_URL, {
+            allowedHosts: ALLOWED_HOSTS
+        });
+
+        assert.deepEqual(result, {
+            ok: false,
+            failure: 'badContentType',
+            status: 200
+        });
+    });
+
+    it('enforces the size cap on a declared length and on a stream', async () => {
+        const declared = createFakeFetch(() => {
+            return json({}, { 'content-length': '2000' });
+        });
+        const streamed = createFakeFetch(() => {
+            return new Response(chunkedStream(512, 8), {
+                status: 200,
+                headers: { 'content-type': 'application/json' }
+            });
+        });
+        const options = { allowedHosts: ALLOWED_HOSTS, maxBytes: 1024 };
+
+        assert.deepEqual(
+            await createSafeFetcher(declared.fakeFetch).fetchJson(
+                API_URL,
+                options
+            ),
+            { ok: false, failure: 'tooLarge', status: 200 }
+        );
+        assert.deepEqual(
+            await createSafeFetcher(streamed.fakeFetch).fetchJson(
+                API_URL,
+                options
+            ),
+            { ok: false, failure: 'tooLarge', status: 200 }
+        );
+    });
+
+    it('maps blocked and failing statuses and network errors to closed labels', async () => {
+        const blocked = createFakeFetch(() => {
+            return new Response('', { status: 429 });
+        });
+        const broken = createFakeFetch(() => {
+            return new Response('', { status: 502 });
+        });
+        const offline = createFakeFetch(() => {
+            throw new TypeError('connection reset');
+        });
+        const options = { allowedHosts: ALLOWED_HOSTS };
+
+        assert.deepEqual(
+            await createSafeFetcher(blocked.fakeFetch).fetchJson(
+                API_URL,
+                options
+            ),
+            { ok: false, failure: 'blockedStatus', status: 429 }
+        );
+        assert.deepEqual(
+            await createSafeFetcher(broken.fakeFetch).fetchJson(
+                API_URL,
+                options
+            ),
+            { ok: false, failure: 'badStatus', status: 502 }
+        );
+        assert.deepEqual(
+            await createSafeFetcher(offline.fakeFetch).fetchJson(
+                API_URL,
+                options
+            ),
+            { ok: false, failure: 'network', status: null }
+        );
+    });
+
+    it('times out through the call budget', async () => {
+        const { fakeFetch } = createFakeFetch((_url, init) => {
+            return new Promise<Response>((_resolve, reject) => {
+                init.signal?.addEventListener('abort', () => {
+                    reject(new DOMException('aborted', 'AbortError'));
+                });
+            });
+        });
+        const result = await createSafeFetcher(fakeFetch).fetchJson(API_URL, {
+            allowedHosts: ALLOWED_HOSTS,
+            timeoutMs: 10
+        });
+
+        assert.deepEqual(result, {
+            ok: false,
+            failure: 'timeout',
+            status: null
+        });
+    });
+});

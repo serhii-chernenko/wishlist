@@ -819,6 +819,7 @@ test('the preview reset deletes dependent tables before their parents', () => {
         'sessions',
         'telegram_updates',
         'release_announcements',
+        'list_imports',
         'gives',
         'wishes',
         'wishlist_shares',

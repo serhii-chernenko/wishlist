@@ -264,6 +264,9 @@ export const createFakeSafeFetcher = (input: {
                     contentType: response.contentType ?? 'image/jpeg'
                 }
             };
+        },
+        async fetchJson() {
+            return { ok: false, failure: 'network', status: null };
         }
     };
 

@@ -15,6 +15,8 @@ import type {
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import type {
     ContactDisclosureField,
+    ListImportSource,
+    ListImportVisibility,
     RateLimitBucket,
     WishPriorityLevel
 } from '../../shared/app-api';
@@ -28,8 +30,13 @@ import type {
 } from '../services/link-import/types';
 import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
-import type { LinkImportCompletedInput } from '../../worker/telemetry';
+import type {
+    LinkImportCompletedInput,
+    ListImportCompletedInput,
+    ListImportPreviewedInput
+} from '../../worker/telemetry';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
+import type { ListImportService } from '../services/list-import/types';
 import type { StatsService } from '../services/stats-service';
 import type { UserService } from '../services/user-service';
 
@@ -59,7 +66,8 @@ export type ScreenId =
     | 'delivery'
     | 'disclosure'
     | 'wishPriority'
-    | 'wishImages';
+    | 'wishImages'
+    | 'listImport';
 
 export type NavigationScreenId = Extract<
     ScreenId,
@@ -80,6 +88,7 @@ export type NavigationScreenId = Extract<
     | 'currency'
     | 'delivery'
     | 'disclosure'
+    | 'listImport'
 >;
 
 export type WishField = 'title' | 'description' | 'images' | 'link' | 'price';
@@ -98,6 +107,11 @@ export type ConfirmableDisclosureField = Exclude<
 export type PendingInput =
     | { kind: 'wishTitleNew'; link?: string; importMarker?: number }
     | { kind: 'wishField'; wishId: number; field: WishField }
+    | {
+          kind: 'listImportUrl';
+          source: ListImportSource;
+          importMarker?: number;
+      }
     | { kind: 'findQuery' }
     | { kind: 'feedback' }
     | { kind: 'payments' }
@@ -186,6 +200,15 @@ export type CallbackAction =
     | { type: 'disclosureConfirm'; field: ConfirmableDisclosureField }
     | { type: 'deliveryRemove' }
     | { type: 'language'; choice: LanguageChoice }
+    | { type: 'listImportSource'; source: ListImportSource }
+    | {
+          type: 'listImportVisibility';
+          jobId: number;
+          visibility: ListImportVisibility;
+      }
+    | { type: 'listImportCommit'; jobId: number }
+    | { type: 'listImportCancel'; jobId: number }
+    | { type: 'listImportRefresh'; jobId: number }
     | { type: 'noop' }
     | { type: 'outdated' };
 
@@ -272,7 +295,11 @@ export type WishlistShareChangeResult = 'success' | 'failed';
 
 export type WishlistShareUsernameResult = 'on' | 'off' | 'failed';
 
-export type { LinkImportCompletedInput };
+export type {
+    LinkImportCompletedInput,
+    ListImportCompletedInput,
+    ListImportPreviewedInput
+};
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {
@@ -285,6 +312,8 @@ export interface WishlistBotTelemetry {
         errorType: string;
     }): void;
     linkImportCompleted?(input: LinkImportCompletedInput): void;
+    listImportPreviewed?(input: ListImportPreviewedInput): void;
+    listImportCompleted?(input: ListImportCompletedInput): void;
     rateLimiterGap?(bucket: RateLimitBucket, result: 'missing' | 'error'): void;
 }
 
@@ -301,6 +330,7 @@ export interface BotServices {
     users: UserService;
     stats: StatsService;
     linkImport?: BotLinkImport;
+    listImport?: ListImportService;
 }
 
 export interface BotRequest {
