@@ -85,12 +85,11 @@
         gap: 0.375rem;
     }
 
-    .action-sheet-danger {
-        --btn-fg: var(--heart-ink);
-    }
-
     .toast-action {
+        display: inline-flex;
         flex: none;
+        align-items: center;
+        gap: 0.5rem;
         min-height: var(--tap-size);
         padding: 0 0.75rem;
         font-weight: 700;

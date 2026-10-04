@@ -21,6 +21,7 @@ import {
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
+import { DangerButton } from '../ui/danger-button';
 import { Field } from '../ui/field';
 import { ScreenLayout } from '../ui/screen';
 
@@ -35,9 +36,23 @@ const describeFieldError = (
     code: FieldErrorCode,
     max: number
 ) => {
+    if (code === 'containsLink') {
+        return LL.delivery.errors.containsLink();
+    }
+
     return code === 'tooShort' || code === 'tooLong'
         ? fieldErrorMessage(LL, code, max)
         : LL.delivery.hint();
+};
+
+const describeRejection = (
+    LL: AppTranslator,
+    reason: AddressRejection,
+    max: number
+) => {
+    return reason === 'tooManyLines'
+        ? LL.delivery.errors.tooManyLines()
+        : describeFieldError(LL, reason, max);
 };
 
 const isPhoneShown = (me: Pick<MeDto, 'disclosure' | 'phoneMasked'>) => {
@@ -68,7 +83,7 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
     const rejectLocally = (reason: AddressRejection) => {
         const code = toFieldErrorCode(reason);
 
-        setError(describeFieldError(LL, code, max));
+        setError(describeRejection(LL, reason, max));
         haptics.error();
         reportEvent('validationFailed', 'delivery', { field: 'address', code });
     };
@@ -128,7 +143,6 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
 
         try {
             updateMe(await api.request('removeDeliveryAddress'));
-            haptics.success();
             toast.show(LL.delivery.removed(), 'success');
             leave();
 
@@ -193,16 +207,14 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
                 </div>
             )}
             {me.deliveryAddress === null ? null : (
-                <button
-                    type='button'
-                    class='btn delivery-remove'
+                <DangerButton
+                    class='delivery-remove'
+                    label={LL.delivery.remove()}
                     disabled={pending !== null}
-                    onClick={() => {
+                    onCommit={() => {
                         void remove();
                     }}
-                >
-                    {LL.delivery.remove()}
-                </button>
+                />
             )}
         </ScreenLayout>
     );

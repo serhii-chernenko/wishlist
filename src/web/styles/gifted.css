@@ -11,7 +11,7 @@
         line-height: 1.5;
         text-align: center;
         color: var(--text);
-        background: var(--paper);
+        background: var(--gifted-band);
         border-top: var(--card-border) solid var(--ink);
     }
 

@@ -80,8 +80,16 @@ const renderOrderPicker = async (req: BotRequest, wishId: number) => {
         return;
     }
 
+    const { order } = req.LL.wishlist.edit.images;
+
     await req.send.wish(
-        { html: req.LL.wishlist.edit.images.order.prompt(), images: fileIds },
+        {
+            html: order.prompt(),
+            images: fileIds,
+            captions: fileIds.map((_, index) => {
+                return order.caption({ n: index + 1 });
+            })
+        },
         await buildOrderKeyboard(req, wishId, fileIds)
     );
 };

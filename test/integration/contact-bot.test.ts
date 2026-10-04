@@ -490,15 +490,18 @@ describe('contact and disclosure in the bot', () => {
                 )
             );
 
-            await press(createRequest(owner).request, {
-                type: 'wishlistShareIndexing'
-            });
+            const toggle = createRequest(owner);
+
+            await press(toggle.request, { type: 'wishlistShareIndexing' });
 
             const share = await run(
                 harness.repositories.shares.findActiveByUserId(owner.id)
             );
 
             assert.equal(share?.allowIndexing, false);
+            assert.deepEqual(toggle.telemetry, [
+                { action: 'wishlist_share_indexing_toggled', result: 'off' }
+            ]);
         });
 
         it('links the share screen to what others see', async () => {

@@ -427,7 +427,14 @@ export type DeliveryAddressInput = { text: string };
 
 export type ContactDisclosureInput = Partial<ContactDisclosureDto>;
 
-export type ReorderImagesInput = { hashes: string[] };
+export const IMAGE_REORDER_SOURCES = ['drag', 'keyboard', 'button'] as const;
+
+export type ImageReorderSource = (typeof IMAGE_REORDER_SOURCES)[number];
+
+export type ReorderImagesInput = {
+    hashes: string[];
+    source?: ImageReorderSource;
+};
 
 export type ShareUsernameInput = { show: boolean };
 

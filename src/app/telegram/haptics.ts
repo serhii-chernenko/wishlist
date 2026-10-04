@@ -40,6 +40,9 @@ export const haptics = {
     success() {
         haptics.notify('success');
     },
+    warning() {
+        haptics.notify('warning');
+    },
     error() {
         haptics.notify('error');
     }

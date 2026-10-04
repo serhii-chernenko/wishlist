@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'hono/jsx/dom';
+import { Trash2 } from 'lucide';
 
 import type {
     OwnWishDto,
@@ -19,10 +20,12 @@ import {
     pickFields,
     removeFromPage,
     replaceInPage,
+    restoreToPage,
     revertInPage,
     revertPatch,
     runOptimistic,
-    type KeyOf
+    type KeyOf,
+    type RemovedItem
 } from '../logic/optimistic';
 import {
     isHighPriority,
@@ -46,6 +49,7 @@ import { ChipGroup, type ChipOption } from '../ui/chips';
 import { EmptyState } from '../ui/empty-state';
 import { ErrorState } from '../ui/error-state';
 import { HEART_SYMBOL_ID } from '../ui/heart';
+import { Icon } from '../ui/icon';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { WishGrid, WishTag } from '../ui/wish-tag';
@@ -94,6 +98,35 @@ export const readCachedWish = (cache: ResourceCache, id: number) => {
 };
 
 const pendingFlagWrites = new Map<number, number>();
+const pendingWishRemovals = new Set<number>();
+const pendingGiftedHides = new Set<number>();
+
+const withoutGifted = (page: WishListDto, id: number): WishListDto => {
+    const { page: next, removed } = removeFromPage(page, ownWishKey, id);
+
+    return removed === null
+        ? page
+        : {
+              ...next,
+              total: page.total,
+              giftedTotal: Math.max(0, page.giftedTotal - 1)
+          };
+};
+
+/** Leaves out wishes whose removal or hiding still waits for its undo countdown, so a reload does not bring them back early. */
+const withoutPendingWishes = (page: WishListDto): WishListDto => {
+    let next = page;
+
+    for (const id of pendingWishRemovals) {
+        next = removeFromPage(next, ownWishKey, id).page;
+    }
+
+    for (const id of pendingGiftedHides) {
+        next = withoutGifted(next, id);
+    }
+
+    return next;
+};
 
 /** Writes a server copy of a wish into the list page and its editor entry; the list goes stale because any change moves the wish in the server order. */
 export const storeWish = (cache: ResourceCache, wish: OwnWishDto) => {
@@ -103,15 +136,14 @@ export const storeWish = (cache: ResourceCache, wish: OwnWishDto) => {
 };
 
 /** Reloads the own list keeping as many items as "Show more" had loaded. */
-export const loadWishRange = (
+export const loadWishRange = async (
     api: ApiClient,
     cache: ResourceCache,
     signal?: AbortSignal
 ) => {
     const loaded =
         cache.read<WishListDto>(WISHES_LIST_KEY).data?.items.length ?? 0;
-
-    return loadPagesUntil<OwnWishDto, WishListDto>(
+    const page = await loadPagesUntil<OwnWishDto, WishListDto>(
         offset => {
             return api.request('listWishes', {
                 ...(offset > 0 && { query: { offset } }),
@@ -121,6 +153,8 @@ export const loadWishRange = (
         loaded,
         ownWishKey
     );
+
+    return withoutPendingWishes(page);
 };
 
 const refreshWishList = (api: ApiClient, cache: ResourceCache) => {
@@ -183,17 +217,51 @@ export const forgetWish = (services: AppServices, id: number) => {
 };
 
 const removeGiftedFromList = (cache: ResourceCache, id: number) => {
-    mutateList(cache, page => {
-        const { page: next, removed } = removeFromPage(page, ownWishKey, id);
+    mutateList(cache, page => withoutGifted(page, id));
+};
 
-        return removed === null
-            ? page
-            : {
-                  ...next,
-                  total: page.total,
-                  giftedTotal: Math.max(0, page.giftedTotal - 1)
-              };
+const reloadWishList = (api: ApiClient, cache: ResourceCache) => {
+    cache.invalidate(WISHES_LIST_KEY);
+    refreshWishList(api, cache);
+};
+
+/** Removes a wish from the cached list and the Home count only, and hands back what an undo needs to put it back. */
+export const removeWishLocally = (services: AppServices, id: number) => {
+    let removed: RemovedItem<OwnWishDto> | null = null;
+
+    pendingWishRemovals.add(id);
+    mutateList(services.cache, page => {
+        const result = removeFromPage(page, ownWishKey, id);
+
+        removed = result.removed;
+
+        return result.page;
     });
+    updateCounts(services, counts => {
+        return { ...counts, wishes: Math.max(0, counts.wishes - 1) };
+    });
+
+    return {
+        restore() {
+            const restored = removed;
+
+            pendingWishRemovals.delete(id);
+            updateCounts(services, counts => {
+                return { ...counts, wishes: counts.wishes + 1 };
+            });
+
+            if (restored !== null) {
+                mutateList(services.cache, page => {
+                    return restoreToPage(page, ownWishKey, restored);
+                });
+            }
+        },
+        settle() {
+            pendingWishRemovals.delete(id);
+            services.cache.remove(wishItemKey(id));
+            reloadWishList(services.api, services.cache);
+        }
+    };
 };
 
 /** Restore and hide-with-undo for gifted cards; both end with a reload because either moves the wish in the server order. */
@@ -201,23 +269,6 @@ const useGiftedActions = (reload: () => void) => {
     const services = useApp();
     const LL = useLL();
     const { api, cache, toast } = services;
-
-    const setHidden = (wishId: number, hidden: boolean) => {
-        return api.request('hideGiftedWish', {
-            params: { id: wishId },
-            body: { hidden }
-        });
-    };
-
-    const undoHide = async (wish: OwnWishDto) => {
-        try {
-            await setHidden(wish.id, false);
-        } catch (error) {
-            toast.failure(toFailure(error));
-        }
-
-        reload();
-    };
 
     return {
         async restore(wish: OwnWishDto) {
@@ -243,31 +294,41 @@ const useGiftedActions = (reload: () => void) => {
 
             reload();
         },
-        async hide(wish: OwnWishDto) {
-            removeGiftedFromList(cache, wish.id);
-
-            try {
-                await setHidden(wish.id, true);
-                haptics.success();
-                toast.show(LL.gifted.hidden(), 'success', {
-                    label: LL.gifted.undo(),
-                    onSelect: () => {
-                        void undoHide(wish);
-                    }
-                });
-            } catch (error) {
-                toast.failure(toFailure(error));
-                reload();
-            }
+        hide(wish: OwnWishDto) {
+            toast.undoable({
+                message: LL.gifted.hidden(),
+                apply() {
+                    pendingGiftedHides.add(wish.id);
+                    removeGiftedFromList(cache, wish.id);
+                },
+                restore() {
+                    pendingGiftedHides.delete(wish.id);
+                    reloadWishList(api, cache);
+                },
+                commit() {
+                    return api.request('hideGiftedWish', {
+                        params: { id: wish.id },
+                        body: { hidden: true }
+                    });
+                },
+                committed() {
+                    pendingGiftedHides.delete(wish.id);
+                    reloadWishList(api, cache);
+                }
+            });
         }
     };
 };
 
+const priorityToast = (LL: AppTranslator, priority: WishPriority) => {
+    return LL.wishes.toasts.priorityChanged({
+        level: LL.editor.priority.levels[priority]()
+    });
+};
+
 const flagToast = (LL: AppTranslator, flag: DraftFlag, value: boolean) => {
     if (flag === 'priority') {
-        return value
-            ? LL.wishes.toasts.priorityOn()
-            : LL.wishes.toasts.priorityOff();
+        return priorityToast(LL, toToggledPriority(value));
     }
 
     return value ? LL.wishes.toasts.hidden() : LL.wishes.toasts.shown();
@@ -292,7 +353,7 @@ const useOptimisticFlagPatch = () => {
         wish: OwnWishDto,
         flag: DraftFlag,
         applied: Partial<OwnWishDto>,
-        message: string | null
+        message: string
     ) => {
         const { api, cache, toast } = services;
         const previous = pickFields(wish, [flag]);
@@ -318,9 +379,7 @@ const useOptimisticFlagPatch = () => {
                     refreshWishList(api, cache);
                 }
 
-                if (message !== null) {
-                    toast.show(message, 'success');
-                }
+                toast.show(message, 'success');
             },
             fail(error) {
                 const failure = toFailure(error);
@@ -350,13 +409,18 @@ export const useWishFlagToggle = () => {
     };
 };
 
-/** Optimistic move to any priority level; the editor's segmented control is its own feedback, so no toast. */
 export const useWishPriorityChange = () => {
+    const LL = useLL();
     const patchFlag = useOptimisticFlagPatch();
 
     return (wish: OwnWishDto, priority: WishPriority) => {
         if (priority !== wish.priority) {
-            patchFlag(wish, 'priority', { priority }, null);
+            patchFlag(
+                wish,
+                'priority',
+                { priority },
+                priorityToast(LL, priority)
+            );
         }
     };
 };
@@ -519,6 +583,12 @@ export const OverflowMenu = ({
                                         item.onSelect();
                                     }}
                                 >
+                                    {item.destructive ? (
+                                        <Icon
+                                            icon={Trash2}
+                                            class='danger-icon'
+                                        />
+                                    ) : null}
                                     {item.label}
                                 </button>
                             </li>
@@ -702,7 +772,11 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
             list.mutate(current => {
                 return current === undefined
                     ? current
-                    : appendPage(current, next, ownWishKey);
+                    : appendPage(
+                          current,
+                          withoutPendingWishes(next),
+                          ownWishKey
+                      );
             });
         } catch (error) {
             toast.failure(toFailure(error));
@@ -895,7 +969,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                     }}
                     onHide={wish => {
                         setGiftedSheetWish(null);
-                        void giftedActions.hide(wish);
+                        giftedActions.hide(wish);
                     }}
                 />
             )}

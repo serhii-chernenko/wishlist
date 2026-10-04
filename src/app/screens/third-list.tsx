@@ -401,7 +401,6 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             <WishTag
                 key={wish.id}
                 wish={wish}
-                owner='other'
                 badges={
                     <>
                         {wish.description === null ? null : (

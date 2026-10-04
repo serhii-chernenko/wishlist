@@ -56,6 +56,7 @@ export type TelemetryAction =
     | 'wishlist_share_stopped'
     | 'wishlist_share_rotated'
     | 'wishlist_share_username_toggled'
+    | 'wishlist_share_indexing_toggled'
     | 'wishlist_filtered'
     | 'wishlist_searched'
     | 'give_added'

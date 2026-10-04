@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'hono/jsx/dom';
+import { Trash2 } from 'lucide';
 
 import {
     WISH_PRIORITIES,
     type ApiImage,
     type FieldErrorCode,
+    type ImageReorderSource,
     type OwnWishDto,
     type WishPriority
 } from '../../shared/app-api';
@@ -62,6 +64,7 @@ import { haptics } from '../telegram/haptics';
 import { openTelegramLink, requestWriteAccess } from '../telegram/links';
 import { confirmAction, showPopup } from '../telegram/popups';
 import { Field } from '../ui/field';
+import { Icon } from '../ui/icon';
 import {
     PhotoPicker,
     photoFailureText,
@@ -77,6 +80,7 @@ import { ErrorState } from '../ui/error-state';
 import {
     forgetWish,
     readCachedWish,
+    removeWishLocally,
     storeWish,
     updateCounts,
     useWishFlagToggle,
@@ -396,7 +400,10 @@ const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
     const latest = useLatest({ wish, onReload });
     const [state] = useState(() => {
         const { api, cache, toast } = services;
-        const box: { confirmed: ApiImage[] | null } = { confirmed: null };
+        const box: {
+            confirmed: ApiImage[] | null;
+            source: ImageReorderSource;
+        } = { confirmed: null, source: 'button' };
         const currentWish = () => {
             const { wish: base } = latest.current;
 
@@ -413,7 +420,7 @@ const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
             commit(hashes) {
                 return api.request('reorderWishImages', {
                     params: { id: latest.current.wish?.id ?? 0 },
-                    body: { hashes: [...hashes] }
+                    body: { hashes: [...hashes], source: box.source }
                 });
             },
             committed(updated, isLatest) {
@@ -446,13 +453,14 @@ const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
         });
 
         return {
-            submit(hashes: readonly string[]) {
+            submit(hashes: readonly string[], source: ImageReorderSource) {
                 const shown = currentWish();
 
                 if (shown === null) {
                     return;
                 }
 
+                box.source = source;
                 box.confirmed ??= shown.images;
                 storeWish(cache, {
                     ...shown,
@@ -493,7 +501,6 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     );
     const [serverErrors, setServerErrors] = useState<DraftErrors>({});
     const [saving, setSaving] = useState(false);
-    const [removing, setRemoving] = useState(false);
     const [removingPhoto, setRemovingPhoto] = useState(false);
     const photos = usePhotoUploads(wish);
     const photoOrder = usePhotoReorder(wish, onReload);
@@ -733,7 +740,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     });
 
     const removeWish = async () => {
-        if (wish === null || removing) {
+        if (wish === null) {
             return;
         }
 
@@ -756,32 +763,50 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
             return;
         }
 
-        setRemoving(true);
+        const wishId = wish.id;
+        const done = choice === REMOVE_DONE;
+        let local: ReturnType<typeof removeWishLocally> | null = null;
 
-        try {
-            await api.request('removeWish', {
-                params: { id: wish.id },
-                body: { done: choice === REMOVE_DONE }
-            });
-            haptics.success();
-            forgetWish(services, wish.id);
-            toast.show(texts.success(), 'success');
-            leave();
-        } catch (error) {
-            setRemoving(false);
-            handleFailure(error);
-        }
+        leave();
+        toast.undoable({
+            message: texts.success(),
+            apply() {
+                local = removeWishLocally(services, wishId);
+            },
+            restore() {
+                local?.restore();
+            },
+            async commit() {
+                try {
+                    await api.request('removeWish', {
+                        params: { id: wishId },
+                        body: { done }
+                    });
+                } catch (error) {
+                    if (!hasErrorCode(toFailure(error), 'notFound')) {
+                        throw error;
+                    }
+                }
+            },
+            committed() {
+                local?.settle();
+            }
+        });
     };
 
-    const removePhoto = (index: number, image: ApiImage) => {
+    const removePhoto = (image: ApiImage) => {
         if (wish === null) {
             return;
         }
 
-        const previous = wish.images;
         const latest = () => readCachedWish(cache, wish.id) ?? wish;
+        const previous = latest().images;
+        const index = previous.findIndex(item => item.hash === image.hash);
 
-        haptics.selection();
+        if (index === -1) {
+            return;
+        }
+
         setRemovingPhoto(true);
         void runOptimistic({
             apply() {
@@ -822,19 +847,6 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
             return;
         }
 
-        const texts = LL.photos.removeAllConfirm;
-        const confirmed = await confirmAction({
-            title: texts.title(),
-            message: texts.text(),
-            confirmText: texts.confirm(),
-            cancelText: LL.common.cancel(),
-            destructive: true
-        });
-
-        if (!confirmed) {
-            return;
-        }
-
         setRemovingPhoto(true);
 
         try {
@@ -844,7 +856,6 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     params: { id: wish.id }
                 })
             );
-            haptics.success();
             toast.show(LL.toasts.removed(), 'success');
         } catch (error) {
             toast.failure(toFailure(error));
@@ -1059,19 +1070,12 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     </p>
                     <button
                         type='button'
-                        class='btn btn-outline editor-remove'
-                        disabled={removing}
-                        aria-busy={String(removing)}
+                        class='btn danger-button'
                         onClick={() => {
                             void removeWish();
                         }}
                     >
-                        {removing ? (
-                            <span
-                                class='loading loading-spinner loading-sm'
-                                aria-hidden='true'
-                            />
-                        ) : null}
+                        <Icon icon={Trash2} />
                         {LL.editor.remove.action()}
                     </button>
                 </div>

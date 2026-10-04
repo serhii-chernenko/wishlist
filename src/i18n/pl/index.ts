@@ -50,7 +50,7 @@ const pl: Translation = {
         title: '🧐 Dowiedz się więcej',
         description: {
             sensitive:
-                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nTe dane posłużą wyłącznie do wyszukiwania list życzeń innych użytkowników, jeśli znasz ich numer.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu.\nŻadnych imion, żadnych nazwisk, dopóki sam(-a) nie udostępnisz listy życzeń: wtedy bot zapisze imię z twojego Telegrama, żeby pokazać je na publicznej stronie. Gdy wyłączysz udostępnianie, imię zostanie usunięte.\nNumer telefonu i adres dostawy, jeśli je włączysz, są pokazywane tylko w Telegramie i nigdy na stronie w przeglądarce.\nDzięki za zainteresowanie tak ważnym tematem ❤️',
+                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nDomyślnie te dane służą wyłącznie do tego, żeby inni mogli znaleźć twoją listę życzeń po numerze. Jeśli to włączysz, numer (i adres dostawy, jeśli go dodasz) zobaczą osoby, które otworzą twoją listę w Telegramie, ale nigdy na stronie w przeglądarce.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu oraz adres dostawy, jeśli go dodasz.\nŻadnych imion, żadnych nazwisk, dopóki sam(-a) nie udostępnisz listy życzeń: wtedy bot zapisze imię z twojego Telegrama, żeby pokazać je na publicznej stronie. Gdy wyłączysz udostępnianie, imię zostanie usunięte.\nDzięki za zainteresowanie tak ważnym tematem ❤️',
             openSource:
                 '\n\n<b>Otwarty kod (Open Source)</b>\n\nOtwarty kod oznacza, że każdy chętny może\n- włączyć się w ulepszanie projektu\n- zobaczyć, jak napisany jest kod\n- ponadto projekt ma licencję GNU AGPLv3, co oznacza, że kod można w pełni skopiować do dowolnego innego projektu, nawet komercyjnego.',
             languages:
@@ -110,7 +110,7 @@ const pl: Translation = {
         sendNumber: {
             title: '📱 Wyślij numer',
             description:
-                'Potrzebuję twojego numeru, żeby dodać go do bazy wyszukiwania.\nNie martw się, nie będzie używany do niczego poza wyszukiwaniem.\n\nKliknij przycisk:\n📱 <b>Wyślij numer</b>\nNie musisz wpisywać numeru ręcznie!'
+                'Potrzebuję twojego numeru, żeby dodać go do bazy wyszukiwania.\nNie martw się: domyślnie służy tylko do wyszukiwania. Inni zobaczą go tylko w Telegramie i tylko wtedy, gdy to włączysz.\n\nKliknij przycisk:\n📱 <b>Wyślij numer</b>\nNie musisz wpisywać numeru ręcznie!'
         },
         errors: {
             username:
@@ -236,7 +236,7 @@ const pl: Translation = {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
             empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
-                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane. Numer telefonu i adres dostawy, jeśli je włączysz, są pokazywane tylko w Telegramie, a na stronie w przeglądarce nigdy.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli są dodane i włączone\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane; numer i adres, jeśli je włączysz, zobaczą tylko osoby w Telegramie.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest gotowa!\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
@@ -450,7 +450,9 @@ const pl: Translation = {
             tooLong:
                 '❌ Adres jest za długi! Maksymalnie {max} znaków.\nSpróbuj jeszcze raz.',
             containsLink:
-                '❌ Adres nie może zawierać linków.\nSpróbuj jeszcze raz.'
+                '❌ Adres nie może zawierać linków.\nSpróbuj jeszcze raz.',
+            tooManyLines:
+                '❌ Za dużo wierszy: maksymalnie 6.\nSpróbuj ponownie.'
         },
         success: {
             update: '✅ Adres dostawy został zapisany!',
@@ -654,7 +656,7 @@ const pl: Translation = {
             },
             privacy: {
                 title: 'Prywatność',
-                phone: 'Numer telefonu nigdy nie jest publiczny: służy tylko do wyszukiwania.',
+                phone: 'Numer telefonu nigdy nie trafia na stronę: domyślnie służy tylko do wyszukiwania, a o tym, czy zobaczą go inni w Telegramie, decydujesz ty.',
                 name: 'Imię pojawia się na stronie dopiero po Twojej zgodzie i znika, gdy tylko przestajesz udostępniać.',
                 openSource:
                     'Kod jest otwarty na licencji AGPL-3.0, więc każdy może sprawdzić, jak bot obchodzi się z danymi.'
@@ -681,6 +683,7 @@ const pl: Translation = {
             loading: 'Wczytywanie…',
             retry: 'Spróbuj ponownie',
             cancel: 'Anuluj',
+            undo: 'Cofnij',
             save: 'Zapisz',
             saving: 'Zapisuję…',
             send: 'Wyślij',
@@ -719,6 +722,11 @@ const pl: Translation = {
             photoPlaceholder: 'Brak zdjęcia',
             menu: 'Menu',
             closeToast: 'Zamknij komunikat',
+            countdown: {
+                started:
+                    'Nastąpi to za {seconds} {{seconds:|sekundę||sekundy|sekund|sekundy}}. Naciśnij „Anuluj”, aby zatrzymać.',
+                cancelled: 'Anulowano'
+            },
             mainNavigation: 'Główna nawigacja',
             externalLink: 'Otworzy się w przeglądarce'
         },
@@ -878,7 +886,11 @@ const pl: Translation = {
             save: 'Zapisz',
             remove: 'Usuń adres',
             saved: 'Zapisano adres',
-            removed: 'Usunięto adres'
+            removed: 'Usunięto adres',
+            errors: {
+                tooManyLines: 'Maksymalnie 6 wierszy.',
+                containsLink: 'Linki w adresie są niedozwolone.'
+            }
         },
         home: {
             title: 'Lista życzeń',
@@ -971,8 +983,7 @@ const pl: Translation = {
                 empty: 'Lista życzeń jest już pusta'
             },
             toasts: {
-                priorityOn: 'Ustawiono wysoki priorytet',
-                priorityOff: 'Zdjęto priorytet',
+                priorityChanged: 'Priorytet: {level}',
                 hidden: 'Teraz to życzenie widzisz tylko ty',
                 shown: 'Teraz to życzenie widzą inni'
             }
@@ -985,8 +996,7 @@ const pl: Translation = {
             hideHint:
                 'Nie zobaczysz go ani ty, ani znajomi. Zostanie w statystykach.',
             restored: 'Życzenie znów jest na liście',
-            hidden: 'Ukryto',
-            undo: 'Cofnij'
+            hidden: 'Ukryto'
         },
         money: {
             approx: '≈ {amount}',
@@ -1083,11 +1093,6 @@ const pl: Translation = {
             add: 'Dodaj zdjęcia',
             remove: 'Usuń zdjęcie',
             removeAll: 'Usuń wszystkie zdjęcia',
-            removeAllConfirm: {
-                title: 'Usunąć wszystkie zdjęcia?',
-                text: 'Wszystkie zdjęcia tego życzenia zostaną usunięte.',
-                confirm: 'Usuń wszystkie'
-            },
             uploading: 'Przesyłam zdjęcia…',
             progress: 'Przesłano {done} z {total}',
             uploaded: 'Dodano zdjęcie',
@@ -1134,9 +1139,6 @@ const pl: Translation = {
             removed: 'Rezerwacja anulowana',
             clean: {
                 action: 'Wyczyść listę',
-                title: 'Wyczyścić listę „Chcę podarować”?',
-                text: 'Wszystkie twoje rezerwacje zostaną anulowane, a życzenia znikną z tej listy.',
-                confirm: 'Wyczyść',
                 success: 'Lista wyczyszczona'
             }
         },
@@ -1205,7 +1207,7 @@ const pl: Translation = {
                     'twoje dane płatnicze, jeśli są dodane (numer telefonu i adres dostawy nie są tam pokazywane, nawet jeśli je włączysz)',
                 public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
                 private:
-                    'Numer telefonu i lista „Chcę podarować” nigdy tam nie są pokazywane.',
+                    'Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane.',
                 stop: 'Udostępnianie możesz zakończyć w każdej chwili.'
             },
             details: {
@@ -1302,9 +1304,6 @@ const pl: Translation = {
             },
             remove: {
                 action: 'Usuń dane płatnicze',
-                title: 'Usunąć dane płatnicze?',
-                text: 'Inni nie zobaczą ich już na twojej liście.',
-                confirm: 'Usuń',
                 success: 'Usunięto dane płatnicze'
             }
         },
@@ -1413,7 +1412,7 @@ const pl: Translation = {
                 title: 'Prywatność',
                 storage:
                     'Dane są przechowywane w Cloudflare z solidną ochroną. Bot zapisuje tylko twoją nazwę użytkownika i, jeśli pozwolisz, numer telefonu.',
-                phone: 'Numer telefonu nigdy nie jest pokazywany innym: służy tylko do znalezienia twojej listy.',
+                phone: 'Numer telefonu służy do znalezienia twojej listy. Inni widzą go tylko w Telegramie i tylko jeśli włączysz to w „Co widzą inni”.',
                 name: 'Imię z Telegrama pojawia się na publicznej stronie dopiero po twojej zgodzie i znika, gdy tylko przestaniesz udostępniać.',
                 photos: 'Zdjęcia życzeń widzą tylko osoby, którym pokazujesz swoją listę.'
             },

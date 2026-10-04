@@ -172,8 +172,14 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
                 await deliver(() => {
                     return ctx.telegram.sendMediaGroup(
                         chatId,
-                        item.images.map(media => {
-                            return { type: 'photo' as const, media };
+                        item.images.map((media, index) => {
+                            const caption = item.captions?.[index];
+
+                            return {
+                                type: 'photo' as const,
+                                media,
+                                ...(caption !== undefined && { caption })
+                            };
                         })
                     );
                 });

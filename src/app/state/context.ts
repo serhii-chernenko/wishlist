@@ -11,6 +11,7 @@ import type {
 } from '../../shared/app-api';
 import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
+import type { UndoableAction } from '../logic/countdown';
 import type { AppFailure } from '../logic/errors';
 import type { Route, ScreenId } from '../logic/nav';
 import type { LaunchContext } from '../telegram/sdk';
@@ -50,9 +51,14 @@ export interface ToastAction {
     onSelect: () => void;
 }
 
+export interface UndoToastRequest extends UndoableAction {
+    message: string;
+}
+
 export interface Toaster {
     show(message: string, tone?: ToastTone, action?: ToastAction): void;
     failure(failure: AppFailure): void;
+    undoable(request: UndoToastRequest): void;
 }
 
 export interface AppServices {

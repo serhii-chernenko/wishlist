@@ -50,7 +50,9 @@ const BRIDGE_EXPECTED = {
     'on-box': 'color-secondary-content',
     'heart-ink': 'color-accent',
     button: 'color-neutral',
-    'on-button': 'color-neutral-content'
+    'on-button': 'color-neutral-content',
+    danger: 'color-error',
+    'on-danger': 'color-error-content'
 } as const;
 
 const COLOR_ROLES = [
@@ -311,5 +313,29 @@ test('the committed stylesheet carries both themes and self hosted fonts', () =>
             existsSync(new URL(`../public/fonts/${file}`, import.meta.url)),
             fontUrl
         );
+    }
+});
+
+test('the gifted band sits on the paper in light and on the card colour in dark', () => {
+    const giftedSource = readFileSync(
+        new URL('../src/web/styles/gifted.css', import.meta.url),
+        'utf8'
+    );
+    const darkBlocks = Array.from(
+        GIFT_TAG_SOURCE.matchAll(
+            /(?::root:not\(\[data-theme\]\)|\[data-theme='wishlist-dark'\]) \{([^}]*)\}/g
+        ),
+        match => match[1] ?? ''
+    );
+
+    assert.match(giftedSource, /background: var\(--gifted-band\);/);
+    assert.match(
+        GIFT_TAG_SOURCE,
+        /:root,\s*\[data-theme\] \{[^}]*--gifted-band: var\(--paper\);/
+    );
+    assert.equal(darkBlocks.length, 2);
+
+    for (const block of darkBlocks) {
+        assert.match(block, /--gifted-band: var\(--tag\);/);
     }
 });

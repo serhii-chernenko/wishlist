@@ -1048,6 +1048,12 @@ describe('Mini App API own wishes', () => {
             await call('PATCH', `/wishes/${created.id}`, {
                 body: { title: 'Renamed', hidden: true, priority: true }
             });
+            await call('PATCH', `/wishes/${created.id}`, {
+                body: { priority: 'high' }
+            });
+            await call('PATCH', `/wishes/${created.id}`, {
+                body: { priority: 'low' }
+            });
             await call('PUT', '/wishes/filter', { body: { filter: 1 } });
             await call('PUT', '/wishes/filter', { body: { filter: null } });
             await call('POST', `/wishes/${wish.id}/remove`, {
@@ -1067,8 +1073,9 @@ describe('Mini App API own wishes', () => {
             assert.deepEqual(summary, [
                 ['app', 'wish_created', null],
                 ['app', 'wish_updated', 'title'],
-                ['app', 'wish_updated', 'priority'],
                 ['app', 'wish_updated', 'visibility'],
+                ['app', 'wish_priority_set', 'high'],
+                ['app', 'wish_priority_set', 'low'],
                 ['app', 'wishlist_filtered', 'set'],
                 ['app', 'wishlist_filtered', 'reset'],
                 ['app', 'wish_removed', 'done'],

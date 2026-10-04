@@ -49,7 +49,7 @@ const en: Translation = {
         title: '🧐 Read more',
         description: {
             sensitive:
-                '<b>Private data</b>\n\nYour phone number is private information of every user!\nIt is used only to let other users find your wish list if they know your number.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number.\nNo first names, no last names, unless you share your wish list yourself: then the bot keeps the name from your Telegram to show it on the public page. When you stop sharing, the name is deleted.\nIf you turn them on, your phone number and delivery address are shown only in Telegram and never on the web page.\nThanks for caring about this important topic ❤️',
+                '<b>Private data</b>\n\nYour phone number is private information of every user!\nBy default it is used only to let others find your wish list if they know your number. If you turn it on, people who open your list in Telegram also see it, with your delivery address if you add one; it never appears on the web page.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number, and a delivery address if you add one.\nNo first names, no last names, unless you share your wish list yourself: then the bot keeps the name from your Telegram to show it on the public page. When you stop sharing, the name is deleted.\nThanks for caring about this important topic ❤️',
             openSource:
                 '\n\n<b>Open source</b>\n\nOpen source means that anyone can\n- help improve the project\n- see how the code is written\n- this project is also licensed under GNU AGPLv3, which means the code can be fully copied for any other project, even a commercial one.',
             languages:
@@ -108,7 +108,7 @@ const en: Translation = {
         },
         sendNumber: {
             title: '📱 Send number',
-            description: `I need your number to add it to the search database.\nDon't worry, it will be used for search only.\n\nTap the button:\n📱 <b>Send number</b>\nNo need to type the number manually!`
+            description: `I need your number to add it to the search database.\nDon't worry: by default it is used only for search. Others see it only in Telegram, and only if you turn that on.\n\nTap the button:\n📱 <b>Send number</b>\nNo need to type the number manually!`
         },
         errors: {
             username: `❌ You don't have a username yet.\nTry adding one in your Telegram settings and come back ;)`,
@@ -230,7 +230,7 @@ const en: Translation = {
             success: '✅ Here is the link to your wish list:\n{url}',
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
-                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there. If you turn them on, your phone number and delivery address are shown only in Telegram, never on the web page.\n\nYou can stop sharing at any time.',
+                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment info, if you added it and it is on\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number, delivery address and your “Gifts to give” list are never shown there; if you turn on the phone and address, only people in Telegram see them.\n\nYou can stop sharing at any time.',
             ready: '✅ Your wish list is ready!\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Page in the browser:\n{pageUrl}\n\nThe page updates itself after every change to your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
@@ -439,7 +439,9 @@ const en: Translation = {
             tooShort: '❌ Not enough details: add a little more.\nTry again.',
             tooLong:
                 '❌ The address is too long! The maximum is {max} characters.\nTry again.',
-            containsLink: '❌ Links are not allowed in the address.\nTry again.'
+            containsLink:
+                '❌ Links are not allowed in the address.\nTry again.',
+            tooManyLines: '❌ Too many lines: 6 at most.\nTry again.'
         },
         success: {
             update: '✅ The delivery address was saved!',
@@ -642,7 +644,7 @@ const en: Translation = {
             },
             privacy: {
                 title: 'Privacy',
-                phone: 'Your phone number is never public: it is only used for search.',
+                phone: 'Your phone number is never on the web: by default it is only used for search, and only you decide whether people in Telegram see it.',
                 name: 'Your name appears on the page only after you agree, and disappears as soon as you stop sharing.',
                 openSource:
                     'The code is open source under AGPL-3.0, so anyone can check how the bot handles data.'
@@ -669,6 +671,7 @@ const en: Translation = {
             loading: 'Loading…',
             retry: 'Try again',
             cancel: 'Cancel',
+            undo: 'Undo',
             save: 'Save',
             saving: 'Saving…',
             send: 'Send',
@@ -706,6 +709,11 @@ const en: Translation = {
             photoPlaceholder: 'No photo',
             menu: 'Menu',
             closeToast: 'Close the message',
+            countdown: {
+                started:
+                    'This happens in {seconds} {{seconds:second|seconds}}. Press Cancel to stop it.',
+                cancelled: 'Cancelled'
+            },
             mainNavigation: 'Main navigation',
             externalLink: 'Opens in the browser'
         },
@@ -865,7 +873,11 @@ const en: Translation = {
             save: 'Save',
             remove: 'Remove the address',
             saved: 'Delivery address saved',
-            removed: 'Delivery address removed'
+            removed: 'Delivery address removed',
+            errors: {
+                tooManyLines: 'Up to 6 lines.',
+                containsLink: 'Links are not allowed in the address.'
+            }
         },
         home: {
             title: 'Wish list',
@@ -956,8 +968,7 @@ const en: Translation = {
                 empty: 'Your wish list is already empty'
             },
             toasts: {
-                priorityOn: 'High priority set',
-                priorityOff: 'Priority removed',
+                priorityChanged: 'Priority: {level}',
                 hidden: 'Now only you can see this wish',
                 shown: 'Now others can see this wish'
             }
@@ -970,8 +981,7 @@ const en: Translation = {
             hideHint:
                 'Neither you nor your friends will see it. It still counts in your stats.',
             restored: 'The wish is back on your list',
-            hidden: 'Hidden',
-            undo: 'Undo'
+            hidden: 'Hidden'
         },
         money: {
             approx: '≈ {amount}',
@@ -1069,11 +1079,6 @@ const en: Translation = {
             add: 'Add photos',
             remove: 'Remove the photo',
             removeAll: 'Remove all photos',
-            removeAllConfirm: {
-                title: 'Remove all photos?',
-                text: 'All photos of this wish will be removed.',
-                confirm: 'Remove all'
-            },
             uploading: 'Uploading photos…',
             progress: '{done} of {total} uploaded',
             uploaded: 'Photo added',
@@ -1120,9 +1125,6 @@ const en: Translation = {
             removed: 'Reservation cancelled',
             clean: {
                 action: 'Clear the list',
-                title: 'Clear your “I want to give” list?',
-                text: 'All your reservations will be cancelled and the wishes will disappear from this list.',
-                confirm: 'Clear',
                 success: 'The list is cleared'
             }
         },
@@ -1190,7 +1192,7 @@ const en: Translation = {
                     'your payment details, if you added them (your phone number and delivery address are never shown there, even if you turn them on)',
                 public: 'Anyone with the link can open the page, and it may appear in search engine results.',
                 private:
-                    'Your phone number and your “I want to give” list are never shown there.',
+                    'Your phone number, delivery address and your “Gifts to give” list are never shown there.',
                 stop: 'You can stop sharing at any time.'
             },
             details: {
@@ -1287,9 +1289,6 @@ const en: Translation = {
             },
             remove: {
                 action: 'Remove payment details',
-                title: 'Remove your payment details?',
-                text: 'Others will no longer see them on your list.',
-                confirm: 'Remove',
                 success: 'Payment details removed'
             }
         },
@@ -1398,7 +1397,7 @@ const en: Translation = {
                 title: 'Privacy',
                 storage:
                     'Your data is stored on Cloudflare with strong protection. The bot keeps only your username and, if you allow it, your phone number.',
-                phone: 'Your phone number is never shown to anyone: it is used only to find your list.',
+                phone: 'Your phone number is used to find your list. Others see it only in Telegram, and only if you turn it on in “What others see”.',
                 name: 'Your Telegram name appears on the public page only after you agree, and disappears as soon as you stop sharing.',
                 photos: 'Wish photos are visible only to the people you show your list to.'
             },

@@ -377,6 +377,19 @@ describe('Mini App contact and disclosure API', () => {
             );
 
             assert.equal(on.allowIndexing, true);
+            assert.deepEqual(
+                fixtures.events
+                    .filter(event => {
+                        return (
+                            event.action === 'wishlist_share_indexing_toggled'
+                        );
+                    })
+                    .map(event => [event.channel, event.result]),
+                [
+                    ['app', 'off'],
+                    ['app', 'on']
+                ]
+            );
         });
 
         it('answers notShared without an active share and validates the body', async () => {

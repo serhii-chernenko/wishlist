@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'hono/jsx/dom';
+import { Trash2, X } from 'lucide';
 
 import type { GiveEntryDto, GiveListDto } from '../../shared/app-api';
 import { hasErrorCode } from '../logic/errors';
@@ -7,7 +8,6 @@ import {
     emptyPage,
     removeFromPage,
     restoreToPage,
-    runOptimistic,
     type KeyOf,
     type RemovedItem
 } from '../logic/optimistic';
@@ -20,9 +20,8 @@ import {
 } from '../state/context';
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
-import { haptics } from '../telegram/haptics';
-import { confirmAction } from '../telegram/popups';
 import { EmptyState } from '../ui/empty-state';
+import { Icon } from '../ui/icon';
 import { ScreenLayout } from '../ui/screen';
 import { WishGrid, WishTag } from '../ui/wish-tag';
 import {
@@ -34,11 +33,57 @@ import {
 
 const giveKey: KeyOf<GiveEntryDto> = entry => entry.wish.id;
 
+const pendingGiveRemovals = new Set<number>();
+let pendingGivesClean = false;
+
+const withoutPendingGives = (page: GiveListDto): GiveListDto => {
+    if (pendingGivesClean) {
+        return emptyPage(page);
+    }
+
+    let next = page;
+
+    for (const wishId of pendingGiveRemovals) {
+        next = removeFromPage(next, giveKey, wishId).page;
+    }
+
+    return next;
+};
+
+/** Loads a give page with the removals that are still waiting for their undo countdown left out. */
+const loadGives = async (
+    services: AppServices,
+    offset: number,
+    signal?: AbortSignal
+) => {
+    const page = await services.api.request('listGives', {
+        ...(offset > 0 && { query: { offset } }),
+        ...(signal !== undefined && { signal })
+    });
+
+    return withoutPendingGives(page);
+};
+
+const mutateGives = (
+    services: AppServices,
+    update: (page: GiveListDto) => GiveListDto
+) => {
+    services.cache.mutate<GiveListDto>(GIVES_LIST_KEY, page => {
+        return page === undefined ? page : update(page);
+    });
+};
+
+const changeGivesCount = (services: AppServices, delta: number) => {
+    updateCounts(services, counts => {
+        return { ...counts, gives: Math.max(0, counts.gives + delta) };
+    });
+};
+
 /** Reloads the give list after a give or take elsewhere and takes the Home count from the server, so a give that already existed is not counted twice. */
 export const refreshGives = (services: AppServices) => {
     void services.cache
         .load<GiveListDto>(GIVES_LIST_KEY, signal => {
-            return services.api.request('listGives', { signal });
+            return loadGives(services, 0, signal);
         })
         .then(page => {
             if (page !== undefined) {
@@ -77,9 +122,8 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
     const { api, nav, toast } = services;
     const LL = useLL();
     const [loadingMore, setLoadingMore] = useState(false);
-    const [cleaning, setCleaning] = useState(false);
     const list = useAppResource<GiveListDto>(GIVES_LIST_KEY, signal => {
-        return api.request('listGives', { signal });
+        return loadGives(services, 0, signal);
     });
     const page = list.data;
 
@@ -96,53 +140,47 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
     }, [page?.total]);
 
     const dropGive = (entry: GiveEntryDto) => {
+        const wishId = giveKey(entry);
         let removed: RemovedItem<GiveEntryDto> | null = null;
 
-        haptics.impact('light');
-        void runOptimistic({
+        toast.undoable({
+            message: LL.gives.removed(),
             apply() {
-                list.mutate(current => {
-                    if (current === undefined) {
-                        return current;
-                    }
-
-                    const result = removeFromPage(
-                        current,
-                        giveKey,
-                        giveKey(entry)
-                    );
+                pendingGiveRemovals.add(wishId);
+                mutateGives(services, current => {
+                    const result = removeFromPage(current, giveKey, wishId);
 
                     removed = result.removed;
 
                     return result.page;
                 });
+                changeGivesCount(services, -1);
             },
-            commit() {
-                return api.request('removeGive', {
-                    params: { wishId: entry.wish.id }
-                });
-            },
-            rollback() {
+            restore() {
                 const restored = removed;
 
+                pendingGiveRemovals.delete(wishId);
+                changeGivesCount(services, 1);
+
                 if (restored !== null) {
-                    list.mutate(current => {
-                        return current === undefined
-                            ? current
-                            : restoreToPage(current, giveKey, restored);
+                    mutateGives(services, current => {
+                        return restoreToPage(current, giveKey, restored);
                     });
                 }
             },
-            settle() {
-                toast.show(LL.gives.removed(), 'success');
+            commit() {
+                return api.request('removeGive', { params: { wishId } });
             },
-            fail(error) {
+            committed() {
+                pendingGiveRemovals.delete(wishId);
+            },
+            failed(error) {
                 const failure = toFailure(error);
 
                 toast.failure(failure);
 
                 if (hasErrorCode(failure, 'notFound')) {
-                    void list.reload();
+                    refreshGives(services);
                 }
             }
         });
@@ -156,9 +194,7 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
         setLoadingMore(true);
 
         try {
-            const next = await api.request('listGives', {
-                query: { offset: page.nextOffset }
-            });
+            const next = await loadGives(services, page.nextOffset);
 
             list.mutate(current => {
                 return current === undefined
@@ -172,34 +208,36 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
         }
     };
 
-    const clean = async () => {
-        const texts = LL.gives.clean;
-        const confirmed = await confirmAction({
-            title: texts.title(),
-            message: texts.text(),
-            confirmText: texts.confirm(),
-            cancelText: LL.common.cancel(),
-            destructive: true
+    const clean = () => {
+        let snapshot: GiveListDto | undefined;
+
+        toast.undoable({
+            message: LL.gives.clean.success(),
+            apply() {
+                pendingGivesClean = true;
+                snapshot =
+                    services.cache.read<GiveListDto>(GIVES_LIST_KEY).data;
+                mutateGives(services, emptyPage);
+                updateCounts(services, counts => ({ ...counts, gives: 0 }));
+            },
+            restore() {
+                pendingGivesClean = false;
+                refreshGives(services);
+
+                if (snapshot !== undefined) {
+                    const previous = snapshot;
+
+                    mutateGives(services, () => previous);
+                }
+            },
+            commit() {
+                return api.request('cleanGives');
+            },
+            committed() {
+                pendingGivesClean = false;
+                pendingGiveRemovals.clear();
+            }
         });
-
-        if (!confirmed) {
-            return;
-        }
-
-        setCleaning(true);
-
-        try {
-            await api.request('cleanGives');
-            haptics.success();
-            list.mutate(current => {
-                return current === undefined ? current : emptyPage(current);
-            });
-            toast.show(texts.success(), 'success');
-        } catch (error) {
-            toast.failure(toFailure(error));
-        } finally {
-            setCleaning(false);
-        }
     };
 
     const items = page?.items ?? [];
@@ -240,16 +278,16 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                                 <WishTag
                                     key={entry.wish.id}
                                     wish={entry.wish}
-                                    owner='other'
                                     badges={<GiveBadges entry={entry} />}
                                     actions={
                                         <button
                                             type='button'
-                                            class='btn btn-sm give-drop'
+                                            class='btn btn-sm danger-button give-drop'
                                             onClick={() => {
                                                 dropGive(entry);
                                             }}
                                         >
+                                            <Icon icon={X} />
                                             {LL.gives.remove()}
                                         </button>
                                     }
@@ -268,11 +306,9 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                         <button
                             type='button'
                             class='text-button text-button-danger'
-                            disabled={cleaning}
-                            onClick={() => {
-                                void clean();
-                            }}
+                            onClick={clean}
                         >
+                            <Icon icon={Trash2} />
                             {LL.gives.clean.action()}
                         </button>
                     </div>

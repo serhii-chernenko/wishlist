@@ -231,6 +231,37 @@ describe('Mini App photo reordering', () => {
 
         assert.equal(reorderEvents().length, 1);
         assert.equal(reorderEvents()[0]?.channel, 'app');
+        assert.equal(reorderEvents()[0]?.result, undefined);
+    });
+
+    it('reports how the photos were moved and rejects an unknown source', async () => {
+        const { wish } = await seedWish();
+        const moved = await reorder(wish.id, {
+            hashes: await hashesOf(['second', 'first', 'third']),
+            source: 'keyboard'
+        });
+
+        assert.equal(moved.status, 200);
+        assert.deepEqual(
+            reorderEvents().map(event => event.result),
+            ['keyboard']
+        );
+
+        const rejected = await reorder(wish.id, {
+            hashes: await hashesOf(FILE_IDS),
+            source: 'swipe'
+        });
+
+        assert.equal(rejected.status, 422);
+        assert.deepEqual(await readError(rejected), {
+            code: 'validation',
+            fields: { source: 'invalid' }
+        });
+        assert.deepEqual((await storedRow(wish.id)).images, [
+            'second',
+            'first',
+            'third'
+        ]);
     });
 
     it('treats the current order as a no-op without touching updated_at', async () => {

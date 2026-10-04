@@ -17,7 +17,7 @@ import {
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
-import { confirmAction } from '../telegram/popups';
+import { DangerButton } from '../ui/danger-button';
 import { Envelope } from '../ui/envelope';
 import { Field } from '../ui/field';
 import { ScreenLayout } from '../ui/screen';
@@ -107,23 +107,10 @@ export const PaymentsScreen = (_props: ScreenProps<'payments'>) => {
     };
 
     const remove = async () => {
-        const confirmed = await confirmAction({
-            title: LL.payments.remove.title(),
-            message: LL.payments.remove.text(),
-            confirmText: LL.payments.remove.confirm(),
-            cancelText: LL.common.cancel(),
-            destructive: true
-        });
-
-        if (!confirmed) {
-            return;
-        }
-
         setPending('remove');
 
         try {
             updateMe(await api.request('removePayments'));
-            haptics.success();
             toast.show(LL.payments.remove.success(), 'success');
             leave();
 
@@ -187,16 +174,14 @@ export const PaymentsScreen = (_props: ScreenProps<'payments'>) => {
                 </Envelope>
             </section>
             {me.payments === null ? null : (
-                <button
-                    type='button'
-                    class='btn payments-remove'
+                <DangerButton
+                    class='payments-remove'
+                    label={LL.payments.remove.action()}
                     disabled={pending !== null}
-                    onClick={() => {
+                    onCommit={() => {
                         void remove();
                     }}
-                >
-                    {LL.payments.remove.action()}
-                </button>
+                />
             )}
         </ScreenLayout>
     );

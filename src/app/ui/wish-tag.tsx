@@ -26,7 +26,6 @@ export interface WishTagModel {
 
 export interface WishTagProps {
     wish: WishTagModel;
-    owner?: 'self' | 'other';
     onOpen?: () => void;
     badges?: Child;
     actions?: Child;

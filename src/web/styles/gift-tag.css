@@ -35,6 +35,7 @@
         --shadow-hard-lg: 5px 5px 0 var(--ink);
         --shadow-focus: 0 0 0 2px var(--heart);
         --focus-outline: 3px solid var(--ink);
+        --gifted-band: var(--paper);
     }
 
     :root {
@@ -51,6 +52,7 @@
             --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
             --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
             --photo-placeholder-line: var(--photo-placeholder-line-dark);
+            --gifted-band: var(--tag);
         }
     }
 
@@ -58,6 +60,7 @@
         --photo-placeholder-bg: var(--photo-placeholder-bg-dark);
         --photo-placeholder-fill: var(--photo-placeholder-fill-dark);
         --photo-placeholder-line: var(--photo-placeholder-line-dark);
+        --gifted-band: var(--tag);
     }
 
     .sr-only {

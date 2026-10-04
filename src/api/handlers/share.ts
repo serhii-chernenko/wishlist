@@ -151,5 +151,9 @@ export const setShareIndexing: ApiHandler = async c => {
         throw new ApiError('notShared');
     }
 
+    emitAppAction(c, 'wishlist_share_indexing_toggled', {
+        result: allowIndexing ? 'on' : 'off'
+    });
+
     return respondWithShare(c, user);
 };

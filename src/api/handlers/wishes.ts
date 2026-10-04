@@ -28,7 +28,11 @@ import {
     resolvePriceBounds,
     type Currency
 } from '../../shared/money';
-import { isWishPriority, toWishPriorityLevel } from '../../shared/priority';
+import {
+    isWishPriority,
+    toWishPriority,
+    toWishPriorityLevel
+} from '../../shared/priority';
 import {
     getSigner,
     readExchangeRates,
@@ -478,6 +482,11 @@ export const updateWish: ApiHandler = async c => {
         hidden: input.hidden
     }) as WishFlags;
 
+    const previousPriorityLevel =
+        input.priorityLevel === undefined
+            ? undefined
+            : (await service.findOwned(wishId, user.id))?.priorityLevel;
+
     if (
         Object.keys(fieldsPatch).length > 0 &&
         !(await service.updateFields(wishId, user.id, fieldsPatch))
@@ -492,7 +501,18 @@ export const updateWish: ApiHandler = async c => {
     }
 
     for (const field of getUpdatedFields(input)) {
-        emitAppAction(c, 'wish_updated', { field });
+        if (field !== 'priority') {
+            emitAppAction(c, 'wish_updated', { field });
+        }
+    }
+
+    if (
+        input.priorityLevel !== undefined &&
+        input.priorityLevel !== previousPriorityLevel
+    ) {
+        emitAppAction(c, 'wish_priority_set', {
+            result: toWishPriority(input.priorityLevel)
+        });
     }
 
     return c.json(await toWishResponse(c, wish));

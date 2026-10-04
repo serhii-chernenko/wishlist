@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'hono/jsx/dom';
-import { ArrowUpLeft, GripVertical } from 'lucide';
+import { ArrowUpLeft, GripVertical, X } from 'lucide';
 
-import type { ApiImage } from '../../shared/app-api';
+import type { ApiImage, ImageReorderSource } from '../../shared/app-api';
 import type { AppTranslator } from '../i18n/i18n';
 import { keyboardTargetIndex, moveItem, reorderHashes } from '../logic/reorder';
 import type { PhotoFailureKind, PhotoUploadStatus } from '../logic/wish-draft';
 import { useLL } from '../state/context';
 import { haptics } from '../telegram/haptics';
+import { DangerButton } from './danger-button';
 import { Icon } from './icon';
 import {
     PHOTO_HANDLE_ATTRIBUTE,
@@ -38,12 +39,12 @@ export interface PhotoPickerProps {
     removing: boolean;
     reorderDisabled?: boolean;
     onPick: (files: File[]) => void;
-    onRemove: (index: number, image: ApiImage) => void;
+    onRemove: (image: ApiImage) => void;
     onRemoveAll: () => void;
     onRetry: (key: number) => void;
     onDiscard: (key: number) => void;
     onChatFallback?: () => void;
-    onReorder?: (hashes: string[]) => void;
+    onReorder?: (hashes: string[], source: ImageReorderSource) => void;
 }
 
 const INPUT_ID = 'wish-photo-input';
@@ -138,7 +139,8 @@ const UploadedTile = ({
     lifted,
     removing,
     sortable,
-    onRemove
+    onRemove,
+    onCountdownChange
 }: {
     image: ApiImage;
     index: number;
@@ -147,6 +149,7 @@ const UploadedTile = ({
     removing: boolean;
     sortable: SortableControls | null;
     onRemove: () => void;
+    onCountdownChange: (running: boolean) => void;
 }) => {
     const LL = useLL();
     const texts = LL.photos.reorder;
@@ -166,15 +169,15 @@ const UploadedTile = ({
         <li class={tileClass} {...slotAttributes}>
             <div class='photo-tile-body'>
                 <PhotoFrame src={image.url} alt={label} />
-                <button
-                    type='button'
+                <DangerButton
+                    compact
                     class='photo-remove'
-                    aria-label={`${LL.photos.remove()}: ${label}`}
+                    icon={X}
+                    label={`${LL.photos.remove()}: ${label}`}
                     disabled={removing}
-                    onClick={onRemove}
-                >
-                    <span aria-hidden='true'>×</span>
-                </button>
+                    onCommit={onRemove}
+                    onCountdownChange={onCountdownChange}
+                />
                 {sortable === null ? null : (
                     <button
                         type='button'
@@ -229,18 +232,22 @@ export const PhotoPicker = ({
     };
     const sortable =
         onReorder !== undefined && images.length >= MINIMUM_SORTABLE_PHOTOS;
-    const canReorder = sortable && !reorderDisabled;
+    const [removalCountdowns, setRemovalCountdowns] = useState(0);
+    const trackRemovalCountdown = (running: boolean) => {
+        setRemovalCountdowns(count => count + (running ? 1 : -1));
+    };
+    const canReorder = sortable && !reorderDisabled && removalCountdowns === 0;
     const [announcement, setAnnouncement] = useState('');
     const [focusHash, setFocusHash] = useState<string | null>(null);
     const hashes = images.map(image => image.hash);
-    const reorder = (from: number, to: number) => {
+    const reorder = (from: number, to: number, source: ImageReorderSource) => {
         const moved = images[from];
 
         if (onReorder === undefined || moved === undefined || from === to) {
             return null;
         }
 
-        onReorder(reorderHashes(images, from, to));
+        onReorder(reorderHashes(images, from, to), source);
         setAnnouncement(
             LL.photos.reorder.moved({ position: to + 1, total: images.length })
         );
@@ -251,14 +258,18 @@ export const PhotoPicker = ({
         hashes,
         disabled: !canReorder,
         onDrop: (from, to) => {
-            reorder(from, to);
+            reorder(from, to, 'drag');
         }
     });
     const { drag } = photoDrag;
     const displayed =
         drag === null ? images : moveItem(images, drag.from, drag.target);
-    const moveFromControl = (from: number, to: number) => {
-        const moved = reorder(from, to);
+    const moveFromControl = (
+        from: number,
+        to: number,
+        source: ImageReorderSource
+    ) => {
+        const moved = reorder(from, to, source);
 
         if (moved !== null) {
             haptics.selection();
@@ -281,11 +292,11 @@ export const PhotoPicker = ({
 
                 if (target !== null) {
                     event.preventDefault();
-                    moveFromControl(index, target);
+                    moveFromControl(index, target, 'keyboard');
                 }
             },
             onMakeFirst: () => {
-                moveFromControl(index, 0);
+                moveFromControl(index, 0, 'button');
             }
         };
     };
@@ -339,8 +350,9 @@ export const PhotoPicker = ({
                             removing={removing || drag !== null}
                             sortable={controlsFor(index)}
                             onRemove={() => {
-                                onRemove(index, image);
+                                onRemove(image);
                             }}
+                            onCountdownChange={trackRemovalCountdown}
                         />
                     );
                 })}
@@ -403,14 +415,13 @@ export const PhotoPicker = ({
             {images.length > 1 || onChatFallback !== undefined ? (
                 <div class='photos-actions'>
                     {images.length > 1 ? (
-                        <button
-                            type='button'
-                            class='text-button'
+                        <DangerButton
+                            class='photos-remove-all'
+                            label={LL.photos.removeAll()}
                             disabled={removing}
-                            onClick={onRemoveAll}
-                        >
-                            {LL.photos.removeAll()}
-                        </button>
+                            onCommit={onRemoveAll}
+                            onCountdownChange={trackRemovalCountdown}
+                        />
                     ) : null}
                     {onChatFallback === undefined ? null : (
                         <div class='photos-fallback'>

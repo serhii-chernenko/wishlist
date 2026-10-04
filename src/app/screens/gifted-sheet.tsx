@@ -1,7 +1,10 @@
+import { EyeOff } from 'lucide';
+
 import type { OwnWishDto } from '../../shared/app-api';
 import { formatIsoDate } from '../logic/format';
 import { useLL, useSession } from '../state/context';
 import { ActionSheet } from '../ui/action-sheet';
+import { Icon } from '../ui/icon';
 
 const HIDE_HINT_ID = 'gifted-hide-hint';
 
@@ -44,12 +47,13 @@ export const GiftedSheet = ({
                 <div class='action-sheet-option'>
                     <button
                         type='button'
-                        class='btn action-sheet-danger'
+                        class='btn danger-button'
                         aria-describedby={HIDE_HINT_ID}
                         onClick={() => {
                             onHide(wish);
                         }}
                     >
+                        <Icon icon={EyeOff} />
                         {LL.gifted.hide()}
                     </button>
                     <p id={HIDE_HINT_ID} class='field-hint'>

@@ -1,4 +1,5 @@
 import { useState } from 'hono/jsx/dom';
+import { Link2Off, RefreshCw } from 'lucide';
 
 import type {
     ContactDisclosureField,
@@ -22,6 +23,7 @@ import { haptics } from '../telegram/haptics';
 import { buildShareUrl, openLink, openTelegramLink } from '../telegram/links';
 import { confirmAction } from '../telegram/popups';
 import { EmptyState } from '../ui/empty-state';
+import { Icon } from '../ui/icon';
 import { isResourcePending, ResourceView } from '../ui/resource-view';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
@@ -679,22 +681,24 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                             <div class='share-manage'>
                                 <button
                                     type='button'
-                                    class='btn'
+                                    class='btn danger-button'
                                     disabled={pending !== null}
                                     onClick={() => {
                                         void rotate();
                                     }}
                                 >
+                                    <Icon icon={RefreshCw} />
                                     {LL.share.rotate.action()}
                                 </button>
                                 <button
                                     type='button'
-                                    class='btn share-stop'
+                                    class='btn danger-button'
                                     disabled={pending !== null}
                                     onClick={() => {
                                         void stop();
                                     }}
                                 >
+                                    <Icon icon={Link2Off} />
                                     {LL.share.stop.action()}
                                 </button>
                             </div>

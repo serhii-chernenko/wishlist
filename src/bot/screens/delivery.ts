@@ -39,8 +39,9 @@ const describeRejection = (req: BotRequest, reason: AddressRejection) => {
             return errors.tooShort();
         case 'containsLink':
             return errors.containsLink();
-        case 'tooLong':
         case 'tooManyLines':
+            return errors.tooManyLines();
+        case 'tooLong':
             return errors.tooLong({ max: ADDRESS_MAX_LENGTH });
     }
 };

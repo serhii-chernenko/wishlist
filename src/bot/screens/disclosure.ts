@@ -237,13 +237,19 @@ export const callbacks: CallbackTable = {
         const share = await getShareService(req).getShare(user.id);
 
         if (share !== null) {
+            const allowIndexing = !share.allowIndexing;
+
             await runRepository(
                 req.repos.shares.setAllowIndexing(
                     user.id,
-                    !share.allowIndexing,
+                    allowIndexing,
                     new Date()
                 )
             );
+            req.telemetry.botActionCompleted({
+                action: 'wishlist_share_indexing_toggled',
+                result: allowIndexing ? 'on' : 'off'
+            });
             await req.send.toast(req.LL.disclosure.saved());
         }
 

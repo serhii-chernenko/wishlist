@@ -14,6 +14,7 @@ import type { WishRecord } from '../../db/repositories';
 import {
     APP_MAX_WISH_IMAGES,
     APP_UPLOAD_MAX_BYTES,
+    IMAGE_REORDER_SOURCES,
     type OwnWishDto
 } from '../../shared/app-api';
 import {
@@ -38,6 +39,7 @@ import { normalizeImageContentType } from '../photos/image-store';
 import { TelegramApiError, type TelegramApi } from '../telegram-api';
 import { emitAppAction } from '../telemetry';
 import {
+    createBodyReader,
     readIdParam,
     readIndexParam,
     readJsonBody,
@@ -311,7 +313,16 @@ const isImageHash = (value: unknown): value is string => {
     return typeof value === 'string' && IMAGE_HASH_PATTERN.test(value);
 };
 
-const readOrderedHashes = async (c: ApiContext) => {
+const readReorderSource = (body: Record<string, unknown>) => {
+    const reader = createBodyReader(body);
+    const source = reader.optionalOneOf('source', IMAGE_REORDER_SOURCES);
+
+    reader.finish();
+
+    return source;
+};
+
+const readReorderInput = async (c: ApiContext) => {
     const body = await readJsonBody(c);
     const raw = body['hashes'];
 
@@ -328,7 +339,7 @@ const readOrderedHashes = async (c: ApiContext) => {
         throw validationError('hashes', 'invalid');
     }
 
-    return raw;
+    return { hashes: raw, source: readReorderSource(body) };
 };
 
 const mapHashesToFileIds = async (
@@ -365,7 +376,7 @@ const isSameFileOrder = (left: readonly string[], right: readonly string[]) => {
 
 export const reorderWishImages: ApiHandler = async c => {
     const { user, wishId, wish } = await requireOwnedWish(c);
-    const hashes = await readOrderedHashes(c);
+    const { hashes, source } = await readReorderInput(c);
     const current = parseWishImages(wish.images);
     const ordered = await mapHashesToFileIds(c, current, hashes);
 
@@ -390,7 +401,11 @@ export const reorderWishImages: ApiHandler = async c => {
         throw new ApiError('imageChanged');
     }
 
-    emitAppAction(c, 'wish_images_reordered');
+    emitAppAction(
+        c,
+        'wish_images_reordered',
+        source === undefined ? {} : { result: source }
+    );
 
     return respondWithWish(c, updated);
 };

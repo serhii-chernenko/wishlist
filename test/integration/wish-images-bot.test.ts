@@ -109,6 +109,20 @@ describe('Bot photo order', () => {
         await press(`w:io:${wish.id}`);
 
         assert.deepEqual(albumFileIds(), [[...FILE_IDS]]);
+        assert.deepEqual(
+            webhook.callsOf('sendMediaGroup').map(call => {
+                return (call.payload.media as Array<{ caption?: string }>).map(
+                    item => item.caption
+                );
+            }),
+            [
+                FILE_IDS.map((_, index) => {
+                    return LL.wishlist.edit.images.order.caption({
+                        n: index + 1
+                    });
+                })
+            ]
+        );
 
         const picker = webhook.lastMessage();
         const expectedCodes = [
