@@ -797,6 +797,7 @@ describe('Bot flows through the Worker on D1', () => {
                 LL.wishlist.share.actions.send(),
                 LL.actions.openApp(),
                 LL.wishlist.share.actions.showUsername(),
+                LL.wishlist.share.actions.showGifted(),
                 LL.wishlist.share.actions.newLink(),
                 LL.wishlist.share.actions.stop(),
                 LL.actions.back()
@@ -808,6 +809,7 @@ describe('Bot flows through the Worker on D1', () => {
             ]);
             assert.deepEqual(callbackDataOf(message), [
                 'wl:share:u',
+                'wl:share:g',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'
@@ -839,6 +841,7 @@ describe('Bot flows through the Worker on D1', () => {
             );
             assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
                 'wl:share:u',
+                'wl:share:g',
                 'wl:share:new',
                 'wl:share:stop',
                 'n:wl'

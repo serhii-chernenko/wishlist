@@ -44,7 +44,10 @@ interface ThirdListData {
     total: number;
     nextOffset: number | null;
     payments: string | null;
+    gifted: SharedWishDto[];
 }
+
+const NO_GIFTED: SharedWishDto[] = [];
 
 const SHARED_STALE_MS = 5 * 60 * 1000;
 
@@ -178,7 +181,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                 items: page.items,
                 total: page.total,
                 nextOffset: page.nextOffset,
-                payments: page.owner.payments
+                payments: page.owner.payments,
+                gifted: page.gifted ?? NO_GIFTED
             };
         }
     );
@@ -193,6 +197,9 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const nextOffset = viewOnly
         ? (preview?.nextOffset ?? null)
         : (list.data?.nextOffset ?? null);
+    const giftedItems = viewOnly
+        ? (shared.data?.gifted ?? NO_GIFTED)
+        : (list.data?.gifted ?? NO_GIFTED);
     const headerFailure = owner === null ? shared.failure : null;
     const pending =
         owner === null
@@ -302,7 +309,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                                   ],
                                   total: more.total,
                                   nextOffset: more.nextOffset
-                              }
+                              },
+                              gifted: page.gifted ?? NO_GIFTED
                           };
                 });
             } else {
@@ -321,7 +329,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                               items: [...cached.items, ...page.items],
                               total: page.total,
                               nextOffset: page.nextOffset,
-                              payments: page.owner.payments
+                              payments: page.owner.payments,
+                              gifted: page.gifted ?? NO_GIFTED
                           };
                 });
             }
@@ -348,7 +357,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     ];
 
     const renderWish = (wish: ThirdWishDto | SharedWishDto) => {
-        const givers = 'givers' in wish ? wish.givers : null;
+        const givers =
+            'givers' in wish && wish.gifted !== true ? wish.givers : null;
 
         return (
             <WishTag
@@ -398,6 +408,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     };
 
     const listFailure = viewOnly ? null : list.failure;
+    const shownGifted = nextOffset === null ? giftedItems : NO_GIFTED;
 
     return (
         <ScreenLayout id='thirdList' title={LL.third.title()} busy={pending}>
@@ -456,9 +467,10 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                     listFailure === null ? (
                         <TagSkeletons count={2} />
                     ) : null}
-                    {visibleItems.length > 0 ? (
+                    {visibleItems.length > 0 || shownGifted.length > 0 ? (
                         <WishGrid label={LL.third.title()}>
                             {visibleItems.map(renderWish)}
+                            {shownGifted.map(renderWish)}
                         </WishGrid>
                     ) : null}
                     {visibleItems.length === 0 &&

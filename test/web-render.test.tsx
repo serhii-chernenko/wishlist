@@ -14,6 +14,7 @@ import {
     type ShareFingerprintInput
 } from '../src/web/share/fingerprint';
 import type { PublicShareFingerprint } from '../src/db/repositories';
+import { APP_THIRD_PARTY_GIFTED_LIMIT } from '../src/shared/app-api';
 import { FALLBACK_RATES, getDefaultCurrency } from '../src/shared/money';
 import type {
     SharePageModel,
@@ -256,6 +257,47 @@ test('only the high priority shows the heart sticker', () => {
         ),
         /wish-heart/
     );
+});
+
+test('gifted wishes follow active ones as compact cards with the gifted band', () => {
+    const html = renderSharePage(
+        buildModel({
+            language: 'uk',
+            wishes: [buildWish({ title: 'Active kettle' })],
+            gifted: [
+                buildWish({
+                    title: 'Gifted mug',
+                    priority: 'high',
+                    description: 'Gifted description',
+                    link: 'https://shop.test/mug',
+                    price: 300,
+                    gifted: true
+                })
+            ]
+        })
+    );
+    const giftedCard = html.slice(
+        html.indexOf('<li class="wish wish-gifted">')
+    );
+
+    assert.ok(html.indexOf('Active kettle') < html.indexOf('Gifted mug'));
+    assert.match(giftedCard, /<div class="wish-photo" data-band="Подароване">/);
+    assert.match(giftedCard, /class="price"/);
+    assert.doesNotMatch(giftedCard, /wish-heart|wish-link|wish-details/);
+    assert.doesNotMatch(html, /Gifted description/);
+    assert.doesNotMatch(renderSharePage(buildModel()), /data-band|wish-gifted/);
+});
+
+test('an empty active list still shows gifted wishes after the empty note', () => {
+    const html = renderSharePage(
+        buildModel({
+            wishes: [],
+            visibleCount: 0,
+            gifted: [buildWish({ title: 'Old gift', gifted: true })]
+        })
+    );
+
+    assert.ok(html.indexOf('class="empty"') < html.indexOf('Old gift'));
 });
 
 test('a Ukrainian page keeps exact hryvnia prices without the rates note', () => {
@@ -598,6 +640,43 @@ test('twenty maximum size wishes stay below 60 KB', () => {
     );
 });
 
+test('the gifted section at its cap stays below 60 KB', () => {
+    const gifted = Array.from(
+        { length: APP_THIRD_PARTY_GIFTED_LIMIT },
+        (_, index) => {
+            return buildWish({
+                title: `${index} ${'т'.repeat(197)}`,
+                description: 'о'.repeat(500),
+                link: `https://shop.test/items/${'p'.repeat(200)}${index}`,
+                price: 1000 + index,
+                gifted: true,
+                photos: Array.from({ length: 9 }, (_, photo) => {
+                    return {
+                        url: buildShareImagePath(
+                            PUBLIC_ID,
+                            100_000 + index,
+                            photo,
+                            'f'.repeat(16)
+                        ),
+                        alt: `Фото ${photo + 1} з 9, ${index}`
+                    };
+                })
+            });
+        }
+    );
+    const html = renderSharePage(
+        buildModel({
+            language: 'uk',
+            wishes: [],
+            gifted,
+            visibleCount: 0,
+            payments: 'р'.repeat(1000)
+        })
+    );
+
+    assert.ok(Buffer.byteLength(html) < 60_000, `${Buffer.byteLength(html)}`);
+});
+
 test('error pages are noindex, localized and carry no list data', () => {
     for (const kind of ['notFound', 'gone'] as const) {
         for (const language of ['uk', 'en', 'pl'] as const) {
@@ -680,7 +759,10 @@ const baseFingerprintInput: PublicShareFingerprint = {
     language: 'uk',
     telegramLanguageCode: 'uk',
     visibleCount: 3,
-    lastUpdatedAt: new Date(2_000)
+    lastUpdatedAt: new Date(2_000),
+    showGifted: true,
+    giftedCount: 2,
+    giftedLastUpdatedAt: new Date(1_500)
 };
 
 test('the fingerprint changes for every input that affects the page', async () => {
@@ -722,7 +804,13 @@ test('the fingerprint changes for every input that affects the page', async () =
                 ['payments', { payments: 'other' }],
                 ['allowIndexing', { allowIndexing: false }],
                 ['visibleCount', { visibleCount: 4 }],
-                ['lastUpdatedAt', { lastUpdatedAt: new Date(2_001) }]
+                ['lastUpdatedAt', { lastUpdatedAt: new Date(2_001) }],
+                ['showGifted', { showGifted: false }],
+                ['giftedCount', { giftedCount: 1 }],
+                [
+                    'giftedLastUpdatedAt',
+                    { giftedLastUpdatedAt: new Date(1_501) }
+                ]
             ] as [string, Partial<PublicShareFingerprint>][]
         ).map(([name, patch]): [string, () => Promise<string>] => {
             return [

@@ -48,6 +48,7 @@ import { HEART_SYMBOL_ID } from '../ui/heart';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { WishGrid, WishTag } from '../ui/wish-tag';
+import { GiftedSheet } from './gifted-sheet';
 
 export const WISHES_PREFIX = 'wishes:';
 export const WISHES_LIST_KEY = `${WISHES_PREFIX}list`;
@@ -174,9 +175,91 @@ export const forgetWish = (services: AppServices, id: number) => {
         return removeFromPage(page, ownWishKey, id).page;
     });
     services.cache.remove(wishItemKey(id));
+    services.cache.invalidate(WISHES_LIST_KEY);
     updateCounts(services, counts => {
         return { ...counts, wishes: Math.max(0, counts.wishes - 1) };
     });
+};
+
+const removeGiftedFromList = (cache: ResourceCache, id: number) => {
+    mutateList(cache, page => {
+        const { page: next, removed } = removeFromPage(page, ownWishKey, id);
+
+        return removed === null
+            ? page
+            : {
+                  ...next,
+                  total: page.total,
+                  giftedTotal: Math.max(0, page.giftedTotal - 1)
+              };
+    });
+};
+
+/** Restore and hide-with-undo for gifted cards; both end with a reload because either moves the wish in the server order. */
+const useGiftedActions = (reload: () => void) => {
+    const services = useApp();
+    const LL = useLL();
+    const { api, cache, toast } = services;
+
+    const setHidden = (wishId: number, hidden: boolean) => {
+        return api.request('hideGiftedWish', {
+            params: { id: wishId },
+            body: { hidden }
+        });
+    };
+
+    const undoHide = async (wish: OwnWishDto) => {
+        try {
+            await setHidden(wish.id, false);
+        } catch (error) {
+            toast.failure(toFailure(error));
+        }
+
+        reload();
+    };
+
+    return {
+        async restore(wish: OwnWishDto) {
+            try {
+                const restored = await api.request('restoreWish', {
+                    params: { id: wish.id }
+                });
+
+                haptics.success();
+                cache.mutate<OwnWishDto>(wishItemKey(restored.id), () => {
+                    return restored;
+                });
+                toast.show(LL.gifted.restored(), 'success');
+            } catch (error) {
+                const failure = toFailure(error);
+
+                if (hasErrorCode(failure, 'notFound')) {
+                    removeGiftedFromList(cache, wish.id);
+                }
+
+                toast.failure(failure);
+            }
+
+            reload();
+        },
+        async hide(wish: OwnWishDto) {
+            removeGiftedFromList(cache, wish.id);
+
+            try {
+                await setHidden(wish.id, true);
+                haptics.success();
+                toast.show(LL.gifted.hidden(), 'success', {
+                    label: LL.gifted.undo(),
+                    onSelect: () => {
+                        void undoHide(wish);
+                    }
+                });
+            } catch (error) {
+                toast.failure(toFailure(error));
+                reload();
+            }
+        }
+    };
 };
 
 const flagToast = (LL: AppTranslator, flag: DraftFlag, value: boolean) => {
@@ -504,10 +587,16 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const [gate] = useState(createLatestGate);
     const [loadingMore, setLoadingMore] = useState(false);
     const [cleaning, setCleaning] = useState(false);
+    const [giftedSheetWish, setGiftedSheetWish] = useState<OwnWishDto | null>(
+        null
+    );
     const list = useAppResource<WishListDto>(WISHES_LIST_KEY, signal => {
         return loadWishRange(api, services.cache, signal);
     });
     const page = list.data;
+    const giftedActions = useGiftedActions(() => {
+        void list.reload();
+    });
 
     useEffect(() => {
         if (page !== undefined && page.filter === null) {
@@ -632,6 +721,8 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
 
     const filter = page?.filter ?? null;
     const items = page?.items ?? [];
+    const activeItems = items.filter(wish => wish.gifted !== true);
+    const giftedItems = items.filter(wish => wish.gifted === true);
     const nothingAtAll = filter === null || counts?.wishes === 0;
     const refreshing = list.loading && page !== undefined;
 
@@ -688,34 +779,33 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             />
                         </div>
                     ) : null}
-                    {items.length === 0 ? (
-                        nothingAtAll ? (
-                            <EmptyState
-                                title={LL.wishes.empty.title()}
-                                text={LL.wishes.empty.text()}
-                                action={{
-                                    label: LL.wishes.empty.cta(),
-                                    onClick: () => {
-                                        nav.push({
-                                            screen: 'wishEditor',
-                                            wishId: null
-                                        });
-                                    }
-                                }}
-                            />
-                        ) : (
-                            <EmptyState
-                                title={LL.wishes.filteredEmpty.title()}
-                                text={LL.wishes.filteredEmpty.text()}
-                                action={{
-                                    label: LL.wishes.filteredEmpty.cta(),
-                                    onClick: () => {
-                                        selectFilter(null);
-                                    }
-                                }}
-                            />
-                        )
+                    {activeItems.length > 0 ? null : nothingAtAll ? (
+                        <EmptyState
+                            title={LL.wishes.empty.title()}
+                            text={LL.wishes.empty.text()}
+                            action={{
+                                label: LL.wishes.empty.cta(),
+                                onClick: () => {
+                                    nav.push({
+                                        screen: 'wishEditor',
+                                        wishId: null
+                                    });
+                                }
+                            }}
+                        />
                     ) : (
+                        <EmptyState
+                            title={LL.wishes.filteredEmpty.title()}
+                            text={LL.wishes.filteredEmpty.text()}
+                            action={{
+                                label: LL.wishes.filteredEmpty.cta(),
+                                onClick: () => {
+                                    selectFilter(null);
+                                }
+                            }}
+                        />
+                    )}
+                    {items.length === 0 ? null : (
                         <div
                             class={
                                 refreshing
@@ -725,7 +815,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             aria-busy={String(refreshing)}
                         >
                             <WishGrid label={LL.wishes.title()}>
-                                {items.map(wish => {
+                                {activeItems.map(wish => {
                                     return (
                                         <WishTag
                                             key={wish.id}
@@ -742,6 +832,17 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                                         />
                                     );
                                 })}
+                                {giftedItems.map(wish => {
+                                    return (
+                                        <WishTag
+                                            key={wish.id}
+                                            wish={wish}
+                                            onOpen={() => {
+                                                setGiftedSheetWish(wish);
+                                            }}
+                                        />
+                                    );
+                                })}
                             </WishGrid>
                         </div>
                     )}
@@ -753,6 +854,22 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                         }}
                     />
                 </>
+            )}
+            {giftedSheetWish === null ? null : (
+                <GiftedSheet
+                    wish={giftedSheetWish}
+                    onClose={() => {
+                        setGiftedSheetWish(null);
+                    }}
+                    onRestore={wish => {
+                        setGiftedSheetWish(null);
+                        void giftedActions.restore(wish);
+                    }}
+                    onHide={wish => {
+                        setGiftedSheetWish(null);
+                        void giftedActions.hide(wish);
+                    }}
+                />
             )}
         </ScreenLayout>
     );

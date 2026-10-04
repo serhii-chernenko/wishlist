@@ -98,7 +98,10 @@ export const computeShareFingerprint = (
         resolvePublicPayments(share),
         input.deliveryHintShown,
         share.visibleCount,
-        share.lastUpdatedAt?.getTime() ?? null
+        share.lastUpdatedAt?.getTime() ?? null,
+        share.showGifted,
+        share.giftedCount,
+        share.giftedLastUpdatedAt?.getTime() ?? null
     ];
 
     return digestFields(fields);

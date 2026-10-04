@@ -21,6 +21,7 @@ export interface ShareWishView {
     createdAt: Date;
     updatedAt: Date;
     photos?: readonly ShareWishPhoto[];
+    gifted?: boolean;
 }
 
 export interface SharePageModel {
@@ -39,6 +40,7 @@ export interface SharePageModel {
     visibleCount: number;
     lastUpdatedAt: Date | null;
     wishes: readonly ShareWishView[];
+    gifted?: readonly ShareWishView[];
     indexable: boolean;
     botUrl: string;
     githubUrl: string;

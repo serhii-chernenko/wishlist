@@ -42,6 +42,7 @@ const expectedWebKeys = [
     'web.wish.details',
     'web.wish.created',
     'web.wish.updated',
+    'web.wish.gifted',
     'web.empty',
     'web.truncated',
     'web.ratesNote',

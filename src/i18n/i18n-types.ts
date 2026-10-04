@@ -886,6 +886,24 @@ type RootTranslation = {
 				 * �​�​ ​Н​е​ ​п​о​к​а​з​у​в​а​т​и​ ​@​u​s​e​r​n​a​m​e
 				 */
 				hideUsername: string
+				/**
+				 * �​�​ ​П​о​к​а​з​у​в​а​т​и​ ​п​о​д​а​р​о​в​а​н​і
+				 */
+				showGifted: string
+				/**
+				 * �​�​ ​Н​е​ ​п​о​к​а​з​у​в​а​т​и​ ​п​о​д​а​р​о​в​а​н​і
+				 */
+				hideGifted: string
+			}
+			gifted: {
+				/**
+				 * �​�​ ​Т​е​п​е​р​ ​д​р​у​з​і​ ​п​о​б​а​ч​а​т​ь​,​ ​щ​о​ ​т​о​б​і​ ​в​ж​е​ ​п​о​д​а​р​у​в​а​л​и​,​ ​в​ ​к​і​н​ц​і​ ​с​п​и​с​к​у​.
+				 */
+				shown: string
+				/**
+				 * �​�​ ​Д​р​у​з​і​ ​б​і​л​ь​ш​е​ ​н​е​ ​б​а​ч​а​т​ь​ ​п​о​д​а​р​о​в​а​н​и​х​ ​б​а​ж​а​н​ь​.
+				 */
+				hidden: string
 			}
 		}
 	}
@@ -1708,6 +1726,10 @@ type RootTranslation = {
 			 * @param {string} updated
 			 */
 			updated: RequiredParams<'created' | 'updated'>
+			/**
+			 * П​о​д​а​р​о​в​а​н​е
+			 */
+			gifted: string
 		}
 		/**
 		 * Т​у​т​ ​п​о​к​и​ ​щ​о​ ​п​о​р​о​ж​н​ь​о​.​ ​Б​а​ж​а​н​н​я​ ​з​ʼ​я​в​л​я​т​ь​с​я​,​ ​щ​о​й​н​о​ ​ї​х​ ​д​о​д​а​д​у​т​ь​ ​д​о​ ​с​п​и​с​к​у​.
@@ -2926,6 +2948,41 @@ type RootTranslation = {
 				shown: string
 			}
 		}
+		gifted: {
+			/**
+			 * П​о​д​а​р​о​в​а​н​е
+			 */
+			band: string
+			/**
+			 * П​о​д​а​р​о​в​а​н​о​ ​{​d​a​t​e​}
+			 * @param {string} date
+			 */
+			date: RequiredParams<'date'>
+			/**
+			 * П​о​в​е​р​н​у​т​и​ ​в​ ​м​о​ї​ ​б​а​ж​а​н​н​я
+			 */
+			restore: string
+			/**
+			 * П​р​и​х​о​в​а​т​и​ ​н​а​з​а​в​ж​д​и​ ​д​л​я​ ​в​с​і​х
+			 */
+			hide: string
+			/**
+			 * Й​о​г​о​ ​н​е​ ​п​о​б​а​ч​и​ш​ ​н​і​ ​т​и​,​ ​н​і​ ​д​р​у​з​і​.​ ​У​ ​с​т​а​т​и​с​т​и​ц​і​ ​з​а​л​и​ш​и​т​ь​с​я​.
+			 */
+			hideHint: string
+			/**
+			 * Б​а​ж​а​н​н​я​ ​з​н​о​в​у​ ​у​ ​с​п​и​с​к​у
+			 */
+			restored: string
+			/**
+			 * П​р​и​х​о​в​а​н​о
+			 */
+			hidden: string
+			/**
+			 * С​к​а​с​у​в​а​т​и
+			 */
+			undo: string
+		}
 		money: {
 			/**
 			 * ≈​ ​{​a​m​o​u​n​t​}
@@ -3765,6 +3822,24 @@ type RootTranslation = {
 				shown: string
 				/**
 				 * @​u​s​e​r​n​a​m​e​ ​б​і​л​ь​ш​е​ ​н​е​ ​в​и​д​н​о​ ​н​а​ ​с​т​о​р​і​н​ц​і
+				 */
+				hidden: string
+			}
+			gifted: {
+				/**
+				 * П​о​к​а​з​у​в​а​т​и​ ​п​о​д​а​р​о​в​а​н​і​ ​б​а​ж​а​н​н​я
+				 */
+				label: string
+				/**
+				 * Д​р​у​з​і​ ​п​о​б​а​ч​а​т​ь​,​ ​щ​о​ ​т​о​б​і​ ​в​ж​е​ ​п​о​д​а​р​у​в​а​л​и​,​ ​в​ ​к​і​н​ц​і​ ​с​п​и​с​к​у
+				 */
+				hint: string
+				/**
+				 * П​о​д​а​р​о​в​а​н​і​ ​б​а​ж​а​н​н​я​ ​т​е​п​е​р​ ​в​и​д​н​о​ ​д​р​у​з​я​м
+				 */
+				shown: string
+				/**
+				 * Д​р​у​з​і​ ​б​і​л​ь​ш​е​ ​н​е​ ​б​а​ч​а​т​ь​ ​п​о​д​а​р​о​в​а​н​и​х​ ​б​а​ж​а​н​ь
 				 */
 				hidden: string
 			}
@@ -5182,6 +5257,24 @@ export type TranslationFunctions = {
 				 * 🙈 Не показувати @username
 				 */
 				hideUsername: () => LocalizedString
+				/**
+				 * 🎁 Показувати подаровані
+				 */
+				showGifted: () => LocalizedString
+				/**
+				 * 🙈 Не показувати подаровані
+				 */
+				hideGifted: () => LocalizedString
+			}
+			gifted: {
+				/**
+				 * 🎁 Тепер друзі побачать, що тобі вже подарували, в кінці списку.
+				 */
+				shown: () => LocalizedString
+				/**
+				 * 🙈 Друзі більше не бачать подарованих бажань.
+				 */
+				hidden: () => LocalizedString
 			}
 		}
 	}
@@ -5954,6 +6047,10 @@ export type TranslationFunctions = {
 			 * Додано {created}, оновлено {updated}
 			 */
 			updated: (arg: { created: string, updated: string }) => LocalizedString
+			/**
+			 * Подароване
+			 */
+			gifted: () => LocalizedString
 		}
 		/**
 		 * Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.
@@ -7153,6 +7250,40 @@ export type TranslationFunctions = {
 				shown: () => LocalizedString
 			}
 		}
+		gifted: {
+			/**
+			 * Подароване
+			 */
+			band: () => LocalizedString
+			/**
+			 * Подаровано {date}
+			 */
+			date: (arg: { date: string }) => LocalizedString
+			/**
+			 * Повернути в мої бажання
+			 */
+			restore: () => LocalizedString
+			/**
+			 * Приховати назавжди для всіх
+			 */
+			hide: () => LocalizedString
+			/**
+			 * Його не побачиш ні ти, ні друзі. У статистиці залишиться.
+			 */
+			hideHint: () => LocalizedString
+			/**
+			 * Бажання знову у списку
+			 */
+			restored: () => LocalizedString
+			/**
+			 * Приховано
+			 */
+			hidden: () => LocalizedString
+			/**
+			 * Скасувати
+			 */
+			undo: () => LocalizedString
+		}
 		money: {
 			/**
 			 * ≈ {amount}
@@ -7959,6 +8090,24 @@ export type TranslationFunctions = {
 				shown: () => LocalizedString
 				/**
 				 * @username більше не видно на сторінці
+				 */
+				hidden: () => LocalizedString
+			}
+			gifted: {
+				/**
+				 * Показувати подаровані бажання
+				 */
+				label: () => LocalizedString
+				/**
+				 * Друзі побачать, що тобі вже подарували, в кінці списку
+				 */
+				hint: () => LocalizedString
+				/**
+				 * Подаровані бажання тепер видно друзям
+				 */
+				shown: () => LocalizedString
+				/**
+				 * Друзі більше не бачать подарованих бажань
 				 */
 				hidden: () => LocalizedString
 			}

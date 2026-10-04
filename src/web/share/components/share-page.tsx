@@ -96,8 +96,10 @@ const ShareHero = ({ model }: { model: SharePageModel }) => {
     );
 };
 
+const NO_GIFTED: SharePageModel['wishes'] = [];
+
 const hasConvertedPrices = (model: SharePageModel) => {
-    return model.wishes.some(wish => {
+    return [...model.wishes, ...(model.gifted ?? NO_GIFTED)].some(wish => {
         return (
             wish.price > 0 &&
             isPriceConverted(wish.currency, model.displayCurrency, model.rates)
@@ -120,6 +122,7 @@ const RatesNote = ({ model }: { model: SharePageModel }) => {
 
 export const SharePage = ({ model }: { model: SharePageModel }) => {
     const LL = getTranslator(model.language);
+    const gifted = model.gifted ?? NO_GIFTED;
 
     return (
         <>
@@ -146,9 +149,10 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                 ) : null}
                 {model.wishes.length === 0 ? (
                     <p class='empty'>{LL.web.empty()}</p>
-                ) : (
+                ) : null}
+                {model.wishes.length + gifted.length === 0 ? null : (
                     <ul class='wishes'>
-                        {model.wishes.map(wish => {
+                        {[...model.wishes, ...gifted].map(wish => {
                             return (
                                 <WishCard
                                     wish={wish}

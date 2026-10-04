@@ -28,6 +28,9 @@ export interface PublicShareFingerprint {
     telegramLanguageCode: string | null;
     visibleCount: number;
     lastUpdatedAt: Date | null;
+    showGifted: boolean;
+    giftedCount: number;
+    giftedLastUpdatedAt: Date | null;
 }
 
 export const SHARE_DISPLAY_NAME_MAX_LENGTH = 64;
@@ -52,6 +55,8 @@ const toDateOrNull = (milliseconds: number | null) => {
 };
 
 const visibleWishesOfOwner = sql`${wishes.userId} = ${users.id} and ${wishes.removed} = 0 and ${wishes.hidden} = 0`;
+
+const visibleGiftedOfOwner = sql`${wishes.userId} = ${users.id} and ${wishes.removed} = 1 and ${wishes.done} = 1 and ${wishes.giftedHidden} = 0 and ${wishes.hidden} = 0`;
 
 export const createShareRepository = (db: AppDb) => {
     const findByUserId = async (userId: number) => {
@@ -209,7 +214,12 @@ export const createShareRepository = (db: AppDb) => {
                         visibleCount: sql<number>`(select count(*) from ${wishes} where ${visibleWishesOfOwner})`,
                         lastUpdatedAt: sql<
                             number | null
-                        >`(select max(${wishes.updatedAt}) from ${wishes} where ${visibleWishesOfOwner})`
+                        >`(select max(${wishes.updatedAt}) from ${wishes} where ${visibleWishesOfOwner})`,
+                        showGifted: users.showGifted,
+                        giftedCount: sql<number>`(select count(*) from ${wishes} where ${visibleGiftedOfOwner})`,
+                        giftedLastUpdatedAt: sql<
+                            number | null
+                        >`(select max(${wishes.updatedAt}) from ${wishes} where ${visibleGiftedOfOwner})`
                     })
                     .from(wishlistShares)
                     .innerJoin(users, eq(users.id, wishlistShares.userId))
@@ -230,7 +240,9 @@ export const createShareRepository = (db: AppDb) => {
                     hasPhone: Boolean(row.hasPhone),
                     hasDeliveryAddress: Boolean(row.hasDeliveryAddress),
                     visibleCount: Number(row.visibleCount),
-                    lastUpdatedAt: toDateOrNull(row.lastUpdatedAt)
+                    lastUpdatedAt: toDateOrNull(row.lastUpdatedAt),
+                    giftedCount: Number(row.giftedCount),
+                    giftedLastUpdatedAt: toDateOrNull(row.giftedLastUpdatedAt)
                 };
             });
         }

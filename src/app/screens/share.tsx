@@ -21,7 +21,7 @@ import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
 import { Toggle } from '../ui/toggle';
 
-type ShareAction = 'publish' | 'rotate' | 'stop' | 'username';
+type ShareAction = 'publish' | 'rotate' | 'stop' | 'username' | 'gifted';
 
 const copyToClipboard = async (text: string) => {
     try {
@@ -89,7 +89,8 @@ const sendShareLinks = (
 export const ShareScreen = (_props: ScreenProps<'share'>) => {
     const LL = useLL();
     const nav = useNav();
-    const { api, toast } = useApp();
+    const services = useApp();
+    const { api, toast } = services;
     const { me } = useSession();
     const [pending, setPending] = useState<ShareAction | null>(null);
     const share = useAppResource('share', signal => {
@@ -104,10 +105,12 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
             return api.request('listWishes', { signal });
         }
     );
+    const ownActiveWishes =
+        ownWishes.data?.items.filter(wish => wish.gifted !== true) ?? [];
     const pageEmpty =
         ownWishes.data !== undefined &&
-        ownWishes.data.nextOffset === null &&
-        ownWishes.data.items.every(wish => {
+        ownActiveWishes.length >= ownWishes.data.total &&
+        ownActiveWishes.every(wish => {
             return wish.hidden;
         });
 
@@ -197,6 +200,28 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
             );
         } catch (error) {
             store(previous);
+            toast.failure(toFailure(error));
+        }
+
+        setPending(null);
+    };
+
+    const toggleShowGifted = async (show: boolean) => {
+        const previous = services.session.get().me;
+
+        setPending('gifted');
+        services.updateMe({ ...previous, showGifted: show });
+
+        try {
+            services.updateMe(
+                await api.request('setShowGifted', { body: { show } })
+            );
+            toast.show(
+                show ? LL.share.gifted.shown() : LL.share.gifted.hidden(),
+                'success'
+            );
+        } catch (error) {
+            services.updateMe(previous);
             toast.failure(toFailure(error));
         }
 
@@ -371,6 +396,16 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                     }}
                                 />
                             ) : null}
+                            <Toggle
+                                id='share-gifted'
+                                label={LL.share.gifted.label()}
+                                hint={LL.share.gifted.hint()}
+                                pressed={me.showGifted}
+                                disabled={pending !== null}
+                                onToggle={show => {
+                                    void toggleShowGifted(show);
+                                }}
+                            />
                             <div class='share-manage'>
                                 <button
                                     type='button'

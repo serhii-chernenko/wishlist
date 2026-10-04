@@ -21,6 +21,7 @@ import {
     type Navigator,
     type Session
 } from '../state/context';
+import { dismissibleLayers, dismissTopLayer } from '../state/layers';
 import { createStore, useStore, type Store } from '../state/store';
 import { useBackButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -148,10 +149,14 @@ export const Router = ({ handle }: { handle: NavigatorHandle }) => {
     >;
     const { scrollPositions } = handle;
     const { reportEvent } = useApp();
+    const layers = useStore(dismissibleLayers);
 
-    useBackButton(canGoBack(nav), () => {
+    useBackButton(canGoBack(nav) || layers.length > 0, () => {
         haptics.selection();
-        void handle.navigator.back();
+
+        if (!dismissTopLayer()) {
+            void handle.navigator.back();
+        }
     });
 
     useEffect(() => {

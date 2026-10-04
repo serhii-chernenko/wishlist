@@ -366,7 +366,7 @@ export const listWishes: ApiHandler = async c => {
                   await readExchangeRates(c)
               );
     const page = await runRepository(
-        c.var.repos.wishes.listOwned(user.id, {
+        c.var.repos.wishes.listOwnedWithGifted(user.id, {
             filter: priceBounds,
             offset,
             limit: APP_PAGE_SIZE
@@ -378,8 +378,10 @@ export const listWishes: ApiHandler = async c => {
         })
     );
     const body: WishListDto = {
-        ...toPageDto(items, page.total, offset),
-        filter
+        ...toPageDto(items, page.total + page.giftedTotal, offset),
+        total: page.total,
+        filter,
+        giftedTotal: page.giftedTotal
     };
 
     return c.json(body);

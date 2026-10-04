@@ -358,6 +358,17 @@ export const createUserRepository = (db: AppDb) => {
                 return updated ?? null;
             });
         },
+        setShowGifted(id: number, showGifted: boolean, now: Date = new Date()) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(users)
+                    .set({ showGifted, updatedAt: now })
+                    .where(eq(users.id, id))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
         setWishlistFilter(
             id: number,
             wishlistFilter: number | null,

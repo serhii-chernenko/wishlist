@@ -132,6 +132,7 @@ export type CallbackAction =
     | { type: 'wishlistShareRotateConfirm' }
     | { type: 'wishlistShareUsername' }
     | { type: 'wishlistShareIndexing' }
+    | { type: 'wishlistShareGifted' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
     | { type: 'wishEdit'; wishId: number }
@@ -222,7 +223,8 @@ export type BotActionName =
     | 'wish_images_reordered'
     | 'contact_disclosure_changed'
     | 'delivery_address_updated'
-    | 'delivery_address_removed';
+    | 'delivery_address_removed'
+    | 'show_gifted_changed';
 
 export type InternalFailureEvent =
     | 'generic_error_reply_failed'

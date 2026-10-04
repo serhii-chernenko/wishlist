@@ -29,6 +29,7 @@ export const wishes = snakeCase.table(
         hidden: integer({ mode: 'boolean' }).notNull().default(false),
         removed: integer({ mode: 'boolean' }).notNull().default(false),
         done: integer({ mode: 'boolean' }).notNull().default(false),
+        giftedHidden: integer({ mode: 'boolean' }).notNull().default(false),
         price: integer().notNull().default(0),
         currency: text().notNull().default('UAH'),
         createdAt: integer({ mode: 'timestamp_ms' })

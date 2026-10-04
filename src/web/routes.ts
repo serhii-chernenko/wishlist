@@ -29,6 +29,7 @@ import {
 import { getTranslator } from '../bot/i18n';
 import type { SharePageErrorKind } from './share/components/error-page';
 import { buildShareWishPhotos } from './image-proxy/share-photos';
+import { loadShareGiftedWishes } from './share/gifted-wishes';
 import { matchAcceptLanguage } from './share/accept-language';
 import {
     computeHomeFingerprint,
@@ -421,6 +422,12 @@ const servePage = async ({
                 visibleCount: share.visibleCount,
                 lastUpdatedAt: share.lastUpdatedAt,
                 wishes,
+                gifted: await loadShareGiftedWishes({
+                    repositories,
+                    share,
+                    crypto,
+                    language
+                }),
                 indexable,
                 botUrl: c.env.WISHLIST_TG_URL,
                 githubUrl: c.env.GITHUB_REPO_URL,

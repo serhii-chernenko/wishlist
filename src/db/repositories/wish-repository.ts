@@ -1,5 +1,6 @@
 import {
     and,
+    asc,
     count,
     desc,
     eq,
@@ -66,6 +67,15 @@ export interface WishPage {
     total: number;
 }
 
+export interface OwnWishPage extends WishPage {
+    giftedTotal: number;
+}
+
+export interface GiftedListOptions {
+    filter: PriceBoundsByCurrency | null;
+    limit: number;
+}
+
 export const SHAREABLE_WISHES_LIMIT = 100;
 
 const tryDb = createTryDb('Wish repository');
@@ -128,6 +138,45 @@ const ownedAndActive = (wishId: number, userId: number) => {
         eq(wishes.removed, false)
     );
 };
+
+export const isShownGifted = () => {
+    return and(
+        eq(wishes.removed, true),
+        eq(wishes.done, true),
+        eq(wishes.giftedHidden, false)
+    );
+};
+
+export const isActiveOrShownGifted = () => {
+    return or(eq(wishes.removed, false), isShownGifted());
+};
+
+const ownedAndShownGifted = (wishId: number, userId: number) => {
+    return and(
+        eq(wishes.id, wishId),
+        eq(wishes.userId, userId),
+        isShownGifted()
+    );
+};
+
+const ownedAndGifted = (wishId: number, userId: number) => {
+    return and(
+        eq(wishes.id, wishId),
+        eq(wishes.userId, userId),
+        eq(wishes.removed, true),
+        eq(wishes.done, true)
+    );
+};
+
+export const GIFTED_LIST_ORDER = [desc(wishes.updatedAt), desc(wishes.id)];
+
+const ACTIVE_THEN_GIFTED_ORDER = [
+    asc(wishes.removed),
+    desc(
+        sql`case when ${wishes.removed} = 0 then ${wishes.priorityLevel} else 0 end`
+    ),
+    ...GIFTED_LIST_ORDER
+];
 
 const imageSlotPath = (index: number) => {
     return `$[${index}]`;
@@ -226,7 +275,7 @@ export const createWishRepository = (db: AppDb) => {
                         sql`, `
                     );
                     const rows = await db.all<{ fileId: string }>(
-                        sql`select distinct json_each.value as fileId from ${wishes}, json_each(${wishes.images}) where ${wishes.removed} = 0 and json_each.value in (${placeholders})`
+                        sql`select distinct json_each.value as fileId from ${wishes}, json_each(${wishes.images}) where (${wishes.removed} = 0 or (${wishes.done} = 1 and ${wishes.giftedHidden} = 0)) and json_each.value in (${placeholders})`
                     );
 
                     for (const row of rows) {
@@ -286,6 +335,99 @@ export const createWishRepository = (db: AppDb) => {
                 ]);
 
                 return { items, total: totals[0]?.total ?? 0 };
+            });
+        },
+        listOwnedWithGifted(userId: number, options: WishListOptions) {
+            return tryDb(async (): Promise<OwnWishPage> => {
+                const priceCondition = buildPriceFilterCondition(
+                    options.filter
+                );
+                const countWhere = (state: SQL | undefined) => {
+                    return db
+                        .select({ total: count() })
+                        .from(wishes)
+                        .where(
+                            and(
+                                eq(wishes.userId, userId),
+                                state,
+                                priceCondition
+                            )
+                        );
+                };
+                const [items, activeTotals, giftedTotals] = await db.batch([
+                    db
+                        .select()
+                        .from(wishes)
+                        .where(
+                            and(
+                                eq(wishes.userId, userId),
+                                isActiveOrShownGifted(),
+                                priceCondition
+                            )
+                        )
+                        .orderBy(...ACTIVE_THEN_GIFTED_ORDER)
+                        .limit(options.limit)
+                        .offset(options.offset),
+                    countWhere(eq(wishes.removed, false)),
+                    countWhere(isShownGifted())
+                ]);
+
+                return {
+                    items,
+                    total: activeTotals[0]?.total ?? 0,
+                    giftedTotal: giftedTotals[0]?.total ?? 0
+                };
+            });
+        },
+        listGiftedVisibleOf(ownerId: number, options: GiftedListOptions) {
+            return tryDb(async () => {
+                const rows = await db
+                    .select({ wish: wishes })
+                    .from(wishes)
+                    .innerJoin(users, eq(users.id, wishes.userId))
+                    .where(
+                        and(
+                            eq(wishes.userId, ownerId),
+                            eq(wishes.hidden, false),
+                            isShownGifted(),
+                            eq(users.showGifted, true),
+                            isNull(users.blockedAt),
+                            buildPriceFilterCondition(options.filter)
+                        )
+                    )
+                    .orderBy(...GIFTED_LIST_ORDER)
+                    .limit(options.limit);
+
+                return rows.map(row => {
+                    return row.wish;
+                });
+            });
+        },
+        restoreGifted(wishId: number, userId: number, now: Date) {
+            return tryDb(async () => {
+                const [restored] = await db
+                    .update(wishes)
+                    .set({
+                        removed: false,
+                        done: false,
+                        giftedHidden: false,
+                        updatedAt: now
+                    })
+                    .where(ownedAndShownGifted(wishId, userId))
+                    .returning();
+
+                return restored ?? null;
+            });
+        },
+        setGiftedHidden(wishId: number, userId: number, giftedHidden: boolean) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ giftedHidden })
+                    .where(ownedAndGifted(wishId, userId))
+                    .returning();
+
+                return updated ?? null;
             });
         },
         listVisibleOf(ownerId: number, options: WishListOptions) {
@@ -495,9 +637,7 @@ export const createWishRepository = (db: AppDb) => {
                         >`json_extract(${wishes.images}, ${imageSlotPath(index)})`
                     })
                     .from(wishes)
-                    .where(
-                        and(eq(wishes.id, wishId), eq(wishes.removed, false))
-                    )
+                    .where(and(eq(wishes.id, wishId), isActiveOrShownGifted()))
                     .limit(1);
 
                 return typeof row?.fileId === 'string' && row.fileId !== ''
@@ -519,7 +659,10 @@ export const createWishRepository = (db: AppDb) => {
                             isNull(users.blockedAt),
                             eq(wishes.id, wishId),
                             eq(wishes.hidden, false),
-                            eq(wishes.removed, false)
+                            or(
+                                eq(wishes.removed, false),
+                                and(isShownGifted(), eq(users.showGifted, true))
+                            )
                         )
                     )
                     .limit(1);
