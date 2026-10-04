@@ -84,7 +84,7 @@ Decisions:
 - [ ] Tests, review, security audit
 - [x] Prices in the viewer's language currency (UAH, EUR, PLN) with approximate NBU conversion, per-currency price filters and a daily rates refresh (2026-10-04)
 - [ ] Preview test on @InevixTestBot, production rollout
-- [ ] Production rollout: apply the five pending migrations (`20261003214556_many_harry_osborn`, `20261004011719_careless_mulholland_black`, `20261004083515_far_impossible_man`, `20261004090459_flat_omega_sentinel`, `20261004111004_show_gifted_default_on`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
+- [ ] Production rollout: apply the six pending migrations (`20261004162852_list_imports` included; `20261003214556_many_harry_osborn`, `20261004011719_careless_mulholland_black`, `20261004083515_far_impossible_man`, `20261004090459_flat_omega_sentinel`, `20261004111004_show_gifted_default_on`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
 - [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
 ### Batch 2 (in 2.0.0, started 2026-10-04)
@@ -100,7 +100,10 @@ Decisions:
 - [x] Gifted wishes at the end of the app list and, when the owner opts in, of shared lists, with a "Gifted" band (merged 2026-10-04)
 - [x] One pattern for destructive actions in the app: red buttons, a countdown on the button itself, undo toasts for removed items, and destructive confirm popups for bulk actions
 - [x] Link import: paste a product link, parse title, photos, price and description, and ingest photos into Telegram (app and bot)
-- [x] Copy pass (Polish, US English) over all strings (2026-10-04)
+- [x] Copy pass (Polish, US English) over all strings
+- [x] Navigation fixes, native Home button, compact sticky list header, two-column grid from 320px, toast position (2026-10-04)
+- [ ] List import from rewish.io (preview, merge with dedupe, hidden or public, gifted kept, background photos), bot and app: foundation done (43a802b), core/bot/app in progress
+- [ ] One structured device test pass on @InevixTestBot before the final changelog approval (2026-10-04)
 - [x] Review, security audit, preview test (2026-10-04)
 - [x] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order (2026-10-04)
 - [x] Production rollout additions documented: Time Travel bookmark, priority count check, new migrations, post-deploy priority repair, R2 `import/` lifecycle rule (added on both buckets 2026-10-04)
