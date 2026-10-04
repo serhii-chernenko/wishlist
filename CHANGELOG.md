@@ -20,6 +20,9 @@
 - [added] Бажання можна додати за посиланням: встав посилання на товар у застосунку або надішли його боту, і назва, опис, ціна та фото заповняться самі. Працює з більшістю магазинів, а решту завжди можна заповнити вручну.
     - en: Add a wish from a link: paste a product link in the app or send it to the bot, and the title, description, price, and photos fill in automatically. It works with most stores, and you can always fill in the rest yourself.
     - pl: Życzenie dodasz z linku: wklej link do produktu w aplikacji albo wyślij go botowi, a nazwa, opis, cena i zdjęcia uzupełnią się same. Działa z większością sklepów, a resztę zawsze uzupełnisz ręcznie.
+- [added] Можна імпортувати лист бажань з rewish.io: у налаштуваннях встав посилання на профіль чи колекцію, і бажання додадуться до твоїх без дублікатів. Подаровані потраплять у «Подароване», а фото підвантажаться поступово.
+    - en: You can import a wish list from rewish.io: paste a profile or collection link in Settings, and the wishes join yours without duplicates. Gifted ones go to "Gifted", and photos load gradually.
+    - pl: Możesz zaimportować listę życzeń z rewish.io: wklej link do profilu lub kolekcji w ustawieniach, a życzenia dołączą do twoich bez duplikatów. Podarowane trafią do „Podarowane”, a zdjęcia wczytają się stopniowo.
 - [added] Валюту тепер можна обрати в налаштуваннях: гривня, долар, євро або злотий. Кожне бажання зберігає валюту, в якій вказана ціна, а друзі бачать суму у своїй валюті, орієнтовно за щоденним курсом НБУ. На сторінці листа бажань валюту можна перемкнути вгорі.
     - en: You can now pick your currency in Settings: hryvnia, US dollar, euro, or złoty. Each wish keeps the currency it was priced in, and friends see the amount in their own currency, converted approximately at the official daily rate. The wish list page has a currency switcher at the top.
     - pl: Walutę możesz teraz wybrać w ustawieniach: hrywna, dolar amerykański, euro lub złoty. Każde życzenie zachowuje walutę, w której podano cenę, a znajomi widzą kwotę w swojej walucie, przeliczoną orientacyjnie po oficjalnym dziennym kursie. Na stronie listy życzeń walutę przełączysz u góry.
@@ -54,24 +57,9 @@
 - [added] Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.
     - en: The /releases command shows the history of bot changes, and the bot now announces new versions on its own.
     - pl: Polecenie /releases pokazuje historię zmian bota, a o nowych wersjach bot teraz informuje sam.
-- [fixed] Пошук за юзернеймом тепер не залежить від регістру літер.
-    - en: Username search is no longer case-sensitive.
-    - pl: Wyszukiwanie po nazwie użytkownika nie zależy już od wielkości liter.
-- [fixed] Налаштування видимості тепер працюють як треба: можна обрати, щоб тебе знаходили лише за юзернеймом або лише за номером.
-    - en: Visibility settings now work properly: you can choose to be found by username only or by phone number only.
-    - pl: Ustawienia widoczności działają teraz poprawnie: możesz wybrać, żeby inni znajdowali cię tylko po nazwie użytkownika albo tylko po numerze telefonu.
-- [fixed] Кнопка «Очистити» знову працює, і тепер перед очищенням бот перепитує, чи точно все очистити.
-    - en: The "Clear" button works again, and the bot now asks you to confirm before clearing.
-    - pl: Przycisk „Wyczyść” znowu działa, a bot pyta teraz o potwierdzenie przed czyszczeniem.
-- [fixed] У списку «Хочу подарувати» бронь тепер скасовується саме для того бажання, яке ти обираєш, а після скасування бот показує правильне повідомлення.
-    - en: On your "Gifts to give" list, the reservation is now canceled for exactly the wish you pick, and after canceling, the bot shows the right message.
-    - pl: Na liście „Chcę podarować” rezerwacja jest teraz anulowana dokładnie dla tego życzenia, które wybierzesz, a po jej anulowaniu bot pokazuje właściwy komunikat.
-- [fixed] У чужому листі бажань знову видно, скільки ще людей забронювали те саме.
-    - en: On someone else's wish list, you can once again see how many people reserved the same gift.
-    - pl: Na cudzej liście życzeń znów widać, ile jeszcze osób zarezerwowało to samo życzenie.
-- [fixed] Назви та описи бажань більше не ламають оформлення повідомлень, а дати показуються за київським часом.
-    - en: Wish titles and descriptions no longer break message formatting, and dates are shown in Kyiv time.
-    - pl: Tytuły i opisy życzeń nie psują już formatowania wiadomości, a daty są pokazywane według czasu kijowskiego.
+- [fixed] Виправлено старі помилки: пошук за юзернеймом не залежить від регістру, видимість можна обрати лише за юзернеймом чи лише за номером, «Очистити» знову працює з підтвердженням, бронь скасовується для правильного бажання, у чужому листі знову видно кількість броней, а назви не ламають оформлення повідомлень.
+    - en: Old bugs are fixed: username search is no longer case-sensitive, you can be found by username only or by phone only, "Clear" works again with a confirmation, canceling a reservation affects the right wish, someone else's list shows the reservation count again, and titles no longer break message formatting.
+    - pl: Naprawiono stare błędy: wyszukiwanie po nazwie użytkownika nie zależy od wielkości liter, można być wyszukiwanym tylko po nazwie albo tylko po numerze, „Wyczyść” znowu działa z potwierdzeniem, rezerwacja anuluje się dla właściwego życzenia, na cudzej liście znów widać liczbę rezerwacji, a tytuły nie psują formatowania wiadomości.
 
 ## 1.7.0 - 24.12.2023
 
