@@ -286,17 +286,27 @@ const usePhotoUploads = (
         };
     }, []);
 
+    const uploadFailureText = (
+        failure: PhotoFailureKind,
+        source: UploadSource | undefined
+    ) => {
+        if (source?.kind === 'import' && failure === 'failed') {
+            return LL.linkImport.photosFailed();
+        }
+
+        if (source?.kind === 'import' && failure === 'unsupported') {
+            return LL.linkImport.photosUnsupported();
+        }
+
+        return photoFailureText(LL, failure, max);
+    };
+
     const reportFailure = (
         failure: PhotoFailureKind,
         source?: UploadSource
     ) => {
         haptics.error();
-        services.toast.show(
-            source?.kind === 'import' && failure === 'failed'
-                ? LL.linkImport.photosFailed()
-                : photoFailureText(LL, failure, max),
-            'error'
-        );
+        services.toast.show(uploadFailureText(failure, source), 'error');
     };
 
     const pump = async (target: OwnWishDto | null = latestWish.current) => {

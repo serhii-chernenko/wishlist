@@ -6,7 +6,6 @@ import { Effect } from 'effect';
 import { releaseOrphanedImages } from '../src/api/photos/image-cleanup';
 import {
     createLinkImportServices,
-    pickTelemetryTransform,
     reportLinkImportCompleted,
     toImportedDraft,
     type LinkImportImplementations
@@ -17,8 +16,7 @@ import {
 } from '../src/bot/services/link-import/result-cache';
 import {
     importImageKey,
-    importMetaKey,
-    importUsageKey
+    importMetaKey
 } from '../src/bot/services/link-import/storage-keys';
 import type {
     ExtractedProduct,
@@ -35,7 +33,6 @@ import {
 import { createNodeApiCrypto } from './fixtures/app-auth';
 import {
     AVIF_BYTES,
-    createFakeImagesBinding,
     createFakeSafeFetcher,
     createLinkImportEnv,
     createMemoryBucket,
@@ -93,7 +90,6 @@ const createServiceHarness = (
         pageFailure?: SafeFetchFailure;
         limiter?: 'allow' | 'limit' | 'missing';
         images?: Record<string, { bytes: Uint8Array }>;
-        withBinding?: boolean;
     } = {}
 ): ServiceHarness => {
     const memory = createMemoryBucket();
@@ -162,10 +158,7 @@ const createServiceHarness = (
         deps: {
             env: createLinkImportEnv({
                 bucket: memory.bucket,
-                hostLimiter: limiter,
-                ...(input.withBinding === true
-                    ? { images: createFakeImagesBinding().binding }
-                    : {})
+                hostLimiter: limiter
             }),
             now: () => clock.now
         }
@@ -500,15 +493,9 @@ describe('link import telemetry', () => {
             {
                 channel: 'bot',
                 result,
-                staged: [
-                    {
-                        index: 0,
-                        contentType: 'image/jpeg',
-                        bytes: 10,
-                        transform: 'passthrough'
-                    }
-                ],
-                imagesIngested: 1
+                staged: 1,
+                skipped: 2,
+                ingested: 1
             },
             (_env, _context, fields) => {
                 events.push(fields);
@@ -521,7 +508,8 @@ describe('link import telemetry', () => {
         assert.equal(event.event, 'link_import_completed');
         assert.equal(event.result, 'ok');
         assert.equal(event.shop, 'rozetka');
-        assert.equal(event.transform, 'passthrough');
+        assert.equal(event.imagesStaged, 'oneToFour');
+        assert.equal(event.imagesSkipped, 'oneToFour');
         assert.equal(event.imagesIngested, 'oneToFour');
 
         const serialized = JSON.stringify(toWishlistAttributes(event, 'local'));
@@ -530,31 +518,10 @@ describe('link import telemetry', () => {
         assert.equal(serialized.includes(SECRET_TITLE), false);
         assert.equal(serialized.includes('1299'), false);
     });
-
-    it('labels a capped or missing binding as missing', () => {
-        assert.equal(pickTelemetryTransform([]), 'missing');
-        assert.equal(
-            pickTelemetryTransform([
-                {
-                    index: 0,
-                    contentType: 'image/jpeg',
-                    bytes: 1,
-                    transform: 'passthrough'
-                },
-                {
-                    index: 1,
-                    contentType: 'image/jpeg',
-                    bytes: 1,
-                    transform: 'binding'
-                }
-            ]),
-            'binding'
-        );
-    });
 });
 
 describe('import cache purge', () => {
-    it('deletes expired entries, images and old usage counters across pages', async () => {
+    it('deletes expired entries and images across pages', async () => {
         const memory = createMemoryBucket({ pageSize: 2 });
         const expired = String(NOW - 1);
         const fresh = String(NOW + HOUR_MS);
@@ -571,16 +538,6 @@ describe('import cache purge', () => {
         memory.seed(importImageKey('b'.repeat(32), 0), JPEG_BYTES, {
             uploaded: new Date(NOW - 25 * HOUR_MS)
         });
-        memory.seed(importUsageKey('2026-09-30'), '{"count":3}', {
-            customMetadata: {
-                expiresAt: String(Date.parse('2026-10-04T00:00:00.000Z'))
-            }
-        });
-        memory.seed(importUsageKey('2026-10-04'), '{"count":3}', {
-            customMetadata: {
-                expiresAt: String(Date.parse('2026-10-08T00:00:00.000Z'))
-            }
-        });
         memory.seed('f'.repeat(64), JPEG_BYTES, {
             uploaded: new Date(NOW - 30 * 24 * HOUR_MS)
         });
@@ -589,14 +546,10 @@ describe('import cache purge', () => {
             NOW
         );
 
-        assert.equal(purged, 4);
+        assert.equal(purged, 3);
         assert.deepEqual(
             memory.keys(),
-            [
-                importMetaKey('b'.repeat(32)),
-                importUsageKey('2026-10-04'),
-                'f'.repeat(64)
-            ].sort()
+            [importMetaKey('b'.repeat(32)), 'f'.repeat(64)].sort()
         );
     });
 
@@ -722,7 +675,7 @@ describe('wish image cleanup', () => {
         const importKeys = [
             importMetaKey(URL_HASH),
             importImageKey(URL_HASH, 0),
-            importUsageKey('2026-10-04')
+            importImageKey(URL_HASH, 1)
         ];
 
         for (const key of importKeys) {

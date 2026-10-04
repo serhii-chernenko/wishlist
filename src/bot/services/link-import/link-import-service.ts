@@ -14,6 +14,7 @@ import {
     appRateLimiterMissingEvent,
     emitTelemetryEvent,
     linkImportCompletedEvent,
+    type LinkImportCompletedInput,
     type TelemetryContext,
     type TelemetryFields
 } from '../../../worker/telemetry';
@@ -23,12 +24,7 @@ import {
     isCacheableOutcome
 } from './result-cache';
 import { resolveShop } from './shop';
-import {
-    countUnsupportedSkips,
-    createImageStaging,
-    type StageImagesDetailed,
-    type StageImagesOutcome
-} from './stage-images';
+import { countUnsupportedSkips, createImageStaging } from './stage-images';
 import type {
     CollectPageSignals,
     CreateSafeFetcher,
@@ -39,17 +35,18 @@ import type {
     LinkImportDeps,
     LinkImportOutcome,
     LinkImportResult,
-    LinkImportTransform,
     LoadStagedImage,
     NormalizeImportUrl,
     NormalizedImportUrl,
     RunLinkImport,
     SafeFetchFailure,
     StageImages,
+    StageImagesOutcome,
     StagedImage,
     StagedImageBody,
     ToImportedDraft
 } from './types';
+import { isSkippedStagedImage } from './types';
 
 export interface LinkImportImplementations {
     createSafeFetcher: CreateSafeFetcher;
@@ -83,14 +80,6 @@ const SAFE_FETCH_FAILURE_OUTCOMES = {
     badStatus: 'notProduct',
     network: 'timeout'
 } as const satisfies Record<SafeFetchFailure, LinkImportOutcome>;
-
-const TELEMETRY_TRANSFORM_PRIORITY = [
-    'binding',
-    'passthrough',
-    'missing'
-] as const satisfies readonly LinkImportTransform[];
-
-const CAPPED_TRANSFORM_LABEL: LinkImportTransform = 'missing';
 
 type ResultFields = Omit<LinkImportResult, 'elapsedMs'>;
 
@@ -158,17 +147,21 @@ export const toImportedDraft: ToImportedDraft = (product, link) => {
     };
 };
 
-/** Picks one transform label for telemetry; a capped or missing binding reports `missing` until a `capped` label exists. */
-export const pickTelemetryTransform = (
-    staged: readonly StagedImage[]
-): LinkImportTransform => {
-    return (
-        TELEMETRY_TRANSFORM_PRIORITY.find(transform => {
-            return staged.some(image => {
-                return image.transform === transform;
-            });
-        }) ?? CAPPED_TRANSFORM_LABEL
-    );
+/** Builds the closed-label `link_import_completed` input both channels report once an import finishes. */
+export const toLinkImportCompletedInput = (
+    result: LinkImportResult,
+    images: { staged: number; skipped: number; ingested: number }
+): LinkImportCompletedInput => {
+    return {
+        result: result.outcome,
+        source: result.product?.source ?? null,
+        shop: result.shop,
+        cacheOutcome: result.cache,
+        imagesStaged: images.staged,
+        imagesSkipped: images.skipped,
+        imagesIngested: images.ingested,
+        elapsedMs: result.elapsedMs
+    };
 };
 
 /** Emits `link_import_completed` with closed labels only; channels call it once, after staging or ingestion finishes. */
@@ -177,8 +170,9 @@ export const reportLinkImportCompleted = (
     input: {
         channel: LinkImportChannel;
         result: LinkImportResult;
-        staged: readonly StagedImage[];
-        imagesIngested: number;
+        staged: number;
+        skipped: number;
+        ingested: number;
     },
     emitter?: LinkImportTelemetryEmitter
 ) => {
@@ -186,14 +180,7 @@ export const reportLinkImportCompleted = (
         deps,
         linkImportCompletedEvent({
             channel: input.channel,
-            result: input.result.outcome,
-            source: input.result.product?.source ?? null,
-            shop: input.result.shop,
-            cacheOutcome: input.result.cache,
-            imagesStaged: input.staged.length,
-            imagesIngested: input.imagesIngested,
-            elapsedMs: input.result.elapsedMs,
-            transform: pickTelemetryTransform(input.staged)
+            ...toLinkImportCompletedInput(input.result, input)
         }),
         emitter
     );
@@ -326,7 +313,7 @@ const firstIndexes = (count: number, limit: number) => {
 };
 
 const createPreparePreviewImages = (
-    stageImagesDetailed: StageImagesDetailed,
+    stageImages: StageImages,
     loadStagedImage: LoadStagedImage
 ) => {
     return async (
@@ -340,50 +327,56 @@ const createPreparePreviewImages = (
             return { images: [], staged: [], skippedUnsupported: 0 };
         }
 
-        const outcome: StageImagesOutcome = await stageImagesDetailed(deps, {
+        const outcome: StageImagesOutcome = await stageImages(deps, {
             urlHash,
             imageUrls: product.images,
             indexes: firstIndexes(product.images.length, limit),
             budgetMs: LINK_IMPORT_IMAGE_BUDGET_MS
         });
-        const bodies = await Promise.all(
+        const loaded = await Promise.all(
             outcome.staged.map(image => {
                 return loadStagedImage(deps, { urlHash, index: image.index });
             })
         );
+        const images = loaded.filter((image): image is StagedImageBody => {
+            return !isSkippedStagedImage(image);
+        });
+        const unsupportedOnLoad = loaded.filter(image => {
+            return (
+                isSkippedStagedImage(image) &&
+                image.skipped === 'unsupportedFormat'
+            );
+        }).length;
 
         return {
-            images: bodies.filter((body): body is StagedImageBody => {
-                return body !== null;
-            }),
+            images,
             staged: outcome.staged,
-            skippedUnsupported: countUnsupportedSkips(outcome)
+            skippedUnsupported:
+                countUnsupportedSkips(outcome) + unsupportedOnLoad
         };
     };
 };
 
 /**
- * Wires the link import pipeline from WP2's fetch and extract functions:
+ * Wires the link import pipeline from the fetch and extract functions:
  * `run` is the cache, host limiter, fetch and extract orchestrator;
  * `stageImages`/`loadStagedImage` stage and serve images under
  * `import/<urlHash>/`; `preparePreviewImages` stages and loads the bot's
- * preview images. Telemetry is left to the channel through
- * `reportLinkImportCompleted`, so each import is counted once.
+ * preview images. Telemetry is left to the channel, so each import is
+ * counted once.
  */
 export const createLinkImportServices = (
     implementations: LinkImportImplementations
 ) => {
     const staging = createImageStaging(implementations.createSafeFetcher);
-    const stageImages: StageImages = staging.stageImages;
 
     return {
         run: createRunLinkImport(implementations),
-        stageImages,
-        stageImagesDetailed: staging.stageImagesDetailed,
+        stageImages: staging.stageImages,
         loadStagedImage: staging.loadStagedImage,
         toImportedDraft,
         preparePreviewImages: createPreparePreviewImages(
-            staging.stageImagesDetailed,
+            staging.stageImages,
             staging.loadStagedImage
         )
     };

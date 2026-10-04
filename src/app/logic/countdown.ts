@@ -30,10 +30,13 @@ const delayToNextSecond = (remainingMs: number) => {
 export interface PendingRegistry {
     track(flush: () => boolean): () => void;
     flushAll(): number;
+    isFlushing(): boolean;
 }
 
+/** `isFlushing` is true only while `flushAll` runs, so requests a commit starts then can ask the browser to outlive the page. */
 export const createPendingRegistry = (): PendingRegistry => {
     const pending = new Set<() => boolean>();
+    let flushing = false;
 
     return {
         track(flush) {
@@ -44,15 +47,25 @@ export const createPendingRegistry = (): PendingRegistry => {
             };
         },
         flushAll() {
+            const snapshot = Array.from(pending);
             let flushed = 0;
 
-            for (const flush of [...pending]) {
-                if (flush()) {
-                    flushed += 1;
+            flushing = true;
+
+            try {
+                for (const flush of snapshot) {
+                    if (flush()) {
+                        flushed += 1;
+                    }
                 }
+            } finally {
+                flushing = false;
             }
 
             return flushed;
+        },
+        isFlushing() {
+            return flushing;
         }
     };
 };

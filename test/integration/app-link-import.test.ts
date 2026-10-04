@@ -14,9 +14,10 @@ import type {
     ExtractedProduct,
     LinkImportRequest,
     LinkImportResult,
+    LoadedStagedImage,
     StageImagesInput,
-    StagedImage,
-    StagedImageBody
+    SkippedImage,
+    StagedImage
 } from '../../src/bot/services/link-import/types';
 import {
     APP_MAX_WISH_IMAGES,
@@ -106,7 +107,8 @@ interface FakeLinkImport extends LinkImportServices {
     loadCalls: { urlHash: string; index: number }[];
     nextRun: () => Promise<LinkImportResult>;
     nextStaged: StagedImage[];
-    nextBody: StagedImageBody | null;
+    nextSkipped: SkippedImage[];
+    nextBody: LoadedStagedImage;
 }
 
 const isOwnCurrency = (value: string | null) => {
@@ -122,6 +124,7 @@ const createFakeLinkImport = (): FakeLinkImport => {
         loadCalls: [],
         nextRun: () => Promise.resolve(buildResult()),
         nextStaged: [],
+        nextSkipped: [],
         nextBody: {
             body: JPEG_BYTES.buffer as ArrayBuffer,
             contentType: 'image/jpeg'
@@ -134,7 +137,10 @@ const createFakeLinkImport = (): FakeLinkImport => {
         stageImages(_deps, input) {
             fake.stageCalls.push(input);
 
-            return Promise.resolve(fake.nextStaged);
+            return Promise.resolve({
+                staged: fake.nextStaged,
+                skipped: fake.nextSkipped
+            });
         },
         loadStagedImage(_deps, input) {
             fake.loadCalls.push(input);
@@ -210,6 +216,9 @@ const createFakeTelegram = (): FakeTelegram => {
                     { file_id: fileId, width: 1280, height: 1280 }
                 ]
             } as unknown as SentPhotoMessage;
+        },
+        async sendMediaGroup() {
+            throw new Error('unexpected sendMediaGroup');
         },
         async deleteMessage(chatId, messageId) {
             fake.deleteCalls.push({ chatId, messageId });
@@ -518,11 +527,13 @@ describe('Mini App link import endpoints', () => {
                     return {
                         index,
                         contentType: 'image/jpeg',
-                        bytes: 1000,
-                        transform: 'binding'
+                        bytes: 1000
                     };
                 }
             );
+            linkImport.nextSkipped = [
+                { index: 5, reason: 'unsupportedFormat' }
+            ];
 
             await importLink();
             restoreConsole();
@@ -548,9 +559,9 @@ describe('Mini App link import endpoints', () => {
                 shop: 'rozetka',
                 cacheOutcome: 'miss',
                 imagesStaged: 'fivePlus',
+                imagesSkipped: 'oneToFour',
                 imagesIngested: 'none',
-                elapsedBucket: 'quick',
-                transform: 'binding'
+                elapsedBucket: 'quick'
             });
             assert.equal(
                 JSON.stringify(events).includes('rozetka.com.ua'),
@@ -987,7 +998,7 @@ describe('Mini App link import endpoints', () => {
 
         it('answers 502 when the staged image cannot be produced', async () => {
             const { wish } = await seedWish();
-            linkImport.nextBody = null;
+            linkImport.nextBody = { skipped: 'failed' };
 
             const response = await importOnce(wish.id);
 
@@ -995,6 +1006,36 @@ describe('Mini App link import endpoints', () => {
             assert.equal(response.status, 502);
             assert.deepEqual(await readError(response), { code: 'upstream' });
             assert.deepEqual(telegram.sendPhotoCalls, []);
+            assert.deepEqual(eventResults(), ['telegramError']);
+        });
+
+        it('answers 415 when the image is in a format Telegram does not take', async () => {
+            const { wish } = await seedWish();
+            linkImport.nextBody = { skipped: 'unsupportedFormat' };
+
+            const response = await importOnce(wish.id);
+
+            restoreConsole();
+            assert.equal(response.status, 415);
+            assert.deepEqual(await readError(response), {
+                code: 'unsupportedMedia'
+            });
+            assert.deepEqual(telegram.sendPhotoCalls, []);
+            assert.deepEqual(eventResults(), ['unsupported']);
+        });
+
+        it('answers 415 when Telegram refuses the imported photo', async () => {
+            const { wish } = await seedWish();
+            telegram.failWith = telegramError(400);
+
+            const response = await importOnce(wish.id);
+
+            restoreConsole();
+            assert.equal(response.status, 415);
+            assert.deepEqual(await readError(response), {
+                code: 'unsupportedMedia'
+            });
+            assert.deepEqual(await storedImages(wish.id), []);
             assert.deepEqual(eventResults(), ['unsupported']);
         });
 

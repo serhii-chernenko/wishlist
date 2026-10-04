@@ -71,7 +71,7 @@ const swallowBadRequest = async (operation: () => Promise<unknown>) => {
     }
 };
 
-const stripUrlButtons = (keyboard: ReplyMarkup | undefined) => {
+export const stripUrlButtons = (keyboard: ReplyMarkup | undefined) => {
     if (keyboard === undefined || !('inline_keyboard' in keyboard)) {
         return keyboard;
     }

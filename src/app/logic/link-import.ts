@@ -21,7 +21,8 @@ export type ImportFailureReason =
     | 'blocked'
     | 'notProduct'
     | 'timeout'
-    | 'rateLimited';
+    | 'rateLimited'
+    | 'disabled';
 
 export type ImportNote =
     | { kind: 'filled'; host: string }

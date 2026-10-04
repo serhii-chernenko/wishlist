@@ -88,6 +88,13 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 - Escape the address in bot HTML with the existing `escapeHtml` helper; never re-implement escaping.
 - Never persist `me`, contact details, the delivery address or the masked phone client-side: no `sessionStorage`, `localStorage`, Telegram CloudStorage, IndexedDB or cookies. `test/app-contact-storage.test.ts` allows storage access only in `src/app/nav/persistence.ts` and `src/app/telegram/theme.ts`; extend that allowlist only after review.
 
+## Link import
+
+- Link import never logs or emits URLs, query strings, hosts, page titles or prices: not in telemetry, `console` output, R2 keys or `/img/i` paths. Telemetry uses the closed labels in `linkImportCompletedEvent` only.
+- Shop fetches go through `src/bot/services/link-import/safe-fetch.ts`; never call `fetch` on a user-supplied URL directly.
+- Images are never transcoded: only JPEG, PNG and WebP up to 10 MiB are staged, everything else is reported as unsupported.
+- Respect `LINK_IMPORT_ENABLED` in every entry point (app, API, `/img/i`, bot); see `docs/OPERATIONS.md` section 19.
+
 ## Releases
 
 - `CHANGELOG.md` is the human-owned release history.

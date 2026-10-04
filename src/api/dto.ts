@@ -45,7 +45,7 @@ import {
     type ExchangeRates
 } from '../shared/money';
 import { toWishPriority } from '../shared/priority';
-import type { WorkerBindings } from '../worker/env';
+import { isLinkImportEnabled, type WorkerBindings } from '../worker/env';
 import { sha256Hex, type ApiCrypto } from './auth/crypto';
 import type { Signer } from './auth/signing';
 import { getNextOffset } from './validate';
@@ -336,6 +336,7 @@ export const buildAppConfig = (
         rates,
         priceFilters: getPriceFiltersByCurrency(),
         supportLinks: getSupportLinks(env, getTranslator(locale)),
-        links: getAppLinks(env)
+        links: getAppLinks(env),
+        linkImportEnabled: isLinkImportEnabled(env)
     };
 };

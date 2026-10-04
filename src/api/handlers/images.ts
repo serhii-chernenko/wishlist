@@ -9,12 +9,14 @@ import {
     loadSession,
     saveSessionIfChanged
 } from '../../bot/runtime/session-store';
+import { isSkippedStagedImage } from '../../bot/services/link-import/types';
 import { createWishService } from '../../bot/services/wish-service';
 import type { UserRecord, WishRecord } from '../../db/repositories';
 import {
     APP_MAX_WISH_IMAGES,
     APP_UPLOAD_MAX_BYTES,
     IMAGE_REORDER_SOURCES,
+    LINK_IMPORT_IMAGE_MAX_BYTES,
     LINK_IMPORT_MAX_IMAGE_CANDIDATES,
     type AppUploadContentType,
     type OwnWishDto
@@ -53,6 +55,7 @@ import {
     validationError
 } from '../validate';
 
+const TELEGRAM_BAD_REQUEST_CODE = 400;
 const TELEGRAM_FORBIDDEN_CODE = 403;
 const UPLOAD_FILE_EXTENSIONS = {
     'image/jpeg': 'jpg',
@@ -60,12 +63,17 @@ const UPLOAD_FILE_EXTENSIONS = {
     'image/webp': 'webp'
 } as const;
 
-const isTelegramForbidden = (error: unknown) => {
+const hasTelegramErrorCode = (error: unknown, code: number) => {
     return (
-        error instanceof TelegramApiError &&
-        error.response.error_code === TELEGRAM_FORBIDDEN_CODE
+        error instanceof TelegramApiError && error.response.error_code === code
     );
 };
+
+const isTelegramForbidden = (error: unknown) => {
+    return hasTelegramErrorCode(error, TELEGRAM_FORBIDDEN_CODE);
+};
+
+type TelegramPhotoRejection = 'upstream' | 'unsupportedMedia';
 
 const getWishService = (c: ApiContext) => {
     return createWishService(c.var.repos, c.var.deps.now);
@@ -117,11 +125,35 @@ const rejectUpload = (
     throw error;
 };
 
+const rejectTelegramFailure = (
+    c: ApiContext,
+    error: unknown,
+    badRequestCode: TelegramPhotoRejection
+): never => {
+    if (isTelegramForbidden(error)) {
+        return rejectUpload(
+            c,
+            'writeAccessRequired',
+            new ApiError('writeAccessRequired')
+        );
+    }
+
+    if (
+        badRequestCode === 'unsupportedMedia' &&
+        hasTelegramErrorCode(error, TELEGRAM_BAD_REQUEST_CODE)
+    ) {
+        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
+    }
+
+    return rejectUpload(c, 'telegramError', new ApiError('upstream'));
+};
+
 const sendUploadedPhoto = async (
     c: ApiContext,
     api: TelegramApi,
     bytes: ArrayBuffer,
-    contentType: AppUploadContentType
+    contentType: AppUploadContentType,
+    badRequestCode: TelegramPhotoRejection
 ) => {
     try {
         return await api.sendPhoto(
@@ -133,15 +165,7 @@ const sendUploadedPhoto = async (
             }
         );
     } catch (error) {
-        return rejectUpload(
-            c,
-            isTelegramForbidden(error)
-                ? 'writeAccessRequired'
-                : 'telegramError',
-            new ApiError(
-                isTelegramForbidden(error) ? 'writeAccessRequired' : 'upstream'
-            )
-        );
+        return rejectTelegramFailure(c, error, badRequestCode);
     }
 };
 
@@ -172,11 +196,18 @@ const ingestPhotoBytes = async (
         wishId: number;
         bytes: ArrayBuffer;
         contentType: AppUploadContentType;
+        badRequestCode: TelegramPhotoRejection;
     }
 ) => {
     const { user, wishId, bytes, contentType } = input;
     const api = getTelegramApi(c);
-    const sent = await sendUploadedPhoto(c, api, bytes, contentType);
+    const sent = await sendUploadedPhoto(
+        c,
+        api,
+        bytes,
+        contentType,
+        input.badRequestCode
+    );
     const cleanUp = runInBackground(
         c,
         api.deleteMessage(c.var.actor.id, sent.message_id)
@@ -229,7 +260,13 @@ export const uploadWishImage: ApiHandler = async c => {
         return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
     }
 
-    return ingestPhotoBytes(c, { user, wishId, bytes, contentType });
+    return ingestPhotoBytes(c, {
+        user,
+        wishId,
+        bytes,
+        contentType,
+        badRequestCode: 'upstream'
+    });
 };
 
 const IMPORT_TOKEN_MAX_LENGTH = 160;
@@ -309,15 +346,16 @@ export const importWishImage: ApiHandler = async c => {
         index
     });
 
-    if (staged === null) {
-        return rejectUpload(c, 'unsupported', new ApiError('upstream'));
+    if (isSkippedStagedImage(staged)) {
+        return staged.skipped === 'unsupportedFormat'
+            ? rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'))
+            : rejectUpload(c, 'telegramError', new ApiError('upstream'));
     }
 
-    if (staged.body.byteLength > APP_UPLOAD_MAX_BYTES) {
-        return rejectUpload(c, 'tooLarge', new ApiError('payloadTooLarge'));
-    }
-
-    if (!matchesDeclaredImageType(staged.body, staged.contentType)) {
+    if (
+        staged.body.byteLength > LINK_IMPORT_IMAGE_MAX_BYTES ||
+        !matchesDeclaredImageType(staged.body, staged.contentType)
+    ) {
         return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
     }
 
@@ -325,7 +363,8 @@ export const importWishImage: ApiHandler = async c => {
         user,
         wishId,
         bytes: staged.body,
-        contentType: staged.contentType
+        contentType: staged.contentType,
+        badRequestCode: 'unsupportedMedia'
     });
 };
 

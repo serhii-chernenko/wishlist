@@ -53,7 +53,8 @@ test('a reload of the same launch restores the saved stack', () => {
             stored: serializeNavSnapshot(STACK, LAUNCH),
             initData: INIT_DATA,
             startParam: 'gives',
-            registered: true
+            registered: true,
+            linkImportEnabled: false
         }),
         STACK
     );
@@ -68,7 +69,8 @@ test('a new launch ignores the snapshot and follows its start param', () => {
                 stored,
                 initData: NEXT_LAUNCH,
                 startParam: 'gives',
-                registered: true
+                registered: true,
+                linkImportEnabled: false
             })
         ),
         ['home', 'gives']
@@ -78,7 +80,8 @@ test('a new launch ignores the snapshot and follows its start param', () => {
             stored,
             initData: NEXT_LAUNCH,
             startParam: null,
-            registered: true
+            registered: true,
+            linkImportEnabled: false
         }),
         [{ screen: 'home' }]
     );
@@ -98,7 +101,8 @@ test('a missing, broken or foreign-version snapshot falls back to start routing'
                     stored,
                     initData: INIT_DATA,
                     startParam: 'find',
-                    registered: true
+                    registered: true,
+                    linkImportEnabled: false
                 })
             ),
             ['home', 'find'],
@@ -119,7 +123,8 @@ test('owner routes are stored without payment details and restored with a fresh 
         stored,
         initData: INIT_DATA,
         startParam: null,
-        registered: true
+        registered: true,
+        linkImportEnabled: false
     });
 
     assert.deepEqual(restored[1], {
@@ -227,7 +232,8 @@ test('very deep stacks are capped', () => {
         stored: serializeNavSnapshot(deep, LAUNCH),
         initData: INIT_DATA,
         startParam: null,
-        registered: true
+        registered: true,
+        linkImportEnabled: false
     });
 
     assert.ok(restored.length <= NAV_SNAPSHOT_MAX_ROUTES + 1);
@@ -252,7 +258,8 @@ test('a reload on the link step reopens the link step above the wish list', () =
             stored: serializeNavSnapshot(stack, LAUNCH),
             initData: INIT_DATA,
             startParam: null,
-            registered: true
+            registered: true,
+            linkImportEnabled: false
         }),
         stack
     );
@@ -261,7 +268,8 @@ test('a reload on the link step reopens the link step above the wish list', () =
             stored: serializeNavSnapshot(stack, LAUNCH),
             initData: INIT_DATA,
             startParam: null,
-            registered: false
+            registered: false,
+            linkImportEnabled: false
         }),
         [{ screen: 'onboarding' }]
     );

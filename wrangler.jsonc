@@ -106,9 +106,6 @@
             }
         }
     ],
-    "images": {
-        "binding": "IMAGE_TRANSFORMS"
-    },
     "r2_buckets": [
         {
             "binding": "IMAGES",
@@ -248,9 +245,6 @@
                     }
                 }
             ],
-            "images": {
-                "binding": "IMAGE_TRANSFORMS"
-            },
             "r2_buckets": [
                 {
                     "binding": "IMAGES",
@@ -336,9 +330,6 @@
                         }
                     }
                 ],
-                "images": {
-                    "binding": "IMAGE_TRANSFORMS"
-                },
                 "r2_buckets": [
                     {
                         "binding": "IMAGES",

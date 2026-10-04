@@ -19,11 +19,15 @@ import {
     type SecretComparisonCrypto,
     type SecretMatcher
 } from '../telegram-auth';
+import type { LinkImportServiceSet } from '../../bot/services/link-import/link-import-service';
+import { toBotLinkImport } from '../link-import';
 import {
+    appRateLimiterMissingEvent,
     emitTelemetryEvent,
     getTelegramCallbackCategory,
     getTelegramCommandCategory,
     getTelegramUpdateType,
+    linkImportCompletedEvent,
     type TelemetryContext
 } from '../telemetry';
 
@@ -47,6 +51,7 @@ export interface TelegramRouteDependencies {
     createLeaseId?: () => string;
     now?: () => Date;
     logWarning?: (message: string) => void;
+    linkImport?: LinkImportServiceSet;
 }
 
 export interface TelegramUpdateLedger {
@@ -355,8 +360,10 @@ export const handleUpdateWithWishlistBot = async (
         dependencies: CreateWishlistBotDependencies
     ) => WishlistBot = createWishlistBot,
     context?: TelemetryContext,
-    publicOrigin?: string
+    publicOrigin?: string,
+    linkImportServices?: LinkImportServiceSet
 ) => {
+    const linkImport = toBotLinkImport(env, linkImportServices);
     const telemetry: WishlistBotTelemetry = {
         botActionCompleted(input) {
             emitTelemetryEvent(env, context, {
@@ -370,10 +377,25 @@ export const handleUpdateWithWishlistBot = async (
                 ...input,
                 outcome: 'error'
             });
+        },
+        linkImportCompleted(input) {
+            emitTelemetryEvent(
+                env,
+                context,
+                linkImportCompletedEvent({ ...input, channel: 'bot' })
+            );
+        },
+        importRateLimiterGap(result) {
+            emitTelemetryEvent(
+                env,
+                context,
+                appRateLimiterMissingEvent('import', result)
+            );
         }
     };
     const bot = createBot(env, {
         telemetry,
+        ...(linkImport === undefined ? {} : { linkImport }),
         readExchangeRates: repository => {
             return readWorkerExchangeRates(env, context, repository);
         },
@@ -421,7 +443,8 @@ export const registerTelegramRoutes = (
                 botKey,
                 createWishlistBot,
                 context,
-                publicOrigin
+                publicOrigin,
+                dependencies.linkImport
             );
         });
     const secretsMatch = dependencies.secretsMatch ?? compareSecrets;

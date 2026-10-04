@@ -52,6 +52,8 @@ interface ImportScenario {
     result?: Partial<LinkImportResult>;
     product?: Partial<ExtractedProduct> | null;
     stagedIndexes?: number[] | 'all';
+    unsupportedIndexes?: number[];
+    rejectedByTelegram?: number;
     gate?: Promise<void>;
     limiterAllows?: boolean;
     enabled?: boolean;
@@ -157,14 +159,18 @@ describe('Bot link import', () => {
                         ? input.indexes
                         : scenario.stagedIndexes;
 
-                return indexes.map(index => {
-                    return {
-                        index,
-                        contentType: 'image/jpeg' as const,
-                        bytes: 1000,
-                        transform: 'passthrough' as const
-                    };
-                });
+                return {
+                    staged: indexes.map(index => {
+                        return {
+                            index,
+                            contentType: 'image/jpeg' as const,
+                            bytes: 1000
+                        };
+                    }),
+                    skipped: (scenario.unsupportedIndexes ?? []).map(index => {
+                        return { index, reason: 'unsupportedFormat' as const };
+                    })
+                };
             },
             async loadStagedImage(_deps, input) {
                 return {
@@ -176,10 +182,15 @@ describe('Bot link import', () => {
             async sendPreview(_api, input) {
                 previewCalls.push(input);
 
+                const rejected = scenario.rejectedByTelegram ?? 0;
+
                 return {
-                    fileIds: input.images.map((_image, index) => {
-                        return `imported-${index}`;
-                    }),
+                    fileIds: input.images
+                        .slice(rejected)
+                        .map((_image, index) => {
+                            return `imported-${index}`;
+                        }),
+                    rejected,
                     textDelivered: true
                 };
             }
@@ -470,11 +481,43 @@ describe('Bot link import', () => {
                     shop: 'rozetka',
                     cacheOutcome: 'miss',
                     imagesStaged: 3,
+                    imagesSkipped: 0,
                     imagesIngested: 3,
-                    elapsedMs: 1200,
-                    transform: 'passthrough'
+                    elapsedMs: 1200
                 }
             ]);
+        });
+
+        it('notes unsupported photos after the preview and counts them as skipped', async () => {
+            scenario.stagedIndexes = [0];
+            scenario.unsupportedIndexes = [1, 2];
+            await sendText(PRODUCT_URL);
+
+            const [wish] = await readWishes();
+
+            assert.deepEqual(JSON.parse(wish?.images ?? '[]'), ['imported-0']);
+            assert.ok(
+                webhook.lastMessage().text.includes(IMPORT.photosUnsupported())
+            );
+            assert.equal(
+                webhook.lastMessage().text.includes(IMPORT.photosFailed()),
+                false
+            );
+            assert.equal(events[0]?.imagesSkipped, 2);
+            assert.equal(events[0]?.imagesIngested, 1);
+        });
+
+        it('notes photos Telegram refused as unsupported', async () => {
+            scenario.rejectedByTelegram = 1;
+            await sendText(PRODUCT_URL);
+
+            const [wish] = await readWishes();
+
+            assert.equal(JSON.parse(wish?.images ?? '[]').length, 2);
+            assert.ok(
+                webhook.lastMessage().text.includes(IMPORT.photosUnsupported())
+            );
+            assert.equal(events[0]?.imagesSkipped, 1);
         });
 
         it('keeps a foreign-currency price out of the wish and shows it as a hint', async () => {

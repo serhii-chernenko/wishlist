@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
 import { createImportSigner } from '../src/api/auth/import-signing';
+import type { LinkImportServices } from '../src/api/context';
 import type { RateLimiterLike } from '../src/api/rate-limit';
 import { importImageKey } from '../src/bot/services/link-import/storage-keys';
 import type { LoadStagedImage } from '../src/bot/services/link-import/types';
@@ -38,12 +39,29 @@ describe('signed import image proxy', () => {
         }).buildImportImageUrl({ urlHash, index }, NOW);
     };
 
-    const request = (path: string, options: { withLoader?: boolean } = {}) => {
+    const request = (
+        path: string,
+        options: {
+            withLoader?: boolean;
+            viaServices?: boolean;
+            enabled?: boolean;
+        } = {}
+    ) => {
         const loadStagedImage: LoadStagedImage = async (_deps, input) => {
             loaderCalls.push(input);
 
             return loaderResult;
         };
+        const loader =
+            options.withLoader === false
+                ? {}
+                : options.viaServices === true
+                  ? {
+                        linkImport: {
+                            loadStagedImage
+                        } as unknown as LinkImportServices
+                    }
+                  : { loadStagedImage };
         const app = createApp(
             {},
             {},
@@ -56,12 +74,13 @@ describe('signed import image proxy', () => {
                 emitTelemetry: (_env, _context, fields) => {
                     events.push(fields);
                 },
-                ...(options.withLoader === false ? {} : { loadStagedImage })
+                ...loader
             }
         );
         const env = {
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
+            LINK_IMPORT_ENABLED: options.enabled === false ? 'false' : 'true',
             IMAGES: memory.bucket
         } as unknown as WorkerBindings;
 
@@ -88,7 +107,7 @@ describe('signed import image proxy', () => {
         now = NOW;
         limiter = null;
         loaderCalls = [];
-        loaderResult = null;
+        loaderResult = { skipped: 'failed' };
     });
 
     it('serves a staged image from R2 with private, same-origin, sandboxed headers', async () => {
@@ -160,6 +179,33 @@ describe('signed import image proxy', () => {
             withoutLoader.headers.get('Content-Type'),
             'image/svg+xml'
         );
+    });
+
+    it('re-stages through the wired link import services on a miss', async () => {
+        loaderResult = {
+            body: JPEG_BYTES.buffer as ArrayBuffer,
+            contentType: 'image/jpeg'
+        };
+
+        const response = await request(await signedUrl(3), {
+            viaServices: true
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('Content-Type'), 'image/jpeg');
+        assert.deepEqual(loaderCalls, [{ urlHash: URL_HASH, index: 3 }]);
+    });
+
+    it('answers 404 without touching R2 while the kill switch is off', async () => {
+        memory.seed(importImageKey(URL_HASH, 0), JPEG_BYTES, {
+            contentType: 'image/jpeg'
+        });
+
+        const response = await request(await signedUrl(0), { enabled: false });
+
+        assert.equal(response.status, 404);
+        assert.deepEqual(loaderCalls, []);
+        assert.deepEqual(servedEvents(), ['import:notFound:404']);
     });
 
     it('rejects forged, expired and malformed URLs before touching R2', async () => {

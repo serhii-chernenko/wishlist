@@ -400,7 +400,7 @@ describe('Bot flows through the Worker on D1', () => {
 
             assert.equal(
                 webhook.lastMessage().text,
-                LL.wishlist.add.description('200')
+                LL.wishlist.add.import.prompt({ max: 200 })
             );
             assert.equal(
                 (await readSession(alice.id))?.state.pendingInput?.kind,

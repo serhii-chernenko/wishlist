@@ -15,6 +15,7 @@ import {
     Wallet
 } from 'lucide';
 
+import { newWishRoute } from '../logic/nav';
 import type { ScreenProps } from '../nav/routes';
 import { useLL, useNav, useSession } from '../state/context';
 import { useBottomButton, useSettingsButton } from '../telegram/buttons';
@@ -60,12 +61,12 @@ const ABOUT_MENU: readonly MenuEntry[] = [
 const UserHome = () => {
     const LL = useLL();
     const nav = useNav();
-    const { counts, me } = useSession();
+    const { counts, me, config } = useSession();
 
     useBottomButton({
         text: LL.home.addWish(),
         onClick: () => {
-            nav.push({ screen: 'linkImport' });
+            nav.push(newWishRoute(config.linkImportEnabled));
         }
     });
     useSettingsButton(() => {

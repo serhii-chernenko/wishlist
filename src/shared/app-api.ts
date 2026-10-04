@@ -94,7 +94,6 @@ export const LINK_IMPORT_CLIENT_TIMEOUT_MS = 9000;
 export const LINK_IMPORT_BOT_BUDGET_MS = 20_000;
 export const LINK_IMPORT_HTML_MAX_BYTES = 2 * 1024 * 1024;
 export const LINK_IMPORT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
-export const LINK_IMPORT_PASSTHROUGH_MAX_BYTES = APP_UPLOAD_MAX_BYTES;
 export const LINK_IMPORT_MAX_IMAGE_CANDIDATES = 9;
 export const LINK_IMPORT_PRESELECTED_IMAGES = 5;
 export const LINK_IMPORT_BOT_IMAGES = 5;
@@ -146,14 +145,6 @@ export const LINK_IMPORT_SHOPS = [
 ] as const;
 
 export type LinkImportShop = (typeof LINK_IMPORT_SHOPS)[number];
-
-export const LINK_IMPORT_TRANSFORMS = [
-    'binding',
-    'passthrough',
-    'missing'
-] as const;
-
-export type LinkImportTransform = (typeof LINK_IMPORT_TRANSFORMS)[number];
 
 export const LINK_IMPORT_URL_HASH_LENGTH = 32;
 
@@ -454,6 +445,7 @@ export type BootstrapDto = {
         priceFilters: Record<Currency, PriceFilterDto[]>;
         supportLinks: SupportLinkDto[];
         links: Record<AppLinkId, string | null>;
+        linkImportEnabled: boolean;
     };
 };
 

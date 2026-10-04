@@ -29,9 +29,10 @@ import {
     isStagedImageIndex,
     readStagedImage
 } from '../../bot/services/link-import/stage-images';
-import type {
-    LinkImportDeps,
-    LoadStagedImage
+import {
+    isSkippedStagedImage,
+    type LinkImportDeps,
+    type LoadStagedImage
 } from '../../bot/services/link-import/types';
 import { createWishService } from '../../bot/services/wish-service';
 import {
@@ -42,7 +43,7 @@ import {
 } from '../../shared/app-api';
 import { buildPhotoPlaceholderSvg } from '../../shared/photo-placeholder';
 import type { WorkerApp } from '../../worker/app';
-import type { WorkerBindings } from '../../worker/env';
+import { isLinkImportEnabled, type WorkerBindings } from '../../worker/env';
 import {
     appRateLimitedEvent,
     appRateLimiterMissingEvent,
@@ -493,6 +494,10 @@ const toLinkImportDeps = (c: ProxyContext, deps: ProxyDeps): LinkImportDeps => {
 };
 
 const serveImportImage: ImageResponder = async (c, deps) => {
+    if (!isLinkImportEnabled(c.env)) {
+        return rejectionResponse(NOT_FOUND);
+    }
+
     const authorization = await authorizeImportImage(c, deps);
 
     if ('status' in authorization) {
@@ -517,7 +522,7 @@ const serveImportImage: ImageResponder = async (c, deps) => {
         authorization
     );
 
-    return restaged === null
+    return isSkippedStagedImage(restaged)
         ? { response: placeholderResponse('import'), result: 'placeholder' }
         : { response: imageResponse('import', restaged), result: 'miss' };
 };
@@ -574,8 +579,16 @@ const createImageHandler = (
     };
 };
 
-const readStagedImageOnly: LoadStagedImage = (deps, input) => {
-    return readStagedImage(deps.env.IMAGES, input.urlHash, input.index);
+const readStagedImageOnly: LoadStagedImage = async (deps, input) => {
+    return (
+        (await readStagedImage(
+            deps.env.IMAGES,
+            input.urlHash,
+            input.index
+        )) ?? {
+            skipped: 'failed'
+        }
+    );
 };
 
 const notFoundHandler = () => errorResponse(NOT_FOUND.status);
@@ -589,7 +602,10 @@ export const registerImageProxyRoutes = (
         ...(dependencies.cache === undefined
             ? {}
             : { cache: dependencies.cache }),
-        loadStagedImage: dependencies.loadStagedImage ?? readStagedImageOnly
+        loadStagedImage:
+            dependencies.loadStagedImage ??
+            dependencies.linkImport?.loadStagedImage ??
+            readStagedImageOnly
     };
 
     app.get(

@@ -12,6 +12,7 @@ import {
 } from '../src/api/telegram-api';
 import {
     ingestStagedImage,
+    sendBotImportPreview,
     sendImportPreview
 } from '../src/bot/services/link-import/ingest';
 import type { StagedImageBody } from '../src/bot/services/link-import/types';
@@ -144,7 +145,11 @@ describe('sendImportPreview', () => {
             images: []
         });
 
-        assert.deepEqual(result, { fileIds: [], textDelivered: true });
+        assert.deepEqual(result, {
+            fileIds: [],
+            rejected: 0,
+            textDelivered: true
+        });
         assert.deepEqual(telegram.calls, ['text:short']);
         assert.deepEqual(telegram.textExtras[0], {
             parse_mode: 'HTML',
@@ -161,7 +166,11 @@ describe('sendImportPreview', () => {
             images: [WEBP]
         });
 
-        assert.deepEqual(result, { fileIds: ['photo-0'], textDelivered: true });
+        assert.deepEqual(result, {
+            fileIds: ['photo-0'],
+            rejected: 0,
+            textDelivered: true
+        });
         assert.deepEqual(telegram.calls, ['photo:0']);
         assert.deepEqual(telegram.photoExtras[0], {
             filename: 'photo-0.webp',
@@ -195,7 +204,11 @@ describe('sendImportPreview', () => {
             images: [JPEG]
         });
 
-        assert.deepEqual(result, { fileIds: [], textDelivered: true });
+        assert.deepEqual(result, {
+            fileIds: [],
+            rejected: 1,
+            textDelivered: true
+        });
         assert.deepEqual(telegram.calls, ['photo:0', 'text:short']);
     });
 
@@ -209,6 +222,7 @@ describe('sendImportPreview', () => {
 
         assert.deepEqual(result, {
             fileIds: ['album-0', 'album-1', 'album-2'],
+            rejected: 0,
             textDelivered: true
         });
         assert.deepEqual(telegram.calls, ['album:3']);
@@ -266,6 +280,7 @@ describe('sendImportPreview', () => {
 
         assert.deepEqual(result, {
             fileIds: ['photo-0', 'photo-2'],
+            rejected: 1,
             textDelivered: true
         });
         assert.deepEqual(telegram.calls, [
@@ -293,6 +308,73 @@ describe('sendImportPreview', () => {
             }),
             TelegramApiError
         );
+    });
+});
+
+describe('sendBotImportPreview', () => {
+    const buttonUrlError = (method: string) => {
+        return new TelegramApiError(method, {
+            error_code: 400,
+            description: 'Bad Request: BUTTON_URL_INVALID'
+        });
+    };
+
+    it('retries a captioned photo without URL buttons when Telegram rejects the button URL', async () => {
+        const telegram = createRecordingTelegram();
+        const sendPhoto = telegram.sendPhoto;
+        let refused = false;
+
+        telegram.sendPhoto = async (chatId, photo, extra) => {
+            if (!refused && extra?.reply_markup !== undefined) {
+                refused = true;
+                throw buttonUrlError('sendPhoto');
+            }
+
+            return sendPhoto(chatId, photo, extra);
+        };
+
+        const result = await sendBotImportPreview(telegram, {
+            chatId: CHAT_ID,
+            html: SHORT_HTML,
+            replyMarkup: KEYBOARD,
+            images: [JPEG]
+        });
+
+        assert.deepEqual(result, {
+            fileIds: ['photo-0'],
+            rejected: 0,
+            textDelivered: true
+        });
+        assert.deepEqual(telegram.photoExtras[0]?.reply_markup, {
+            inline_keyboard: []
+        });
+    });
+
+    it('sends the text after an album without URL buttons when Telegram rejects the button URL', async () => {
+        const telegram = createRecordingTelegram();
+        const sendMessage = telegram.sendMessage;
+
+        telegram.sendMessage = async (chatId, text, extra) => {
+            if (extra?.reply_markup === KEYBOARD) {
+                throw buttonUrlError('sendMessage');
+            }
+
+            return sendMessage(chatId, text, extra);
+        };
+
+        const result = await sendBotImportPreview(telegram, {
+            chatId: CHAT_ID,
+            html: SHORT_HTML,
+            replyMarkup: KEYBOARD,
+            images: [JPEG, PNG]
+        });
+
+        assert.deepEqual(result.fileIds, ['album-0', 'album-1']);
+        assert.deepEqual(telegram.calls, ['album:2', 'text:short']);
+        assert.deepEqual(telegram.textExtras[0], {
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: [] }
+        });
     });
 });
 

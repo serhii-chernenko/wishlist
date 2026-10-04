@@ -15,7 +15,6 @@ import {
     LINK_IMPORT_OUTCOMES,
     LINK_IMPORT_SHOPS,
     LINK_IMPORT_SOURCES,
-    LINK_IMPORT_TRANSFORMS,
     type LinkImportOutcome
 } from '../src/shared/app-api';
 import type { WorkerBindings } from '../src/worker/env';
@@ -89,11 +88,11 @@ test('the kill switch and the AI flag are read as exact strings', () => {
     assert.equal(isLinkImportAiEnabled({ LINK_IMPORT_AI: 'true' }), true);
 });
 
-test('every wrangler block declares the link import bindings and flags', () => {
+test('every wrangler block declares the link import limiters and flags and no image transforms', () => {
     const namespaces = new Set<string>();
 
     for (const [name, block] of Object.entries(wranglerBlocks)) {
-        assert.deepEqual(block.images, { binding: 'IMAGE_TRANSFORMS' }, name);
+        assert.equal(block.images, undefined, name);
         assert.equal(block.vars?.LINK_IMPORT_AI, 'false', name);
 
         for (const limiter of ['APP_IMPORT_LIMITER', 'LINK_HOST_LIMITER']) {
@@ -143,27 +142,25 @@ test('the link import event keeps only closed labels for every enum value', () =
     for (const shop of LINK_IMPORT_SHOPS) {
         for (const result of LINK_IMPORT_OUTCOMES) {
             for (const source of [null, ...LINK_IMPORT_SOURCES]) {
-                for (const transform of LINK_IMPORT_TRANSFORMS) {
-                    const attributes = toWishlistAttributes(
-                        linkImportCompletedEvent({
-                            channel: 'app',
-                            result,
-                            source,
-                            shop,
-                            cacheOutcome: 'miss',
-                            imagesStaged: 5,
-                            imagesIngested: 0,
-                            elapsedMs: 1200,
-                            transform
-                        }),
-                        'production'
-                    );
+                const attributes = toWishlistAttributes(
+                    linkImportCompletedEvent({
+                        channel: 'app',
+                        result,
+                        source,
+                        shop,
+                        cacheOutcome: 'miss',
+                        imagesStaged: 5,
+                        imagesSkipped: 2,
+                        imagesIngested: 0,
+                        elapsedMs: 1200
+                    }),
+                    'production'
+                );
 
-                    assert.equal(
-                        Object.values(attributes).includes('invalid'),
-                        false
-                    );
-                }
+                assert.equal(
+                    Object.values(attributes).includes('invalid'),
+                    false
+                );
             }
         }
     }
@@ -178,9 +175,9 @@ test('the link import event reports the result, the channel path and no raw valu
             shop: 'other',
             cacheOutcome: 'hit',
             imagesStaged: 3,
+            imagesSkipped: 6,
             imagesIngested: 2,
-            elapsedMs: 250,
-            transform: 'passthrough'
+            elapsedMs: 250
         }),
         'production'
     );
@@ -195,9 +192,9 @@ test('the link import event reports the result, the channel path and no raw valu
         shop: 'other',
         cacheOutcome: 'hit',
         imagesStaged: 'oneToFour',
+        imagesSkipped: 'fivePlus',
         imagesIngested: 'oneToFour',
         elapsedBucket: 'instant',
-        transform: 'passthrough',
         botEnvironment: 'production'
     });
 });
@@ -212,9 +209,9 @@ test('result labels map to success, rejected and error outcomes', () => {
                 shop: 'other',
                 cacheOutcome: 'miss',
                 imagesStaged: 0,
+                imagesSkipped: 0,
                 imagesIngested: 0,
-                elapsedMs: 0,
-                transform: 'missing'
+                elapsedMs: 0
             });
 
             return [result, event.outcome];

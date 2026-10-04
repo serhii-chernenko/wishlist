@@ -19,10 +19,6 @@ import type {
 } from '../../shared/app-api';
 import type {
     LinkImportDeps,
-    LinkImportOutcome,
-    LinkImportShop,
-    LinkImportSource,
-    LinkImportTransform,
     LoadStagedImage,
     RunLinkImport,
     SendImportPreview,
@@ -31,6 +27,7 @@ import type {
 } from '../services/link-import/types';
 import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
+import type { LinkImportCompletedInput } from '../../worker/telemetry';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
 import type { StatsService } from '../services/stats-service';
 import type { UserService } from '../services/user-service';
@@ -266,16 +263,7 @@ export type WishlistShareChangeResult = 'success' | 'failed';
 
 export type WishlistShareUsernameResult = 'on' | 'off' | 'failed';
 
-export interface LinkImportCompletedInput {
-    result: LinkImportOutcome;
-    source: LinkImportSource | null;
-    shop: LinkImportShop;
-    cacheOutcome: 'hit' | 'miss';
-    imagesStaged: number;
-    imagesIngested: number;
-    elapsedMs: number;
-    transform: LinkImportTransform;
-}
+export type { LinkImportCompletedInput };
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {

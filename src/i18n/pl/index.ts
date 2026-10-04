@@ -154,6 +154,8 @@ const pl: Translation = {
                 sourcePrice: 'Cena w sklepie: {price}',
                 failed: 'Nie udało się odczytać strony. Napisz nazwę życzenia, a link zachowam.',
                 photosFailed: 'Nie udało się pobrać zdjęć. Dodaj je ręcznie.',
+                photosUnsupported:
+                    'Niektóre zdjęcia mają nieobsługiwany format, dodaj je ręcznie',
                 rateLimited:
                     'Zbyt wiele linków z rzędu. Spróbuj później lub napisz nazwę.',
                 cancel: '❌ Anuluj',
@@ -1158,6 +1160,8 @@ const pl: Translation = {
                 'Znaleziono tylko część danych na {host}. Sprawdź i uzupełnij.',
             sourcePrice: 'Cena w sklepie: {price}',
             photosFailed: 'Nie udało się pobrać zdjęć. Dodaj je ręcznie.',
+            photosUnsupported:
+                'Niektóre zdjęcia mają nieobsługiwany format, dodaj je ręcznie',
             errors: {
                 invalidUrl:
                     'To nie wygląda na link do produktu. Sprawdź go i spróbuj jeszcze raz.',
@@ -1168,7 +1172,9 @@ const pl: Translation = {
                 timeout:
                     'Strona odpowiada zbyt wolno. Uzupełnij życzenie ręcznie.',
                 rateLimited:
-                    'Zbyt wiele zapytań do tego sklepu. Uzupełnij życzenie ręcznie lub spróbuj później.'
+                    'Zbyt wiele zapytań do tego sklepu. Uzupełnij życzenie ręcznie lub spróbuj później.',
+                disabled:
+                    'Uzupełnianie z linku jest teraz niedostępne. Uzupełnij życzenie ręcznie.'
             }
         },
         gives: {

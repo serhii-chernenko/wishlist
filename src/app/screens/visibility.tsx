@@ -68,7 +68,7 @@ export const VisibilityScreen = (_props: ScreenProps<'visibility'>) => {
     const LL = useLL();
     const nav = useNav();
     const { api, toast, updateMe, reloadSession, launch } = useApp();
-    const { me } = useSession();
+    const { me, config } = useSession();
     const [choice, setChoice] = useState<VisibilityType>(getInitialChoice(me));
     const [saving, setSaving] = useState(false);
     const [flow, setFlow] = useState<ContactFlowState>(INITIAL_CONTACT_FLOW);
@@ -101,7 +101,11 @@ export const VisibilityScreen = (_props: ScreenProps<'visibility'>) => {
         }
 
         await reloadSession().catch(() => undefined);
-        nav.reset(routesAfterRegistration(launch.startParam));
+        nav.reset(
+            routesAfterRegistration(launch.startParam, {
+                linkImportEnabled: config.linkImportEnabled
+            })
+        );
     };
 
     const saveUsername = async () => {

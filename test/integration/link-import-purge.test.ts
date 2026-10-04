@@ -4,8 +4,7 @@ import { after, before, describe, it } from 'node:test';
 import { createLinkImportCache } from '../../src/bot/services/link-import/result-cache';
 import {
     importImageKey,
-    importMetaKey,
-    importUsageKey
+    importMetaKey
 } from '../../src/bot/services/link-import/storage-keys';
 import { createD1Harness, type D1Harness } from './d1-harness';
 
@@ -34,9 +33,8 @@ describe('link import purge on R2', () => {
     it('lists custom metadata and deletes only expired import objects', async () => {
         await putWithExpiry(importMetaKey(EXPIRED_HASH), NOW - 1);
         await putWithExpiry(importImageKey(EXPIRED_HASH, 0), NOW - 1);
-        await putWithExpiry(importUsageKey('2026-09-30'), NOW - 1);
         await putWithExpiry(importMetaKey(FRESH_HASH), NOW + 1000);
-        await putWithExpiry(importUsageKey('2026-10-04'), NOW + 1000);
+        await putWithExpiry(importImageKey(FRESH_HASH, 0), NOW + 1000);
         await harness.env.IMAGES.put(WISH_IMAGE_KEY, 'x');
 
         const purged = await createLinkImportCache(
@@ -44,7 +42,7 @@ describe('link import purge on R2', () => {
         ).purgeExpired(NOW);
         const remaining = await harness.env.IMAGES.list();
 
-        assert.equal(purged, 3);
+        assert.equal(purged, 2);
         assert.deepEqual(
             remaining.objects
                 .map(object => {
@@ -53,7 +51,7 @@ describe('link import purge on R2', () => {
                 .sort(),
             [
                 importMetaKey(FRESH_HASH),
-                importUsageKey('2026-10-04'),
+                importImageKey(FRESH_HASH, 0),
                 WISH_IMAGE_KEY
             ].sort()
         );

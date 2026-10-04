@@ -7,6 +7,7 @@ import {
     currentEntry,
     getDepth,
     isRootScreen,
+    newWishRoute,
     popRoute,
     popToScreen,
     pushRoute,
@@ -232,4 +233,31 @@ test('after registering, other deep links resume and Visibility is dropped', () 
 test('the link import screen is a registered-only screen without parameters', () => {
     assert.ok(SCREEN_IDS.includes('linkImport'));
     assert.equal(requiresRegistration({ screen: 'linkImport' }), true);
+});
+
+test('the add deep link opens the link step while link import is on', () => {
+    const enabled = { linkImportEnabled: true };
+
+    assert.deepEqual(screensOf(resolveStartRoutes('add', true, enabled)), [
+        'home',
+        'wishes',
+        'linkImport'
+    ]);
+    assert.deepEqual(screensOf(routesAfterRegistration('add', enabled)), [
+        'home',
+        'wishes',
+        'linkImport'
+    ]);
+    assert.deepEqual(screensOf(resolveStartRoutes('add', false, enabled)), [
+        'onboarding',
+        'visibility'
+    ]);
+});
+
+test('adding a wish skips the link step while link import is off', () => {
+    assert.deepEqual(newWishRoute(true), { screen: 'linkImport' });
+    assert.deepEqual(newWishRoute(false), {
+        screen: 'wishEditor',
+        wishId: null
+    });
 });

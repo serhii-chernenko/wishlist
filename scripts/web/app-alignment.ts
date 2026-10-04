@@ -44,6 +44,7 @@ interface AlignmentScreen {
     name: string;
     start: string | null;
     openRow?: number;
+    skipLinkStep?: boolean;
 }
 
 const SCREENS: readonly AlignmentScreen[] = [
@@ -55,7 +56,8 @@ const SCREENS: readonly AlignmentScreen[] = [
     { name: 'share', start: 'share' },
     { name: 'currency', start: 'settings', openRow: 2 },
     { name: 'delivery', start: 'settings', openRow: 3 },
-    { name: 'wishEditor', start: 'add' },
+    { name: 'linkImport', start: 'add' },
+    { name: 'wishEditor', start: 'add', skipLinkStep: true },
     { name: 'feedback', start: 'feedback' },
     { name: 'find', start: 'find' }
 ];
@@ -85,7 +87,9 @@ const wait = (milliseconds: number) => {
     });
 };
 
-const LANDING_SCREENS: Record<string, string> = { add: 'wishEditor' };
+const LANDING_SCREENS: Record<string, string> = { add: 'linkImport' };
+const WITHOUT_LINK_BUTTON_SELECTOR = '.link-import-actions .text-button';
+const EDITOR_FIELD_SELECTOR = 'textarea.field-control';
 const OPEN_ATTEMPTS = 5;
 const ATTEMPT_TIMEOUT_MS = 6_000;
 const RATE_LIMIT_PAUSE_MS = 5_000;
@@ -136,6 +140,14 @@ const openScreen = async (
             `document.querySelectorAll('.menu-row')[${screen.openRow}].click()`
         );
         await page.waitFor(`[data-screen="${screen.name}"][aria-busy="false"]`);
+        await page.settle();
+    }
+
+    if (screen.skipLinkStep === true) {
+        await page.evaluate(
+            `document.querySelector('${WITHOUT_LINK_BUTTON_SELECTOR}').click()`
+        );
+        await page.waitFor(EDITOR_FIELD_SELECTOR);
         await page.settle();
     }
 
@@ -288,7 +300,7 @@ const checkTextareaGrowth = async (
 
         await openScreen(
             page,
-            { name: 'wishEditor', start: 'add' },
+            { name: 'wishEditor', start: 'add', skipLinkStep: true },
             buildAppUrl(
                 baseUrl,
                 signInitData(credentials, 'add'),

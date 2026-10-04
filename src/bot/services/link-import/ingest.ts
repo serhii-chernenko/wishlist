@@ -5,10 +5,16 @@ import type {
 } from '../../../api/telegram-api';
 import type { AppUploadContentType } from '../../../shared/app-api';
 import { pickLargestPhoto } from '../../input/photo';
-import { sendWithRetry, TELEGRAM_CAPTION_LIMIT } from '../../runtime/send';
+import {
+    sendWithRetry,
+    stripUrlButtons,
+    TELEGRAM_CAPTION_LIMIT
+} from '../../runtime/send';
+import type { ReplyMarkup } from '../../runtime/types';
 import { getVisibleHtmlLength } from '../../utils/strings';
 import {
     isTelegramBadRequest,
+    isTelegramButtonUrlError,
     isTelegramForbidden
 } from '../../utils/telegram-errors';
 import type {
@@ -89,6 +95,7 @@ const sendPhotosOneByOne = async (
     input: ImportPreviewInput
 ) => {
     const fileIds: string[] = [];
+    let rejected = 0;
 
     for (const [position, image] of input.images.entries()) {
         const { photo, filename } = toMediaGroupPhoto(image, position);
@@ -97,12 +104,16 @@ const sendPhotosOneByOne = async (
         });
         const fileId = sent === null ? null : toFileId(sent);
 
+        if (sent === null) {
+            rejected += 1;
+        }
+
         if (fileId !== null) {
             fileIds.push(fileId);
         }
     }
 
-    return fileIds;
+    return { fileIds, rejected };
 };
 
 const sendSinglePhotoPreview = async (
@@ -132,7 +143,11 @@ const sendSinglePhotoPreview = async (
         await sendText(api, input);
     }
 
-    return { fileIds: fileId === null ? [] : [fileId], textDelivered: true };
+    return {
+        fileIds: fileId === null ? [] : [fileId],
+        rejected: sent === null ? 1 : 0,
+        textDelivered: true
+    };
 };
 
 const sendAlbumPreview = async (
@@ -152,17 +167,21 @@ const sendAlbumPreview = async (
     });
 
     if (album !== null && captioned) {
-        return { fileIds: collectFileIds(album), textDelivered: true };
+        return {
+            fileIds: collectFileIds(album),
+            rejected: 0,
+            textDelivered: true
+        };
     }
 
-    const fileIds =
+    const sent =
         album === null
             ? await sendPhotosOneByOne(api, input)
-            : collectFileIds(album);
+            : { fileIds: collectFileIds(album), rejected: 0 };
 
     await sendText(api, input);
 
-    return { fileIds, textDelivered: true };
+    return { ...sent, textDelivered: true };
 };
 
 /**
@@ -179,12 +198,61 @@ export const sendImportPreview: SendImportPreview = async (api, input) => {
     if (firstImage === undefined) {
         await sendText(api, input);
 
-        return { fileIds: [], textDelivered: true };
+        return { fileIds: [], rejected: 0, textDelivered: true };
     }
 
     return input.images.length < ALBUM_MIN_PHOTOS
         ? sendSinglePhotoPreview(api, input, firstImage)
         : sendAlbumPreview(api, input);
+};
+
+const isReplyMarkup = (value: unknown): value is ReplyMarkup => {
+    return typeof value === 'object' && value !== null;
+};
+
+const retryWithoutUrlButtons = async <
+    Extra extends { reply_markup?: unknown },
+    Result
+>(
+    extra: Extra | undefined,
+    send: (extra: Extra | undefined) => Promise<Result>
+): Promise<Result> => {
+    try {
+        return await send(extra);
+    } catch (error) {
+        const keyboard = extra?.reply_markup;
+        const stripped = isReplyMarkup(keyboard)
+            ? stripUrlButtons(keyboard)
+            : keyboard;
+
+        if (!isTelegramButtonUrlError(error) || stripped === keyboard) {
+            throw error;
+        }
+
+        return send({ ...extra, reply_markup: stripped } as Extra);
+    }
+};
+
+/** Retries `sendMessage` and `sendPhoto` once without URL buttons when Telegram rejects a button URL, as the bot sender does. */
+export const withUrlButtonFallback = (api: TelegramApi): TelegramApi => {
+    return {
+        ...api,
+        sendMessage(chatId, text, extra) {
+            return retryWithoutUrlButtons(extra, nextExtra => {
+                return api.sendMessage(chatId, text, nextExtra);
+            });
+        },
+        sendPhoto(chatId, photo, extra) {
+            return retryWithoutUrlButtons(extra, nextExtra => {
+                return api.sendPhoto(chatId, photo, nextExtra);
+            });
+        }
+    };
+};
+
+/** The bot's preview sender: `sendImportPreview` over an API whose keyboards fall back to no URL buttons. */
+export const sendBotImportPreview: SendImportPreview = (api, input) => {
+    return sendImportPreview(withUrlButtonFallback(api), input);
 };
 
 const scheduleCleanup = async (

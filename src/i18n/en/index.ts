@@ -150,6 +150,8 @@ const en: Translation = {
                 sourcePrice: 'Price on the site: {price}',
                 failed: 'Could not read the page. Send the title of the wish and I will keep the link.',
                 photosFailed: 'Could not load the photos. Add them manually.',
+                photosUnsupported:
+                    'Some photos are in an unsupported format, add them manually',
                 rateLimited:
                     'Too many links in a row. Try again a bit later or type a title.',
                 cancel: '❌ Cancel',
@@ -1143,6 +1145,8 @@ const en: Translation = {
                 'Found only part of the details on {host}. Check and complete them.',
             sourcePrice: 'Price on the site: {price}',
             photosFailed: 'Could not load the photos. Add them manually.',
+            photosUnsupported:
+                'Some photos are in an unsupported format, add them manually',
             errors: {
                 invalidUrl: `That doesn't look like a product link. Check it and try again.`,
                 blocked:
@@ -1152,7 +1156,9 @@ const en: Translation = {
                 timeout:
                     'The page is taking too long to respond. Fill in the wish manually.',
                 rateLimited:
-                    'Too many requests to this shop. Fill in the wish manually or try again later.'
+                    'Too many requests to this shop. Fill in the wish manually or try again later.',
+                disabled:
+                    'Filling in from a link is unavailable right now. Fill in the wish manually.'
             }
         },
         gives: {

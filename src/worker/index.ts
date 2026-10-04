@@ -1,11 +1,13 @@
 import { createApp } from './app';
 import type { WorkerBindings } from './env';
+import { createWorkerLinkImport } from './link-import';
 import type { ReleaseAnnouncementJob } from './queues/release-announcement-job';
 import { handleReleaseAnnouncementQueue } from './queues/release-announcements-handler';
 import { runScheduledTasks } from './scheduled/tasks';
 import { emitHttpRequestTelemetry, emitTelemetryEvent } from './telemetry';
 
-const app = createApp();
+const linkImport = createWorkerLinkImport();
+const app = createApp({ linkImport }, {}, {}, { linkImport }, { linkImport });
 
 export default {
     async fetch(request, env, ctx) {

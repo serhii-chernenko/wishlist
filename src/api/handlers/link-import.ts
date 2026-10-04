@@ -1,9 +1,10 @@
 import { LINK_MAX_LENGTH } from '../../bot/input/limits';
 import { isRenderableLink } from '../../bot/input/link';
+import { toLinkImportCompletedInput } from '../../bot/services/link-import/link-import-service';
 import { resolveShop } from '../../bot/services/link-import/shop';
 import type {
     LinkImportResult,
-    StagedImage
+    StageImagesOutcome
 } from '../../bot/services/link-import/types';
 import {
     LINK_IMPORT_HANDLER_BUDGET_MS,
@@ -11,8 +12,7 @@ import {
     LINK_IMPORT_MAX_IMAGE_CANDIDATES,
     LINK_IMPORT_PRESELECTED_IMAGES,
     type LinkImportDto,
-    type LinkImportImageDto,
-    type LinkImportTransform
+    type LinkImportImageDto
 } from '../../shared/app-api';
 import { isLinkImportEnabled } from '../../worker/env';
 import { linkImportCompletedEvent } from '../../worker/telemetry';
@@ -30,11 +30,6 @@ import {
 } from '../context';
 import { ApiError } from '../errors';
 import { createBodyReader, readJsonBody, validationError } from '../validate';
-
-const STAGING_TRANSFORM_PRIORITY = [
-    'binding',
-    'passthrough'
-] as const satisfies readonly LinkImportTransform[];
 
 const readLinkInput = async (c: ApiContext) => {
     const reader = createBodyReader(await readJsonBody(c));
@@ -99,33 +94,22 @@ const runWithinBudget = async (
     }
 };
 
-const pickTransform = (staged: readonly StagedImage[]): LinkImportTransform => {
-    return (
-        STAGING_TRANSFORM_PRIORITY.find(transform => {
-            return staged.some(image => {
-                return image.transform === transform;
-            });
-        }) ?? 'missing'
-    );
-};
+const NOTHING_STAGED: StageImagesOutcome = { staged: [], skipped: [] };
 
 const emitCompleted = (
     c: ApiContext,
     result: LinkImportResult,
-    staged: readonly StagedImage[]
+    staging: StageImagesOutcome
 ) => {
     emitApiTelemetry(
         c,
         linkImportCompletedEvent({
             channel: 'app',
-            result: result.outcome,
-            source: result.product?.source ?? null,
-            shop: result.shop,
-            cacheOutcome: result.cache,
-            imagesStaged: staged.length,
-            imagesIngested: 0,
-            elapsedMs: result.elapsedMs,
-            transform: pickTransform(staged)
+            ...toLinkImportCompletedInput(result, {
+                staged: staging.staged.length,
+                skipped: staging.skipped.length,
+                ingested: 0
+            })
         })
     );
 };
@@ -142,17 +126,17 @@ const stageThenEmit = async (
         .map((_, index) => {
             return index;
         });
-    let staged: StagedImage[] = [];
+    let staging = NOTHING_STAGED;
 
     try {
-        staged = await services.stageImages(getLinkImportDeps(c), {
+        staging = await services.stageImages(getLinkImportDeps(c), {
             urlHash,
             imageUrls,
             indexes,
             budgetMs: LINK_IMPORT_IMAGE_BUDGET_MS
         });
     } finally {
-        emitCompleted(c, result, staged);
+        emitCompleted(c, result, staging);
     }
 };
 
@@ -198,7 +182,7 @@ export const importLink: ApiHandler = async c => {
     const result = await runWithinBudget(c, services, link);
 
     if (result.outcome === 'invalidUrl') {
-        emitCompleted(c, result, []);
+        emitCompleted(c, result, NOTHING_STAGED);
 
         throw validationError('url', 'invalid');
     }
@@ -212,7 +196,7 @@ export const importLink: ApiHandler = async c => {
     let importToken: string | null = null;
 
     if (importable === null) {
-        emitCompleted(c, result, []);
+        emitCompleted(c, result, NOTHING_STAGED);
     } else {
         images = await mintImages(
             c,

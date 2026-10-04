@@ -50,6 +50,7 @@ export interface ApiClientOptions {
     onConnectivity?: (online: boolean) => void;
     fetchImpl?: typeof fetch;
     wait?: (milliseconds: number) => Promise<void>;
+    isPageClosing?: () => boolean;
 }
 
 export interface ApiClient {
@@ -93,8 +94,19 @@ export const createApiClient = ({
     onSystemFailure,
     onConnectivity,
     fetchImpl = (input, init) => fetch(input, init),
-    wait = waitFor
+    wait = waitFor,
+    isPageClosing = () => false
 }: ApiClientOptions): ApiClient => {
+    const shouldKeepAlive = (options: {
+        keepalive?: boolean;
+        body?: unknown;
+    }) => {
+        return (
+            options.keepalive === true ||
+            (isPageClosing() && !(options.body instanceof Blob))
+        );
+    };
+
     const send = async <Key extends AppApiRouteKey>(
         key: Key,
         options: ApiRequestOptions<Key>
@@ -113,7 +125,7 @@ export const createApiClient = ({
             cache: 'no-store',
             ...(body !== undefined && { body }),
             ...(options.signal !== undefined && { signal: options.signal }),
-            ...(options.keepalive === true && { keepalive: true })
+            ...(shouldKeepAlive(options) && { keepalive: true })
         } as RequestInit;
 
         try {

@@ -104,7 +104,7 @@ const LinkStep = ({ onOpenEditor }: LinkStepProps) => {
             haptics.error();
 
             if (kind === 'disabled') {
-                openLinkOnly(importTarget.url, null);
+                openLinkOnly(importTarget.url, 'disabled');
             } else if (kind === 'rateLimited') {
                 openLinkOnly(importTarget.url, 'rateLimited');
             } else {
@@ -225,6 +225,7 @@ const LinkStep = ({ onOpenEditor }: LinkStepProps) => {
 
 /** First step of adding a wish: paste a product link to prefill the editor, or skip to an empty one. */
 export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
+    const { reportEvent } = useApp();
     const [editor, setEditor] = useState<{ start: ImportStart | null } | null>(
         null
     );
@@ -242,6 +243,7 @@ export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
             {editor === null ? (
                 <LinkStep
                     onOpenEditor={start => {
+                        reportEvent('screenView', 'wishEditor');
                         setEditor({ start });
                     }}
                 />

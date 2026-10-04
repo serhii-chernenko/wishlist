@@ -15,20 +15,19 @@ import { inlineKeyboard, removeReplyKeyboard } from '../content/keyboards';
 import { renderWishHtml } from '../content/wish-markup';
 import { cutDescription, cutTitle } from '../input/limits';
 import { claimLinkImport, savePendingInput } from '../runtime/session-store';
-import type {
-    BotLinkImport,
-    BotRequest,
-    LinkImportCompletedInput,
-    PendingInput
-} from '../runtime/types';
+import type { BotLinkImport, BotRequest, PendingInput } from '../runtime/types';
+import { toLinkImportCompletedInput } from '../services/link-import/link-import-service';
 import { resolveShop } from '../services/link-import/shop';
-import type {
-    ExtractedProduct,
-    ImportedWishDraft,
-    ImportPreviewResult,
-    LinkImportResult,
-    StagedImage,
-    StagedImageBody
+import {
+    isSkippedStagedImage,
+    type ExtractedProduct,
+    type ImportedWishDraft,
+    type ImportPreviewResult,
+    type LinkImportResult,
+    type StageImagesOutcome,
+    type StagedImage,
+    type StagedImageBody,
+    type StagingSkipReason
 } from '../services/link-import/types';
 import {
     createWishFormatters,
@@ -109,24 +108,23 @@ const buildFailedResult = (
     };
 };
 
+interface ImportImageCounts {
+    staged: number;
+    skipped: number;
+    ingested: number;
+}
+
+const NO_IMAGES: ImportImageCounts = { staged: 0, skipped: 0, ingested: 0 };
+const NOTHING_STAGED: StageImagesOutcome = { staged: [], skipped: [] };
+
 const reportCompleted = (
     req: BotRequest,
     result: LinkImportResult,
-    staged: readonly StagedImage[],
-    ingested: number
+    images: ImportImageCounts = NO_IMAGES
 ) => {
-    const report: LinkImportCompletedInput = {
-        result: result.outcome,
-        source: result.product?.source ?? null,
-        shop: result.shop,
-        cacheOutcome: result.cache,
-        imagesStaged: staged.length,
-        imagesIngested: ingested,
-        elapsedMs: result.elapsedMs,
-        transform: staged[0]?.transform ?? 'missing'
-    };
-
-    req.telemetry.linkImportCompleted?.(report);
+    req.telemetry.linkImportCompleted?.(
+        toLinkImportCompletedInput(result, images)
+    );
 };
 
 const runWithinBudget = async (
@@ -173,12 +171,13 @@ const buildNotice = (
     req: BotRequest,
     host: string,
     draft: ImportedWishDraft,
-    photosFailed: boolean
+    photos: { failed: boolean; unsupported: boolean }
 ) => {
     const {
         filledFrom,
         sourcePrice,
-        photosFailed: photosFailedText
+        photosFailed: photosFailedText,
+        photosUnsupported: photosUnsupportedText
     } = req.LL.wishlist.add.import;
 
     const lines: string[] = [filledFrom({ host: escapeHtml(host) })];
@@ -191,7 +190,9 @@ const buildNotice = (
         );
     }
 
-    if (photosFailed) {
+    if (photos.unsupported) {
+        lines.push(photosUnsupportedText());
+    } else if (photos.failed) {
         lines.push(photosFailedText());
     }
 
@@ -208,7 +209,7 @@ const stageSafely = async (
     const count = Math.min(product.images.length, LINK_IMPORT_BOT_IMAGES);
 
     if (urlHash === null || count === 0) {
-        return [];
+        return NOTHING_STAGED;
     }
 
     const remainingMs = LINK_IMPORT_BOT_BUDGET_MS - (Date.now() - startedAt);
@@ -229,7 +230,7 @@ const stageSafely = async (
             }
         );
     } catch {
-        return [];
+        return NOTHING_STAGED;
     }
 };
 
@@ -250,13 +251,20 @@ const loadBodies = async (
                         { env: req.env, ...linkImport.deps },
                         { urlHash, index: image.index }
                     )
-                    .catch(() => null);
+                    .catch(() => {
+                        return { skipped: 'failed' } as const;
+                    });
             })
     );
 
-    return loaded.filter((body): body is StagedImageBody => {
-        return body !== null;
-    });
+    return {
+        bodies: loaded.filter((image): image is StagedImageBody => {
+            return !isSkippedStagedImage(image);
+        }),
+        skipped: loaded.filter(isSkippedStagedImage).map(image => {
+            return image.skipped;
+        })
+    };
 };
 
 const deliverPreview = async (
@@ -279,10 +287,14 @@ const deliverPreview = async (
     if (bodies.length === 0) {
         await sendText();
 
-        return { fileIds: [], textDelivered: true };
+        return { fileIds: [], rejected: 0, textDelivered: true };
     }
 
-    let delivered: ImportPreviewResult = { fileIds: [], textDelivered: false };
+    let delivered: ImportPreviewResult = {
+        fileIds: [],
+        rejected: 0,
+        textDelivered: false
+    };
 
     try {
         delivered = await linkImport.sendPreview(
@@ -321,18 +333,23 @@ const ingestPreview = async (
     startedAt: number
 ) => {
     const user = requireUser(req);
-    const staged = await stageSafely(
+    const staging = await stageSafely(
         req,
         linkImport,
         product,
         result.urlHash,
         startedAt
     );
-    const bodies =
+    const loaded =
         result.urlHash === null
-            ? []
-            : await loadBodies(req, linkImport, result.urlHash, staged);
-    const { fileIds } = await deliverPreview(req, linkImport, wish, bodies);
+            ? { bodies: [], skipped: [] }
+            : await loadBodies(req, linkImport, result.urlHash, staging.staged);
+    const { fileIds, rejected } = await deliverPreview(
+        req,
+        linkImport,
+        wish,
+        loaded.bodies
+    );
 
     if (fileIds.length > 0) {
         await createWishScreenServices(req).wishes.reorderImages(
@@ -343,7 +360,29 @@ const ingestPreview = async (
         );
     }
 
-    return { staged, ingested: fileIds.length };
+    const unsupported =
+        countUnsupported(staging.skipped.map(toReason)) +
+        countUnsupported(loaded.skipped) +
+        rejected;
+
+    return {
+        counts: {
+            staged: staging.staged.length,
+            skipped: staging.skipped.length + loaded.skipped.length + rejected,
+            ingested: fileIds.length
+        },
+        unsupported
+    };
+};
+
+const toReason = (skipped: { reason: StagingSkipReason }) => {
+    return skipped.reason;
+};
+
+const countUnsupported = (reasons: readonly StagingSkipReason[]) => {
+    return reasons.filter(reason => {
+        return reason === 'unsupportedFormat';
+    }).length;
 };
 
 const finishWithoutWish = async (
@@ -357,7 +396,7 @@ const finishWithoutWish = async (
         link: url
     });
 
-    reportCompleted(req, result, [], 0);
+    reportCompleted(req, result);
 
     if (!claimed) {
         return;
@@ -414,7 +453,7 @@ const finishWithWish = async (
     const claimed = await claimImport(req, marker, null);
 
     if (!claimed) {
-        reportCompleted(req, result, [], 0);
+        reportCompleted(req, result);
 
         return;
     }
@@ -423,7 +462,7 @@ const finishWithWish = async (
     const { wishes } = createWishScreenServices(req);
 
     if (await wishes.isWishLimitReached(user.id)) {
-        reportCompleted(req, result, [], 0);
+        reportCompleted(req, result);
         await req.send.text(req.LL.wishlist.add.limit(), removeReplyKeyboard());
 
         return;
@@ -435,7 +474,7 @@ const finishWithWish = async (
     );
 
     if (wish === null) {
-        reportCompleted(req, result, [], 0);
+        reportCompleted(req, result);
         await savePendingInput(
             req.repos,
             req.actor.id,
@@ -452,7 +491,7 @@ const finishWithWish = async (
 
     req.telemetry.botActionCompleted({ action: 'wish_created' });
 
-    const { staged, ingested } = await ingestPreview(
+    const { counts, unsupported } = await ingestPreview(
         req,
         linkImport,
         wish,
@@ -461,15 +500,13 @@ const finishWithWish = async (
         startedAt
     );
 
-    reportCompleted(req, result, staged, ingested);
+    reportCompleted(req, result, counts);
     await renderEditMenuOnly(req, {
         wishId: wish.id,
-        notice: buildNotice(
-            req,
-            getDisplayHost(result, url),
-            draft,
-            product.images.length > 0 && ingested === 0
-        ),
+        notice: buildNotice(req, getDisplayHost(result, url), draft, {
+            failed: product.images.length > 0 && counts.ingested === 0,
+            unsupported: unsupported > 0
+        }),
         withCancel: true
     });
 };
@@ -516,12 +553,10 @@ export const startLinkImport = async (req: BotRequest, url: string) => {
         updateSession(req, {
             pendingInput: { kind: 'wishTitleNew', link: url }
         });
-        reportCompleted(
-            req,
-            { ...buildFailedResult(url, 0), outcome: 'rateLimited' },
-            [],
-            0
-        );
+        reportCompleted(req, {
+            ...buildFailedResult(url, 0),
+            outcome: 'rateLimited'
+        });
         await req.send.text(
             LL.wishlist.add.import.rateLimited(),
             removeReplyKeyboard()

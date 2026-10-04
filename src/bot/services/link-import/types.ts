@@ -5,17 +5,11 @@ import type {
     LinkImportOutcome,
     LinkImportShop,
     LinkImportSource,
-    LinkImportSourcePriceDto,
-    LinkImportTransform
+    LinkImportSourcePriceDto
 } from '../../../shared/app-api';
 import type { WorkerBindings } from '../../../worker/env';
 
-export type {
-    LinkImportOutcome,
-    LinkImportShop,
-    LinkImportSource,
-    LinkImportTransform
-};
+export type { LinkImportOutcome, LinkImportShop, LinkImportSource };
 
 export const LINK_IMPORT_R2_PREFIX = 'import/';
 
@@ -162,7 +156,6 @@ export interface StagedImage {
     index: number;
     contentType: AppUploadContentType;
     bytes: number;
-    transform: LinkImportTransform;
 }
 
 export interface StagedImageBody {
@@ -177,17 +170,45 @@ export interface StageImagesInput {
     budgetMs: number;
 }
 
-/** Resolves with the images that survived; a missing index means that image failed and is skipped. */
+/**
+ * `unsupportedFormat`: the image is not JPEG, PNG or WebP by its magic bytes,
+ * is larger than Telegram accepts, or Telegram refused it. `failed`: it could
+ * not be downloaded or stored.
+ */
+export type StagingSkipReason = 'unsupportedFormat' | 'failed';
+
+export interface SkippedImage {
+    index: number;
+    reason: StagingSkipReason;
+}
+
+export interface StageImagesOutcome {
+    staged: StagedImage[];
+    skipped: SkippedImage[];
+}
+
+export interface SkippedStagedImage {
+    skipped: StagingSkipReason;
+}
+
+export type LoadedStagedImage = StagedImageBody | SkippedStagedImage;
+
+export const isSkippedStagedImage = (
+    image: LoadedStagedImage
+): image is SkippedStagedImage => {
+    return 'skipped' in image;
+};
+
 export type StageImages = (
     deps: LinkImportDeps,
     input: StageImagesInput
-) => Promise<StagedImage[]>;
+) => Promise<StageImagesOutcome>;
 
-/** Serves a staged image from R2 and re-stages it from the cached entry on a miss; null when it cannot be produced. */
+/** Serves a staged image from R2 and re-stages it from the cached entry on a miss. */
 export type LoadStagedImage = (
     deps: LinkImportDeps,
     input: { urlHash: string; index: number }
-) => Promise<StagedImageBody | null>;
+) => Promise<LoadedStagedImage>;
 
 export type ImportedWishDraft = LinkImportDraftDto & {
     sourcePrice: LinkImportSourcePriceDto | null;
@@ -234,9 +255,10 @@ export interface ImportPreviewInput {
     images: readonly StagedImageBody[];
 }
 
-/** `fileIds` follow the order of `images`, minus the ones Telegram refused. */
+/** `fileIds` follow the order of `images`, minus the `rejected` ones Telegram refused with a 400. */
 export interface ImportPreviewResult {
     fileIds: string[];
+    rejected: number;
     textDelivered: boolean;
 }
 

@@ -8,6 +8,7 @@ import type {
     ShareDto
 } from '../../shared/app-api';
 import type { AppTranslator } from '../i18n/i18n';
+import { newWishRoute } from '../logic/nav';
 import type { ScreenProps } from '../nav/routes';
 import {
     useApp,
@@ -332,7 +333,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
     const nav = useNav();
     const services = useApp();
     const { api, toast } = services;
-    const { me } = useSession();
+    const { me, config } = useSession();
     const [pending, setPending] = useState<ShareAction | null>(null);
     const share = useAppResource('share', signal => {
         return api.request('getShare', { signal });
@@ -534,7 +535,11 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                 action={{
                                     label: LL.share.empty.cta(),
                                     onClick: () => {
-                                        nav.push({ screen: 'linkImport' });
+                                        nav.push(
+                                            newWishRoute(
+                                                config.linkImportEnabled
+                                            )
+                                        );
                                     }
                                 }}
                             />

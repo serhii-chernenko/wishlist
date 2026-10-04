@@ -20,7 +20,6 @@ import {
     type LinkImportOutcome,
     type LinkImportShop,
     type LinkImportSource,
-    type LinkImportTransform,
     type RateLimitBucket
 } from '../shared/app-api';
 import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
@@ -277,8 +276,8 @@ export type TelemetryFields = {
     currencySource?: SharePageCurrencySource;
     source?: LinkImportSource;
     shop?: LinkImportShop;
-    transform?: LinkImportTransform;
     imagesStaged?: LinkImportImageBucket;
+    imagesSkipped?: LinkImportImageBucket;
     imagesIngested?: LinkImportImageBucket;
     elapsedBucket?: LinkImportElapsedBucket;
 };
@@ -325,8 +324,8 @@ const labelFieldNames = [
     'currencySource',
     'source',
     'shop',
-    'transform',
     'imagesStaged',
+    'imagesSkipped',
     'imagesIngested',
     'elapsedBucket'
 ] as const;
@@ -380,6 +379,8 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^w:f:[tdilp]:\d{1,12}$/, 'wish:field'],
     [/^w:back:\d{1,12}$/, 'wish:back'],
     [/^w:add$/, 'wish:add'],
+    [/^w:add:nl$/, 'wish:addNoLink'],
+    [/^w:add:lk:\d{1,16}$/, 'wish:linkOffer'],
     [/^t:p:\d{1,12}:\d{1,9}$/, 'third:page'],
     [/^t:g:\d{1,12}$/, 'third:give'],
     [/^t:t:\d{1,12}$/, 'third:take'],
@@ -799,17 +800,20 @@ const LINK_IMPORT_OUTCOME_LABELS = {
     timeout: 'error'
 } as const satisfies Record<LinkImportOutcome, string>;
 
-export const linkImportCompletedEvent = (input: {
-    channel: TelemetryChannel;
+export interface LinkImportCompletedInput {
     result: LinkImportOutcome;
     source: LinkImportSource | null;
     shop: LinkImportShop;
     cacheOutcome: Extract<ShareCacheOutcome, 'hit' | 'miss'>;
     imagesStaged: number;
+    imagesSkipped: number;
     imagesIngested: number;
     elapsedMs: number;
-    transform: LinkImportTransform;
-}): TelemetryFields => {
+}
+
+export const linkImportCompletedEvent = (
+    input: LinkImportCompletedInput & { channel: TelemetryChannel }
+): TelemetryFields => {
     return {
         event: 'link_import_completed',
         path:
@@ -823,8 +827,8 @@ export const linkImportCompletedEvent = (input: {
         shop: input.shop,
         cacheOutcome: input.cacheOutcome,
         imagesStaged: toLinkImportImageBucket(input.imagesStaged),
+        imagesSkipped: toLinkImportImageBucket(input.imagesSkipped),
         imagesIngested: toLinkImportImageBucket(input.imagesIngested),
-        elapsedBucket: toLinkImportElapsedBucket(input.elapsedMs),
-        transform: input.transform
+        elapsedBucket: toLinkImportElapsedBucket(input.elapsedMs)
     };
 };

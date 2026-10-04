@@ -103,7 +103,6 @@ const createBindings = (
         IMAGE_PROXY_LIMITER: {} as WorkerBindings['IMAGE_PROXY_LIMITER'],
         APP_IMPORT_LIMITER: {} as WorkerBindings['APP_IMPORT_LIMITER'],
         LINK_HOST_LIMITER: {} as WorkerBindings['LINK_HOST_LIMITER'],
-        IMAGE_TRANSFORMS: {} as WorkerBindings['IMAGE_TRANSFORMS'],
         MINI_APP_ENABLED: 'true',
         LINK_IMPORT_ENABLED: 'true',
         LINK_IMPORT_AI: 'false',

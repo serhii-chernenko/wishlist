@@ -4,7 +4,7 @@ import type { AppLocale, BootstrapDto } from '../shared/app-api';
 import { createApiClient, ApiRequestError } from './api/client';
 import { createAppServices, Root, type RootPhase } from './app';
 import { resolveSystemLocale } from './i18n/system-texts';
-import { flushPendingOnHide } from './logic/countdown';
+import { flushPendingOnHide, pendingCountdowns } from './logic/countdown';
 import { toSystemScreen } from './logic/errors';
 import { createStore } from './state/store';
 import { connectBottomButton } from './telegram/buttons';
@@ -80,7 +80,8 @@ const start = (container: HTMLElement) => {
         },
         onConnectivity: isOnline => {
             online.set(isOnline);
-        }
+        },
+        isPageClosing: () => pendingCountdowns.isFlushing()
     });
 
     const loadBootstrap = (): Promise<BootstrapDto> => {

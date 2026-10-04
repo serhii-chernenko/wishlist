@@ -25,9 +25,6 @@ export const AVIF_BYTES = new Uint8Array([
     0, 0, 0, 0x1c, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66, 0, 0, 0, 0,
     0x61, 0x76, 0x69, 0x66, 0x6d, 0x69, 0x66, 0x31, 0x6d, 0x69, 0x61, 0x66
 ]);
-export const TRANSCODED_JPEG_BYTES = new Uint8Array([
-    0xff, 0xd8, 0xff, 0xdb, 9, 9, 9, 9
-]);
 
 export const toArrayBuffer = (bytes: Uint8Array) => {
     return bytes.slice().buffer;
@@ -216,70 +213,6 @@ export const createMemoryBucket = (
     };
 };
 
-export interface FakeImagesBinding {
-    binding: ImagesBinding;
-    infoCalls: number;
-    transformCalls: number;
-    dimensions: { width: number; height: number } | null;
-    failTransform: boolean;
-    output: Uint8Array;
-}
-
-export const createFakeImagesBinding = (): FakeImagesBinding => {
-    const fake: FakeImagesBinding = {
-        binding: null as unknown as ImagesBinding,
-        infoCalls: 0,
-        transformCalls: 0,
-        dimensions: { width: 800, height: 600 },
-        failTransform: false,
-        output: TRANSCODED_JPEG_BYTES
-    };
-    const transformer = {
-        transform() {
-            return transformer;
-        },
-        async output() {
-            fake.transformCalls += 1;
-
-            if (fake.failTransform) {
-                throw new Error('transform failed');
-            }
-
-            return {
-                image() {
-                    return new Blob([fake.output.slice()]).stream();
-                },
-                contentType() {
-                    return 'image/jpeg';
-                },
-                response() {
-                    return new Response(fake.output.slice());
-                }
-            };
-        }
-    };
-
-    fake.binding = {
-        async info(stream: ReadableStream<Uint8Array>) {
-            fake.infoCalls += 1;
-            await new Response(stream).arrayBuffer();
-
-            if (fake.dimensions === null) {
-                throw new Error('not an image');
-            }
-
-            return { format: 'image/jpeg', fileSize: 1, ...fake.dimensions };
-        },
-        input(stream: ReadableStream<Uint8Array>) {
-            void new Response(stream).arrayBuffer();
-
-            return transformer;
-        }
-    } as unknown as ImagesBinding;
-
-    return fake;
-};
-
 export type FakeImageResponse =
     | { bytes: Uint8Array; contentType?: string }
     | { failure: SafeFetchFailure; status?: number };
@@ -339,13 +272,11 @@ export const createFakeSafeFetcher = (input: {
 
 export const createLinkImportEnv = (input: {
     bucket?: R2Bucket;
-    images?: ImagesBinding;
     hostLimiter?: unknown;
 }): WorkerBindings => {
     return {
         BOT_ENVIRONMENT: 'local',
         IMAGES: input.bucket,
-        IMAGE_TRANSFORMS: input.images,
         LINK_HOST_LIMITER: input.hostLimiter
     } as unknown as WorkerBindings;
 };

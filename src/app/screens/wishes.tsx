@@ -32,6 +32,7 @@ import {
     toToggledPriority,
     type DraftFlag
 } from '../logic/wish-draft';
+import { newWishRoute } from '../logic/nav';
 import type { ScreenProps } from '../nav/routes';
 import {
     useApp,
@@ -684,7 +685,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const services = useApp();
     const { api, nav, toast } = services;
     const LL = useLL();
-    const { counts } = useSession();
+    const { counts, config } = useSession();
     const filterOptions = useFilterOptions();
     const [gate] = useState(createLatestGate);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -713,7 +714,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     useBottomButton({
         text: LL.wishes.add(),
         onClick: () => {
-            nav.push({ screen: 'linkImport' });
+            nav.push(newWishRoute(config.linkImportEnabled));
         }
     });
 
@@ -892,7 +893,9 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             action={{
                                 label: LL.wishes.empty.cta(),
                                 onClick: () => {
-                                    nav.push({ screen: 'linkImport' });
+                                    nav.push(
+                                        newWishRoute(config.linkImportEnabled)
+                                    );
                                 }
                             }}
                         />

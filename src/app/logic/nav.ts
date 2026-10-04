@@ -82,7 +82,6 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
 
 const SIMPLE_START_ROUTES = {
     wishes: [{ screen: 'wishes' }],
-    add: [{ screen: 'wishes' }, { screen: 'wishEditor', wishId: null }],
     gives: [{ screen: 'gives' }],
     find: [{ screen: 'find' }],
     share: [{ screen: 'share' }],
@@ -95,7 +94,20 @@ const SIMPLE_START_ROUTES = {
     donate: [{ screen: 'donate' }],
     releases: [{ screen: 'releases' }],
     about: [{ screen: 'about' }]
-} as const satisfies Record<StartScreen, readonly Route[]>;
+} as const satisfies Record<Exclude<StartScreen, 'add'>, readonly Route[]>;
+
+export interface StartRouteOptions {
+    linkImportEnabled: boolean;
+}
+
+const WITHOUT_LINK_IMPORT: StartRouteOptions = { linkImportEnabled: false };
+
+/** Where "add a wish" leads: the link step while link import is on, otherwise straight to an empty editor. */
+export const newWishRoute = (linkImportEnabled: boolean): Route => {
+    return linkImportEnabled
+        ? { screen: 'linkImport' }
+        : { screen: 'wishEditor', wishId: null };
+};
 
 export const rootRoute = (registered: boolean): Route => {
     return registered ? { screen: 'home' } : { screen: 'onboarding' };
@@ -109,7 +121,10 @@ export const requiresRegistration = (route: Route) => {
     return REGISTERED_ONLY_SCREENS.has(route.screen);
 };
 
-const routesForStart = (startParam: string | null): readonly Route[] => {
+const routesForStart = (
+    startParam: string | null,
+    options: StartRouteOptions
+): readonly Route[] => {
     const target = parseStartParam(startParam);
 
     if (target === null) {
@@ -117,7 +132,11 @@ const routesForStart = (startParam: string | null): readonly Route[] => {
     }
 
     if (target.kind === 'screen') {
-        return SIMPLE_START_ROUTES[target.screen];
+        const { screen } = target;
+
+        return screen === 'add'
+            ? [{ screen: 'wishes' }, newWishRoute(options.linkImportEnabled)]
+            : SIMPLE_START_ROUTES[screen];
     }
 
     if (target.kind === 'wish') {
@@ -137,9 +156,10 @@ const routesForStart = (startParam: string | null): readonly Route[] => {
 
 export const resolveStartRoutes = (
     startParam: string | null,
-    registered: boolean
+    registered: boolean,
+    options: StartRouteOptions = WITHOUT_LINK_IMPORT
 ): Route[] => {
-    const targets = routesForStart(startParam);
+    const targets = routesForStart(startParam, options);
     const blocked = !registered && targets.some(requiresRegistration);
 
     return [
@@ -149,8 +169,11 @@ export const resolveStartRoutes = (
 };
 
 /** The stack a guest lands on right after registering: the deep link they opened the app with, never the Visibility screen they just finished. */
-export const routesAfterRegistration = (startParam: string | null): Route[] => {
-    return resolveStartRoutes(startParam, true).filter(route => {
+export const routesAfterRegistration = (
+    startParam: string | null,
+    options: StartRouteOptions = WITHOUT_LINK_IMPORT
+): Route[] => {
+    return resolveStartRoutes(startParam, true, options).filter(route => {
         return route.screen !== 'visibility';
     });
 };
