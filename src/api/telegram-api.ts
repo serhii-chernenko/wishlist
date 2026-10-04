@@ -35,8 +35,21 @@ export interface SendMessageExtra {
 
 export interface SendPhotoExtra {
     caption?: string;
+    parse_mode?: 'HTML';
     disable_notification?: boolean;
+    reply_markup?: unknown;
     filename?: string;
+}
+
+export interface MediaGroupPhoto {
+    photo: Blob;
+    filename?: string;
+}
+
+export interface SendMediaGroupExtra {
+    caption?: string;
+    parse_mode?: 'HTML';
+    disable_notification?: boolean;
 }
 
 export type SentPhotoMessage = Message.PhotoMessage & { photo: PhotoSize[] };
@@ -52,6 +65,11 @@ export interface TelegramApi {
         photo: Blob,
         extra?: SendPhotoExtra
     ): Promise<SentPhotoMessage>;
+    sendMediaGroup(
+        chatId: number | string,
+        photos: readonly MediaGroupPhoto[],
+        extra?: SendMediaGroupExtra
+    ): Promise<SentPhotoMessage[]>;
     deleteMessage(chatId: number | string, messageId: number): Promise<boolean>;
     getFile(fileId: string): Promise<File>;
     downloadFile(filePath: string): Promise<Response>;
@@ -72,6 +90,32 @@ type TelegramEnvelope<Result> =
       };
 
 const DEFAULT_PHOTO_FILENAME = 'photo.jpg';
+const MEDIA_ATTACHMENT_PREFIX = 'p';
+
+const setOptionalField = (
+    form: FormData,
+    name: string,
+    value: string | boolean | undefined
+) => {
+    if (value !== undefined) {
+        form.set(name, String(value));
+    }
+};
+
+const buildMediaGroupItems = (count: number, extra: SendMediaGroupExtra) => {
+    return Array.from({ length: count }, (_, index) => {
+        const isCaptioned = index === 0 && extra.caption !== undefined;
+
+        return {
+            type: 'photo',
+            media: `attach://${MEDIA_ATTACHMENT_PREFIX}${index}`,
+            ...(isCaptioned ? { caption: extra.caption } : {}),
+            ...(isCaptioned && extra.parse_mode !== undefined
+                ? { parse_mode: extra.parse_mode }
+                : {})
+        };
+    });
+};
 
 export const createTelegramApi = (options: TelegramApiOptions): TelegramApi => {
     const send = options.fetch ?? fetch;
@@ -156,19 +200,42 @@ export const createTelegramApi = (options: TelegramApiOptions): TelegramApi => {
 
             form.set('chat_id', String(chatId));
             form.set('photo', photo, extra.filename ?? DEFAULT_PHOTO_FILENAME);
+            setOptionalField(form, 'caption', extra.caption);
+            setOptionalField(form, 'parse_mode', extra.parse_mode);
+            setOptionalField(
+                form,
+                'disable_notification',
+                extra.disable_notification
+            );
 
-            if (extra.caption !== undefined) {
-                form.set('caption', extra.caption);
-            }
-
-            if (extra.disable_notification !== undefined) {
-                form.set(
-                    'disable_notification',
-                    String(extra.disable_notification)
-                );
+            if (extra.reply_markup !== undefined) {
+                form.set('reply_markup', JSON.stringify(extra.reply_markup));
             }
 
             return call<SentPhotoMessage>('sendPhoto', form);
+        },
+        sendMediaGroup(chatId, photos, extra = {}) {
+            const form = new FormData();
+
+            form.set('chat_id', String(chatId));
+            form.set(
+                'media',
+                JSON.stringify(buildMediaGroupItems(photos.length, extra))
+            );
+            setOptionalField(
+                form,
+                'disable_notification',
+                extra.disable_notification
+            );
+            photos.forEach((item, index) => {
+                form.set(
+                    `${MEDIA_ATTACHMENT_PREFIX}${index}`,
+                    item.photo,
+                    item.filename ?? DEFAULT_PHOTO_FILENAME
+                );
+            });
+
+            return call<SentPhotoMessage[]>('sendMediaGroup', form);
         },
         deleteMessage(chatId, messageId) {
             return callJson<boolean>('deleteMessage', {

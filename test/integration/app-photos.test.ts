@@ -121,6 +121,9 @@ const createFakeTelegram = (): FakeTelegram => {
                 ]
             } as unknown as SentPhotoMessage;
         },
+        async sendMediaGroup() {
+            throw new Error('unexpected sendMediaGroup');
+        },
         async deleteMessage(chatId, messageId) {
             fake.deleteCalls.push({ chatId, messageId });
 
