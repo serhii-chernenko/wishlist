@@ -22,14 +22,41 @@ import { isHighPriorityWish, WishCard } from './wish-card';
 
 const TELEGRAM_USERNAME_PATTERN = /^[A-Za-z0-9_]{1,64}$/;
 
+const DeliveryHint = ({
+    model,
+    className,
+    linkClass
+}: {
+    model: SharePageModel;
+    className: string;
+    linkClass: string;
+}) => {
+    const LL = getTranslator(model.language);
+    const appLink = buildShareAppLink(model.botUrl, model.publicId);
+
+    return (
+        <p class={className}>
+            {LL.web.delivery.inTelegram()}
+            {appLink === null ? null : (
+                <>
+                    {' '}
+                    <a class={linkClass} href={appLink} rel={EXTERNAL_LINK_REL}>
+                        {LL.web.delivery.cta()}
+                    </a>
+                </>
+            )}
+        </p>
+    );
+};
+
 const PaymentsEnvelope = ({
-    language,
+    model,
     payments
 }: {
-    language: SharePageModel['language'];
+    model: SharePageModel;
     payments: string;
 }) => {
-    const LL = getTranslator(language);
+    const LL = getTranslator(model.language);
     const nodes = trimEdgeWhitespace(
         inlineMarkup(truncateWithMark(payments, PAYMENTS_MAX_LENGTH))
     );
@@ -41,8 +68,29 @@ const PaymentsEnvelope = ({
             <p class='envelope-text'>
                 <InlineContent nodes={nodes} linkClass={ENVELOPE_LINK_CLASS} />
             </p>
+            {model.deliveryHintShown ? (
+                <DeliveryHint
+                    model={model}
+                    className='delivery-hint'
+                    linkClass={ENVELOPE_LINK_CLASS}
+                />
+            ) : null}
         </section>
     );
+};
+
+const OwnerDetails = ({ model }: { model: SharePageModel }) => {
+    if (model.payments) {
+        return <PaymentsEnvelope model={model} payments={model.payments} />;
+    }
+
+    return model.deliveryHintShown ? (
+        <DeliveryHint
+            model={model}
+            className='notice'
+            linkClass={TEXT_LINK_CLASS}
+        />
+    ) : null;
 };
 
 const ShareHero = ({ model }: { model: SharePageModel }) => {
@@ -145,12 +193,7 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
             </div>
             <main>
                 <ShareHero model={model} />
-                {model.payments ? (
-                    <PaymentsEnvelope
-                        language={model.language}
-                        payments={model.payments}
-                    />
-                ) : null}
+                <OwnerDetails model={model} />
                 {model.wishes.length === 0 ? (
                     <p class='empty'>{LL.web.empty()}</p>
                 ) : (

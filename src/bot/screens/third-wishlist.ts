@@ -4,6 +4,7 @@ import type {
 } from 'telegraf/types';
 
 import type { UserRecord, WishRecord } from '../../db/repositories';
+import type { OwnerContactDto } from '../../shared/app-api';
 import {
     buildFilterKeyboard,
     getFilterMarker,
@@ -25,6 +26,7 @@ import type {
     ScreenModule,
     WishFilter
 } from '../runtime/types';
+import { resolveOwnerContact } from '../services/contact-service';
 import { summarizeGivers, type GiverSummary } from '../services/give-service';
 import {
     createWishFormatters,
@@ -96,6 +98,25 @@ const buildFilterButton = (
         `${req.LL.filters.title()} ${getFilterMarker(filter)}`,
         { type: 'thirdFilterMenu', ownerId }
     );
+};
+
+const renderContactHtml = (req: BotRequest, contact: OwnerContactDto) => {
+    const { contact: texts } = req.LL.findList.filled;
+    const lines = [
+        texts.title(),
+        contact.phone === null
+            ? null
+            : texts.phone({ phone: escapeHtml(contact.phone) }),
+        contact.address === null
+            ? null
+            : texts.address({ address: escapeHtml(contact.address) })
+    ];
+
+    return lines
+        .filter(line => {
+            return line !== null;
+        })
+        .join('\n\n');
 };
 
 const renderUnavailableOwner = async (req: BotRequest) => {
@@ -218,13 +239,22 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
             removeReplyKeyboard()
         );
 
-        if (owner.payments) {
+        if (owner.showPayments && owner.payments) {
             await req.send.text(
                 LL.findList.filled.payments(
                     escapeHtml(
                         truncateWithMark(owner.payments, PAYMENTS_MAX_LENGTH)
                     )
                 ),
+                removeReplyKeyboard()
+            );
+        }
+
+        const contact = resolveOwnerContact({ owner, viewer, offset: 0 });
+
+        if (contact !== null) {
+            await req.send.text(
+                renderContactHtml(req, contact),
                 removeReplyKeyboard()
             );
         }

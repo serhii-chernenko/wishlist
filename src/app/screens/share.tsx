@@ -1,6 +1,11 @@
 import { useState } from 'hono/jsx/dom';
 
-import type { ShareDto } from '../../shared/app-api';
+import type {
+    ContactDisclosureField,
+    ContactDisclosureInput,
+    MeDto,
+    ShareDto
+} from '../../shared/app-api';
 import type { AppTranslator } from '../i18n/i18n';
 import type { ScreenProps } from '../nav/routes';
 import {
@@ -10,6 +15,7 @@ import {
     useNav,
     useSession
 } from '../state/context';
+import { getFieldErrors, type AppFailure } from '../logic/errors';
 import { toFailure } from '../state/store';
 import { useBottomButton } from '../telegram/buttons';
 import { haptics } from '../telegram/haptics';
@@ -19,30 +25,257 @@ import { EmptyState } from '../ui/empty-state';
 import { isResourcePending, ResourceView } from '../ui/resource-view';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
+import { copyToClipboard } from '../ui/clipboard';
 import { Toggle } from '../ui/toggle';
 
-type ShareAction = 'publish' | 'rotate' | 'stop' | 'username';
+type ShareAction = 'publish' | 'rotate' | 'stop' | 'username' | 'indexing';
 
-const copyToClipboard = async (text: string) => {
-    try {
-        await navigator.clipboard.writeText(text);
+type ContactConfirmation = 'phone' | 'address' | 'both';
 
-        return true;
-    } catch {
-        const area = document.createElement('textarea');
+type DetailsNotice = 'phoneMissing' | 'addressMissing' | 'needsPhone';
 
-        area.value = text;
-        area.className = 'sr-only';
-        area.setAttribute('readonly', '');
-        document.body.append(area);
-        area.select();
+const CONFIRMATION_PATCHES: Record<
+    ContactConfirmation,
+    ContactDisclosureInput
+> = {
+    phone: { phone: true },
+    address: { address: true },
+    both: { phone: true, address: true }
+};
 
-        const copied = document.execCommand('copy');
-
-        area.remove();
-
-        return copied;
+const resolveEnabling = (
+    me: Pick<MeDto, 'phoneMasked' | 'deliveryAddress' | 'disclosure'>,
+    field: Exclude<ContactDisclosureField, 'payments'>
+): { confirm: ContactConfirmation } | { notice: DetailsNotice } => {
+    if (me.phoneMasked === null) {
+        return { notice: 'phoneMissing' };
     }
+
+    if (field === 'phone') {
+        return { confirm: 'phone' };
+    }
+
+    if (me.deliveryAddress === null) {
+        return { notice: 'addressMissing' };
+    }
+
+    return { confirm: me.disclosure.phone ? 'address' : 'both' };
+};
+
+const toDetailsNotice = (
+    failure: AppFailure,
+    hasPhone: boolean
+): DetailsNotice | null => {
+    const fields = getFieldErrors(failure);
+    const codes = [fields.phone, fields.address];
+
+    if (codes.includes('addressRequired')) {
+        return 'addressMissing';
+    }
+
+    if (codes.includes('phoneRequired')) {
+        return hasPhone ? 'needsPhone' : 'phoneMissing';
+    }
+
+    return null;
+};
+
+const DetailsNoticeView = ({ notice }: { notice: DetailsNotice }) => {
+    const LL = useLL();
+    const nav = useNav();
+    const texts = LL.share.details;
+    const target =
+        notice === 'phoneMissing'
+            ? ({
+                  screen: 'visibility',
+                  label: LL.settings.visibility()
+              } as const)
+            : notice === 'addressMissing'
+              ? ({ screen: 'delivery', label: LL.delivery.title() } as const)
+              : null;
+
+    return (
+        <div class='contact-note' role='alert'>
+            <p>{texts[notice]()}</p>
+            {target === null ? null : (
+                <button
+                    type='button'
+                    class='text-button'
+                    onClick={() => {
+                        haptics.selection();
+                        nav.push({ screen: target.screen });
+                    }}
+                >
+                    {target.label}
+                </button>
+            )}
+        </div>
+    );
+};
+
+const ContactConfirmationView = ({
+    confirmation,
+    pending,
+    onConfirm,
+    onCancel
+}: {
+    confirmation: ContactConfirmation;
+    pending: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+}) => {
+    const LL = useLL();
+    const { confirm } = LL.share.details;
+
+    return (
+        <div
+            class='contact-confirm'
+            role='group'
+            aria-labelledby='contact-confirm-text'
+        >
+            <div id='contact-confirm-text' class='contact-confirm-text'>
+                {confirmation === 'address' ? null : <p>{confirm.phone()}</p>}
+                {confirmation === 'phone' ? null : <p>{confirm.address()}</p>}
+            </div>
+            <div class='contact-confirm-actions'>
+                <button
+                    type='button'
+                    class='btn btn-primary'
+                    disabled={pending}
+                    aria-busy={String(pending)}
+                    onClick={onConfirm}
+                >
+                    {LL.common.confirm()}
+                </button>
+                <button
+                    type='button'
+                    class='btn'
+                    disabled={pending}
+                    onClick={onCancel}
+                >
+                    {LL.common.cancel()}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const ContactDetails = () => {
+    const LL = useLL();
+    const { api, toast, updateMe } = useApp();
+    const { me } = useSession();
+    const texts = LL.share.details;
+    const [pending, setPending] = useState(false);
+    const [confirmation, setConfirmation] =
+        useState<ContactConfirmation | null>(null);
+    const [notice, setNotice] = useState<DetailsNotice | null>(null);
+
+    const apply = async (patch: ContactDisclosureInput) => {
+        setPending(true);
+        setNotice(null);
+
+        try {
+            updateMe(
+                await api.request('setContactDisclosure', { body: patch })
+            );
+            haptics.success();
+            setConfirmation(null);
+        } catch (error) {
+            const failure = toFailure(error);
+            const detailsNotice = toDetailsNotice(
+                failure,
+                me.phoneMasked !== null
+            );
+
+            setConfirmation(null);
+
+            if (detailsNotice === null) {
+                toast.failure(failure);
+            } else {
+                haptics.error();
+                setNotice(detailsNotice);
+            }
+        }
+
+        setPending(false);
+    };
+
+    const toggle = (field: ContactDisclosureField, next: boolean) => {
+        setNotice(null);
+        setConfirmation(null);
+
+        if (field === 'payments' || !next) {
+            void apply({ [field]: next });
+
+            return;
+        }
+
+        const decision = resolveEnabling(me, field);
+
+        if ('notice' in decision) {
+            haptics.error();
+            setNotice(decision.notice);
+
+            return;
+        }
+
+        setConfirmation(decision.confirm);
+    };
+
+    return (
+        <section
+            class='contact-details'
+            aria-labelledby='contact-details-title'
+        >
+            <h2 id='contact-details-title' class='state-title'>
+                {texts.title()}
+            </h2>
+            <p class='field-hint'>{texts.lead()}</p>
+            <Toggle
+                id='disclosure-payments'
+                label={texts.payments.label()}
+                hint={texts.payments.hint()}
+                pressed={me.disclosure.payments}
+                disabled={pending}
+                onToggle={next => {
+                    toggle('payments', next);
+                }}
+            />
+            <Toggle
+                id='disclosure-phone'
+                label={texts.phone.label()}
+                hint={texts.phone.hint()}
+                pressed={me.disclosure.phone}
+                disabled={pending}
+                onToggle={next => {
+                    toggle('phone', next);
+                }}
+            />
+            <Toggle
+                id='disclosure-address'
+                label={texts.address.label()}
+                hint={texts.address.hint()}
+                pressed={me.disclosure.address}
+                disabled={pending}
+                onToggle={next => {
+                    toggle('address', next);
+                }}
+            />
+            {notice === null ? null : <DetailsNoticeView notice={notice} />}
+            {confirmation === null ? null : (
+                <ContactConfirmationView
+                    confirmation={confirmation}
+                    pending={pending}
+                    onConfirm={() => {
+                        void apply(CONFIRMATION_PATCHES[confirmation]);
+                    }}
+                    onCancel={() => {
+                        setConfirmation(null);
+                    }}
+                />
+            )}
+        </section>
+    );
 };
 
 const ShareConsent = ({ share }: { share: ShareDto }) => {
@@ -194,6 +427,27 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
             toast.show(
                 show ? LL.share.username.shown() : LL.share.username.hidden(),
                 'success'
+            );
+        } catch (error) {
+            store(previous);
+            toast.failure(toFailure(error));
+        }
+
+        setPending(null);
+    };
+
+    const toggleIndexing = async (
+        previous: ShareDto,
+        allowIndexing: boolean
+    ) => {
+        setPending('indexing');
+        store({ ...previous, allowIndexing });
+
+        try {
+            store(
+                await api.request('setShareIndexing', {
+                    body: { allowIndexing }
+                })
             );
         } catch (error) {
             store(previous);
@@ -371,6 +625,16 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                     }}
                                 />
                             ) : null}
+                            <Toggle
+                                id='share-indexing'
+                                label={LL.share.indexing.title()}
+                                hint={LL.share.indexing.hint()}
+                                pressed={data.allowIndexing}
+                                disabled={pending !== null}
+                                onToggle={allowIndexing => {
+                                    void toggleIndexing(data, allowIndexing);
+                                }}
+                            />
                             <div class='share-manage'>
                                 <button
                                     type='button'
@@ -397,6 +661,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                     );
                 }}
             </ResourceView>
+            {me.registered ? <ContactDetails /> : null}
         </ScreenLayout>
     );
 };

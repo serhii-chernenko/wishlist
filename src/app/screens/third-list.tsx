@@ -1,6 +1,7 @@
 import { useState } from 'hono/jsx/dom';
 
 import type {
+    OwnerContactDto,
     OwnerDto,
     SharedWishDto,
     ThirdWishDto,
@@ -32,7 +33,7 @@ import {
 import { toFailure } from '../state/store';
 import { haptics } from '../telegram/haptics';
 import { ChipGroup, type ChipOption } from '../ui/chips';
-import { Envelope } from '../ui/envelope';
+import { ContactRows, Envelope } from '../ui/envelope';
 import { TagSkeletons } from '../ui/skeleton';
 import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
@@ -44,6 +45,7 @@ interface ThirdListData {
     total: number;
     nextOffset: number | null;
     payments: string | null;
+    contact: OwnerContactDto | null;
 }
 
 const SHARED_STALE_MS = 5 * 60 * 1000;
@@ -140,6 +142,38 @@ const OwnerHeader = ({
     );
 };
 
+const OwnerEnvelope = ({
+    payments,
+    contact
+}: {
+    payments: string | null;
+    contact: OwnerContactDto | null;
+}) => {
+    const LL = useLL();
+
+    if (payments === null && contact === null) {
+        return null;
+    }
+
+    return (
+        <Envelope
+            title={
+                payments === null
+                    ? LL.contact.title()
+                    : LL.third.payments.title()
+            }
+        >
+            {payments === null ? null : (
+                <>
+                    <p>{LL.third.payments.text()}</p>
+                    <p class='third-payments-text'>{payments}</p>
+                </>
+            )}
+            {contact === null ? null : <ContactRows contact={contact} />}
+        </Envelope>
+    );
+};
+
 export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const { source } = route;
     const LL = useLL();
@@ -178,13 +212,15 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                 items: page.items,
                 total: page.total,
                 nextOffset: page.nextOffset,
-                payments: page.owner.payments
+                payments: page.owner.payments,
+                contact: page.owner.contact
             };
         }
     );
 
     const preview = shared.data?.preview ?? null;
     const payments = list.data?.payments ?? owner?.payments ?? null;
+    const contact = list.data?.contact ?? owner?.contact ?? null;
     const viewOnly = owner !== null && token === null;
     const visibleItems: ReadonlyArray<ThirdWishDto | SharedWishDto> = viewOnly
         ? (preview?.items ?? [])
@@ -321,7 +357,8 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                               items: [...cached.items, ...page.items],
                               total: page.total,
                               nextOffset: page.nextOffset,
-                              payments: page.owner.payments
+                              payments: page.owner.payments,
+                              contact: cached.contact
                           };
                 });
             }
@@ -416,12 +453,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             ) : (
                 <>
                     <OwnerHeader owner={owner} total={total} />
-                    {payments === null ? null : (
-                        <Envelope title={LL.third.payments.title()}>
-                            <p>{LL.third.payments.text()}</p>
-                            <p class='third-payments-text'>{payments}</p>
-                        </Envelope>
-                    )}
+                    <OwnerEnvelope payments={payments} contact={contact} />
                     {viewOnly ? (
                         <Tag class='third-view-only'>
                             <p role='note'>{LL.third.viewOnly()}</p>
