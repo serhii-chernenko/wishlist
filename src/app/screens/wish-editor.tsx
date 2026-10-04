@@ -18,6 +18,11 @@ import {
     getApproximateDraftPrice,
     getLinkHost
 } from '../logic/format';
+import {
+    formatSourcePrice,
+    type ImportImageSource,
+    type ImportStart
+} from '../logic/link-import';
 import { runOptimistic } from '../logic/optimistic';
 import { createOrderQueue, orderImagesByHashes } from '../logic/reorder';
 import {
@@ -65,6 +70,7 @@ import { openTelegramLink, requestWriteAccess } from '../telegram/links';
 import { confirmAction, showPopup } from '../telegram/popups';
 import { Field } from '../ui/field';
 import { Icon } from '../ui/icon';
+import { ImportNoteBanner } from '../ui/import-note';
 import {
     PhotoPicker,
     photoFailureText,
@@ -104,10 +110,19 @@ const buildPriorityOptions = (
     });
 };
 
-interface UploadSource {
-    file: Blob;
-    previewUrl: string;
-}
+type UploadSource =
+    | { kind: 'file'; file: Blob; previewUrl: string }
+    | ({ kind: 'import' } & ImportImageSource);
+
+const releasePreview = (source: UploadSource) => {
+    if (source.kind === 'file') {
+        URL.revokeObjectURL(source.previewUrl);
+    }
+};
+
+const toImportSource = (image: ImportImageSource): UploadSource => {
+    return { kind: 'import', ...image };
+};
 
 type UploadOutcome =
     | { kind: 'done'; wish: OwnWishDto; added: boolean }
@@ -179,17 +194,33 @@ const askForWriteAccess = async (LL: AppTranslator) => {
     return confirmed && (await requestWriteAccess());
 };
 
+const sendPhoto = async (
+    services: AppServices,
+    wish: OwnWishDto,
+    source: UploadSource
+) => {
+    if (source.kind === 'import') {
+        return services.api.request('importWishImage', {
+            params: { id: wish.id },
+            body: { importToken: source.importToken, index: source.index }
+        });
+    }
+
+    const resized = await resizeImage(source.file);
+
+    return services.api.request('uploadWishImage', {
+        params: { id: wish.id },
+        body: resized.blob
+    });
+};
+
 const uploadPhoto = async (
     services: AppServices,
     wish: OwnWishDto,
     source: UploadSource
 ): Promise<UploadOutcome> => {
     try {
-        const resized = await resizeImage(source.file);
-        const updated = await services.api.request('uploadWishImage', {
-            params: { id: wish.id },
-            body: resized.blob
-        });
+        const updated = await sendPhoto(services, wish, source);
 
         return {
             kind: 'done',
@@ -213,14 +244,21 @@ const uploadPhoto = async (
 };
 
 /** Sequential photo uploads with per-tile state; in create mode photos wait in the queue until the wish exists. */
-const usePhotoUploads = (wish: OwnWishDto | null) => {
+const usePhotoUploads = (
+    wish: OwnWishDto | null,
+    imported: readonly ImportImageSource[]
+) => {
     const services = useApp();
     const LL = useLL();
     const { config } = useSession();
     const max = config.limits.images;
     const [state] = useState(() => {
         return {
-            queue: createPhotoQueue<UploadSource>(),
+            queue: enqueuePhotos(
+                createPhotoQueue<UploadSource>(),
+                imported.map(toImportSource),
+                imported.length
+            ).queue,
             pumping: false,
             alive: true,
             done: 0,
@@ -243,14 +281,22 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
             state.alive = false;
 
             for (const item of state.queue.items) {
-                URL.revokeObjectURL(item.source.previewUrl);
+                releasePreview(item.source);
             }
         };
     }, []);
 
-    const reportFailure = (failure: PhotoFailureKind) => {
+    const reportFailure = (
+        failure: PhotoFailureKind,
+        source?: UploadSource
+    ) => {
         haptics.error();
-        services.toast.show(photoFailureText(LL, failure, max), 'error');
+        services.toast.show(
+            source?.kind === 'import' && failure === 'failed'
+                ? LL.linkImport.photosFailed()
+                : photoFailureText(LL, failure, max),
+            'error'
+        );
     };
 
     const pump = async (target: OwnWishDto | null = latestWish.current) => {
@@ -288,7 +334,7 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
                 if (outcome.kind === 'done') {
                     current = outcome.wish;
                     storeWish(services.cache, outcome.wish);
-                    URL.revokeObjectURL(next.source.previewUrl);
+                    releasePreview(next.source);
                     update(pending => removePendingPhoto(pending, next.key));
                     state.done += 1;
                     added += outcome.added ? 1 : 0;
@@ -326,7 +372,7 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
                         ? failQueuedPhotos(failed, 'full')
                         : failed;
                 });
-                reportFailure(failure);
+                reportFailure(failure, next.source);
                 services.reportEvent('uploadFailed', 'wishEditor');
             }
         } finally {
@@ -349,7 +395,11 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
             max
         );
         const sources = files.slice(0, free).map(file => {
-            return { file, previewUrl: URL.createObjectURL(file) };
+            return {
+                kind: 'file' as const,
+                file,
+                previewUrl: URL.createObjectURL(file)
+            };
         });
         const result = enqueuePhotos(state.queue, sources, free);
 
@@ -375,7 +425,7 @@ const usePhotoUploads = (wish: OwnWishDto | null) => {
         });
 
         if (item !== undefined) {
-            URL.revokeObjectURL(item.source.previewUrl);
+            releasePreview(item.source);
         }
 
         update(pending => removePendingPhoto(pending, key));
@@ -477,11 +527,17 @@ const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
 
 interface WishFormProps {
     wish: OwnWishDto | null;
+    importStart: ImportStart | null;
     onCreated: (wish: OwnWishDto) => void;
     onReload: () => void;
 }
 
-const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
+const WishForm = ({
+    wish,
+    importStart,
+    onCreated,
+    onReload
+}: WishFormProps) => {
     const services = useApp();
     const { api, cache, nav, toast } = services;
     const LL = useLL();
@@ -495,14 +551,16 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
             ? createEmptyDraft(me.currency)
             : draftFromWish(wish);
     });
-    const [draft, setDraft] = useState<WishDraft>(baseline);
+    const [draft, setDraft] = useState<WishDraft>(() => {
+        return importStart?.draft ?? baseline;
+    });
     const [touched, setTouched] = useState<ReadonlySet<DraftTextField>>(
         () => new Set()
     );
     const [serverErrors, setServerErrors] = useState<DraftErrors>({});
     const [saving, setSaving] = useState(false);
     const [removingPhoto, setRemovingPhoto] = useState(false);
-    const photos = usePhotoUploads(wish);
+    const photos = usePhotoUploads(wish, importStart?.images ?? []);
     const photoOrder = usePhotoReorder(wish, onReload);
     const current = useLatest({ baseline, draft });
 
@@ -897,6 +955,15 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
         locale,
         config.rates
     );
+    const importNote = wish === null ? (importStart?.note ?? null) : null;
+    const sourcePrice =
+        wish === null ? (importStart?.sourcePrice ?? null) : null;
+    const sourcePriceText =
+        sourcePrice !== null && draft.price.trim() === ''
+            ? LL.linkImport.sourcePrice({
+                  price: formatSourcePrice(sourcePrice, locale)
+              })
+            : null;
     const pendingTiles = photos.queue.items.map(item => {
         return {
             key: item.key,
@@ -915,6 +982,9 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                 void save();
             }}
         >
+            {importNote === null ? null : (
+                <ImportNoteBanner note={importNote} />
+            )}
             <Tag class='editor-sheet'>
                 <Field
                     id={fieldId('title')}
@@ -968,6 +1038,9 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                                 value={draft.currency}
                                 onChange={setCurrency}
                             />
+                            {sourcePriceText === null ? null : (
+                                <p class='field-host'>{sourcePriceText}</p>
+                            )}
                             {approximatePrice === null ? null : (
                                 <p class='field-host' aria-live='polite'>
                                     {LL.money.approx({
@@ -1084,11 +1157,22 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     );
 };
 
-export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
+export interface WishEditorViewProps {
+    layoutId: 'wishEditor' | 'linkImport';
+    wishId: number | null;
+    importStart?: ImportStart | null;
+}
+
+/** The create/edit form with its loading and error states; the link step reuses it for the prefilled editor. */
+export const WishEditorView = ({
+    layoutId,
+    wishId: initialWishId,
+    importStart = null
+}: WishEditorViewProps) => {
     const services = useApp();
     const LL = useLL();
     const entryKey = useEntryKey();
-    const [wishId, setWishId] = useState<number | null>(route.wishId);
+    const [wishId, setWishId] = useState<number | null>(initialWishId);
     const resource = useAppResource<OwnWishDto>(
         wishId === null ? null : wishItemKey(wishId),
         signal => {
@@ -1114,7 +1198,7 @@ export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
 
     return (
         <ScreenLayout
-            id='wishEditor'
+            id={layoutId}
             title={
                 wishId === null
                     ? LL.editor.createTitle()
@@ -1136,6 +1220,7 @@ export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
             ) : (
                 <WishForm
                     wish={resource.data ?? null}
+                    importStart={importStart}
                     onCreated={created => {
                         services.cache.mutate<OwnWishDto>(
                             wishItemKey(created.id),
@@ -1150,4 +1235,8 @@ export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
             )}
         </ScreenLayout>
     );
+};
+
+export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
+    return <WishEditorView layoutId='wishEditor' wishId={route.wishId} />;
 };

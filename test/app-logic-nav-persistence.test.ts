@@ -239,3 +239,30 @@ test('the link import screen is restored as a parameterless route', () => {
         screen: 'linkImport'
     });
 });
+
+test('a reload on the link step reopens the link step above the wish list', () => {
+    const stack: Route[] = [
+        { screen: 'home' },
+        { screen: 'wishes' },
+        { screen: 'linkImport' }
+    ];
+
+    assert.deepEqual(
+        resolveInitialRoutes({
+            stored: serializeNavSnapshot(stack, LAUNCH),
+            initData: INIT_DATA,
+            startParam: null,
+            registered: true
+        }),
+        stack
+    );
+    assert.deepEqual(
+        resolveInitialRoutes({
+            stored: serializeNavSnapshot(stack, LAUNCH),
+            initData: INIT_DATA,
+            startParam: null,
+            registered: false
+        }),
+        [{ screen: 'onboarding' }]
+    );
+});

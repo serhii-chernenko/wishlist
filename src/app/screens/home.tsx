@@ -65,7 +65,7 @@ const UserHome = () => {
     useBottomButton({
         text: LL.home.addWish(),
         onClick: () => {
-            nav.push({ screen: 'wishEditor', wishId: null });
+            nav.push({ screen: 'linkImport' });
         }
     });
     useSettingsButton(() => {

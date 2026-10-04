@@ -186,7 +186,8 @@
         min-height: var(--tg-viewport-stable-height, 100dvh);
     }
 
-    #root > .screen {
+    #root > .screen,
+    .link-import-host > .screen {
         flex: 1 0 auto;
     }
 
@@ -2107,3 +2108,4 @@
 @import '../../web/styles/gifted.css';
 @import './gifted.css';
 @import './danger.css';
+@import './link-import.css';

@@ -534,10 +534,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                 action={{
                                     label: LL.share.empty.cta(),
                                     onClick: () => {
-                                        nav.push({
-                                            screen: 'wishEditor',
-                                            wishId: null
-                                        });
+                                        nav.push({ screen: 'linkImport' });
                                     }
                                 }}
                             />

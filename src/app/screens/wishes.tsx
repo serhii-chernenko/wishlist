@@ -713,7 +713,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     useBottomButton({
         text: LL.wishes.add(),
         onClick: () => {
-            nav.push({ screen: 'wishEditor', wishId: null });
+            nav.push({ screen: 'linkImport' });
         }
     });
 
@@ -892,10 +892,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             action={{
                                 label: LL.wishes.empty.cta(),
                                 onClick: () => {
-                                    nav.push({
-                                        screen: 'wishEditor',
-                                        wishId: null
-                                    });
+                                    nav.push({ screen: 'linkImport' });
                                 }
                             }}
                         />

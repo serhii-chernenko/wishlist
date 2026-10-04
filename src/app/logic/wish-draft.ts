@@ -6,6 +6,7 @@ import type {
     ApiErrorCode,
     FieldErrorCode,
     FieldErrors,
+    LinkImportDraftDto,
     OwnWishDto,
     WishDraftInput,
     WishPatchInput,
@@ -78,6 +79,29 @@ export const draftFromWish = (wish: OwnWishDto): WishDraft => {
         priority: wish.priority,
         hidden: wish.hidden
     };
+};
+
+export const draftFromImport = (
+    imported: LinkImportDraftDto,
+    fallbackCurrency: Currency
+): WishDraft => {
+    const { price } = imported;
+
+    return {
+        ...createEmptyDraft(fallbackCurrency),
+        title: imported.title ?? '',
+        description: imported.description ?? '',
+        price: price !== null && price > 0 ? String(price) : '',
+        link: imported.link,
+        currency: imported.currency ?? fallbackCurrency
+    };
+};
+
+export const draftWithLinkOnly = (
+    link: string,
+    fallbackCurrency: Currency
+): WishDraft => {
+    return { ...createEmptyDraft(fallbackCurrency), link };
 };
 
 export const withFlags = (

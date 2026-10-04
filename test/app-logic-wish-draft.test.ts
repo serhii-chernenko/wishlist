@@ -5,7 +5,9 @@ import {
     checkDraftForSubmit,
     countFreePhotoSlots,
     createPhotoQueue,
+    draftFromImport,
     draftFromWish,
+    draftWithLinkOnly,
     EMPTY_DRAFT,
     enqueuePhotos,
     failQueuedPhotos,
@@ -339,4 +341,57 @@ test('server errors still block a resubmit until the field changes', () => {
         onlyTitleMissing: false
     });
     assert.deepEqual(checkDraftForSubmit(draft()), { ok: true });
+});
+
+test('an import fills the draft and falls back to the account currency', () => {
+    assert.deepEqual(
+        draftFromImport(
+            {
+                title: 'Kettle',
+                description: null,
+                link: 'https://shop.example/p/1',
+                price: 49,
+                currency: 'USD'
+            },
+            'UAH'
+        ),
+        {
+            title: 'Kettle',
+            description: '',
+            price: '49',
+            link: 'https://shop.example/p/1',
+            currency: 'USD',
+            priority: 'none',
+            hidden: false
+        }
+    );
+    assert.deepEqual(
+        draftFromImport(
+            {
+                title: 'Kettle',
+                description: 'Steel',
+                link: 'https://shop.example/p/1',
+                price: null,
+                currency: null
+            },
+            'PLN'
+        ),
+        {
+            title: 'Kettle',
+            description: 'Steel',
+            price: '',
+            link: 'https://shop.example/p/1',
+            currency: 'PLN',
+            priority: 'none',
+            hidden: false
+        }
+    );
+});
+
+test('a link-only draft is valid except for the missing title', () => {
+    const linkOnly = draftWithLinkOnly('https://shop.example/p/1', 'EUR');
+
+    assert.equal(linkOnly.link, 'https://shop.example/p/1');
+    assert.equal(linkOnly.currency, 'EUR');
+    assert.deepEqual(Object.keys(validateDraft(linkOnly)), ['title']);
 });
