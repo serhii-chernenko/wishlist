@@ -3,7 +3,8 @@ import type { User } from 'telegraf/types';
 
 import type { SeenChannel } from '../../db/repositories';
 import { getLatestReleaseVersion } from '../content/releases';
-import type { AppLocale } from '../i18n';
+import { getDefaultCurrency, type Currency } from '../../shared/money';
+import { resolveAppLocale, type AppLocale } from '../i18n';
 import type {
     AuthType,
     LanguageChoice,
@@ -127,6 +128,12 @@ export const createUserService = (deps: {
                     telegramId: request.actor.id,
                     ...visibility,
                     language: request.sessionLanguage,
+                    currency: getDefaultCurrency(
+                        resolveAppLocale(
+                            request.sessionLanguage,
+                            request.actor.language_code
+                        )
+                    ),
                     telegramLanguageCode: request.actor.language_code ?? null,
                     releaseVersion: getLatestReleaseVersion(),
                     lastSeenAt: timestamp,
@@ -161,6 +168,11 @@ export const createUserService = (deps: {
             );
 
             return null;
+        },
+        async setCurrency(user: UserRecord, currency: Currency) {
+            return Effect.runPromise(
+                repos.users.setCurrency(user.id, currency, now())
+            );
         },
         async markBlocked(telegramId: number) {
             await Effect.runPromise(

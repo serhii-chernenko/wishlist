@@ -380,6 +380,7 @@ test('registration stores the release version and the guest language', async () 
             phoneDigits: null,
             username: 'olena',
             language: 'pl',
+            currency: 'PLN',
             telegramLanguageCode: 'uk',
             releaseVersion: getLatestReleaseVersion(),
             lastSeenAt: new Date('2026-10-01T10:00:00Z'),

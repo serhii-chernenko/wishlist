@@ -5,7 +5,7 @@ import type {
     FieldErrorCode,
     OwnWishDto
 } from '../../shared/app-api';
-import { getCurrencySymbol } from '../../shared/money';
+import { getCurrencySymbol, type Currency } from '../../shared/money';
 import type { AppTranslator } from '../i18n/i18n';
 import { fieldErrorMessage } from '../i18n/messages';
 import { getFieldErrors, hasErrorCode } from '../logic/errors';
@@ -67,6 +67,7 @@ import {
     photoFailureText,
     type UploadProgress
 } from '../ui/photo-picker';
+import { CurrencyPicker } from '../ui/currency-picker';
 import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
@@ -457,6 +458,10 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
         };
     };
 
+    const setCurrency = (currency: Currency) => {
+        setDraft(previous => ({ ...previous, currency }));
+    };
+
     const touch = (field: DraftTextField) => {
         return () => {
             setTouched(previous => {
@@ -841,11 +846,21 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     optionalMark={LL.common.optional()}
                     showCounter={false}
                     after={
-                        approximatePrice === null ? undefined : (
-                            <p class='field-host' aria-live='polite'>
-                                {LL.money.approx({ amount: approximatePrice })}
-                            </p>
-                        )
+                        <>
+                            <CurrencyPicker
+                                LL={LL}
+                                locale={locale}
+                                value={draft.currency}
+                                onChange={setCurrency}
+                            />
+                            {approximatePrice === null ? null : (
+                                <p class='field-host' aria-live='polite'>
+                                    {LL.money.approx({
+                                        amount: approximatePrice
+                                    })}
+                                </p>
+                            )}
+                        </>
                     }
                 />
                 <Field

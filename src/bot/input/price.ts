@@ -1,3 +1,4 @@
+import type { Currency } from '../../shared/money';
 import { PRICE_MAX_VALUE } from './limits';
 import { isRemoveCommand } from './remove-command';
 
@@ -53,4 +54,78 @@ export const parsePrice = (
     }
 
     return { ok: true, value };
+};
+
+export type PriceWithCurrencyParseResult =
+    | { ok: true; value: number; currency: Currency | null }
+    | { ok: false; reason: 'invalid' };
+
+interface CurrencyMarker {
+    currency: Currency;
+    symbols: readonly string[];
+    words: readonly string[];
+}
+
+const CURRENCY_MARKERS: readonly CurrencyMarker[] = [
+    { currency: 'UAH', symbols: ['₴'], words: ['грн', 'грив', 'uah', 'hrn'] },
+    { currency: 'USD', symbols: ['$'], words: ['usd', 'дол'] },
+    { currency: 'EUR', symbols: ['€'], words: ['eur', 'євро', 'euro'] },
+    { currency: 'PLN', symbols: ['zł'], words: ['zl', 'pln', 'злот'] }
+];
+
+const WORD_TAIL = '[\\p{L}.]*';
+
+const escapeRegExp = (value: string) => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const buildMarkerAlternation = (marker: CurrencyMarker) => {
+    return [
+        ...marker.symbols.map(escapeRegExp),
+        ...marker.words.map(word => {
+            return `${escapeRegExp(word)}${WORD_TAIL}`;
+        })
+    ].join('|');
+};
+
+const buildMarkerMatchers = (marker: CurrencyMarker) => {
+    const alternation = buildMarkerAlternation(marker);
+
+    return {
+        currency: marker.currency,
+        prefix: new RegExp(`^\\s*(?:${alternation})\\s*`, 'iu'),
+        suffix: new RegExp(`\\s*(?:${alternation})\\s*$`, 'iu')
+    };
+};
+
+const CURRENCY_MARKER_MATCHERS = CURRENCY_MARKERS.map(buildMarkerMatchers);
+
+const stripCurrencyMarker = (text: string) => {
+    for (const { currency, prefix, suffix } of CURRENCY_MARKER_MATCHERS) {
+        if (prefix.test(text)) {
+            return { currency, rest: text.replace(prefix, '') };
+        }
+
+        if (suffix.test(text)) {
+            return { currency, rest: text.replace(suffix, '') };
+        }
+    }
+
+    return { currency: null, rest: text };
+};
+
+export const parsePriceWithCurrency = (
+    text: string | undefined,
+    removeLabels: readonly string[]
+): PriceWithCurrencyParseResult => {
+    if (isRemoveCommand(text, removeLabels)) {
+        return { ok: true, value: 0, currency: null };
+    }
+
+    const { currency, rest } = stripCurrencyMarker((text ?? '').trim());
+    const parsed = parsePrice(rest, []);
+
+    return parsed.ok
+        ? { ok: true, value: parsed.value, currency }
+        : { ok: false, reason: 'invalid' };
 };
