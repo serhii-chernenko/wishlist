@@ -150,20 +150,28 @@ describe('Mini App contact and disclosure API', () => {
             );
         });
 
-        it('needs an address and a visible phone to show the address', async () => {
+        it('turns the phone on together with the address', async () => {
+            const owner = await registerOwnerWithContact({
+                showPhone: false,
+                showAddress: false
+            });
+            const me = await readJson<MeDto>(
+                await call(OWNER, 'PUT', '/me/disclosure', { address: true })
+            );
+
+            assert.deepEqual(me.disclosure, {
+                payments: true,
+                phone: true,
+                address: true
+            });
+            assert.equal((await findUser(owner.id)).showPhone, true);
+        });
+
+        it('needs a stored phone and an address to show the address', async () => {
             await registerOwnerWithContact({
                 showPhone: false,
                 showAddress: false
             });
-
-            assert.deepEqual(
-                await readFieldErrors(
-                    await call(OWNER, 'PUT', '/me/disclosure', {
-                        address: true
-                    })
-                ),
-                { address: 'phoneRequired' }
-            );
 
             await call(OWNER, 'DELETE', '/me/address');
 

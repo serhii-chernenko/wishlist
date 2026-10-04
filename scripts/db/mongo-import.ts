@@ -135,6 +135,7 @@ export interface UserRow {
     wishlistFilter: number | null;
     releaseVersion: string;
     language: typeof importedUserLanguage;
+    showGifted: boolean;
     createdAt: number;
     updatedAt: number;
 }
@@ -1121,6 +1122,7 @@ const transformUsers = (records: MongoUserRecord[]): UserRow[] => {
             wishlistFilter: record.wishlistFilter,
             releaseVersion: record.version ?? defaultReleaseVersion,
             language: importedUserLanguage,
+            showGifted: true,
             createdAt,
             updatedAt: createdAt
         };
@@ -1340,6 +1342,7 @@ const formatUserTuple = (row: UserRow): string => {
         quoteNullableNumber(row.wishlistFilter),
         quoteString(row.releaseVersion),
         quoteString(row.language),
+        quoteBoolean(row.showGifted),
         row.createdAt,
         row.updatedAt
     ].join(', ')})`;
@@ -1377,7 +1380,7 @@ const formatGiveTuple = (row: GiveRow): string => {
 };
 
 const userColumns =
-    '"id", "mongo_id", "telegram_id", "username", "username_searchable", "phone", "phone_digits", "currency", "telegraph_access_token", "payments", "wishlist_filter", "release_version", "language", "created_at", "updated_at"';
+    '"id", "mongo_id", "telegram_id", "username", "username_searchable", "phone", "phone_digits", "currency", "telegraph_access_token", "payments", "wishlist_filter", "release_version", "language", "show_gifted", "created_at", "updated_at"';
 const wishColumns =
     '"id", "mongo_id", "user_id", "title", "description", "link", "images", "priority", "priority_level", "hidden", "removed", "done", "price", "currency", "created_at", "updated_at"';
 const giveColumns = '"id", "mongo_id", "user_id", "wish_id", "created_at"';

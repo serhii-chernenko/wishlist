@@ -180,6 +180,7 @@ describe('Mongo import SQL on D1', () => {
                     sum(currency = 'UAH') AS uah,
                     sum(release_version = '0.0.0') AS unversioned,
                     sum(username_searchable) AS searchable,
+                    sum(show_gifted) AS gifted,
                     sum(blocked_at IS NULL) AS unblocked
                 FROM users`
             ).first<Record<string, number>>();
@@ -192,6 +193,7 @@ describe('Mongo import SQL on D1', () => {
             assert.equal(users?.uah, 24);
             assert.equal(users?.unversioned, 6);
             assert.equal(users?.searchable, 16);
+            assert.equal(users?.gifted, 24);
             assert.equal(users?.unblocked, 24);
             assert.equal(emptyStrings?.total, 0);
         });

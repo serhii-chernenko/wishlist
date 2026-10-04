@@ -188,7 +188,7 @@ describe('disclosure toggle rules', () => {
         });
     });
 
-    it('needs a saved address and a visible phone to show the address', () => {
+    it('needs a saved address and a stored phone to show the address', () => {
         assert.deepEqual(
             planDisclosure(
                 subject({ deliveryAddress: null, showPhone: true }),
@@ -198,14 +198,20 @@ describe('disclosure toggle rules', () => {
             ),
             { ok: false, reason: 'addressRequired', field: 'address' }
         );
-        assert.deepEqual(planDisclosure(subject(), { address: true }), {
-            ok: false,
-            reason: 'phoneRequired',
-            field: 'address'
-        });
         assert.deepEqual(
             planDisclosure(subject({ phone: null }), { address: true }),
             { ok: false, reason: 'phoneRequired', field: 'address' }
+        );
+    });
+
+    it('turns the phone on together with the address', () => {
+        assert.deepEqual(planDisclosure(subject(), { address: true }), {
+            ok: true,
+            next: { payments: true, phone: true, address: true }
+        });
+        assert.deepEqual(
+            planDisclosure(subject({ showPhone: true }), { address: true }),
+            { ok: true, next: { payments: true, phone: true, address: true } }
         );
     });
 

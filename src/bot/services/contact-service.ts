@@ -138,7 +138,8 @@ export const planDisclosure = (
         return { ok: false, reason: 'addressRequired', field: 'address' };
     }
 
-    const phone = hasPhone && (patch.phone ?? user.showPhone);
+    const phone =
+        hasPhone && (patch.phone ?? (patch.address === true || user.showPhone));
 
     if (patch.address === true && !phone) {
         return { ok: false, reason: 'phoneRequired', field: 'address' };

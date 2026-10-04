@@ -41,7 +41,7 @@ type ShareAction =
 
 type ContactConfirmation = 'phone' | 'address' | 'both';
 
-type DetailsNotice = 'phoneMissing' | 'addressMissing' | 'needsPhone';
+type DetailsNotice = 'phoneMissing' | 'addressMissing';
 
 const CONFIRMATION_PATCHES: Record<
     ContactConfirmation,
@@ -71,10 +71,7 @@ const resolveEnabling = (
     return { confirm: me.disclosure.phone ? 'address' : 'both' };
 };
 
-const toDetailsNotice = (
-    failure: AppFailure,
-    hasPhone: boolean
-): DetailsNotice | null => {
+const toDetailsNotice = (failure: AppFailure): DetailsNotice | null => {
     const fields = getFieldErrors(failure);
     const codes = [fields.phone, fields.address];
 
@@ -83,7 +80,7 @@ const toDetailsNotice = (
     }
 
     if (codes.includes('phoneRequired')) {
-        return hasPhone ? 'needsPhone' : 'phoneMissing';
+        return 'phoneMissing';
     }
 
     return null;
@@ -143,8 +140,7 @@ const ContactConfirmationView = ({
             aria-labelledby='contact-confirm-text'
         >
             <div id='contact-confirm-text' class='contact-confirm-text'>
-                {confirmation === 'address' ? null : <p>{confirm.phone()}</p>}
-                {confirmation === 'phone' ? null : <p>{confirm.address()}</p>}
+                <p>{confirm[confirmation]()}</p>
             </div>
             <div class='contact-confirm-actions'>
                 <button
@@ -191,10 +187,7 @@ const ContactDetails = () => {
             setConfirmation(null);
         } catch (error) {
             const failure = toFailure(error);
-            const detailsNotice = toDetailsNotice(
-                failure,
-                me.phoneMasked !== null
-            );
+            const detailsNotice = toDetailsNotice(failure);
 
             setConfirmation(null);
 

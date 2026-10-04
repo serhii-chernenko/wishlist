@@ -169,7 +169,7 @@ test('Mongo import assigns ids by ObjectId order and derives user and give times
 
     assert.ok(
         sql.includes(
-            `(1, '${firstUserOid}', 7000000, 'Fake_User_00', 1, '+380990000000', '380990000000', 'UAH', NULL, NULL, NULL, '1.7.0', 'uk', ${firstUserSeconds * 1000}, ${firstUserSeconds * 1000})`
+            `(1, '${firstUserOid}', 7000000, 'Fake_User_00', 1, '+380990000000', '380990000000', 'UAH', NULL, NULL, NULL, '1.7.0', 'uk', 1, ${firstUserSeconds * 1000}, ${firstUserSeconds * 1000})`
         ),
         'first user row'
     );
@@ -212,7 +212,7 @@ test('Mongo import applies defaults and converts empty strings to NULL', async c
     assert.equal(report.aggregates.users.releaseVersions['0.0.0'], 1);
     assert.match(
         sql,
-        /\(1, '[0-9a-f]{24}', 7000000, NULL, 0, NULL, NULL, 'UAH', NULL, NULL, NULL, '0\.0\.0', 'uk', \d+, \d+\)/
+        /\(1, '[0-9a-f]{24}', 7000000, NULL, 0, NULL, NULL, 'UAH', NULL, NULL, NULL, '0\.0\.0', 'uk', 1, \d+, \d+\)/
     );
     assert.match(
         sql,

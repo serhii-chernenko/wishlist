@@ -500,10 +500,9 @@ const pl: Translation = {
         confirm: {
             phone: '❓ Pokazywać twój numer telefonu?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce numer nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
             address:
-                '❓ Pokazywać twój adres dostawy?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
+                '❓ Pokazywać twój adres dostawy?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
+            both: '❓ Pokazywać twój adres dostawy razem z numerem telefonu?\n\nPokażemy twój adres dostawy razem z numerem telefonu, bo bez niego sam adres niewiele pomoże. Oba zobaczy tylko ten, kto otworzy twoją listę w Telegramie, ale nigdy nie są pokazywane na stronie w przeglądarce.'
         },
-        needsPhone:
-            '❌ Najpierw włącz pokazywanie numeru telefonu: adres jest pokazywany tylko razem z nim.',
         needsAddress: '❌ Najpierw dodaj adres dostawy.',
         phoneMissing:
             '❌ Bot nie ma twojego numeru telefonu. Najpierw pozwól, żeby inni mogli cię znajdować po numerze, w sekcji „Zmień widoczność”.',
@@ -1281,13 +1280,12 @@ const pl: Translation = {
                 confirm: {
                     phone: 'Twój numer telefonu zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
                     address:
-                        'Twój adres dostawy zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
+                        'Twój adres dostawy zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
+                    both: 'Pokażemy twój adres dostawy razem z numerem telefonu, bo bez niego sam adres niewiele pomoże. Oba zobaczy tylko ten, kto otworzy twoją listę w Telegramie, ale nigdy nie są pokazywane na stronie w przeglądarce.'
                 },
                 phoneMissing:
                     'Najpierw pozwól, żeby inni mogli cię znajdować po numerze, w sekcji „Widoczność”.',
-                addressMissing: 'Najpierw dodaj adres dostawy.',
-                needsPhone:
-                    'Adres można pokazywać tylko razem z numerem telefonu.'
+                addressMissing: 'Najpierw dodaj adres dostawy.'
             },
             indexing: {
                 title: 'Pokazuj w wyszukiwarkach',

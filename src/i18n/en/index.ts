@@ -489,10 +489,9 @@ const en: Translation = {
         confirm: {
             phone: '❓ Show your phone number?\n\nAnyone who opens your wish list in Telegram will see it: through your link, or by searching for your username or number. It is never shown on the web page. Messages that were already sent stay in the chat of whoever received them.',
             address:
-                '❓ Show your delivery address?\n\nAnyone who opens your wish list in Telegram will see it: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the chat of whoever received them.'
+                '❓ Show your delivery address?\n\nAnyone who opens your wish list in Telegram will see it: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the chat of whoever received them.',
+            both: '❓ Show your delivery address together with your phone number?\n\nWe will show your delivery address together with your phone number, because without it the address will not help. Anyone who opens your list in Telegram will see both, but they are never shown on the web page.'
         },
-        needsPhone:
-            '❌ Turn on showing your phone number first: the address is shown only together with it.',
         needsAddress: '❌ Add a delivery address first.',
         phoneMissing:
             '❌ The bot does not have your phone number. First allow others to find you by phone number in “Change visibility”.',
@@ -1264,13 +1263,12 @@ const en: Translation = {
                 confirm: {
                     phone: 'Your phone number will be visible to anyone who opens your list in Telegram: through your link, or by searching for your username or number. It is never shown on the web page. Messages that were already sent stay in the viewer’s chat.',
                     address:
-                        'Your delivery address will be visible to anyone who opens your list in Telegram: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the viewer’s chat.'
+                        'Your delivery address will be visible to anyone who opens your list in Telegram: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the viewer’s chat.',
+                    both: 'We will show your delivery address together with your phone number, because without it the address will not help. Anyone who opens your list in Telegram will see both, but they are never shown on the web page.'
                 },
                 phoneMissing:
                     'First allow others to find you by phone number in Visibility.',
-                addressMissing: 'Add a delivery address first.',
-                needsPhone:
-                    'The address can be shown only together with your phone number.'
+                addressMissing: 'Add a delivery address first.'
             },
             indexing: {
                 title: 'Show in search engines',

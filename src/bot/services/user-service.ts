@@ -136,6 +136,7 @@ export const createUserService = (deps: {
                     ),
                     telegramLanguageCode: request.actor.language_code ?? null,
                     releaseVersion: getLatestReleaseVersion(),
+                    showGifted: true,
                     lastSeenAt: timestamp,
                     createdAt: timestamp,
                     updatedAt: timestamp

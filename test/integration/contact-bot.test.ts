@@ -393,20 +393,46 @@ describe('contact and disclosure in the bot', () => {
             ]);
         });
 
-        it('explains what is missing before the address can be shown', async () => {
+        it('confirms once and turns the phone on together with the address', async () => {
             const owner = await createOwner({});
-            const withoutPhone = createRequest(owner);
+            const toggle = createRequest(owner);
 
-            await press(withoutPhone.request, {
+            await press(toggle.request, {
                 type: 'disclosureToggle',
                 field: 'address'
             });
 
-            assert.equal(
-                textsOf(withoutPhone.events)[0],
-                LL.disclosure.needsPhone()
-            );
+            assert.equal((await reload(owner)).showAddress, false);
+            assert.deepEqual(textsOf(toggle.events), [
+                LL.disclosure.confirm.both()
+            ]);
 
+            const confirm = createRequest(owner);
+
+            await press(confirm.request, {
+                type: 'disclosureConfirm',
+                field: 'address'
+            });
+
+            const updated = await reload(owner);
+
+            assert.equal(updated.showPhone, true);
+            assert.equal(updated.showAddress, true);
+            assert.deepEqual(confirm.telemetry, [
+                {
+                    action: 'contact_disclosure_changed',
+                    field: 'phone',
+                    result: 'on'
+                },
+                {
+                    action: 'contact_disclosure_changed',
+                    field: 'address',
+                    result: 'on'
+                }
+            ]);
+        });
+
+        it('explains what is missing before the address can be shown', async () => {
             const noNumber = await createUser();
             const missing = createRequest(noNumber);
 

@@ -383,6 +383,7 @@ test('registration stores the release version and the guest language', async () 
             currency: 'PLN',
             telegramLanguageCode: 'uk',
             releaseVersion: getLatestReleaseVersion(),
+            showGifted: true,
             lastSeenAt: new Date('2026-10-01T10:00:00Z'),
             createdAt: new Date('2026-10-01T10:00:00Z'),
             updatedAt: new Date('2026-10-01T10:00:00Z')

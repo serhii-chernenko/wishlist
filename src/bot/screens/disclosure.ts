@@ -100,20 +100,12 @@ const render = async (req: BotRequest) => {
     await renderFor(req, req.user);
 };
 
-const describeRejection = (
-    req: BotRequest,
-    user: Pick<UserRecord, 'phone'>,
-    reason: DisclosureRejection
-) => {
+const describeRejection = (req: BotRequest, reason: DisclosureRejection) => {
     const { disclosure } = req.LL;
 
-    if (reason === 'addressRequired') {
-        return disclosure.needsAddress();
-    }
-
-    return user.phone === null
-        ? disclosure.phoneMissing()
-        : disclosure.needsPhone();
+    return reason === 'addressRequired'
+        ? disclosure.needsAddress()
+        : disclosure.phoneMissing();
 };
 
 const finishChange = async (
@@ -122,7 +114,7 @@ const finishChange = async (
     outcome: DisclosureOutcome
 ) => {
     if (!outcome.ok) {
-        await req.send.text(describeRejection(req, user, outcome.reason));
+        await req.send.text(describeRejection(req, outcome.reason));
         await renderFor(req, user);
         return;
     }
@@ -139,14 +131,22 @@ const finishChange = async (
     await renderFor(deriveRequest(req, { user: outcome.user }), outcome.user);
 };
 
+const resolveConfirmationKey = (
+    user: Pick<UserRecord, 'showPhone'>,
+    field: ConfirmableDisclosureField
+) => {
+    return field === 'address' && !user.showPhone ? 'both' : field;
+};
+
 const renderConfirmation = async (
     req: BotRequest,
+    user: Pick<UserRecord, 'showPhone'>,
     field: ConfirmableDisclosureField
 ) => {
     const { LL } = req;
 
     await req.send.text(
-        LL.disclosure.confirm[field](),
+        LL.disclosure.confirm[resolveConfirmationKey(user, field)](),
         singleColumnKeyboard([
             callbackButton(LL.actions.yes(), {
                 type: 'disclosureConfirm',
@@ -169,9 +169,7 @@ const precheckEnabling = (
         return { reason: 'addressRequired' };
     }
 
-    return user.showPhone && user.phone !== null
-        ? null
-        : { reason: 'phoneRequired' };
+    return user.phone === null ? { reason: 'phoneRequired' } : null;
 };
 
 export const screen: ScreenModule = {
@@ -203,12 +201,12 @@ export const callbacks: CallbackTable = {
         const rejection = precheckEnabling(user, action.field);
 
         if (rejection !== null) {
-            await req.send.text(describeRejection(req, user, rejection.reason));
+            await req.send.text(describeRejection(req, rejection.reason));
             await renderFor(req, user);
             return;
         }
 
-        await renderConfirmation(req, action.field);
+        await renderConfirmation(req, user, action.field);
     },
     async disclosureConfirm(req, action) {
         const { user } = req;

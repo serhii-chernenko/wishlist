@@ -294,6 +294,8 @@ describe('Mini App API account, share, feedback and info', () => {
 
             assert.equal(stored?.username, 'guest_user');
             assert.equal(stored?.usernameSearchable, true);
+            assert.equal(stored?.showGifted, true);
+            assert.equal(me.showGifted, true);
             assert.deepEqual(
                 eventsNamed('bot_action_completed').map(event => {
                     return [event.channel, event.action, event.result];
