@@ -69,6 +69,7 @@ export const AboutScreen = (_props: ScreenProps<'about'>) => {
                 <p>{LL.about.privacy.phone()}</p>
                 <p>{LL.about.privacy.name()}</p>
                 <p>{LL.about.privacy.photos()}</p>
+                <p>{LL.about.privacy.rates()}</p>
             </Tag>
             <Tag class='about-section'>
                 <h2 class='panel-title'>{LL.about.openSource.title()}</h2>

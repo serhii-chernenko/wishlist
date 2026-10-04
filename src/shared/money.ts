@@ -25,7 +25,7 @@ export interface ExchangeRates {
 }
 
 export const FALLBACK_RATES: ExchangeRates = {
-    date: '2026-10-05',
+    date: '2026-10-04',
     perUnit: { UAH: 1, USD: 44.9857, EUR: 50.5333, PLN: 11.5442 }
 };
 

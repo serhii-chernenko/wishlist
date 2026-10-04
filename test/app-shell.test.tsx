@@ -203,7 +203,7 @@ test('the kill switch renders the unavailable page in the requested language', a
     assert.equal(polish.headers.get('Content-Security-Policy'), EXACT_CSP);
     assert.equal(polish.headers.get('X-Robots-Tag'), 'noindex');
     assert.match(html, /<html lang="pl"/);
-    assert.match(html, /Aplikacja jest tymczasowo niedostępna/);
+    assert.match(html, /Aplikacja jest chwilowo niedostępna/);
     assert.match(html, new RegExp(`href="${BOT_URL}"`));
     assert.doesNotMatch(html, /<script/);
     assert.doesNotMatch(html, /id="root"/);

@@ -79,7 +79,7 @@ test('the announcement uses Ukrainian text and headings for uk users', () => {
 test('the announcement uses English text and headings for en users', () => {
     const rendered = renderReleaseAnnouncement(trilingualRelease, 'en');
 
-    assert.match(rendered, /The bot has been updated to version 2\.0\.0 🎉/);
+    assert.match(rendered, /The bot is now on version 2\.0\.0 🎉/);
     assert.match(rendered, /<b>Added<\/b>/);
     assert.match(rendered, /- New \/lang command\./);
     assert.match(rendered, /- Тільки українською\./);

@@ -197,12 +197,12 @@ test('an English page converts hryvnia prices to approximate euros', () => {
 
     assert.match(
         html,
-        /<p class="price" title="₴1,000"><span class="sr-only">Approximate price: <\/span>≈ €20<span class="sr-only"> \(original price ₴1,000\)<\/span><\/p>/u
+        /<p class="price" title="₴1,000"><span class="sr-only">Estimated price: <\/span>≈ €20<span class="sr-only"> \(listed as ₴1,000\)<\/span><\/p>/u
     );
     assert.doesNotMatch(html, /€1,000/);
     assert.match(
         html,
-        /<p class="notice">Prices in other currencies are approximate, converted to EUR at the National Bank of Ukraine rate for October 5, 2026<\/p>/
+        /<p class="notice">Prices are approximate, converted to EUR at the official daily rate as of October 4, 2026\.<\/p>/
     );
 });
 
@@ -217,7 +217,7 @@ test('a Polish page converts to złoty and dates the note the Polish way', () =>
     assert.match(html, />≈ 87\s?zł</u);
     assert.match(
         html,
-        /według kursu Narodowego Banku Ukrainy z 5 października 2026/
+        /według oficjalnego kursu dziennego z 4 października 2026\./
     );
 });
 
@@ -240,7 +240,7 @@ test('wish prices follow the wish currency and the display currency of the page'
     );
 
     assert.match(converted, /≈ €89/u);
-    assert.match(converted, /original price \$100/u);
+    assert.match(converted, /listed as \$100/u);
     assert.doesNotMatch(exact, /≈/);
     assert.doesNotMatch(chosen, /≈/);
     assert.doesNotMatch(chosen, /class="notice"/);
@@ -406,7 +406,7 @@ test('payments are shown once and cut to the payments cap', () => {
     assert.match(html, /<section class="envelope">/);
     assert.match(
         html,
-        /<h2 class="envelope-title">You can also give money<\/h2>/
+        /<h2 class="envelope-title">Prefer to send money\?<\/h2>/
     );
     assert.equal(html.includes('p'.repeat(1000)), false);
     assert.equal(html.includes(`${'p'.repeat(999)}…`), true);
@@ -445,8 +445,14 @@ test('hreflang, canonical, open graph and twitter tags describe the page', () =>
             `<link rel="alternate" hreflang="x-default" href="${base}/w/${PUBLIC_ID}"`
         )
     );
-    assert.match(html, /<meta property="og:title" content="Lista życzeń/);
-    assert.match(html, /<meta property="og:description" content="Alice: 1 /);
+    assert.match(
+        html,
+        /<meta property="og:title" content="Alice – lista życzeń/
+    );
+    assert.match(
+        html,
+        /<meta property="og:description" content="Alice – lista życzeń, 1 /
+    );
     assert.match(
         html,
         new RegExp(

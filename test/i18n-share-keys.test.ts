@@ -198,19 +198,21 @@ test('wish counts use the right plural form in every locale', () => {
             [...expected[locale]],
             locale
         );
-        assert.ok(
-            LL.web.meta
-                .description({ name: 'Alice', count: 5 })
-                .startsWith(`Alice: ${expected[locale][2]}`),
-            locale
-        );
+
+        const metaDescription = LL.web.meta.description({
+            name: 'Alice',
+            count: 5
+        });
+
+        assert.ok(metaDescription.startsWith('Alice'), locale);
+        assert.ok(metaDescription.includes(expected[locale][2]), locale);
     }
 });
 
 test('the consent copy names the host and the public, indexable nature of the page', () => {
     const hints = {
         uk: ['пошукових систем', 'будь-коли'],
-        en: ['search engine', 'any time'],
+        en: ['search results', 'anytime'],
         pl: ['wyszukiwarek', 'w każdej chwili']
     } as const;
 

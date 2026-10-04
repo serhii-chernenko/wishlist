@@ -198,7 +198,7 @@ test('a refresh fetches the NBU feed and stores the validated rates', async () =
     assert.deepEqual(requests, [NBU_EXCHANGE_URL]);
     assert.deepEqual(result, {
         outcome: 'refreshed',
-        rates: FALLBACK_RATES,
+        rates: { ...FALLBACK_RATES, date: '2026-10-05' },
         fetchedAt: START
     });
     assert.deepEqual(fake.rows(), storedRows(START));
@@ -286,7 +286,7 @@ test('stored rates fall back per currency and mark the snapshot as stale', () =>
     });
     assert.deepEqual(toRatesSnapshot([eur!]), {
         rates: {
-            date: '2026-10-05',
+            date: '2026-10-04',
             perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
         },
         fetchedAt: null
@@ -295,7 +295,7 @@ test('stored rates fall back per currency and mark the snapshot as stale', () =>
         toRatesSnapshot([usd!, eur!, { ...pln!, uahPerUnit: 0 }]),
         {
             rates: {
-                date: '2026-10-05',
+                date: '2026-10-04',
                 perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
             },
             fetchedAt: null
@@ -305,11 +305,35 @@ test('stored rates fall back per currency and mark the snapshot as stale', () =>
         toRatesSnapshot([usd!, eur!, { ...pln!, rateDate: 'bad' }]),
         {
             rates: {
-                date: '2026-10-05',
+                date: '2026-10-04',
                 perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
             },
             fetchedAt: null
         }
+    );
+});
+
+test('the snapshot date is the UTC day the rates were fetched, not the NBU value date', () => {
+    const nextDayRates = (fetchedAt: Date) => {
+        return storedRows(fetchedAt).map(row => {
+            return { ...row, rateDate: '2026-10-06' };
+        });
+    };
+
+    assert.equal(
+        toRatesSnapshot(nextDayRates(new Date('2026-10-05T13:30:00.000Z')))
+            .rates.date,
+        '2026-10-05'
+    );
+    assert.equal(
+        toRatesSnapshot(nextDayRates(new Date('2026-10-05T23:59:59.000Z')))
+            .rates.date,
+        '2026-10-05'
+    );
+    assert.equal(
+        toRatesSnapshot(nextDayRates(new Date('2026-10-06T00:00:00.000Z')))
+            .rates.date,
+        '2026-10-06'
     );
 });
 
@@ -401,7 +425,7 @@ test('missing rates serve the fallback and refresh once in the background', asyn
     );
     assert.equal(state.refreshing, false);
     assert.deepEqual(fake.rows(), storedRows(START));
-    assert.deepEqual(await read(), FALLBACK_RATES);
+    assert.deepEqual(await read(), { ...FALLBACK_RATES, date: '2026-10-05' });
     assert.equal(fake.calls.listAll, 2);
 });
 

@@ -14,7 +14,7 @@ const SKELETON_TAG_COUNT = 3;
 
 const NOSCRIPT_TEXTS = {
     uk: 'Для роботи застосунку потрібен JavaScript. Увімкніть його або відкрийте бота в Телеграмі.',
-    en: 'The app needs JavaScript. Turn it on or open the bot in Telegram.',
+    en: 'This app needs JavaScript. Turn it on or open the bot in Telegram.',
     pl: 'Aplikacja wymaga JavaScriptu. Włącz go albo otwórz bota w Telegramie.'
 } as const satisfies Record<SharePageLanguage, string>;
 
@@ -26,12 +26,12 @@ const UNAVAILABLE_TEXTS = {
     },
     en: {
         title: 'The app is temporarily unavailable',
-        text: 'We will bring it back soon. Your wish list still works in the bot chat.',
+        text: 'We’re on it. In the meantime, you can use the bot in chat.',
         action: 'Open the bot'
     },
     pl: {
-        title: 'Aplikacja jest tymczasowo niedostępna',
-        text: 'Wkrótce ją przywrócimy. Twoja lista życzeń nadal działa w czacie z botem.',
+        title: 'Aplikacja jest chwilowo niedostępna',
+        text: 'Już nad tym pracujemy. Tymczasem wszystko możesz zrobić w czacie z botem.',
         action: 'Otwórz bota'
     }
 } as const satisfies Record<

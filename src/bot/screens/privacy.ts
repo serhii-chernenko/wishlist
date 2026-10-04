@@ -16,6 +16,7 @@ const renderDescription = (req: BotRequest) => {
         description.sensitive(),
         description.openSource(),
         description.languages(),
+        description.rates(),
         description.feedback(),
         req.LL.feedback.description.points(),
         description.otherProjects.title(),

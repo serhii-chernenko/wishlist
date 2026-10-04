@@ -1290,7 +1290,7 @@ describe('share page routes', () => {
 
         const english = await (await request('/en')).text();
 
-        assert.match(english, /<title>Wish list/);
+        assert.match(english, /<title>Wishlist/);
         assert.match(english, /How it works/);
     });
 
@@ -1423,7 +1423,7 @@ describe('share page routes', () => {
 
         assert.match(
             body,
-            /<h1 [^>]*><span class="hero-lead">Wish list of<\/span> <span class="hero-name">Alice<\/span><\/h1>/
+            /<h1 [^>]*><span class="hero-lead">Wish list from<\/span> <span class="hero-name">Alice<\/span><\/h1>/
         );
         assert.match(
             body,

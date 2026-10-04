@@ -314,7 +314,7 @@ describe('wishlist screens on D1', () => {
                     'wl:p:10'
                 )
             );
-            assert.ok(lastText(first.events).html.includes('1-10'));
+            assert.ok(lastText(first.events).html.includes('1–10'));
 
             const second = createRequest(owner);
 

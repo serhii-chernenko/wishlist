@@ -677,7 +677,7 @@ describe('Mini App photo endpoints', () => {
         assert.equal(telegram.sendMessageCalls[0]?.chatId, OWNER_TELEGRAM_ID);
         assert.match(
             telegram.sendMessageCalls[0]?.text ?? '',
-            /Add new images \(no more than 9\)$/
+            /Send up to 9 photos$/
         );
         assert.deepEqual(telegram.sendMessageCalls[0]?.replyMarkup, {
             remove_keyboard: true
@@ -694,7 +694,7 @@ describe('Mini App photo endpoints', () => {
         assert.equal(updateResponse.status, 204);
         assert.match(
             telegram.sendMessageCalls[1]?.text ?? '',
-            /remove all the added ones/
+            /remove them all/
         );
         const updateMarkup = telegram.sendMessageCalls[1]?.replyMarkup as
             | { keyboard: unknown[] }

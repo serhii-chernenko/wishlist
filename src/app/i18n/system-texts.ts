@@ -52,11 +52,11 @@ export const SYSTEM_TEXTS = {
         expired: {
             title: 'Session expired',
             text: 'The app has been open for too long. Close it and open it again.',
-            cta: 'Close the app'
+            cta: 'Close app'
         },
         unavailable: {
             title: 'The app is temporarily unavailable',
-            text: 'We are already on it. Meanwhile, you can do everything in the chat with the bot.',
+            text: 'We’re on it. In the meantime, you can use the bot in chat.',
             cta: 'Open the bot'
         },
         previewOnly: {
@@ -66,12 +66,12 @@ export const SYSTEM_TEXTS = {
         },
         unsupported: {
             title: 'Telegram needs an update',
-            text: 'Your Telegram version does not support this app. Update Telegram or use the bot in the chat.',
+            text: 'Your Telegram version doesn’t support this app. Update Telegram or use the bot in chat.',
             cta: 'Open the bot'
         },
         bootError: {
-            title: 'The app could not start',
-            text: 'Try opening it again. If that does not help, the bot in the chat works as usual.',
+            title: 'The app couldn’t start',
+            text: 'Try opening it again. If that doesn’t help, the bot in chat works as usual.',
             cta: 'Try again'
         }
     },
@@ -97,8 +97,8 @@ export const SYSTEM_TEXTS = {
             cta: 'Otwórz bota'
         },
         unsupported: {
-            title: 'Zaktualizuj Telegrama',
-            text: 'Twoja wersja Telegrama nie obsługuje tej aplikacji. Zaktualizuj Telegrama albo korzystaj z bota w czacie.',
+            title: 'Zaktualizuj Telegram',
+            text: 'Twoja wersja Telegrama nie obsługuje tej aplikacji. Zaktualizuj Telegram albo korzystaj z bota w czacie.',
             cta: 'Otwórz bota'
         },
         bootError: {

@@ -95,6 +95,7 @@ type FetchedPayload =
     | { ok: false; reason: RatesRefreshFailureReason };
 
 const NBU_DATE_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+const ISO_DATE_LENGTH = 10;
 const TIMEOUT_ERROR_NAMES = new Set(['TimeoutError', 'AbortError']);
 
 export const createExchangeRatesCacheState = (): ExchangeRatesCacheState => {
@@ -221,12 +222,16 @@ const isUsableRateRow = (
     );
 };
 
-/** Each currency falls back on its own; any fallback leaves `fetchedAt` null so the snapshot counts as stale and schedules a refresh. */
+const toUtcIsoDate = (time: number) => {
+    return new Date(time).toISOString().slice(0, ISO_DATE_LENGTH);
+};
+
+/** Each currency falls back on its own; any fallback leaves `fetchedAt` null so the snapshot counts as stale and schedules a refresh. `date` is the UTC day the rates were fetched, not the NBU value date, which is often the next day. */
 export const toRatesSnapshot = (
     rows: readonly StoredRateRow[]
 ): RatesSnapshot => {
     const perUnit = { ...FALLBACK_RATES.perUnit, [RATE_PIVOT_CURRENCY]: 1 };
-    const rateDates: string[] = [];
+    const fetchedDates: string[] = [];
     const fetchedTimes: number[] = [];
     let usesFallback = false;
 
@@ -237,12 +242,12 @@ export const toRatesSnapshot = (
 
         if (!isUsableRateRow(row)) {
             usesFallback = true;
-            rateDates.push(FALLBACK_RATES.date);
+            fetchedDates.push(FALLBACK_RATES.date);
             continue;
         }
 
         perUnit[currency] = row.uahPerUnit;
-        rateDates.push(row.rateDate);
+        fetchedDates.push(toUtcIsoDate(row.fetchedAt.getTime()));
         fetchedTimes.push(row.fetchedAt.getTime());
     }
 
@@ -250,7 +255,7 @@ export const toRatesSnapshot = (
         return { rates: FALLBACK_RATES, fetchedAt: null };
     }
 
-    const [date = FALLBACK_RATES.date] = rateDates.sort();
+    const [date = FALLBACK_RATES.date] = fetchedDates.sort();
 
     return {
         rates: { date, perUnit },

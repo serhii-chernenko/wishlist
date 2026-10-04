@@ -93,7 +93,7 @@ const languageFlags = { uk: '🇺🇦', en: '🇺🇸', pl: '🇵🇱' } as cons
 const languageCodes = { uk: 'UA', en: 'EN', pl: 'PL' } as const;
 const languageParagraphStarts = {
     uk: '🇺🇦 Змінити мову',
-    en: '🇺🇸 Change a language',
+    en: '🇺🇸 Change the bot’s language',
     pl: '🇵🇱 Zmień język'
 } as const;
 const languageNameInLocale = {
@@ -174,7 +174,7 @@ test('the language screen mentions all three languages', () => {
     const description = ukrainian.get('language.description') ?? '';
 
     assert.match(description, /Змінити мову/);
-    assert.match(description, /Change a language/);
+    assert.match(description, /Change the bot’s language/);
     assert.match(description, /Zmień język/);
 });
 
@@ -213,7 +213,7 @@ test('the approved privacy copy mentions the three languages and Cloudflare', ()
     assert.doesNotMatch(sensitive, /приватному сервері/);
     assert.match(
         flat.en!.get('privacy.description.languages') ?? '',
-        /English, Ukrainian and Polish/
+        /English, Ukrainian, and Polish/
     );
     assert.match(
         flat.pl!.get('privacy.description.languages') ?? '',
