@@ -91,12 +91,14 @@ Decisions:
 
 - [x] Plan: per-wish currency with a user setting (UAH, USD, EUR, PLN), priority levels, delivery address and disclosure toggles (Telegram only, never on the web), photo reordering, UI polish
 - [x] Polish and US English copy reviews
-- [ ] Foundation: one combined additive migration, contract, seams, i18n skeleton
+- [x] Foundation: one combined additive migration, contract, seams, i18n skeleton, search indexing flag (954c665)
 - [ ] Currency setting, editor currency picker, web currency switcher
 - [ ] Priority levels with colored badges (bot single-column menu, app segmented picker)
 - [ ] Delivery address, phone and payment disclosure toggles
 - [ ] Photo reordering (drag and drop, keyboard, "make first", bot)
 - [ ] Polish: sun-moon theme icon, icon and title alignment, short home grid labels, required badge, textarea autosize, muted OFF toggles
+- [ ] Gifted wishes at the end of the app list and, when the owner opts in, of shared lists, with a "Gifted" band
+- [ ] One pattern for destructive actions in the app: red buttons, a countdown on the button itself, undo toasts for removed items, and destructive confirm popups for bulk actions
 - [ ] Copy pass (Polish, US English) over all strings
 - [ ] Review, security audit, preview test
 - [ ] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order
