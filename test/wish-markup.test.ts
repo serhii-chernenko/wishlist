@@ -111,20 +111,27 @@ test('watcher markup uses the watcher priority wording', () => {
     assert.equal(html.includes('Наразі дуже хочу це!'), false);
 });
 
-test('only the high priority level adds the priority block', () => {
-    for (const priorityLevel of [0, 1, 2]) {
+test('every priority level except none adds its own priority block', () => {
+    const expectedByLevel: Record<number, string | null> = {
+        0: null,
+        1: 'Наразі трохи хочу це',
+        2: 'Наразі хочу це',
+        3: 'Наразі дуже хочу це!'
+    };
+
+    for (const [level, expected] of Object.entries(expectedByLevel)) {
         const html = renderWishHtml(
             LL,
-            createWish({ priorityLevel }),
+            createWish({ priorityLevel: Number(level) }),
             formatters,
             ownerFull
         );
 
-        assert.equal(
-            html.includes('<blockquote>'),
-            false,
-            String(priorityLevel)
-        );
+        if (expected === null) {
+            assert.equal(html.includes('<blockquote>'), false, level);
+        } else {
+            assert.ok(html.includes(`<b>${expected}</b>`), level);
+        }
     }
 });
 

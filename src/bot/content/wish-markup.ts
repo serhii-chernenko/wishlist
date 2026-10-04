@@ -1,6 +1,6 @@
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import type { WishRecord } from '../../db/repositories';
-import { WISH_PRIORITY_LEVELS } from '../../shared/app-api';
+import { toWishPriority } from '../../shared/priority';
 import { toWishCurrency, type Currency } from '../../shared/money';
 import { cutDescription, cutTitle } from '../input/limits';
 import { parseWishImages } from '../input/wish-images';
@@ -36,11 +36,16 @@ export type WishMarkupSource = Pick<
 
 const getPriorityBlock = (
     LL: TranslationFunctions,
+    level: number,
     audience: WishMarkupAudience
 ) => {
-    return audience === 'owner'
-        ? LL.markup.priority.high.owner()
-        : LL.markup.priority.high.watcher();
+    const priority = toWishPriority(level);
+
+    if (priority === 'none') {
+        return '';
+    }
+
+    return LL.markup.priority[priority][audience]();
 };
 
 export const renderWishHtml = (
@@ -74,10 +79,7 @@ export const renderWishHtml = (
         return title + price + dateLines + hidden;
     }
 
-    const priority =
-        wish.priorityLevel === WISH_PRIORITY_LEVELS.high
-            ? getPriorityBlock(LL, options.audience)
-            : '';
+    const priority = getPriorityBlock(LL, wish.priorityLevel, options.audience);
     const description = wish.description
         ? LL.markup.description(escapeHtml(cutDescription(wish.description)))
         : '';

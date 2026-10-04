@@ -11,12 +11,13 @@ import { buildSharePath } from '../public-id';
 import type { SharePageModel } from '../view-model';
 import { buildShareAppLink } from '../../../shared/app-links';
 import { EXTERNAL_LINK_REL, PageFooter } from './footer';
+import { HeartStickerDefs } from './heart-sticker';
 import { HeroTag } from './hero';
 import { InlineContent } from './inline-content';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeSwitcher } from './theme-switcher';
 import { ENVELOPE_LINK_CLASS, TEXT_LINK_CLASS } from './link-classes';
-import { WishCard } from './wish-card';
+import { isHighPriorityWish, WishCard } from './wish-card';
 
 const TELEGRAM_USERNAME_PATTERN = /^[A-Za-z0-9_]{1,64}$/;
 
@@ -147,18 +148,23 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                 {model.wishes.length === 0 ? (
                     <p class='empty'>{LL.web.empty()}</p>
                 ) : (
-                    <ul class='wishes'>
-                        {model.wishes.map(wish => {
-                            return (
-                                <WishCard
-                                    wish={wish}
-                                    language={model.language}
-                                    displayCurrency={model.displayCurrency}
-                                    rates={model.rates}
-                                />
-                            );
-                        })}
-                    </ul>
+                    <>
+                        {model.wishes.some(isHighPriorityWish) ? (
+                            <HeartStickerDefs />
+                        ) : null}
+                        <ul class='wishes'>
+                            {model.wishes.map(wish => {
+                                return (
+                                    <WishCard
+                                        wish={wish}
+                                        language={model.language}
+                                        displayCurrency={model.displayCurrency}
+                                        rates={model.rates}
+                                    />
+                                );
+                            })}
+                        </ul>
+                    </>
                 )}
                 {hasConvertedPrices(model) ? <RatesNote model={model} /> : null}
                 {model.visibleCount > SHAREABLE_WISHES_LIMIT ? (

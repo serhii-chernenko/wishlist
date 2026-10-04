@@ -2,12 +2,14 @@ import type { Child } from 'hono/jsx';
 
 import type { ApiImage, WishPriority } from '../../shared/app-api';
 import type { Currency } from '../../shared/money';
+import { isBadgePriority } from '../../shared/priority-badge';
 import { getLinkHost } from '../logic/format';
 import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
 import { HeartSticker } from './heart';
 import { PhotoFrame } from './photo-frame';
 import { PriceChip } from './price-chip';
+import { PriorityBadge } from './priority-badge';
 
 export interface WishTagModel {
     id: number;
@@ -61,13 +63,7 @@ const WishCover = ({
 };
 
 /** The compact gift-tag card shared with the share page markup (`.wish` / `.wish-tag`). */
-export const WishTag = ({
-    wish,
-    owner = 'self',
-    onOpen,
-    badges,
-    actions
-}: WishTagProps) => {
+export const WishTag = ({ wish, onOpen, badges, actions }: WishTagProps) => {
     const LL = useLL();
     const host = wish.linkHost ?? getLinkHost(wish.link);
 
@@ -89,12 +85,8 @@ export const WishTag = ({
                     )}
                 </h2>
                 <WishCover images={wish.images} title={wish.title} />
-                {wish.priority === 'high' ? (
-                    <p class='sr-only'>
-                        {owner === 'self'
-                            ? LL.a11y.priority.high()
-                            : LL.a11y.priorityThird()}
-                    </p>
+                {isBadgePriority(wish.priority) ? (
+                    <PriorityBadge priority={wish.priority} />
                 ) : null}
                 {wish.hidden ? (
                     <p class='wish-badge'>{LL.wishes.hiddenBadge()}</p>

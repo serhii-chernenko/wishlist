@@ -177,7 +177,10 @@ test('priority sticker, price chip and dates follow the page language', () => {
         html,
         /<li class="wish"><svg class="wish-heart"[^>]*aria-hidden="true">/
     );
-    assert.match(html, /<p class="sr-only">Дуже хоче<\/p>/);
+    assert.match(
+        html,
+        /<p class="priority-badge" data-level="high">Дуже хоче<\/p>/
+    );
     assert.match(
         html,
         /<p class="price"><span class="sr-only">Орієнтовна вартість: <\/span>2\s?500\s?₴<\/p>/u
@@ -547,6 +550,8 @@ test('the page has a doctype, no scripts and no external resources', () => {
     assert.ok(ids.includes('wl-hero-heart'));
 });
 
+const STRESS_PRIORITIES = ['high', 'low', 'high', 'medium'] as const;
+
 test('twenty maximum size wishes stay below 60 KB', () => {
     const wishes = Array.from({ length: 20 }, (_, index) => {
         return buildWish({
@@ -554,7 +559,8 @@ test('twenty maximum size wishes stay below 60 KB', () => {
             description: 'о'.repeat(500),
             link: `https://shop.test/items/${'p'.repeat(200)}${index}`,
             price: 1000 + index,
-            priority: index % 2 === 0 ? 'high' : 'none'
+            priority:
+                STRESS_PRIORITIES[index % STRESS_PRIORITIES.length] ?? 'none'
         });
     });
     const html = renderSharePage(

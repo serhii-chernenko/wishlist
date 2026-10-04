@@ -1282,14 +1282,14 @@ describe('wishlist screens on D1', () => {
 
             const own = createRequest(owner);
 
-            await dispatch(own.request, `w:pm:${wish.id}`);
+            await dispatch(own.request, `w:pl:${wish.id}:3`);
             await dispatch(own.request, `w:v:${wish.id}`);
             assert.equal((await readWish(wish.id))?.['priority'], 1);
             assert.equal((await readWish(wish.id))?.['hidden'], 1);
 
             const foreign = createRequest(stranger);
 
-            await dispatch(foreign.request, `w:pm:${wish.id}`);
+            await dispatch(foreign.request, `w:pl:${wish.id}:0`);
             assert.equal((await readWish(wish.id))?.['priority'], 1);
             assert.ok(lastText(foreign.events).html.length > 0);
         });
