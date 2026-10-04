@@ -1,5 +1,5 @@
 import { jsx } from 'hono/jsx';
-import { Monitor, Moon, Sun } from 'lucide';
+import { Moon, Sun, SunMoon } from 'lucide';
 
 import { getTranslator } from '../../../bot/i18n';
 import { buildThemeSwitchPath, WEB_THEMES, type WebTheme } from '../../theme';
@@ -11,7 +11,7 @@ type IconNode = readonly (readonly [
 ])[];
 
 const THEME_ICONS = {
-    system: Monitor,
+    system: SunMoon,
     light: Sun,
     dark: Moon
 } as const satisfies Record<WebTheme, IconNode>;

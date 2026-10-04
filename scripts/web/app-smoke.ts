@@ -69,19 +69,19 @@ interface CdpMessage {
     sessionId?: string;
 }
 
-interface SmokeCredentials {
+export interface SmokeCredentials {
     botToken: string;
     adminId: number;
 }
 
-class SmokeError extends Error {
+export class SmokeError extends Error {
     constructor(message: string) {
         super(message);
         this.name = 'SmokeError';
     }
 }
 
-const assertLocalBase = (baseUrl: string) => {
+export const assertLocalBase = (baseUrl: string) => {
     let hostname: string | null = null;
 
     try {
@@ -332,6 +332,14 @@ type FetchRule = (request: {
     postData: string | undefined;
 }) => { status: number; body: unknown; delayMs?: number } | null;
 
+export interface ScreenshotClip {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    scale: number;
+}
+
 export class SmokePage {
     readonly errors: string[] = [];
     private readonly unsubscribers: Array<() => void> = [];
@@ -342,7 +350,7 @@ export class SmokePage {
         private readonly sessionId: string
     ) {}
 
-    static async open(cdp: CdpConnection) {
+    static async open(cdp: CdpConnection, viewportWidth = VIEWPORT.width) {
         const { targetId } = (await cdp.send('Target.createTarget', {
             url: 'about:blank'
         })) as { targetId: string };
@@ -356,6 +364,7 @@ export class SmokePage {
         await page.send('Runtime.enable');
         await page.send('Emulation.setDeviceMetricsOverride', {
             ...VIEWPORT,
+            width: viewportWidth,
             mobile: true
         });
         page.listen();
@@ -487,12 +496,15 @@ export class SmokePage {
             returnByValue: true
         })) as {
             result: { value?: unknown };
-            exceptionDetails?: { text: string };
+            exceptionDetails?: {
+                text: string;
+                exception?: { description?: string };
+            };
         };
 
         if (result.exceptionDetails) {
             throw new SmokeError(
-                `evaluate failed: ${result.exceptionDetails.text}`
+                `evaluate failed: ${result.exceptionDetails.exception?.description ?? result.exceptionDetails.text}`
             );
         }
 
@@ -552,9 +564,10 @@ export class SmokePage {
         await this.send('DOM.setFileInputFiles', { nodeId, files });
     }
 
-    async screenshot(file: string) {
+    async screenshot(file: string, clip?: ScreenshotClip) {
         const { data } = (await this.send('Page.captureScreenshot', {
-            format: 'png'
+            format: 'png',
+            ...(clip !== undefined && { clip })
         })) as { data: string };
 
         fs.writeFileSync(file, Buffer.from(data, 'base64'));
@@ -643,7 +656,7 @@ const createWishFixtureRule = () => {
     return rule;
 };
 
-const callApi = async (
+export const callApi = async (
     baseUrl: string,
     initData: string,
     method: string,
@@ -679,7 +692,7 @@ const SEED_WISHES = [
 ];
 
 /** Registers the admin, then adds the sample wishes and a share only to an empty list, so reruns do not pile up duplicates. */
-const seedThroughApi = async (baseUrl: string, initData: string) => {
+export const seedThroughApi = async (baseUrl: string, initData: string) => {
     const statuses = [
         (
             await callApi(baseUrl, initData, 'PUT', '/me/visibility', {
@@ -829,12 +842,26 @@ const main = async () => {
             base: { type: 'string', default: DEFAULT_BASE_URL },
             out: { type: 'string' },
             chrome: { type: 'string' },
-            seed: { type: 'boolean', default: true }
+            seed: { type: 'boolean', default: true },
+            'check-alignment': { type: 'boolean', default: false },
+            shots: { type: 'string' }
         }
     });
     const baseUrl = values.base.replace(/\/+$/, '');
 
     assertLocalBase(baseUrl);
+
+    if (values['check-alignment']) {
+        const { runAlignmentCheck } = await import('./app-alignment');
+
+        process.exitCode = await runAlignmentCheck({
+            baseUrl,
+            chrome: values.chrome,
+            shotsDirectory: values.shots
+        });
+
+        return;
+    }
 
     const outDirectory = path.resolve(
         values.out ?? path.join(os.tmpdir(), 'wishlist-app-smoke')
