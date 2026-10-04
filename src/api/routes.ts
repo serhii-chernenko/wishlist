@@ -38,6 +38,7 @@ import {
     uploadWishImage
 } from './handlers/images';
 import { getStats, listReleases } from './handlers/info';
+import { importLink, importWishImage } from './handlers/link-import';
 import { giveWish, listOwnerWishes, openSharedList } from './handlers/lists';
 import {
     cancelContactIntent,
@@ -92,10 +93,12 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     restoreWish,
     hideGiftedWish,
     uploadWishImage,
+    importWishImage,
     removeWishImage,
     clearWishImages,
     reorderWishImages,
     startImageChatIntent,
+    importLink,
     listGives,
     removeGive,
     cleanGives,

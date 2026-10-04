@@ -228,3 +228,8 @@ test('after registering, other deep links resume and Visibility is dropped', () 
     ]);
     assert.deepEqual(screensOf(routesAfterRegistration(null)), ['home']);
 });
+
+test('the link import screen is a registered-only screen without parameters', () => {
+    assert.ok(SCREEN_IDS.includes('linkImport'));
+    assert.equal(requiresRegistration({ screen: 'linkImport' }), true);
+});

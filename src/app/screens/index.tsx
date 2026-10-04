@@ -10,6 +10,7 @@ import { FindScreen } from './find';
 import { GivesScreen } from './gives';
 import { HomeScreen } from './home';
 import { LanguageScreen } from './language';
+import { LinkImportScreen } from './link-import';
 import { OnboardingScreen } from './onboarding';
 import { PaymentsScreen } from './payments';
 import { ReleasesScreen } from './releases';
@@ -28,6 +29,7 @@ export const SCREENS: { [Screen in ScreenId]: FC<ScreenProps<Screen>> } = {
     onboarding: OnboardingScreen,
     wishes: WishesScreen,
     wishEditor: WishEditorScreen,
+    linkImport: LinkImportScreen,
     gives: GivesScreen,
     find: FindScreen,
     thirdList: ThirdListScreen,

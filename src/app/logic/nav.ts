@@ -10,6 +10,7 @@ export type Route =
     | { screen: 'onboarding' }
     | { screen: 'wishes' }
     | { screen: 'wishEditor'; wishId: number | null }
+    | { screen: 'linkImport' }
     | { screen: 'gives' }
     | { screen: 'find' }
     | { screen: 'thirdList'; source: ThirdListSource }
@@ -48,6 +49,7 @@ export const SCREEN_IDS = [
     'onboarding',
     'wishes',
     'wishEditor',
+    'linkImport',
     'gives',
     'find',
     'thirdList',
@@ -68,6 +70,7 @@ export const SCREEN_IDS = [
 export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'wishes',
     'wishEditor',
+    'linkImport',
     'gives',
     'find',
     'thirdList',

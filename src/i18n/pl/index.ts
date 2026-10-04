@@ -144,7 +144,25 @@ const pl: Translation = {
                 'Podaj nazwę nowego życzenia w następnej wiadomości.\nNie więcej niż {0} znaków!',
             error: '❌ To nie wygląda na dobrą nazwę!\nSpróbuj jeszcze raz.',
             success: '✅ Nowe życzenie zostało dodane do listy!',
-            limit: '❌ Lista życzeń jest pełna: może zawierać do 500 życzeń.\nNajpierw usuń kilka z nich.'
+            limit: '❌ Lista życzeń jest pełna: może zawierać do 500 życzeń.\nNajpierw usuń kilka z nich.',
+            import: {
+                prompt: 'Wyślij link do produktu lub po prostu napisz nazwę.\nPostaram się uzupełnić resztę na podstawie linku. Nazwa może mieć do {max} znaków.',
+                withoutLink: 'Bez linku',
+                searching: 'Wyszukiwanie produktu…',
+                filledFrom:
+                    '🔗 Uzupełniono na podstawie {host}. Sprawdź i w razie potrzeby zmień.',
+                sourcePrice: 'Cena w sklepie: {price}',
+                failed: 'Nie udało się odczytać strony. Napisz nazwę życzenia, a link zachowam.',
+                photosFailed: 'Nie udało się pobrać zdjęć. Dodaj je ręcznie.',
+                rateLimited:
+                    'Zbyt wiele linków z rzędu. Spróbuj później lub napisz nazwę.',
+                cancel: '❌ Anuluj',
+                offer: {
+                    text: 'Dodać ten link jako życzenie?',
+                    confirm: '✅ Dodaj jako życzenie',
+                    expired: 'Ten link wygasł. Wyślij go jeszcze raz.'
+                }
+            }
         },
         edit: {
             description: '✏️ Menu edycji życzenia',
@@ -984,6 +1002,7 @@ const pl: Translation = {
             },
             toasts: {
                 priorityChanged: 'Priorytet: {level}',
+                priorityRemoved: 'Usunięto priorytet',
                 hidden: 'Teraz to życzenie widzisz tylko ty',
                 shown: 'Teraz to życzenie widzą inni'
             }
@@ -1122,6 +1141,34 @@ const pl: Translation = {
                 title: 'Potrzebna zgoda',
                 text: 'Aby zapisać zdjęcia, bot wysyła je do ciebie w czacie. Pozwól botowi pisać do ciebie.',
                 allow: 'Pozwól'
+            }
+        },
+        linkImport: {
+            title: 'Dodaj życzenie',
+            hint: 'Wklej link do produktu, a my spróbujemy uzupełnić resztę.',
+            urlLabel: 'Link do produktu',
+            urlPlaceholder: 'https://…',
+            paste: 'Wklej',
+            continue: 'Dalej',
+            withoutLink: 'Dodaj bez linku',
+            loading: 'Wyszukiwanie produktu w {host}…',
+            filledFrom:
+                'Uzupełniono na podstawie {host}. Sprawdź przed zapisaniem.',
+            filledPartial:
+                'Znaleziono tylko część danych na {host}. Sprawdź i uzupełnij.',
+            sourcePrice: 'Cena w sklepie: {price}',
+            photosFailed: 'Nie udało się pobrać zdjęć. Dodaj je ręcznie.',
+            errors: {
+                invalidUrl:
+                    'To nie wygląda na link do produktu. Sprawdź go i spróbuj jeszcze raz.',
+                blocked:
+                    'Sklep nie udostępnił danych. Uzupełnij życzenie ręcznie.',
+                notProduct:
+                    'Nie udało się odczytać strony. Uzupełnij życzenie ręcznie.',
+                timeout:
+                    'Strona odpowiada zbyt wolno. Uzupełnij życzenie ręcznie.',
+                rateLimited:
+                    'Zbyt wiele zapytań do tego sklepu. Uzupełnij życzenie ręcznie lub spróbuj później.'
             }
         },
         gives: {

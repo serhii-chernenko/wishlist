@@ -14,7 +14,8 @@ export const RATE_LIMIT_BINDINGS = {
     api: 'APP_API_LIMITER',
     sensitive: 'APP_SENSITIVE_LIMITER',
     upload: 'APP_UPLOAD_LIMITER',
-    image: 'IMAGE_PROXY_LIMITER'
+    image: 'IMAGE_PROXY_LIMITER',
+    import: 'APP_IMPORT_LIMITER'
 } as const satisfies Record<RateLimitBucket, keyof WorkerBindings>;
 
 export const RATE_LIMIT_RETRY_AFTER_SECONDS = APP_RETRY_AFTER_SECONDS;
@@ -34,6 +35,18 @@ export const selectBoundLimiter = (
     const binding: unknown = env[RATE_LIMIT_BINDINGS[bucket]];
 
     return isRateLimiter(binding) ? binding : null;
+};
+
+export const selectLinkHostLimiter = (
+    env: WorkerBindings
+): RateLimiterLike | null => {
+    const binding: unknown = env.LINK_HOST_LIMITER;
+
+    return isRateLimiter(binding) ? binding : null;
+};
+
+export const linkHostRateLimitKey = (registrableDomain: string) => {
+    return `host:${registrableDomain}`;
 };
 
 export const telegramRateLimitKey = (telegramId: number) => {

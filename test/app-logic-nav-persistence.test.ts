@@ -233,3 +233,9 @@ test('very deep stacks are capped', () => {
     assert.ok(restored.length <= NAV_SNAPSHOT_MAX_ROUTES + 1);
     assert.equal(restored[0]?.screen, 'home');
 });
+
+test('the link import screen is restored as a parameterless route', () => {
+    assert.deepEqual(parseStoredRoute({ screen: 'linkImport' }), {
+        screen: 'linkImport'
+    });
+});

@@ -7,6 +7,7 @@ import {
     APP_API_PREFIX,
     APP_API_ROUTE_TEMPLATES,
     APP_IMAGE_PATH_PREFIX,
+    LINK_IMAGE_PATH_PREFIX,
     SHARE_IMAGE_PATH_PREFIX,
     type ApiErrorCode,
     type AppPlatform,
@@ -16,6 +17,10 @@ import {
     type ClientEventKind,
     type ClientScreen,
     type FieldErrorCode,
+    type LinkImportOutcome,
+    type LinkImportShop,
+    type LinkImportSource,
+    type LinkImportTransform,
     type RateLimitBucket
 } from '../shared/app-api';
 import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
@@ -105,6 +110,10 @@ export const APP_IMAGE_TELEMETRY_PATH = APP_IMAGE_PATH_PREFIX;
 
 export const SHARE_IMAGE_TELEMETRY_PATH = SHARE_IMAGE_PATH_PREFIX;
 
+export const LINK_IMAGE_TELEMETRY_PATH = LINK_IMAGE_PATH_PREFIX;
+
+export const TELEGRAM_WEBHOOK_TELEMETRY_PATH = '/telegram/webhook';
+
 export const APP_API_UNMATCHED_ROUTE = `${APP_API_PREFIX}/*`;
 
 export type AppAuthRejectionReason =
@@ -125,6 +134,54 @@ export type AppPhotoUploadResult =
     | 'carrierKept';
 
 export type ImageProxyScope = 'app' | 'share';
+
+export const LINK_IMPORT_ELAPSED_BUCKETS = [
+    'instant',
+    'quick',
+    'normal',
+    'slow',
+    'verySlow'
+] as const;
+
+export type LinkImportElapsedBucket =
+    (typeof LINK_IMPORT_ELAPSED_BUCKETS)[number];
+
+export const LINK_IMPORT_IMAGE_BUCKETS = [
+    'none',
+    'oneToFour',
+    'fivePlus'
+] as const;
+
+export type LinkImportImageBucket = (typeof LINK_IMPORT_IMAGE_BUCKETS)[number];
+
+const ELAPSED_BUCKET_UPPER_BOUNDS_MS = [
+    [300, 'instant'],
+    [1500, 'quick'],
+    [3000, 'normal'],
+    [6000, 'slow']
+] as const satisfies readonly (readonly [number, LinkImportElapsedBucket])[];
+
+const IMAGE_BUCKET_FEW_MAX = 4;
+
+export const toLinkImportElapsedBucket = (
+    elapsedMs: number
+): LinkImportElapsedBucket => {
+    const bucket = ELAPSED_BUCKET_UPPER_BOUNDS_MS.find(([upperBound]) => {
+        return elapsedMs < upperBound;
+    });
+
+    return bucket === undefined ? 'verySlow' : bucket[1];
+};
+
+export const toLinkImportImageBucket = (
+    count: number
+): LinkImportImageBucket => {
+    if (count <= 0) {
+        return 'none';
+    }
+
+    return count <= IMAGE_BUCKET_FEW_MAX ? 'oneToFour' : 'fivePlus';
+};
 
 export type ImageProxyResult =
     | 'hit'
@@ -218,6 +275,12 @@ export type TelemetryFields = {
     theme?: AppTheme;
     displayCurrency?: Currency;
     currencySource?: SharePageCurrencySource;
+    source?: LinkImportSource;
+    shop?: LinkImportShop;
+    transform?: LinkImportTransform;
+    imagesStaged?: LinkImportImageBucket;
+    imagesIngested?: LinkImportImageBucket;
+    elapsedBucket?: LinkImportElapsedBucket;
 };
 
 const knownPaths = new Set([
@@ -259,7 +322,13 @@ const labelFieldNames = [
     'code',
     'theme',
     'displayCurrency',
-    'currencySource'
+    'currencySource',
+    'source',
+    'shop',
+    'transform',
+    'imagesStaged',
+    'imagesIngested',
+    'elapsedBucket'
 ] as const;
 
 const knownApiRoutes: ReadonlySet<string> = new Set([
@@ -341,7 +410,7 @@ export const normalizeTelemetryPath = (
         path.startsWith('/telegram/') ||
         path === '/telegram'
     ) {
-        return '/telegram/webhook';
+        return TELEGRAM_WEBHOOK_TELEMETRY_PATH;
     }
 
     if (sharePagePathPattern.test(path)) {
@@ -359,7 +428,8 @@ export const normalizeTelemetryPath = (
     for (const prefix of [
         APP_API_TELEMETRY_PATH,
         APP_IMAGE_TELEMETRY_PATH,
-        SHARE_IMAGE_TELEMETRY_PATH
+        SHARE_IMAGE_TELEMETRY_PATH,
+        LINK_IMAGE_TELEMETRY_PATH
     ]) {
         if (path === prefix || path.startsWith(`${prefix}/`)) {
             return prefix;
@@ -713,5 +783,45 @@ export const appClientEvent = (input: {
         path: APP_API_TELEMETRY_PATH,
         outcome: 'success',
         ...input
+    };
+};
+
+const LINK_IMPORT_OUTCOME_LABELS = {
+    ok: 'success',
+    partial: 'success',
+    blocked: 'rejected',
+    notProduct: 'rejected',
+    invalidUrl: 'rejected',
+    rateLimited: 'rejected',
+    timeout: 'error'
+} as const satisfies Record<LinkImportOutcome, string>;
+
+export const linkImportCompletedEvent = (input: {
+    channel: TelemetryChannel;
+    result: LinkImportOutcome;
+    source: LinkImportSource | null;
+    shop: LinkImportShop;
+    cacheOutcome: Extract<ShareCacheOutcome, 'hit' | 'miss'>;
+    imagesStaged: number;
+    imagesIngested: number;
+    elapsedMs: number;
+    transform: LinkImportTransform;
+}): TelemetryFields => {
+    return {
+        event: 'link_import_completed',
+        path:
+            input.channel === 'app'
+                ? APP_API_TELEMETRY_PATH
+                : TELEGRAM_WEBHOOK_TELEMETRY_PATH,
+        outcome: LINK_IMPORT_OUTCOME_LABELS[input.result],
+        channel: input.channel,
+        result: input.result,
+        ...(input.source === null ? {} : { source: input.source }),
+        shop: input.shop,
+        cacheOutcome: input.cacheOutcome,
+        imagesStaged: toLinkImportImageBucket(input.imagesStaged),
+        imagesIngested: toLinkImportImageBucket(input.imagesIngested),
+        elapsedBucket: toLinkImportElapsedBucket(input.elapsedMs),
+        transform: input.transform
     };
 };

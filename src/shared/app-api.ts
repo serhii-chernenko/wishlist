@@ -85,6 +85,76 @@ export const APP_THIRD_PARTY_GIFTED_LIMIT = 30;
 export const APP_IMAGE_HASH_LENGTH = 16;
 export const APP_IMAGE_PATH_PREFIX = '/img/w';
 export const SHARE_IMAGE_PATH_PREFIX = '/img/s';
+export const LINK_IMAGE_PATH_PREFIX = '/img/i';
+export const LINK_IMPORT_PAGE_TIMEOUT_MS = 6000;
+export const LINK_IMPORT_IMAGE_TIMEOUT_MS = 4000;
+export const LINK_IMPORT_IMAGE_BUDGET_MS = 8000;
+export const LINK_IMPORT_HANDLER_BUDGET_MS = 7000;
+export const LINK_IMPORT_CLIENT_TIMEOUT_MS = 9000;
+export const LINK_IMPORT_BOT_BUDGET_MS = 20_000;
+export const LINK_IMPORT_HTML_MAX_BYTES = 2 * 1024 * 1024;
+export const LINK_IMPORT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export const LINK_IMPORT_MAX_IMAGE_CANDIDATES = 9;
+export const LINK_IMPORT_PRESELECTED_IMAGES = 5;
+export const LINK_IMPORT_BOT_IMAGES = 5;
+export const LINK_IMPORT_TOKEN_TTL_SECONDS = 2 * 60 * 60;
+export const LINK_IMPORT_CACHE_TTL_SECONDS = 24 * 60 * 60;
+export const LINK_IMPORT_NEGATIVE_CACHE_TTL_SECONDS = 60 * 60;
+export const LINK_IMPORT_USER_AGENT =
+    'WishlistBot/2.0 (+https://wishlist.chernenko.dev)';
+
+export const LINK_IMPORT_OUTCOMES = [
+    'ok',
+    'partial',
+    'blocked',
+    'notProduct',
+    'timeout',
+    'invalidUrl',
+    'rateLimited'
+] as const;
+
+export type LinkImportOutcome = (typeof LINK_IMPORT_OUTCOMES)[number];
+
+export const LINK_IMPORT_SOURCES = [
+    'jsonld',
+    'microdata',
+    'og',
+    'adapter',
+    'ai'
+] as const;
+
+export type LinkImportSource = (typeof LINK_IMPORT_SOURCES)[number];
+
+export const LINK_IMPORT_SHOPS = [
+    'rozetka',
+    'prom',
+    'epicentrk',
+    'comfy',
+    'allo',
+    'allegro',
+    'olx',
+    'amazon',
+    'ikea',
+    'zalando',
+    'apple',
+    'decathlon',
+    'aliexpress',
+    'temu',
+    'etsy',
+    'other'
+] as const;
+
+export type LinkImportShop = (typeof LINK_IMPORT_SHOPS)[number];
+
+export const LINK_IMPORT_TRANSFORMS = [
+    'binding',
+    'passthrough',
+    'missing'
+] as const;
+
+export type LinkImportTransform = (typeof LINK_IMPORT_TRANSFORMS)[number];
+
+export const LINK_IMPORT_URL_HASH_LENGTH = 32;
 
 export const APP_UPLOAD_CONTENT_TYPES = [
     'image/jpeg',
@@ -148,7 +218,8 @@ export const CLIENT_EVENT_KINDS = [
     'sdkUnsupported',
     'uploadFailed',
     'screenView',
-    'validationFailed'
+    'validationFailed',
+    'importTimeout'
 ] as const;
 
 export const CLIENT_EVENT_FIELDS = [
@@ -171,6 +242,7 @@ export const CLIENT_SCREENS = [
     'onboarding',
     'wishes',
     'wishEditor',
+    'linkImport',
     'gives',
     'find',
     'thirdList',
@@ -270,6 +342,31 @@ export interface ApiErrorBody {
 }
 
 export type ApiImage = { url: string; hash: string };
+
+export type LinkImportImageDto = { url: string; index: number };
+
+export type LinkImportInput = { url: string };
+
+export type LinkImportDraftDto = {
+    title: string | null;
+    description: string | null;
+    link: string;
+    price: number | null;
+    currency: Currency | null;
+};
+
+export type LinkImportSourcePriceDto = { amount: number; currency: string };
+
+export type LinkImportDto = {
+    outcome: LinkImportOutcome;
+    source: LinkImportSource | null;
+    importToken: string | null;
+    draft: LinkImportDraftDto;
+    sourcePrice: LinkImportSourcePriceDto | null;
+    images: LinkImportImageDto[];
+};
+
+export type ImportWishImageInput = { importToken: string; index: number };
 
 export type OwnWishDto = {
     id: number;
@@ -491,7 +588,12 @@ export type NoContent = null;
 
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export type RateLimitBucket = 'api' | 'sensitive' | 'upload' | 'image';
+export type RateLimitBucket =
+    | 'api'
+    | 'sensitive'
+    | 'upload'
+    | 'image'
+    | 'import';
 
 export type ApiRouteAccess = 'any' | 'user';
 
@@ -691,6 +793,14 @@ export const APP_API_ROUTES = {
         body: 'upload',
         status: 200
     },
+    importWishImage: {
+        method: 'POST',
+        path: '/wishes/:id/images/import',
+        access: 'user',
+        bucket: 'upload',
+        body: 'json',
+        status: 200
+    },
     removeWishImage: {
         method: 'DELETE',
         path: '/wishes/:id/images/:index',
@@ -722,6 +832,14 @@ export const APP_API_ROUTES = {
         bucket: 'sensitive',
         body: 'none',
         status: 204
+    },
+    importLink: {
+        method: 'POST',
+        path: '/link-import',
+        access: 'user',
+        bucket: 'import',
+        body: 'json',
+        status: 200
     },
     listGives: {
         method: 'GET',
@@ -913,6 +1031,11 @@ export interface AppApiEndpoints {
         response: NoContent;
     };
     uploadWishImage: { query: null; body: Blob; response: OwnWishDto };
+    importWishImage: {
+        query: null;
+        body: ImportWishImageInput;
+        response: OwnWishDto;
+    };
     removeWishImage: {
         query: RemoveImageQuery;
         body: null;
@@ -925,6 +1048,7 @@ export interface AppApiEndpoints {
         response: OwnWishDto;
     };
     startImageChatIntent: { query: null; body: null; response: NoContent };
+    importLink: { query: null; body: LinkImportInput; response: LinkImportDto };
     listGives: { query: OffsetQuery; body: null; response: GiveListDto };
     removeGive: { query: null; body: null; response: NoContent };
     cleanGives: { query: null; body: null; response: RemovedCountDto };

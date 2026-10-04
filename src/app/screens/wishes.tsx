@@ -321,6 +321,10 @@ const useGiftedActions = (reload: () => void) => {
 };
 
 const priorityToast = (LL: AppTranslator, priority: WishPriority) => {
+    if (priority === 'none') {
+        return LL.wishes.toasts.priorityRemoved();
+    }
+
     return LL.wishes.toasts.priorityChanged({
         level: LL.editor.priority.levels[priority]()
     });

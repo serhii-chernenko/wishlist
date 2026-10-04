@@ -503,6 +503,62 @@ type RootTranslation = {
 		​С​п​о​ч​а​т​к​у​ ​в​и​д​а​л​и​ ​к​і​л​ь​к​а​ ​з​ ​н​и​х​.
 			 */
 			limit: string
+			'import': {
+				/**
+				 * Н​а​д​і​ш​л​и​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​т​о​в​а​р​ ​а​б​о​ ​п​р​о​с​т​о​ ​н​а​п​и​ш​и​ ​н​а​з​в​у​.​
+			​З​ ​п​о​с​и​л​а​н​н​я​ ​я​ ​с​п​р​о​б​у​ю​ ​з​а​п​о​в​н​и​т​и​ ​в​с​е​ ​с​а​м​.​ ​Н​а​з​в​а​ ​—​ ​н​е​ ​б​і​л​ь​ш​е​ ​{​m​a​x​}​ ​с​и​м​в​о​л​і​в​.
+				 * @param {number} max
+				 */
+				prompt: RequiredParams<'max'>
+				/**
+				 * Б​е​з​ ​п​о​с​и​л​а​н​н​я
+				 */
+				withoutLink: string
+				/**
+				 * Ш​у​к​а​ю​ ​т​о​в​а​р​…
+				 */
+				searching: string
+				/**
+				 * �​�​ ​З​а​п​о​в​н​е​н​о​ ​з​ ​{​h​o​s​t​}​.​ ​П​е​р​е​в​і​р​ ​і​ ​з​а​ ​п​о​т​р​е​б​и​ ​з​м​і​н​и​.
+				 * @param {string} host
+				 */
+				filledFrom: RequiredParams<'host'>
+				/**
+				 * Ц​і​н​а​ ​н​а​ ​с​а​й​т​і​:​ ​{​p​r​i​c​e​}
+				 * @param {string} price
+				 */
+				sourcePrice: RequiredParams<'price'>
+				/**
+				 * Н​е​ ​в​д​а​л​о​с​я​ ​п​р​о​ч​и​т​а​т​и​ ​с​т​о​р​і​н​к​у​.​ ​Н​а​п​и​ш​и​ ​н​а​з​в​у​ ​б​а​ж​а​н​н​я​,​ ​а​ ​п​о​с​и​л​а​н​н​я​ ​я​ ​з​б​е​р​е​ж​у​.
+				 */
+				failed: string
+				/**
+				 * Ф​о​т​о​ ​н​е​ ​в​д​а​л​о​с​я​ ​з​а​в​а​н​т​а​ж​и​т​и​.​ ​Д​о​д​а​й​ ​ї​х​ ​в​р​у​ч​н​у​.
+				 */
+				photosFailed: string
+				/**
+				 * З​а​б​а​г​а​т​о​ ​п​о​с​и​л​а​н​ь​ ​п​о​с​п​і​л​ь​.​ ​С​п​р​о​б​у​й​ ​т​р​о​х​и​ ​з​г​о​д​о​м​ ​а​б​о​ ​н​а​п​и​ш​и​ ​н​а​з​в​у​.
+				 */
+				rateLimited: string
+				/**
+				 * ❌​ ​С​к​а​с​у​в​а​т​и
+				 */
+				cancel: string
+				offer: {
+					/**
+					 * Д​о​д​а​т​и​ ​ц​е​ ​п​о​с​и​л​а​н​н​я​ ​я​к​ ​б​а​ж​а​н​н​я​?
+					 */
+					text: string
+					/**
+					 * ✅​ ​Д​о​д​а​т​и​ ​я​к​ ​б​а​ж​а​н​н​я
+					 */
+					confirm: string
+					/**
+					 * Ц​е​ ​п​о​с​и​л​а​н​н​я​ ​в​ж​е​ ​з​а​с​т​а​р​і​л​о​.​ ​Н​а​д​і​ш​л​и​ ​й​о​г​о​ ​щ​е​ ​р​а​з​.
+					 */
+					expired: string
+				}
+			}
 		}
 		edit: {
 			/**
@@ -2965,6 +3021,10 @@ type RootTranslation = {
 				 */
 				priorityChanged: RequiredParams<'level'>
 				/**
+				 * П​р​і​о​р​и​т​е​т​ ​з​н​я​т​о
+				 */
+				priorityRemoved: string
+				/**
 				 * Т​е​п​е​р​ ​ц​е​ ​б​а​ж​а​н​н​я​ ​б​а​ч​и​ш​ ​л​и​ш​е​ ​т​и
 				 */
 				hidden: string
@@ -3405,6 +3465,82 @@ type RootTranslation = {
 				 * Д​о​з​в​о​л​и​т​и
 				 */
 				allow: string
+			}
+		}
+		linkImport: {
+			/**
+			 * Д​о​д​а​т​и​ ​б​а​ж​а​н​н​я
+			 */
+			title: string
+			/**
+			 * В​с​т​а​в​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​т​о​в​а​р​,​ ​і​ ​м​и​ ​с​п​р​о​б​у​є​м​о​ ​з​а​п​о​в​н​и​т​и​ ​в​с​е​ ​с​а​м​і​.
+			 */
+			hint: string
+			/**
+			 * П​о​с​и​л​а​н​н​я​ ​н​а​ ​т​о​в​а​р
+			 */
+			urlLabel: string
+			/**
+			 * h​t​t​p​s​:​/​/​…
+			 */
+			urlPlaceholder: string
+			/**
+			 * В​с​т​а​в​и​т​и
+			 */
+			paste: string
+			/**
+			 * П​р​о​д​о​в​ж​и​т​и
+			 */
+			'continue': string
+			/**
+			 * Д​о​д​а​т​и​ ​б​е​з​ ​п​о​с​и​л​а​н​н​я
+			 */
+			withoutLink: string
+			/**
+			 * Ш​у​к​а​є​м​о​ ​т​о​в​а​р​ ​н​а​ ​{​h​o​s​t​}​…
+			 * @param {string} host
+			 */
+			loading: RequiredParams<'host'>
+			/**
+			 * З​а​п​о​в​н​е​н​о​ ​з​ ​{​h​o​s​t​}​.​ ​П​е​р​е​в​і​р​ ​п​е​р​е​д​ ​з​б​е​р​е​ж​е​н​н​я​м​.
+			 * @param {string} host
+			 */
+			filledFrom: RequiredParams<'host'>
+			/**
+			 * З​ ​{​h​o​s​t​}​ ​з​н​а​й​ш​л​и​ ​н​е​ ​в​с​е​.​ ​П​е​р​е​в​і​р​ ​і​ ​д​о​п​о​в​н​и​.
+			 * @param {string} host
+			 */
+			filledPartial: RequiredParams<'host'>
+			/**
+			 * Ц​і​н​а​ ​н​а​ ​с​а​й​т​і​:​ ​{​p​r​i​c​e​}
+			 * @param {string} price
+			 */
+			sourcePrice: RequiredParams<'price'>
+			/**
+			 * Ф​о​т​о​ ​н​е​ ​в​д​а​л​о​с​я​ ​з​а​в​а​н​т​а​ж​и​т​и​.​ ​Д​о​д​а​й​ ​ї​х​ ​в​р​у​ч​н​у​.
+			 */
+			photosFailed: string
+			errors: {
+				/**
+				 * Ц​е​ ​н​е​ ​с​х​о​ж​е​ ​н​а​ ​п​о​с​и​л​а​н​н​я​ ​н​а​ ​т​о​в​а​р​.​ ​П​е​р​е​в​і​р​ ​й​о​г​о​ ​й​ ​с​п​р​о​б​у​й​ ​щ​е​ ​р​а​з​.
+				 */
+				invalidUrl: string
+				/**
+				 * М​а​г​а​з​и​н​ ​н​е​ ​в​і​д​д​а​в​ ​д​а​н​і​.​ ​З​а​п​о​в​н​и​ ​б​а​ж​а​н​н​я​ ​в​р​у​ч​н​у​.
+				 */
+				blocked: string
+				/**
+				 * Н​е​ ​в​д​а​л​о​с​я​ ​п​р​о​ч​и​т​а​т​и​ ​с​т​о​р​і​н​к​у​.​ ​З​а​п​о​в​н​и​ ​б​а​ж​а​н​н​я​ ​в​р​у​ч​н​у​.
+				 */
+				notProduct: string
+				/**
+				 * С​т​о​р​і​н​к​а​ ​в​і​д​п​о​в​і​д​а​є​ ​н​а​д​т​о​ ​д​о​в​г​о​.​ ​З​а​п​о​в​н​и​ ​б​а​ж​а​н​н​я​ ​в​р​у​ч​н​у​.
+				 */
+				timeout: string
+				/**
+				 * З​а​б​а​г​а​т​о​ ​з​а​п​и​т​і​в​ ​д​о​ ​ц​ь​о​г​о​ ​м​а​г​а​з​и​н​у​.​ ​З​а​п​о​в​н​и​ ​б​а​ж​а​н​н​я​ ​в​р​у​ч​н​у​ ​а​б​о​ ​с​п​р​о​б​у​й​ ​т​р​о​х​и​ ​з​г​о​д​о​м​.
+				 */
+				rateLimited: string
 			}
 		}
 		gives: {
@@ -4875,6 +5011,59 @@ export type TranslationFunctions = {
 		Спочатку видали кілька з них.
 			 */
 			limit: () => LocalizedString
+			'import': {
+				/**
+				 * Надішли посилання на товар або просто напиши назву.
+			З посилання я спробую заповнити все сам. Назва — не більше {max} символів.
+				 */
+				prompt: (arg: { max: number }) => LocalizedString
+				/**
+				 * Без посилання
+				 */
+				withoutLink: () => LocalizedString
+				/**
+				 * Шукаю товар…
+				 */
+				searching: () => LocalizedString
+				/**
+				 * 🔗 Заповнено з {host}. Перевір і за потреби зміни.
+				 */
+				filledFrom: (arg: { host: string }) => LocalizedString
+				/**
+				 * Ціна на сайті: {price}
+				 */
+				sourcePrice: (arg: { price: string }) => LocalizedString
+				/**
+				 * Не вдалося прочитати сторінку. Напиши назву бажання, а посилання я збережу.
+				 */
+				failed: () => LocalizedString
+				/**
+				 * Фото не вдалося завантажити. Додай їх вручну.
+				 */
+				photosFailed: () => LocalizedString
+				/**
+				 * Забагато посилань поспіль. Спробуй трохи згодом або напиши назву.
+				 */
+				rateLimited: () => LocalizedString
+				/**
+				 * ❌ Скасувати
+				 */
+				cancel: () => LocalizedString
+				offer: {
+					/**
+					 * Додати це посилання як бажання?
+					 */
+					text: () => LocalizedString
+					/**
+					 * ✅ Додати як бажання
+					 */
+					confirm: () => LocalizedString
+					/**
+					 * Це посилання вже застаріло. Надішли його ще раз.
+					 */
+					expired: () => LocalizedString
+				}
+			}
 		}
 		edit: {
 			/**
@@ -7249,6 +7438,10 @@ export type TranslationFunctions = {
 				 */
 				priorityChanged: (arg: { level: string }) => LocalizedString
 				/**
+				 * Пріоритет знято
+				 */
+				priorityRemoved: () => LocalizedString
+				/**
 				 * Тепер це бажання бачиш лише ти
 				 */
 				hidden: () => LocalizedString
@@ -7666,6 +7859,78 @@ export type TranslationFunctions = {
 				 * Дозволити
 				 */
 				allow: () => LocalizedString
+			}
+		}
+		linkImport: {
+			/**
+			 * Додати бажання
+			 */
+			title: () => LocalizedString
+			/**
+			 * Встав посилання на товар, і ми спробуємо заповнити все самі.
+			 */
+			hint: () => LocalizedString
+			/**
+			 * Посилання на товар
+			 */
+			urlLabel: () => LocalizedString
+			/**
+			 * https://…
+			 */
+			urlPlaceholder: () => LocalizedString
+			/**
+			 * Вставити
+			 */
+			paste: () => LocalizedString
+			/**
+			 * Продовжити
+			 */
+			'continue': () => LocalizedString
+			/**
+			 * Додати без посилання
+			 */
+			withoutLink: () => LocalizedString
+			/**
+			 * Шукаємо товар на {host}…
+			 */
+			loading: (arg: { host: string }) => LocalizedString
+			/**
+			 * Заповнено з {host}. Перевір перед збереженням.
+			 */
+			filledFrom: (arg: { host: string }) => LocalizedString
+			/**
+			 * З {host} знайшли не все. Перевір і доповни.
+			 */
+			filledPartial: (arg: { host: string }) => LocalizedString
+			/**
+			 * Ціна на сайті: {price}
+			 */
+			sourcePrice: (arg: { price: string }) => LocalizedString
+			/**
+			 * Фото не вдалося завантажити. Додай їх вручну.
+			 */
+			photosFailed: () => LocalizedString
+			errors: {
+				/**
+				 * Це не схоже на посилання на товар. Перевір його й спробуй ще раз.
+				 */
+				invalidUrl: () => LocalizedString
+				/**
+				 * Магазин не віддав дані. Заповни бажання вручну.
+				 */
+				blocked: () => LocalizedString
+				/**
+				 * Не вдалося прочитати сторінку. Заповни бажання вручну.
+				 */
+				notProduct: () => LocalizedString
+				/**
+				 * Сторінка відповідає надто довго. Заповни бажання вручну.
+				 */
+				timeout: () => LocalizedString
+				/**
+				 * Забагато запитів до цього магазину. Заповни бажання вручну або спробуй трохи згодом.
+				 */
+				rateLimited: () => LocalizedString
 			}
 		}
 		gives: {

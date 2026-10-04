@@ -4,6 +4,7 @@ import type { AppLocale, BootstrapDto } from '../shared/app-api';
 import { createApiClient, ApiRequestError } from './api/client';
 import { createAppServices, Root, type RootPhase } from './app';
 import { resolveSystemLocale } from './i18n/system-texts';
+import { flushPendingOnHide } from './logic/countdown';
 import { toSystemScreen } from './logic/errors';
 import { createStore } from './state/store';
 import { connectBottomButton } from './telegram/buttons';
@@ -138,6 +139,7 @@ const start = (container: HTMLElement) => {
     window.addEventListener('online', () => {
         online.set(true);
     });
+    flushPendingOnHide(document, window);
     watchActivation(() => {
         const current = phase.get();
 

@@ -4,10 +4,13 @@ import test from 'node:test';
 
 import {
     createCountdown,
+    createPendingRegistry,
     DESTRUCTIVE_COUNTDOWN_MS,
+    flushPendingOnHide,
     runUndoable,
     secondsLeft,
     type CountdownClock,
+    type PageVisibilityTarget,
     type TimerHandle
 } from '../src/app/logic/countdown';
 
@@ -208,6 +211,175 @@ test('a failed write restores the change and reports the error', async () => {
     assert.equal(handle.flush(), true);
     await flushMicrotasks();
     assert.deepEqual(calls, ['apply', 'commit', 'restore', 'failed']);
+});
+
+const createPageTargets = () => {
+    const events = new EventTarget();
+    const state = { visibilityState: 'visible' };
+    const visibility: PageVisibilityTarget = {
+        get visibilityState() {
+            return state.visibilityState;
+        },
+        addEventListener: (type, listener) => {
+            events.addEventListener(type, listener);
+        },
+        removeEventListener: (type, listener) => {
+            events.removeEventListener(type, listener);
+        }
+    };
+
+    return {
+        visibility,
+        lifecycle: visibility,
+        hide() {
+            state.visibilityState = 'hidden';
+            events.dispatchEvent(new Event('visibilitychange'));
+        },
+        show() {
+            state.visibilityState = 'visible';
+            events.dispatchEvent(new Event('visibilitychange'));
+        },
+        closePage() {
+            events.dispatchEvent(new Event('pagehide'));
+        }
+    };
+};
+
+test('running countdowns are tracked until they commit, cancel or flush', () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const commits: string[] = [];
+    const make = (name: string) => {
+        return createCountdown({
+            clock: fake.clock,
+            registry,
+            onCommit: () => commits.push(name)
+        });
+    };
+    const finished = make('finished');
+    const cancelled = make('cancelled');
+    const running = make('running');
+
+    finished.start();
+    cancelled.start();
+    running.start();
+    cancelled.cancel();
+    fake.advance(DESTRUCTIVE_COUNTDOWN_MS);
+    assert.deepEqual(commits, ['finished', 'running']);
+    assert.equal(registry.flushAll(), 0);
+});
+
+test('flushing the registry commits every running countdown once', () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const commits: string[] = [];
+    const first = createCountdown({
+        clock: fake.clock,
+        registry,
+        onCommit: () => commits.push('first')
+    });
+    const second = createCountdown({
+        clock: fake.clock,
+        registry,
+        onCommit: () => commits.push('second')
+    });
+
+    first.start();
+    second.start();
+    assert.equal(registry.flushAll(), 2);
+    assert.deepEqual(commits, ['first', 'second']);
+    assert.equal(first.isRunning(), false);
+    assert.equal(registry.flushAll(), 0);
+    fake.advance(DESTRUCTIVE_COUNTDOWN_MS * 2);
+    assert.deepEqual(commits, ['first', 'second']);
+    assert.equal(fake.pending(), 0);
+});
+
+test('hiding the page commits a pending undoable change at once', async () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const page = createPageTargets();
+    const { calls, action } = createAction(() => Promise.resolve());
+    const dispose = flushPendingOnHide(
+        page.visibility,
+        page.lifecycle,
+        registry
+    );
+
+    runUndoable(action, { clock: fake.clock, registry });
+    page.show();
+    assert.deepEqual(calls, ['apply']);
+    page.hide();
+    await flushMicrotasks();
+    assert.deepEqual(calls, ['apply', 'commit', 'committed']);
+    dispose();
+});
+
+test('closing the page commits a pending countdown even while it looks visible', () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const page = createPageTargets();
+    let commits = 0;
+    const countdown = createCountdown({
+        clock: fake.clock,
+        registry,
+        onCommit: () => {
+            commits += 1;
+        }
+    });
+
+    flushPendingOnHide(page.visibility, page.lifecycle, registry);
+    countdown.start();
+    page.closePage();
+    assert.equal(commits, 1);
+    assert.equal(countdown.isRunning(), false);
+});
+
+test('a countdown cancelled by leaving its screen is not committed when the page hides', () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const page = createPageTargets();
+    let commits = 0;
+    const countdown = createCountdown({
+        clock: fake.clock,
+        registry,
+        onCommit: () => {
+            commits += 1;
+        }
+    });
+
+    flushPendingOnHide(page.visibility, page.lifecycle, registry);
+    countdown.start();
+    countdown.cancel();
+    page.hide();
+    page.closePage();
+    assert.equal(commits, 0);
+});
+
+test('disposing the page watcher stops further flushes', () => {
+    const fake = createFakeClock();
+    const registry = createPendingRegistry();
+    const page = createPageTargets();
+    let commits = 0;
+    const countdown = createCountdown({
+        clock: fake.clock,
+        registry,
+        onCommit: () => {
+            commits += 1;
+        }
+    });
+    const dispose = flushPendingOnHide(
+        page.visibility,
+        page.lifecycle,
+        registry
+    );
+
+    dispose();
+    countdown.start();
+    page.hide();
+    page.closePage();
+    assert.equal(commits, 0);
+    assert.equal(countdown.isRunning(), true);
 });
 
 test('the CSS countdown duration matches the logic', () => {

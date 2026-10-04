@@ -29,6 +29,16 @@ const isTelegramWebhookPath = (value: unknown): value is string => {
     );
 };
 
+export const isLinkImportEnabled = (
+    env: Pick<WorkerBindings, 'LINK_IMPORT_ENABLED'>
+) => {
+    return env.LINK_IMPORT_ENABLED === 'true';
+};
+
+export const isLinkImportAiEnabled = (env: { LINK_IMPORT_AI?: string }) => {
+    return env.LINK_IMPORT_AI === 'true';
+};
+
 export const getTelegramWebhookPath = (env: RuntimeConfiguration) => {
     if (!isTelegramWebhookPath(env.TELEGRAM_WEBHOOK_PATH)) {
         return null;

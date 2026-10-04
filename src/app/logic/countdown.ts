@@ -27,11 +27,77 @@ const delayToNextSecond = (remainingMs: number) => {
     return remainingMs % SECOND_MS || SECOND_MS;
 };
 
+export interface PendingRegistry {
+    track(flush: () => boolean): () => void;
+    flushAll(): number;
+}
+
+export const createPendingRegistry = (): PendingRegistry => {
+    const pending = new Set<() => boolean>();
+
+    return {
+        track(flush) {
+            pending.add(flush);
+
+            return () => {
+                pending.delete(flush);
+            };
+        },
+        flushAll() {
+            let flushed = 0;
+
+            for (const flush of [...pending]) {
+                if (flush()) {
+                    flushed += 1;
+                }
+            }
+
+            return flushed;
+        }
+    };
+};
+
+export const pendingCountdowns = createPendingRegistry();
+
+export interface PageLifecycleTarget {
+    addEventListener(type: string, listener: () => void): void;
+    removeEventListener(type: string, listener: () => void): void;
+}
+
+export interface PageVisibilityTarget extends PageLifecycleTarget {
+    readonly visibilityState: string;
+}
+
+/** Commits every running countdown the moment the page is hidden or unloaded, so a closed app never drops a pending removal. */
+export const flushPendingOnHide = (
+    visibility: PageVisibilityTarget,
+    lifecycle: PageLifecycleTarget,
+    registry: PendingRegistry = pendingCountdowns
+) => {
+    const handleVisibility = () => {
+        if (visibility.visibilityState === 'hidden') {
+            registry.flushAll();
+        }
+    };
+    const handlePageHide = () => {
+        registry.flushAll();
+    };
+
+    visibility.addEventListener('visibilitychange', handleVisibility);
+    lifecycle.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+        visibility.removeEventListener('visibilitychange', handleVisibility);
+        lifecycle.removeEventListener('pagehide', handlePageHide);
+    };
+};
+
 export interface CountdownOptions {
     onCommit: () => void;
     onTick?: (seconds: number) => void;
     durationMs?: number;
     clock?: CountdownClock;
+    registry?: PendingRegistry;
 }
 
 export interface Countdown {
@@ -46,16 +112,20 @@ export const createCountdown = ({
     onCommit,
     onTick,
     durationMs = DESTRUCTIVE_COUNTDOWN_MS,
-    clock = systemClock
+    clock = systemClock,
+    registry = pendingCountdowns
 }: CountdownOptions): Countdown => {
     let deadline: number | null = null;
     let handle: TimerHandle | null = null;
+    let untrack: (() => void) | null = null;
 
     const stop = () => {
         if (handle !== null) {
             clock.cancel(handle);
         }
 
+        untrack?.();
+        untrack = null;
         handle = null;
         deadline = null;
     };
@@ -79,6 +149,17 @@ export const createCountdown = ({
         handle = clock.schedule(tick, delayToNextSecond(remainingMs));
     };
 
+    const flush = () => {
+        if (deadline === null) {
+            return false;
+        }
+
+        stop();
+        onCommit();
+
+        return true;
+    };
+
     return {
         start() {
             if (deadline !== null) {
@@ -86,6 +167,7 @@ export const createCountdown = ({
             }
 
             deadline = clock.now() + durationMs;
+            untrack = registry.track(flush);
             tick();
 
             return true;
@@ -99,16 +181,7 @@ export const createCountdown = ({
 
             return true;
         },
-        flush() {
-            if (deadline === null) {
-                return false;
-            }
-
-            stop();
-            onCommit();
-
-            return true;
-        },
+        flush,
         isRunning() {
             return deadline !== null;
         }
@@ -127,6 +200,7 @@ export interface UndoableOptions {
     onTick?: (seconds: number) => void;
     durationMs?: number;
     clock?: CountdownClock;
+    registry?: PendingRegistry;
 }
 
 export interface UndoHandle {

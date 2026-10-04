@@ -140,7 +140,25 @@ const en: Translation = {
                 'Send the title of the new wish in the next message.\nNo more than {0} characters!',
             error: `❌ That doesn't look like a good title!\nTry again.`,
             success: '✅ The new wish was added to your list!',
-            limit: '❌ Your wish list is full: it can hold up to 500 wishes.\nRemove some wishes first.'
+            limit: '❌ Your wish list is full: it can hold up to 500 wishes.\nRemove some wishes first.',
+            import: {
+                prompt: 'Send a link to the product or just type a title.\nI will try to fill in the rest from the link. The title can be up to {max} characters.',
+                withoutLink: 'No link',
+                searching: 'Looking for the product…',
+                filledFrom:
+                    '🔗 Filled in from {host}. Check it and change anything if needed.',
+                sourcePrice: 'Price on the site: {price}',
+                failed: 'Could not read the page. Send the title of the wish and I will keep the link.',
+                photosFailed: 'Could not load the photos. Add them manually.',
+                rateLimited:
+                    'Too many links in a row. Try again a bit later or type a title.',
+                cancel: '❌ Cancel',
+                offer: {
+                    text: 'Add this link as a wish?',
+                    confirm: '✅ Add as a wish',
+                    expired: 'This link has expired. Send it again.'
+                }
+            }
         },
         edit: {
             description: '✏️ Wish editing menu',
@@ -969,6 +987,7 @@ const en: Translation = {
             },
             toasts: {
                 priorityChanged: 'Priority: {level}',
+                priorityRemoved: 'Priority removed',
                 hidden: 'Now only you can see this wish',
                 shown: 'Now others can see this wish'
             }
@@ -1108,6 +1127,32 @@ const en: Translation = {
                 title: 'Permission needed',
                 text: 'To save photos, the bot sends them to you in the chat. Allow the bot to message you.',
                 allow: 'Allow'
+            }
+        },
+        linkImport: {
+            title: 'Add a wish',
+            hint: 'Paste a link to the product and we will try to fill in everything for you.',
+            urlLabel: 'Product link',
+            urlPlaceholder: 'https://…',
+            paste: 'Paste',
+            continue: 'Continue',
+            withoutLink: 'Add without a link',
+            loading: 'Looking for the product on {host}…',
+            filledFrom: 'Filled in from {host}. Check it before saving.',
+            filledPartial:
+                'Found only part of the details on {host}. Check and complete them.',
+            sourcePrice: 'Price on the site: {price}',
+            photosFailed: 'Could not load the photos. Add them manually.',
+            errors: {
+                invalidUrl: `That doesn't look like a product link. Check it and try again.`,
+                blocked:
+                    'The shop did not share its data. Fill in the wish manually.',
+                notProduct:
+                    'Could not read the page. Fill in the wish manually.',
+                timeout:
+                    'The page is taking too long to respond. Fill in the wish manually.',
+                rateLimited:
+                    'Too many requests to this shop. Fill in the wish manually or try again later.'
             }
         },
         gives: {

@@ -71,6 +71,10 @@
 !/src/bot/screens/*.ts
 !/src/bot/services
 !/src/bot/services/*.ts
+!/src/bot/services/link-import
+!/src/bot/services/link-import/*.ts
+!/src/bot/services/link-import/adapters
+!/src/bot/services/link-import/adapters/*.ts
 !/src/bot/telegraph
 !/src/bot/telegraph/*.ts
 !/src/bot/content
@@ -117,6 +121,10 @@
 !/test/*.tsx
 !/test/fixtures
 !/test/fixtures/*.ts
+!/test/fixtures/link-import
+!/test/fixtures/link-import/*.html
+!/test/fixtures/link-import/signals
+!/test/fixtures/link-import/signals/*.json
 !/test/fixtures/mongo
 !/test/fixtures/mongo/*.ts
 !/test/integration
