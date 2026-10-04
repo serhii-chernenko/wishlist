@@ -75,12 +75,14 @@ const BASE_HEADERS = {
 
 const SUCCESS_CACHE_CONTROL: Record<ImageProxyScope, string> = {
     app: 'private, max-age=3600, immutable',
-    share: 'public, max-age=3600'
+    share: 'public, max-age=3600',
+    import: 'private, max-age=3600'
 };
 
 const PLACEHOLDER_CACHE_CONTROL: Record<ImageProxyScope, string> = {
     app: 'private, max-age=300',
-    share: 'public, max-age=300'
+    share: 'public, max-age=300',
+    import: 'private, max-age=300'
 };
 
 const PLACEHOLDER_CONTENT_TYPE = 'image/svg+xml';

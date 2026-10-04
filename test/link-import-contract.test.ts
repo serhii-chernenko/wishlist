@@ -23,6 +23,7 @@ import { isLinkImportAiEnabled, isLinkImportEnabled } from '../src/worker/env';
 import {
     LINK_IMPORT_ELAPSED_BUCKETS,
     LINK_IMPORT_IMAGE_BUCKETS,
+    imageProxyServedEvent,
     linkImportCompletedEvent,
     normalizeTelemetryPath,
     toLinkImportElapsedBucket,
@@ -239,4 +240,19 @@ test('the import image path normalizes to its prefix', () => {
         ),
         '/img/i'
     );
+});
+
+test('import previews report the import scope under the import path', () => {
+    const attributes = toWishlistAttributes(
+        imageProxyServedEvent({
+            scope: 'import',
+            result: 'miss',
+            status: 200,
+            elapsedMs: 40
+        }),
+        'production'
+    );
+
+    assert.equal(attributes.path, '/img/i');
+    assert.equal(attributes.scope, 'import');
 });

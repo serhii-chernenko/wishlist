@@ -133,7 +133,7 @@ export type AppPhotoUploadResult =
     | 'telegramError'
     | 'carrierKept';
 
-export type ImageProxyScope = 'app' | 'share';
+export type ImageProxyScope = 'app' | 'share' | 'import';
 
 export const LINK_IMPORT_ELAPSED_BUCKETS = [
     'instant',
@@ -755,6 +755,12 @@ export const appPhotoUploadedEvent = (
     };
 };
 
+const IMAGE_PROXY_TELEMETRY_PATHS = {
+    app: APP_IMAGE_TELEMETRY_PATH,
+    share: SHARE_IMAGE_TELEMETRY_PATH,
+    import: LINK_IMAGE_TELEMETRY_PATH
+} as const satisfies Record<ImageProxyScope, string>;
+
 export const imageProxyServedEvent = (input: {
     scope: ImageProxyScope;
     result: ImageProxyResult;
@@ -763,10 +769,7 @@ export const imageProxyServedEvent = (input: {
 }): TelemetryFields => {
     return {
         event: 'image_proxy_served',
-        path:
-            input.scope === 'app'
-                ? APP_IMAGE_TELEMETRY_PATH
-                : SHARE_IMAGE_TELEMETRY_PATH,
+        path: IMAGE_PROXY_TELEMETRY_PATHS[input.scope],
         outcome: input.status >= 500 ? 'error' : 'success',
         ...input
     };
