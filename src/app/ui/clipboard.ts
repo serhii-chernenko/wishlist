@@ -19,3 +19,18 @@ export const copyToClipboard = async (text: string) => {
         return copied;
     }
 };
+
+export const canReadClipboard = () => {
+    return (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.clipboard?.readText === 'function'
+    );
+};
+
+export const readClipboardText = async () => {
+    try {
+        return await navigator.clipboard.readText();
+    } catch {
+        return null;
+    }
+};
