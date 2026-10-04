@@ -102,7 +102,7 @@ Decisions:
 - [x] Link import: paste a product link, parse title, photos, price and description, and ingest photos into Telegram (app and bot)
 - [x] Copy pass (Polish, US English) over all strings
 - [x] Navigation fixes, native Home button, compact sticky list header, two-column grid from 320px, toast position (2026-10-04)
-- [ ] List import from rewish.io (preview, merge with dedupe, hidden or public, gifted kept, background photos), bot and app: foundation done (43a802b), core/bot/app in progress
+- [x] List import from rewish.io (preview, merge with dedupe, hidden or public, gifted kept, background photos), bot and app (8e36c74, 2026-10-04)
 - [ ] One structured device test pass on @InevixTestBot before the final changelog approval (2026-10-04)
 - [x] Review, security audit, preview test (2026-10-04)
 - [x] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order (2026-10-04)
