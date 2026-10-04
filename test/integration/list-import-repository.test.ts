@@ -503,6 +503,7 @@ describe('list import repository and service on D1', () => {
         });
 
         assert.equal(third.outcome, 'busy');
+        assert.equal(third.jobId, second.jobId);
 
         await harness.env.DB.prepare(
             "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'bot', 'previewed', 'public', ?, ?)"
@@ -520,7 +521,11 @@ describe('list import repository and service on D1', () => {
             chatMessageId: null
         });
 
-        assert.deepEqual(raced, { ok: false, outcome: 'busy' });
+        assert.deepEqual(raced, {
+            ok: false,
+            outcome: 'busy',
+            jobId: second.jobId
+        });
 
         const racedDirectly = await store.jobs.startCommit({
             jobId: results[0]?.id as number,
@@ -778,6 +783,123 @@ describe('list import repository and service on D1', () => {
             ),
             true
         );
+    });
+
+    it('keeps the drain lease on the oldest finished import while newer imports finish', async () => {
+        const userId = await insertUser(14);
+
+        await store.wishes.insertImported([
+            importedRow(userId, 1, {
+                sourceImageUrl: 'https://storage.rewish.io/first'
+            })
+        ]);
+        await harness.env.DB.prepare(
+            "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'app', 'done', 'public', 0, 0)"
+        )
+            .bind(userId)
+            .run();
+
+        const [before] = await store.jobs.listDrainCandidates(10, userId);
+        const leaseUntil = new Date(clock.now + 60_000);
+
+        assert.ok(before);
+        assert.equal(
+            await store.jobs.acquireDrainLease(
+                before.leaseJobId,
+                new Date(clock.now),
+                leaseUntil
+            ),
+            true
+        );
+
+        await harness.env.DB.prepare(
+            "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'bot', 'done', 'hidden', 1, 1), (?, 'rewish', 'wishes', 'bot', 'failed', 'hidden', 2, 2)"
+        )
+            .bind(userId, userId)
+            .run();
+
+        const [after] = await store.jobs.listDrainCandidates(10, userId);
+
+        assert.equal(after?.leaseJobId, before.leaseJobId);
+        assert.equal(
+            await store.jobs.acquireDrainLease(
+                after.leaseJobId,
+                new Date(clock.now),
+                leaseUntil
+            ),
+            false
+        );
+    });
+
+    it('expires stale previews only for the kicked user, and for everyone on the cron', async () => {
+        const kicked = await insertUser(15);
+        const bystander = await insertUser(16);
+        const staleAt = clock.now - LIST_IMPORT_PREVIEW_TTL_MS - 1;
+
+        await harness.env.DB.prepare(
+            "INSERT INTO list_imports (user_id, source, kind, channel, state, visibility, created_at, updated_at) VALUES (?, 'rewish', 'wishes', 'app', 'previewed', 'public', ?, ?), (?, 'rewish', 'wishes', 'app', 'previewed', 'public', ?, ?)"
+        )
+            .bind(kicked, staleAt, staleAt, bystander, staleAt, staleAt)
+            .run();
+
+        const stateOf = async (userId: number) => {
+            const row = await harness.env.DB.prepare(
+                'SELECT state FROM list_imports WHERE user_id = ?'
+            )
+                .bind(userId)
+                .first<{ state: string }>();
+
+            return row?.state;
+        };
+        const { fakeFetch } = createRewishFetch(() => {
+            return [];
+        });
+        const service = createService();
+        const deps = createDeps(fakeFetch);
+
+        await service.resumeStale(deps, { userId: kicked });
+
+        assert.equal(await stateOf(kicked), 'expired');
+        assert.equal(await stateOf(bystander), 'previewed');
+
+        await service.resumeStale(deps, {});
+
+        assert.equal(await stateOf(bystander), 'expired');
+    });
+
+    it('commits with the stored visibility when the caller passes none', async () => {
+        const userId = await insertUser(17);
+        const { fakeFetch } = createRewishFetch(() => {
+            return seedWishes(1);
+        });
+        const service = createService();
+        const deps = createDeps(fakeFetch);
+        const preview = await service.preview(deps, {
+            userId,
+            url: parsedProfileUrl(),
+            channel: 'bot'
+        });
+        const jobId = preview.jobId as number;
+
+        assert.equal(preview.suggestedVisibility, 'hidden');
+        assert.equal(
+            await service.setVisibility(deps, {
+                userId,
+                jobId,
+                visibility: 'public'
+            }),
+            'ok'
+        );
+
+        const started = await service.startCommit(deps, {
+            userId,
+            jobId,
+            chatMessageId: null
+        });
+
+        assert.equal(started.ok, true);
+        assert.equal(started.ok && started.status.visibility, 'public');
+        assert.equal(started.ok && started.status.kind, 'wishes');
     });
 
     it('appends an imported photo to gifted wishes but not to hidden gifted or removed ones', async () => {

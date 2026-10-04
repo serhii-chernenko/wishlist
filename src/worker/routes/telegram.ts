@@ -30,7 +30,6 @@ import {
     getTelegramCommandCategory,
     getTelegramUpdateType,
     linkImportCompletedEvent,
-    listImportCompletedEvent,
     listImportPreviewedEvent,
     type TelemetryContext
 } from '../telemetry';
@@ -397,13 +396,6 @@ export const handleUpdateWithWishlistBot = async (
                 env,
                 context,
                 listImportPreviewedEvent({ ...input, channel: 'bot' })
-            );
-        },
-        listImportCompleted(input) {
-            emitTelemetryEvent(
-                env,
-                context,
-                listImportCompletedEvent({ ...input, channel: 'bot' })
             );
         },
         rateLimiterGap(bucket, result) {

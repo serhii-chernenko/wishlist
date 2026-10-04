@@ -35,7 +35,8 @@ import {
     type ListImportEvent,
     type ListImportFlow,
     type ListImportTarget,
-    type PreviewCountKey
+    type PreviewCountKey,
+    type PreviewNotice
 } from '../logic/list-import';
 import type { ScreenProps } from '../nav/routes';
 import { useApp, useLL, useSession } from '../state/context';
@@ -342,7 +343,7 @@ export const ListImportScreen = (_props: ScreenProps<'listImport'>) => {
                 return;
             }
 
-            if (preview.outcome === 'ok' && toReadyPreview(preview) !== null) {
+            if (toReadyPreview(preview) !== null) {
                 dispatch({ type: 'previewLoaded', preview });
 
                 return;
@@ -423,6 +424,12 @@ export const ListImportScreen = (_props: ScreenProps<'listImport'>) => {
         }
     };
 
+    const noticeText = (notice: PreviewNotice) => {
+        return notice === 'limitReached'
+            ? LL.listImport.failure.limitReached()
+            : LL.listImport.preview.nothing();
+    };
+
     const submitUrl = () => {
         if (!loading && target !== null) {
             void runPreview(target);
@@ -458,15 +465,22 @@ export const ListImportScreen = (_props: ScreenProps<'listImport'>) => {
                     progress: loading,
                     onClick: submitUrl
                 };
-            case 'preview':
+            case 'preview': {
+                const { preview, visibility } = flow;
+
+                if (!canStartImport(preview)) {
+                    return null;
+                }
+
                 return {
                     text: LL.listImport.start(),
-                    disabled: !canStartImport(flow.preview.counts) || loading,
+                    disabled: loading,
                     progress: loading,
                     onClick: () => {
-                        void runCommit(flow.preview.jobId, flow.visibility);
+                        void runCommit(preview.jobId, visibility);
                     }
                 };
+            }
             case 'progress':
                 return pollTimedOut
                     ? {
@@ -627,38 +641,49 @@ export const ListImportScreen = (_props: ScreenProps<'listImport'>) => {
                                     text={LL.listImport.preview.savedNote()}
                                 />
                             ) : null}
+                            {preview.notice === null ? null : (
+                                <NoteLine
+                                    icon={Info}
+                                    text={noticeText(preview.notice)}
+                                />
+                            )}
                         </div>
                     </Tag>
-                    <section
-                        class='menu-group'
-                        aria-labelledby={VISIBILITY_HEADING_ID}
-                    >
-                        <h2 id={VISIBILITY_HEADING_ID} class='menu-group-title'>
-                            {LL.listImport.visibility.label()}
-                        </h2>
-                        <Segmented<ListImportVisibility>
-                            name='list-import-visibility'
-                            legend={LL.listImport.visibility.label()}
-                            describedBy={VISIBILITY_HINT_ID}
-                            disabled={loading}
-                            value={visibility}
-                            options={LIST_IMPORT_VISIBILITIES.map(value => {
-                                return {
-                                    value,
-                                    label: LL.listImport.visibility[value]()
-                                };
-                            })}
-                            onChange={value => {
-                                dispatch({
-                                    type: 'visibilityChanged',
-                                    visibility: value
-                                });
-                            }}
-                        />
-                        <p id={VISIBILITY_HINT_ID} class='field-hint'>
-                            {visibilityHint}
-                        </p>
-                    </section>
+                    {canStartImport(preview) ? (
+                        <section
+                            class='menu-group'
+                            aria-labelledby={VISIBILITY_HEADING_ID}
+                        >
+                            <h2
+                                id={VISIBILITY_HEADING_ID}
+                                class='menu-group-title'
+                            >
+                                {LL.listImport.visibility.label()}
+                            </h2>
+                            <Segmented<ListImportVisibility>
+                                name='list-import-visibility'
+                                legend={LL.listImport.visibility.label()}
+                                describedBy={VISIBILITY_HINT_ID}
+                                disabled={loading}
+                                value={visibility}
+                                options={LIST_IMPORT_VISIBILITIES.map(value => {
+                                    return {
+                                        value,
+                                        label: LL.listImport.visibility[value]()
+                                    };
+                                })}
+                                onChange={value => {
+                                    dispatch({
+                                        type: 'visibilityChanged',
+                                        visibility: value
+                                    });
+                                }}
+                            />
+                            <p id={VISIBILITY_HINT_ID} class='field-hint'>
+                                {visibilityHint}
+                            </p>
+                        </section>
+                    ) : null}
                 </div>
             </ScreenLayout>
         );

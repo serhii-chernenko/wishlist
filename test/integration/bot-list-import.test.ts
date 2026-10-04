@@ -79,6 +79,8 @@ const buildStatus = (
     return {
         jobId: JOB_ID,
         state: 'committing',
+        kind: 'wishes',
+        visibility: 'public',
         planned: 7,
         created: 0,
         createdGifted: 0,
@@ -579,6 +581,72 @@ describe('Bot list import', () => {
                     .text.includes(LL.listImport.preview.visibility()),
                 false
             );
+            assert.ok(
+                webhook
+                    .lastMessage()
+                    .text.includes(LL.listImport.preview.nothing())
+            );
+        });
+
+        it('shows the counts and says nothing is new when every wish is already in the list', async () => {
+            scenario.preview = buildPreview({
+                outcome: 'empty',
+                jobId: null,
+                kind: null,
+                counts: {
+                    found: 6,
+                    active: 0,
+                    gifted: 0,
+                    duplicates: 6,
+                    overLimit: 0,
+                    withoutPrice: 0,
+                    withoutPhoto: 0
+                }
+            });
+            await startImportDialog();
+            await sendText(PROFILE_URL);
+
+            const { text } = webhook.lastMessage();
+
+            assert.ok(
+                text.includes(LL.listImport.preview.duplicates({ count: 6 }))
+            );
+            assert.ok(text.includes(LL.listImport.preview.nothing()));
+            assert.equal(text.includes(LL.listImport.failure.empty()), false);
+            assert.equal(
+                callbackDataOf(webhook.lastMessage()).some(data => {
+                    return data.startsWith('imp:go');
+                }),
+                false
+            );
+            assert.equal(await readPendingInput(), null);
+        });
+
+        it('shows the counts with the limit message when nothing fits', async () => {
+            scenario.preview = buildPreview({
+                outcome: 'limitReached',
+                jobId: null,
+                kind: null,
+                counts: {
+                    found: 3,
+                    active: 0,
+                    gifted: 0,
+                    duplicates: 0,
+                    overLimit: 3,
+                    withoutPrice: 0,
+                    withoutPhoto: 0
+                }
+            });
+            await startImportDialog();
+            await sendText(PROFILE_URL);
+
+            const { text } = webhook.lastMessage();
+
+            assert.ok(
+                text.includes(LL.listImport.preview.overLimit({ count: 3 }))
+            );
+            assert.ok(text.includes(LL.listImport.failure.limitReached()));
+            assert.equal(text.includes(LL.listImport.preview.nothing()), false);
         });
 
         for (const outcome of ['userNotFound', 'timeout'] as const) {
@@ -746,7 +814,7 @@ describe('Bot list import', () => {
             jobId: JOB_ID
         });
 
-        it('starts with the chosen visibility and the progress message id, then finishes in the same message', async () => {
+        it('starts with the stored visibility and the progress message id, then finishes in the same message', async () => {
             scenario.progressSteps = [
                 buildStatus({ created: 2 }),
                 buildStatus({ created: 4 }),
@@ -759,7 +827,7 @@ describe('Bot list import', () => {
                 LL.listImport.reading()
             );
             assert.equal(startRequests.length, 1);
-            assert.equal(startRequests[0]?.visibility, 'public');
+            assert.equal(startRequests[0]?.visibility, undefined);
             assert.equal(startRequests[0]?.userId, userId);
             assert.equal(startRequests[0]?.jobId, JOB_ID);
 
@@ -825,18 +893,51 @@ describe('Bot list import', () => {
             );
         });
 
-        it('falls back to hidden when the keyboard shows no choice', async () => {
-            await sendCallback(commitCallback);
+        it('never reads the choice off the keyboard', async () => {
+            await sendCallbackFrom(commitCallback, previewKeyboard('hidden'));
 
-            assert.equal(startRequests[0]?.visibility, 'hidden');
+            assert.equal(startRequests[0]?.visibility, undefined);
+            assert.equal(
+                Object.hasOwn(startRequests[0] ?? {}, 'visibility'),
+                false
+            );
         });
 
-        it('shows the busy message in the progress message', async () => {
-            scenario.start = { ok: false, outcome: 'busy' };
+        it('shows the busy message with a refresh for the running import', async () => {
+            scenario.start = { ok: false, outcome: 'busy', jobId: 77 };
             await sendCallbackFrom(commitCallback, previewKeyboard('hidden'));
 
             assert.deepEqual(editedTexts(), [LL.listImport.failure.busy()]);
             assert.equal(runRequests.length, 0);
+
+            const markup = callsOf('editMessageText').at(-1)?.reply_markup as {
+                inline_keyboard: { callback_data?: string }[][];
+            };
+
+            assert.ok(
+                markup.inline_keyboard.flat().some(button => {
+                    return (
+                        button.callback_data ===
+                        encode({ type: 'listImportRefresh', jobId: 77 })
+                    );
+                })
+            );
+        });
+
+        it('shows the busy message without a refresh when the running import is gone', async () => {
+            scenario.start = { ok: false, outcome: 'busy', jobId: null };
+            await sendCallbackFrom(commitCallback, previewKeyboard('hidden'));
+
+            const markup = callsOf('editMessageText').at(-1)?.reply_markup as {
+                inline_keyboard: { callback_data?: string }[][];
+            };
+
+            assert.equal(
+                markup.inline_keyboard.flat().some(button => {
+                    return button.callback_data?.startsWith('imp:r') ?? false;
+                }),
+                false
+            );
         });
 
         it('shows the expired message for an outdated preview', async () => {

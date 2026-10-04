@@ -14,9 +14,12 @@ const createController = (cron: string): ScheduledController => {
     return { cron, scheduledTime: Date.now(), noRetry() {} };
 };
 
-const createEnv = (enabled: string) => {
+const createEnv = (
+    enabled: string,
+    environment: WorkerBindings['BOT_ENVIRONMENT'] = 'production'
+) => {
     return {
-        BOT_ENVIRONMENT: 'local',
+        BOT_ENVIRONMENT: environment,
         WISHLIST_IMPORT_ENABLED: enabled
     } as unknown as WorkerBindings;
 };
@@ -66,6 +69,22 @@ const purgeNothing = async () => {
     return 0;
 };
 
+const productionTaskStubs = {
+    async broadcastRelease() {
+        return null;
+    },
+    async readBotStateSnapshot(): Promise<never> {
+        throw new TypeError('no snapshot in tests');
+    },
+    async refreshExchangeRates(): Promise<never> {
+        throw new TypeError('no rates in tests');
+    },
+    purgeLinkImportCache: purgeNothing,
+    pruneSessions: purgeNothing,
+    pruneProcessedTelegramUpdates: purgeNothing,
+    pruneAbandonedTelegramUpdates: purgeNothing
+};
+
 const quietly = async <Result>(run: () => Promise<Result>) => {
     const log = mock.method(console, 'log', () => undefined);
     const error = mock.method(console, 'error', () => undefined);
@@ -86,12 +105,7 @@ describe('list import scheduled tasks', () => {
                 createController('*/10 * * * *'),
                 createEnv('false'),
                 {} as ExecutionContext,
-                {
-                    listImport: service,
-                    async broadcastRelease() {
-                        return null;
-                    }
-                }
+                { ...productionTaskStubs, listImport: service }
             );
         });
 
@@ -102,6 +116,30 @@ describe('list import scheduled tasks', () => {
         assert.deepEqual(calls, []);
     });
 
+    it('adds nothing outside production, where kicks move imports along', async () => {
+        const { service, calls } = createFakeService();
+
+        for (const cron of ['*/10 * * * *', '0 0 * * *']) {
+            const { result } = await quietly(() => {
+                return runScheduledTasks(
+                    createController(cron),
+                    createEnv('true', 'preview'),
+                    {} as ExecutionContext,
+                    { ...productionTaskStubs, listImport: service }
+                );
+            });
+
+            assert.equal(
+                result.taskNames.some(name => {
+                    return name.startsWith('import:');
+                }),
+                false
+            );
+        }
+
+        assert.deepEqual(calls, []);
+    });
+
     it('resumes stale commits and drains photos on the ten-minute cron', async () => {
         const { service, calls, drains } = createFakeService();
         const { result } = await quietly(() => {
@@ -109,12 +147,7 @@ describe('list import scheduled tasks', () => {
                 createController('*/10 * * * *'),
                 createEnv('true'),
                 {} as ExecutionContext,
-                {
-                    listImport: service,
-                    async broadcastRelease() {
-                        return null;
-                    }
-                }
+                { ...productionTaskStubs, listImport: service }
             );
         });
 
@@ -134,10 +167,7 @@ describe('list import scheduled tasks', () => {
                 createController('0 0 * * *'),
                 createEnv('true'),
                 {} as ExecutionContext,
-                {
-                    listImport: service,
-                    purgeLinkImportCache: purgeNothing
-                }
+                { ...productionTaskStubs, listImport: service }
             );
         });
 
@@ -156,12 +186,7 @@ describe('list import scheduled tasks', () => {
                 createController('*/10 * * * *'),
                 createEnv('true'),
                 {} as ExecutionContext,
-                {
-                    listImport: service,
-                    async broadcastRelease() {
-                        return null;
-                    }
-                }
+                { ...productionTaskStubs, listImport: service }
             );
         });
 

@@ -450,6 +450,7 @@ const en: Translation = {
             photosNote: '🖼 Photos will load gradually, which can take a while.',
             savedNote:
                 'ℹ️ rewish doesn’t return the owner’s hidden “saved” wishes for a link like this, so they won’t be included.',
+            nothing: 'Nothing new: every wish is already in your list.',
             visibility:
                 '👀 How should the wishes be imported? <b>Hidden</b> wishes are visible only to you, <b>public</b> ones are visible to everyone you share your list with.'
         },
@@ -1253,7 +1254,8 @@ const en: Translation = {
                 photosNote:
                     'Photos will load gradually, which can take a while.',
                 savedNote:
-                    'rewish doesn’t return the owner’s hidden “saved” wishes for a link like this, so they won’t be included.'
+                    'rewish doesn’t return the owner’s hidden “saved” wishes for a link like this, so they won’t be included.',
+                nothing: 'Nothing new: every wish is already in your list.'
             },
             visibility: {
                 label: 'How to import the wishes',

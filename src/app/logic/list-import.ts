@@ -29,11 +29,15 @@ export interface ListImportTarget {
     savedWishesNote: boolean;
 }
 
+export type PreviewNotice = 'nothing' | 'limitReached';
+
+/** A preview the card can show. Without a `jobId` there is nothing to import: the counts explain why and `notice` names the message. */
 export interface ListImportReadyPreview {
-    jobId: number;
-    kind: ListImportKind;
+    jobId: number | null;
+    kind: ListImportKind | null;
     counts: ListImportCountsDto;
     savedWishesNote: boolean;
+    notice: PreviewNotice | null;
 }
 
 export type ListImportFlow =
@@ -117,24 +121,54 @@ export const createListImportFlow = (): ListImportFlow => {
     return { step: 'source', source: LIST_IMPORT_DEFAULT_SOURCE };
 };
 
-/** The preview answer in a shape the card can render; null for anything the server refused or left incomplete. */
+export const plannedCount = (counts: ListImportCountsDto) => {
+    return counts.active + counts.gifted;
+};
+
+const toNothingToImport = (
+    preview: ListImportPreviewDto,
+    counts: ListImportCountsDto
+): ListImportReadyPreview | null => {
+    if (
+        (preview.outcome !== 'empty' && preview.outcome !== 'limitReached') ||
+        plannedCount(counts) > 0
+    ) {
+        return null;
+    }
+
+    return {
+        jobId: null,
+        kind: preview.kind,
+        counts,
+        savedWishesNote: preview.savedWishesNote,
+        notice: preview.outcome === 'limitReached' ? 'limitReached' : 'nothing'
+    };
+};
+
+/** The preview answer in a shape the card can render: a job to commit, or the counts of a list with nothing new in it. Null for anything the server refused or left incomplete. */
 export const toReadyPreview = (
     preview: ListImportPreviewDto
 ): ListImportReadyPreview | null => {
-    if (
-        preview.outcome !== 'ok' ||
-        preview.jobId === null ||
-        preview.kind === null ||
-        preview.counts === null
-    ) {
+    const { counts } = preview;
+
+    if (counts === null) {
+        return null;
+    }
+
+    if (preview.outcome !== 'ok') {
+        return toNothingToImport(preview, counts);
+    }
+
+    if (preview.jobId === null || preview.kind === null) {
         return null;
     }
 
     return {
         jobId: preview.jobId,
         kind: preview.kind,
-        counts: preview.counts,
-        savedWishesNote: preview.savedWishesNote
+        counts,
+        savedWishesNote: preview.savedWishesNote,
+        notice: plannedCount(counts) > 0 ? null : 'nothing'
     };
 };
 
@@ -224,16 +258,14 @@ export const previewCountLines = (
     });
 };
 
-export const plannedCount = (counts: ListImportCountsDto) => {
-    return counts.active + counts.gifted;
-};
-
 export const hasPhotosToLoad = (counts: ListImportCountsDto) => {
     return plannedCount(counts) > counts.withoutPhoto;
 };
 
-export const canStartImport = (counts: ListImportCountsDto) => {
-    return plannedCount(counts) > 0;
+export const canStartImport = (
+    preview: ListImportReadyPreview
+): preview is ListImportReadyPreview & { jobId: number } => {
+    return preview.jobId !== null && plannedCount(preview.counts) > 0;
 };
 
 /** Done with every photo already in place: nothing left to wait for, so the screen can hand over to the list at once. */

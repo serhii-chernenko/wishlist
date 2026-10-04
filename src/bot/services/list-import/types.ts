@@ -110,13 +110,17 @@ export interface ListImportVisibilityRequest extends ListImportJobRequest {
     visibility: ListImportVisibility;
 }
 
-export interface ListImportStartRequest extends ListImportVisibilityRequest {
+/** Without `visibility` the commit keeps the one stored on the job: the suggested value or the last toggle. */
+export interface ListImportStartRequest extends ListImportJobRequest {
+    visibility?: ListImportVisibility;
     chatMessageId: number | null;
 }
 
+/** `busy` carries the id of the user's running import, or null when it finished in the meantime. */
 export type ListImportStartResult =
     | { ok: true; status: ListImportStatusDto }
-    | { ok: false; outcome: 'busy' | 'expired' | 'notFound' };
+    | { ok: false; outcome: 'busy'; jobId: number | null }
+    | { ok: false; outcome: 'expired' | 'notFound' };
 
 export type ListImportProgressHandler = (
     status: ListImportStatusDto

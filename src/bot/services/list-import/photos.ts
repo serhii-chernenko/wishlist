@@ -367,8 +367,9 @@ const drainUser = async (
 
 /**
  * Downloads the cover photo of imported wishes and re-uploads it to Telegram,
- * one user at a time under a lease on that user's latest finished import.
- * Only users with such an import row are drained, so wishes copied from
+ * one user at a time under a lease on that user's oldest finished import, a
+ * row that stays the same while newer imports finish, so two runs never drain
+ * one user at once. Only users with such an import row are drained, so wishes copied from
  * production into preview with a pending URL but no job are never touched.
  * Uploads to one chat stay `LIST_IMPORT_PHOTO_PACE_MS` apart. A failed or
  * unsupported image clears that wish's URL, a 403 or a blocked user clears all

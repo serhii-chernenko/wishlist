@@ -254,9 +254,10 @@ export const runScheduledTasks = async (
     ctx: ExecutionContext,
     dependencies: ScheduledTaskDependencies = {}
 ) => {
-    const listImport = isListImportEnabled(env)
-        ? dependencies.listImport
-        : undefined;
+    const listImport =
+        env.BOT_ENVIRONMENT === 'production' && isListImportEnabled(env)
+            ? dependencies.listImport
+            : undefined;
     const taskNames = getScheduledTaskNames(
         controller.cron,
         listImport !== undefined

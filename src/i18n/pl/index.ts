@@ -456,6 +456,7 @@ const pl: Translation = {
                 '🖼 Zdjęcia będą pojawiać się stopniowo, może to chwilę potrwać.',
             savedNote:
                 'ℹ️ Ukryte „zapisane” życzenia właściciela rewish nie są dostępne pod takim linkiem, więc ich tu nie będzie.',
+            nothing: 'Nic nowego: wszystkie życzenia są już na twojej liście.',
             visibility:
                 '👀 Jak zaimportować życzenia? <b>Ukryte</b> widzisz tylko ty, <b>publiczne</b> zobaczą wszyscy, z którymi udostępniasz listę.'
         },
@@ -1269,7 +1270,9 @@ const pl: Translation = {
                 photosNote:
                     'Zdjęcia będą pojawiać się stopniowo, może to chwilę potrwać.',
                 savedNote:
-                    'Ukryte „zapisane” życzenia właściciela rewish nie są dostępne pod takim linkiem, więc ich tu nie będzie.'
+                    'Ukryte „zapisane” życzenia właściciela rewish nie są dostępne pod takim linkiem, więc ich tu nie będzie.',
+                nothing:
+                    'Nic nowego: wszystkie życzenia są już na twojej liście.'
             },
             visibility: {
                 label: 'Jak zaimportować życzenia',

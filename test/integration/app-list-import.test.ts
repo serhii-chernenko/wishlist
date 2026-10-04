@@ -76,6 +76,8 @@ const buildStatus = (
     return {
         jobId: JOB_ID,
         state: 'previewed',
+        kind: 'wishes',
+        visibility: 'public',
         planned: 8,
         created: 0,
         createdGifted: 0,
@@ -124,13 +126,21 @@ const createFakeListImport = (): FakeListImport => {
 
             return Promise.resolve(fake.nextPreview);
         },
-        startCommit(_deps, request) {
+        startCommit(_deps, request): Promise<ListImportStartResult> {
             fake.startCalls.push(request);
 
             const job = fake.jobs.get(request.jobId);
 
             if (job === undefined || job.ownerId !== request.userId) {
                 return Promise.resolve({ ok: false, outcome: 'notFound' });
+            }
+
+            if (fake.startOutcome === 'busy') {
+                return Promise.resolve({
+                    ok: false,
+                    outcome: 'busy',
+                    jobId: null
+                });
             }
 
             if (fake.startOutcome !== null) {

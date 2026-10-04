@@ -61,6 +61,8 @@ export const toStatusDto = (
     return {
         jobId: job.id,
         state: job.state,
+        kind: job.kind,
+        visibility: job.visibility,
         planned: job.planned,
         created: job.created,
         createdGifted: job.createdGifted,

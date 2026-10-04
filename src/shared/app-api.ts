@@ -462,6 +462,8 @@ export type ListImportPreviewDto = {
 export type ListImportStatusDto = {
     jobId: number;
     state: ListImportState;
+    kind: ListImportKind;
+    visibility: ListImportVisibility;
     planned: number;
     created: number;
     createdGifted: number;

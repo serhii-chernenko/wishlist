@@ -59,6 +59,8 @@ const status = (patch: Partial<ListImportStatusDto> = {}) => {
     const value: ListImportStatusDto = {
         jobId: 41,
         state: 'committing',
+        kind: 'wishes',
+        visibility: 'public',
         planned: 8,
         created: 0,
         createdGifted: 0,
@@ -293,9 +295,69 @@ test('only the non-zero count lines are shown, in a fixed order', () => {
 });
 
 test('the import can start only when something would be created', () => {
-    assert.equal(canStartImport(counts()), true);
-    assert.equal(canStartImport(counts({ active: 0, gifted: 1 })), true);
-    assert.equal(canStartImport(counts({ active: 0, gifted: 0 })), false);
+    const ready = (patch: Partial<ListImportPreviewDto>) => {
+        const value = toReadyPreview(preview(patch));
+
+        assert.ok(value);
+
+        return value;
+    };
+
+    assert.equal(canStartImport(ready({})), true);
+    assert.equal(
+        canStartImport(ready({ counts: counts({ active: 0, gifted: 1 }) })),
+        true
+    );
+    assert.equal(
+        canStartImport(ready({ counts: counts({ active: 0, gifted: 0 }) })),
+        false
+    );
+    assert.equal(
+        canStartImport(
+            ready({
+                outcome: 'empty',
+                jobId: null,
+                counts: counts({ active: 0, gifted: 0 })
+            })
+        ),
+        false
+    );
+});
+
+test('a list with nothing new opens the card with its counts and the matching notice', () => {
+    const nothingNew = counts({ active: 0, gifted: 0, duplicates: 6 });
+    const duplicates = toReadyPreview(
+        preview({
+            outcome: 'empty',
+            jobId: null,
+            kind: null,
+            counts: nothingNew
+        })
+    );
+    const overLimit = toReadyPreview(
+        preview({
+            outcome: 'limitReached',
+            jobId: null,
+            kind: null,
+            counts: counts({ active: 0, gifted: 0, overLimit: 3 })
+        })
+    );
+
+    assert.equal(duplicates?.notice, 'nothing');
+    assert.equal(duplicates?.jobId, null);
+    assert.deepEqual(duplicates?.counts, nothingNew);
+    assert.equal(overLimit?.notice, 'limitReached');
+    assert.equal(
+        toReadyPreview(
+            preview({ outcome: 'empty', jobId: null, kind: null, counts: null })
+        ),
+        null
+    );
+    assert.equal(
+        previewStep({ outcome: 'empty', jobId: null, counts: nothingNew }).step,
+        'preview'
+    );
+    assert.equal(toReadyPreview(preview())?.notice, null);
 });
 
 test('the photos note shows only when a planned wish has a photo', () => {

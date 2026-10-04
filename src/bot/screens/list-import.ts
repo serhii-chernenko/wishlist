@@ -20,7 +20,7 @@ import {
     type ParsedListUrl
 } from '../../shared/list-import-url';
 import { isListImportEnabled } from '../../worker/env';
-import { encodeCallbackData } from '../callback-data';
+import { kickListImport } from '../../worker/list-import';
 import {
     callbackButton,
     homeButton,
@@ -49,7 +49,8 @@ import type {
 import type {
     ListImportDeps,
     ListImportProgressHandler,
-    ListImportService
+    ListImportService,
+    ListImportStartResult
 } from '../services/list-import/types';
 import { requireUser, updateSession } from '../services/wish-screen-context';
 import { isTelegramBadRequest } from '../utils/telegram-errors';
@@ -57,7 +58,6 @@ import { screen as homeScreen } from './home';
 
 const CLAIM_ATTEMPTS = 4;
 const CLAIM_RETRY_DELAY_MS = 150;
-const FALLBACK_VISIBILITY: ListImportVisibility = 'hidden';
 const INPUT_RETRY_FAILURES: ReadonlySet<ListImportFailure> = new Set([
     'invalidUrl',
     'userNotFound',
@@ -103,6 +103,17 @@ const getAvailableService = (req: BotRequest) => {
     return isListImportAvailable(req) ? req.services.listImport : undefined;
 };
 
+const toBackgroundDeps = (req: BotRequest): ListImportDeps => {
+    return {
+        env: req.env,
+        waitUntil: promise => {
+            req.defer(async () => {
+                await promise;
+            }, 0);
+        }
+    };
+};
+
 const createContext = (
     req: BotRequest,
     service: ListImportService
@@ -110,7 +121,7 @@ const createContext = (
     return {
         req,
         service,
-        deps: { env: req.env },
+        deps: toBackgroundDeps(req),
         userId: requireUser(req).id
     };
 };
@@ -215,32 +226,6 @@ const buildNothingToImportKeyboard = (req: BotRequest, jobId: number) => {
     ]);
 };
 
-const readSelectedVisibility = (req: BotRequest, jobId: number) => {
-    const message = req.ctx.callbackQuery?.message;
-    const buttons =
-        message !== undefined && 'reply_markup' in message
-            ? (message.reply_markup?.inline_keyboard ?? []).flat()
-            : [];
-    const selected = LIST_IMPORT_VISIBILITIES.find(visibility => {
-        const callbackData = encodeCallbackData({
-            type: 'listImportVisibility',
-            jobId,
-            visibility
-        });
-        const text = getVisibilityLabel(req, visibility, true);
-
-        return buttons.some(button => {
-            return (
-                'callback_data' in button &&
-                button.callback_data === callbackData &&
-                button.text === text
-            );
-        });
-    });
-
-    return selected ?? FALLBACK_VISIBILITY;
-};
-
 const buildCountLines = (req: BotRequest, counts: ListImportCountsDto) => {
     const { preview } = req.LL.listImport;
     const lines: [number, CountFormatter][] = [
@@ -260,16 +245,39 @@ const buildCountLines = (req: BotRequest, counts: ListImportCountsDto) => {
         });
 };
 
+const plannedCount = (counts: ListImportCountsDto) => {
+    return counts.active + counts.gifted;
+};
+
+const buildCountsSection = (req: BotRequest, counts: ListImportCountsDto) => {
+    return [
+        req.LL.listImport.preview.title(),
+        ...buildCountLines(req, counts)
+    ].join('\n');
+};
+
+const buildNothingToImportText = (
+    req: BotRequest,
+    failure: ListImportFailure,
+    counts: ListImportCountsDto
+) => {
+    const { listImport } = req.LL;
+    const notice =
+        failure === 'limitReached'
+            ? listImport.failure.limitReached()
+            : listImport.preview.nothing();
+
+    return `${buildCountsSection(req, counts)}\n\n${notice}`;
+};
+
 const buildPreviewText = (
     req: BotRequest,
     preview: ListImportPreviewDto,
     counts: ListImportCountsDto
 ) => {
     const { preview: copy } = req.LL.listImport;
-    const planned = counts.active + counts.gifted;
-    const sections = [
-        [copy.title(), ...buildCountLines(req, counts)].join('\n')
-    ];
+    const planned = plannedCount(counts);
+    const sections = [buildCountsSection(req, counts)];
 
     if (planned - counts.withoutPhoto > 0) {
         sections.push(copy.photosNote());
@@ -279,9 +287,7 @@ const buildPreviewText = (
         sections.push(copy.savedNote());
     }
 
-    if (planned > 0) {
-        sections.push(copy.visibility());
-    }
+    sections.push(planned > 0 ? copy.visibility() : copy.nothing());
 
     return sections.join('\n\n');
 };
@@ -515,24 +521,35 @@ const deliverPreview = async (
     }
 
     const keyboard =
-        counts.active + counts.gifted > 0
+        plannedCount(counts) > 0
             ? buildPreviewKeyboard(req, jobId, preview.suggestedVisibility)
             : buildNothingToImportKeyboard(req, jobId);
 
     await req.send.text(buildPreviewText(req, preview, counts), keyboard);
 };
 
+const buildFailureText = (
+    req: BotRequest,
+    failure: ListImportFailure,
+    counts: ListImportCountsDto | null
+) => {
+    return counts !== null && plannedCount(counts) === 0
+        ? buildNothingToImportText(req, failure, counts)
+        : req.LL.listImport.failure[failure]();
+};
+
 const deliverFailure = async (
     req: BotRequest,
     claim: PreviewClaim,
     failure: ListImportFailure,
-    busyJobId: number | null
+    preview: Pick<ListImportPreviewDto, 'jobId' | 'counts'>
 ) => {
+    const busyJobId = preview.jobId;
     const waiting = INPUT_RETRY_FAILURES.has(failure);
     const nextPendingInput: PendingInput | null = waiting
         ? { kind: 'listImportUrl', source: claim.parsed.source }
         : null;
-    const message = req.LL.listImport.failure[failure]();
+    const message = buildFailureText(req, failure, preview.counts);
     const claimed = await claimPreview(req, claim.marker, nextPendingInput);
 
     if (!claimed) {
@@ -548,13 +565,7 @@ const deliverFailure = async (
     }
 
     const keyboard =
-        failure === 'busy' && busyJobId !== null
-            ? singleColumnKeyboard([
-                  refreshButton(req, busyJobId),
-                  navigationButton(req.LL.actions.back(), 'settings'),
-                  homeButton(req.LL)
-              ])
-            : leaveKeyboard(req);
+        failure === 'busy' ? busyKeyboard(req, busyJobId) : leaveKeyboard(req);
 
     await req.send.text(message, keyboard);
 };
@@ -573,13 +584,16 @@ const completePreview = async (req: BotRequest, claim: PreviewClaim) => {
     reportPreview(req, claim.parsed, preview, Date.now() - startedAt);
 
     if (preview.outcome !== 'ok') {
-        await deliverFailure(req, claim, preview.outcome, preview.jobId);
+        await deliverFailure(req, claim, preview.outcome, preview);
 
         return;
     }
 
     if (preview.jobId === null || preview.counts === null) {
-        await deliverFailure(req, claim, 'upstream', null);
+        await deliverFailure(req, claim, 'upstream', {
+            jobId: null,
+            counts: null
+        });
 
         return;
     }
@@ -645,17 +659,27 @@ const beginPreview = async (
     }, 0);
 };
 
+const busyKeyboard = (req: BotRequest, runningJobId: number | null) => {
+    return runningJobId === null
+        ? leaveKeyboard(req)
+        : singleColumnKeyboard([
+              refreshButton(req, runningJobId),
+              navigationButton(req.LL.actions.back(), 'settings'),
+              homeButton(req.LL)
+          ]);
+};
+
 const showStartFailure = async (
     req: BotRequest,
     handle: TextHandle,
-    outcome: 'busy' | 'expired' | 'notFound'
+    refusal: Extract<ListImportStartResult, { ok: false }>
 ) => {
-    if (outcome === 'busy') {
+    if (refusal.outcome === 'busy') {
         await editOrSend(
             req,
             handle,
             req.LL.listImport.failure.busy(),
-            leaveKeyboard(req)
+            busyKeyboard(req, refusal.jobId)
         );
 
         return;
@@ -717,7 +741,7 @@ const runCommitToCompletion = async (
         buildStatusText(req, finalStatus, 'finished'),
         buildStatusKeyboard(req, finalStatus)
     );
-    await context.service.kick(context.deps, { userId: context.userId });
+    kickListImport(context.service, context.deps, context.userId);
 };
 
 const render = async (req: BotRequest) => {
@@ -813,12 +837,11 @@ export const callbacks: CallbackTable = {
         const started = await service.startCommit(deps, {
             userId,
             jobId: action.jobId,
-            visibility: readSelectedVisibility(req, action.jobId),
             chatMessageId: handle.messageId
         });
 
         if (!started.ok) {
-            await showStartFailure(req, handle, started.outcome);
+            await showStartFailure(req, handle, started);
 
             return;
         }
@@ -853,9 +876,7 @@ export const callbacks: CallbackTable = {
     listImportRefresh: guarded<'listImportRefresh'>(async (context, action) => {
         const { req, service, deps, userId } = context;
 
-        req.defer(() => {
-            return service.kick(deps, { userId });
-        }, 0);
+        kickListImport(service, deps, userId);
 
         const status = await readStatus(context, action.jobId);
 

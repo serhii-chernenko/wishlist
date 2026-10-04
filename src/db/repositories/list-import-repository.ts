@@ -7,7 +7,7 @@ import {
     isNotNull,
     isNull,
     lt,
-    max,
+    min,
     notExists,
     or,
     sql
@@ -268,7 +268,7 @@ export const createListImportRepository = (db: AppDb) => {
                 return updated.length > 0;
             });
         },
-        expireStalePreviews(createdBefore: Date, now: Date) {
+        expireStalePreviews(createdBefore: Date, now: Date, userId?: number) {
             return tryDb(async () => {
                 const updated = await db
                     .update(listImports)
@@ -276,7 +276,10 @@ export const createListImportRepository = (db: AppDb) => {
                     .where(
                         and(
                             eq(listImports.state, 'previewed'),
-                            lt(listImports.createdAt, createdBefore)
+                            lt(listImports.createdAt, createdBefore),
+                            userId === undefined
+                                ? undefined
+                                : eq(listImports.userId, userId)
                         )
                     )
                     .returning({ id: listImports.id });
@@ -472,7 +475,7 @@ export const createListImportRepository = (db: AppDb) => {
                 const leaseRows = await db
                     .select({
                         userId: listImports.userId,
-                        leaseJobId: max(listImports.id)
+                        leaseJobId: min(listImports.id)
                     })
                     .from(listImports)
                     .where(

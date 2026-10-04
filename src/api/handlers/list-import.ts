@@ -10,6 +10,7 @@ import {
     type ListImportStatusDto
 } from '../../shared/app-api';
 import { isListImportEnabled } from '../../worker/env';
+import { kickListImport } from '../../worker/list-import';
 import { listImportPreviewedEvent } from '../../worker/telemetry';
 import {
     emitApiTelemetry,
@@ -128,7 +129,7 @@ export const commitListImport: ApiHandler = async c => {
         await runInBackground(
             c,
             service.runCommit(deps, { jobId, trigger: 'request' }).then(() => {
-                return service.kick(deps, { userId: user.id });
+                kickListImport(service, deps, user.id);
             })
         );
 
@@ -156,7 +157,7 @@ export const getListImport: ApiHandler = async c => {
     }
 
     if (status.state === 'committing' || status.photosPending > 0) {
-        await runInBackground(c, service.kick(deps, { userId: user.id }));
+        kickListImport(service, deps, user.id);
     }
 
     return c.json(status);

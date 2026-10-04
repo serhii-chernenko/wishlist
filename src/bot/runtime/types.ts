@@ -32,7 +32,6 @@ import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import type {
     LinkImportCompletedInput,
-    ListImportCompletedInput,
     ListImportPreviewedInput
 } from '../../worker/telemetry';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
@@ -305,11 +304,7 @@ export type WishlistShareChangeResult = 'success' | 'failed';
 
 export type WishlistShareUsernameResult = 'on' | 'off' | 'failed';
 
-export type {
-    LinkImportCompletedInput,
-    ListImportCompletedInput,
-    ListImportPreviewedInput
-};
+export type { LinkImportCompletedInput, ListImportPreviewedInput };
 
 export interface WishlistBotTelemetry {
     botActionCompleted(input: {
@@ -323,7 +318,6 @@ export interface WishlistBotTelemetry {
     }): void;
     linkImportCompleted?(input: LinkImportCompletedInput): void;
     listImportPreviewed?(input: ListImportPreviewedInput): void;
-    listImportCompleted?(input: ListImportCompletedInput): void;
     rateLimiterGap?(bucket: RateLimitBucket, result: 'missing' | 'error'): void;
 }
 

@@ -73,6 +73,7 @@ export interface ListImportServiceOptions {
     emitTelemetry?: ListImportTelemetryEmitter;
     createFlowId?: () => string;
     createTelegram?: (env: WorkerBindings) => TelegramApi | undefined;
+    sleep?: (milliseconds: number) => Promise<void>;
 }
 
 const RESUME_FAILURE: ListImportFailure = 'timeout';
@@ -118,6 +119,13 @@ const failedPreview = (
     };
 };
 
+const busyPreview = (
+    url: ParsedListUrl,
+    runningJobId: number
+): ListImportPreviewDto => {
+    return { ...failedPreview('busy', url), jobId: runningJobId };
+};
+
 const isPreviewExpired = (job: ListImportRecord, now: number) => {
     return job.createdAt.getTime() + LIST_IMPORT_PREVIEW_TTL_MS <= now;
 };
@@ -139,6 +147,7 @@ export const createListImportService = (
     const emitTelemetry = options.emitTelemetry ?? emitTelemetryEvent;
     const createFlowId = options.createFlowId ?? defaultFlowId;
     const createTelegram = options.createTelegram ?? defaultTelegram;
+    const sleep = options.sleep ?? defaultSleep;
 
     const clock = (deps: ListImportDeps) => {
         return deps.now ?? Date.now;
@@ -278,9 +287,10 @@ export const createListImportService = (
         async preview(deps, request) {
             const store = createStore(deps.env);
             const adapter = adapters[request.url.source];
+            const running = await store.jobs.findCommitting(request.userId);
 
-            if ((await store.jobs.findCommitting(request.userId)) !== null) {
-                return failedPreview('busy', request.url);
+            if (running !== null) {
+                return busyPreview(request.url, running.id);
             }
 
             const fetched = await adapter.fetchItems(
@@ -381,22 +391,30 @@ export const createListImportService = (
                 return { ok: false, outcome: 'expired' };
             }
 
-            if ((await store.jobs.findCommitting(request.userId)) !== null) {
-                return { ok: false, outcome: 'busy' };
+            const running = await store.jobs.findCommitting(request.userId);
+
+            if (running !== null) {
+                return { ok: false, outcome: 'busy', jobId: running.id };
             }
 
             const now = clock(deps)();
             const started = await store.jobs.startCommit({
                 jobId: job.id,
                 userId: request.userId,
-                visibility: request.visibility,
+                visibility: request.visibility ?? job.visibility,
                 chatMessageId: request.chatMessageId,
                 leaseUntil: new Date(now + LIST_IMPORT_LEASE_MS),
                 now: new Date(now)
             });
 
             if (started.outcome === 'busy') {
-                return { ok: false, outcome: 'busy' };
+                const winner = await store.jobs.findCommitting(request.userId);
+
+                return {
+                    ok: false,
+                    outcome: 'busy',
+                    jobId: winner?.id ?? null
+                };
             }
 
             if (started.outcome === 'notPreviewed') {
@@ -479,7 +497,8 @@ export const createListImportService = (
 
             await store.jobs.expireStalePreviews(
                 new Date(now - LIST_IMPORT_PREVIEW_TTL_MS),
-                new Date(now)
+                new Date(now),
+                request.userId
             );
 
             const stale = await store.jobs.listStaleCommitting(
@@ -539,7 +558,7 @@ export const createListImportService = (
                         return createHostGate(deps)(host);
                     },
                     now: clock(deps),
-                    sleep: deps.sleep ?? defaultSleep,
+                    sleep: deps.sleep ?? sleep,
                     ...(deps.waitUntil === undefined
                         ? {}
                         : { waitUntil: deps.waitUntil })
