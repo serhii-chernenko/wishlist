@@ -86,6 +86,7 @@ const decodePendingInput = (value: unknown): Decoded<PendingInput | null> => {
         case 'findQuery':
         case 'feedback':
         case 'payments':
+        case 'deliveryAddress':
             return decoded({ kind: value.kind });
         case 'wishField':
             return isPositiveInteger(value.wishId) && isWishField(value.field)
@@ -296,6 +297,16 @@ export const claimLinkImport = async (
     );
 
     return true;
+};
+
+export const isSessionWrittenBefore = async (
+    repos: Pick<Repositories, 'sessions'>,
+    telegramUserId: number,
+    moment: Date
+) => {
+    const record = await Effect.runPromise(repos.sessions.get(telegramUserId));
+
+    return record === null || record.updatedAt.getTime() < moment.getTime();
 };
 
 export const savePendingInput = async (

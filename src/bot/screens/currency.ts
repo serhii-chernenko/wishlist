@@ -108,7 +108,7 @@ export const callbacks: CallbackTable = {
 
         req.telemetry.botActionCompleted({
             action: 'wish_updated',
-            field: 'price'
+            field: 'currency'
         });
         await req.send.text(
             req.LL.wishlist.edit.currency.success({

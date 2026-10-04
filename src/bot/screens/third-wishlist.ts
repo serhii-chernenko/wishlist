@@ -255,7 +255,8 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
         if (contact !== null) {
             await req.send.text(
                 renderContactHtml(req, contact),
-                removeReplyKeyboard()
+                removeReplyKeyboard(),
+                { disableLinkPreview: true }
             );
         }
     }

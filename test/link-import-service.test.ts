@@ -88,6 +88,7 @@ const createServiceHarness = (
     input: {
         extracted?: ExtractedProduct | null;
         pageFailure?: SafeFetchFailure;
+        pageStatus?: number;
         limiter?: 'allow' | 'limit' | 'missing';
         images?: Record<string, { bytes: Uint8Array }>;
     } = {}
@@ -107,7 +108,11 @@ const createServiceHarness = (
                           response: new Response('<html></html>')
                       }
                   }
-                : { ok: false, failure: input.pageFailure, status: 403 };
+                : {
+                      ok: false,
+                      failure: input.pageFailure,
+                      status: input.pageStatus ?? 403
+                  };
         }
     });
     const limiter =
@@ -296,6 +301,35 @@ describe('runLinkImport', () => {
         }
     });
 
+    it('never caches server errors or a 429 so a transient failure is retried', async () => {
+        const expectations: [SafeFetchFailure, number, string, boolean][] = [
+            ['badStatus', 503, 'notProduct', false],
+            ['badStatus', 500, 'notProduct', false],
+            ['blockedStatus', 429, 'blocked', false],
+            ['badStatus', 404, 'notProduct', true],
+            ['blockedStatus', 403, 'blocked', true]
+        ];
+
+        for (const [failure, status, outcome, cached] of expectations) {
+            const harness = createServiceHarness({
+                pageFailure: failure,
+                pageStatus: status
+            });
+            const result = await harness.services.run(harness.deps, {
+                url: PRODUCT_URL,
+                channel: 'app'
+            });
+            const label = `${failure} ${status}`;
+
+            assert.equal(result.outcome, outcome, label);
+            assert.equal(
+                harness.memory.objects.has(importMetaKey(URL_HASH)),
+                cached,
+                label
+            );
+        }
+    });
+
     it('refuses when the host limiter is exhausted and reports a missing limiter', async () => {
         const limited = createServiceHarness({ limiter: 'limit' });
         const result = await limited.services.run(limited.deps, {
@@ -446,6 +480,17 @@ describe('imported drafts', () => {
                 sourcePrice: null
             }
         );
+    });
+
+    it('rounds a fractional price in one of our currencies to whole units', () => {
+        const draft = toImportedDraft(
+            product({ price: 49.99, currency: 'EUR' }),
+            PRODUCT_URL
+        );
+
+        assert.equal(draft.price, 50);
+        assert.equal(draft.currency, 'EUR');
+        assert.equal(draft.sourcePrice, null);
     });
 
     it('turns a price in another currency into a source price', () => {

@@ -31,6 +31,10 @@ const readLeadingNumber = (normalized: string): number | null => {
     return match ? Number.parseFloat(match[0]) : null;
 };
 
+export const readPriceAmount = (text: string): number | null => {
+    return readLeadingNumber(text.replace(invisibleSpacesPattern, ''));
+};
+
 export const parsePrice = (
     text: string | undefined,
     removeLabels: readonly string[]
@@ -39,9 +43,7 @@ export const parsePrice = (
         return { ok: true, value: 0 };
     }
 
-    const parsed = readLeadingNumber(
-        (text ?? '').replace(invisibleSpacesPattern, '')
-    );
+    const parsed = readPriceAmount(text ?? '');
 
     if (parsed === null) {
         return { ok: false, reason: 'invalid' };
@@ -70,7 +72,7 @@ const CURRENCY_MARKERS: readonly CurrencyMarker[] = [
     { currency: 'UAH', symbols: ['₴'], words: ['грн', 'грив', 'uah', 'hrn'] },
     { currency: 'USD', symbols: ['$'], words: ['usd', 'дол'] },
     { currency: 'EUR', symbols: ['€'], words: ['eur', 'євро', 'euro'] },
-    { currency: 'PLN', symbols: ['zł'], words: ['zl', 'pln', 'злот'] }
+    { currency: 'PLN', symbols: ['zł'], words: ['zl', 'pln', 'зл'] }
 ];
 
 const WORD_TAIL = '[\\p{L}.]*';

@@ -17,6 +17,7 @@ import { defaultSleep, type Sleep } from './defer';
 import type {
     ReplyMarkup,
     Sender,
+    TextOptions,
     WishMessage,
     WishlistBotTelemetry
 } from './types';
@@ -112,6 +113,12 @@ const withReplyMarkup = (keyboard: ReplyMarkup | undefined) => {
     return keyboard ? { reply_markup: keyboard } : {};
 };
 
+const withLinkPreview = (options: TextOptions | undefined) => {
+    return options?.disableLinkPreview
+        ? { link_preview_options: { is_disabled: true } }
+        : {};
+};
+
 export interface RuntimeSender extends Sender {
     answerCallback(): Promise<void>;
     isCallbackAnswered(): boolean;
@@ -146,12 +153,17 @@ export const createSender = (deps: SenderDependencies): RuntimeSender => {
         }
     };
 
-    const sendText = async (html: string, keyboard?: ReplyMarkup) => {
+    const sendText = async (
+        html: string,
+        keyboard?: ReplyMarkup,
+        options?: TextOptions
+    ) => {
         await deliver(() => {
             return sendWithUrlButtonFallback(keyboard, markup => {
                 return ctx.telegram.sendMessage(chatId, html, {
                     parse_mode: 'HTML',
-                    ...withReplyMarkup(markup)
+                    ...withReplyMarkup(markup),
+                    ...withLinkPreview(options)
                 });
             });
         });

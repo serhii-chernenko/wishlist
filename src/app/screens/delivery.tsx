@@ -27,10 +27,6 @@ import { ScreenLayout } from '../ui/screen';
 
 type PendingAction = 'save' | 'remove';
 
-const toFieldErrorCode = (reason: AddressRejection): FieldErrorCode => {
-    return reason === 'tooManyLines' ? 'tooLong' : reason;
-};
-
 const describeFieldError = (
     LL: AppTranslator,
     code: FieldErrorCode,
@@ -40,19 +36,13 @@ const describeFieldError = (
         return LL.delivery.errors.containsLink();
     }
 
+    if (code === 'tooManyLines') {
+        return LL.delivery.errors.tooManyLines();
+    }
+
     return code === 'tooShort' || code === 'tooLong'
         ? fieldErrorMessage(LL, code, max)
         : LL.delivery.hint();
-};
-
-const describeRejection = (
-    LL: AppTranslator,
-    reason: AddressRejection,
-    max: number
-) => {
-    return reason === 'tooManyLines'
-        ? LL.delivery.errors.tooManyLines()
-        : describeFieldError(LL, reason, max);
 };
 
 const isPhoneShown = (me: Pick<MeDto, 'disclosure' | 'phoneMasked'>) => {
@@ -80,10 +70,8 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
         void nav.back();
     };
 
-    const rejectLocally = (reason: AddressRejection) => {
-        const code = toFieldErrorCode(reason);
-
-        setError(describeRejection(LL, reason, max));
+    const rejectLocally = (code: AddressRejection) => {
+        setError(describeFieldError(LL, code, max));
         haptics.error();
         reportEvent('validationFailed', 'delivery', { field: 'address', code });
     };

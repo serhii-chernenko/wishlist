@@ -6,6 +6,7 @@ import {
 import { createTelegramApi } from '../../api/telegram-api';
 import type { WishRecord } from '../../db/repositories';
 import {
+    LINK_IMPORT_BOT_ALBUM_MAX_BYTES,
     LINK_IMPORT_BOT_BUDGET_MS,
     LINK_IMPORT_BOT_IMAGES,
     LINK_IMPORT_IMAGE_BUDGET_MS
@@ -14,7 +15,11 @@ import { formatCurrency } from '../content/intl';
 import { inlineKeyboard, removeReplyKeyboard } from '../content/keyboards';
 import { renderWishHtml } from '../content/wish-markup';
 import { cutDescription, cutTitle } from '../input/limits';
-import { claimLinkImport, savePendingInput } from '../runtime/session-store';
+import {
+    claimLinkImport,
+    isSessionWrittenBefore,
+    savePendingInput
+} from '../runtime/session-store';
 import type { BotLinkImport, BotRequest, PendingInput } from '../runtime/types';
 import { toLinkImportCompletedInput } from '../services/link-import/link-import-service';
 import { resolveShop } from '../services/link-import/shop';
@@ -76,6 +81,32 @@ const claimImport = async (
     }
 
     return false;
+};
+
+interface ImportClaim {
+    url: string;
+    marker: number;
+    markedAt: Date;
+}
+
+const recoverLostClaim = async (
+    req: BotRequest,
+    claim: ImportClaim,
+    message: string
+) => {
+    if (
+        !(await isSessionWrittenBefore(req.repos, req.actor.id, claim.markedAt))
+    ) {
+        return;
+    }
+
+    await savePendingInput(
+        req.repos,
+        req.actor.id,
+        { kind: 'wishTitleNew', link: claim.url },
+        new Date()
+    );
+    await req.send.text(message, removeReplyKeyboard());
 };
 
 const getHost = (url: string) => {
@@ -226,7 +257,8 @@ const stageSafely = async (
                 budgetMs: Math.max(
                     0,
                     Math.min(remainingMs, LINK_IMPORT_IMAGE_BUDGET_MS)
-                )
+                ),
+                keepBodies: true
             }
         );
     } catch {
@@ -234,27 +266,53 @@ const stageSafely = async (
     }
 };
 
+const selectAlbum = (staged: readonly StagedImage[], startedAt: number) => {
+    const ordered = [...staged].sort((left, right) => {
+        return left.index - right.index;
+    });
+
+    if (Date.now() - startedAt >= LINK_IMPORT_BOT_BUDGET_MS) {
+        return { selected: [], dropped: ordered.length };
+    }
+
+    let totalBytes = 0;
+    const selected = ordered.filter(image => {
+        if (totalBytes + image.bytes > LINK_IMPORT_BOT_ALBUM_MAX_BYTES) {
+            return false;
+        }
+
+        totalBytes += image.bytes;
+
+        return true;
+    });
+
+    return { selected, dropped: ordered.length - selected.length };
+};
+
 const loadBodies = async (
     req: BotRequest,
     linkImport: BotLinkImport,
     urlHash: string,
-    staged: readonly StagedImage[]
+    staging: StageImagesOutcome,
+    selected: readonly StagedImage[]
 ) => {
     const loaded = await Promise.all(
-        [...staged]
-            .sort((left, right) => {
-                return left.index - right.index;
-            })
-            .map(image => {
-                return linkImport
-                    .loadStagedImage(
-                        { env: req.env, ...linkImport.deps },
-                        { urlHash, index: image.index }
-                    )
-                    .catch(() => {
-                        return { skipped: 'failed' } as const;
-                    });
-            })
+        selected.map(image => {
+            const downloaded = staging.bodies?.get(image.index);
+
+            if (downloaded !== undefined) {
+                return downloaded;
+            }
+
+            return linkImport
+                .loadStagedImage(
+                    { env: req.env, ...linkImport.deps },
+                    { urlHash, index: image.index }
+                )
+                .catch(() => {
+                    return { skipped: 'failed' } as const;
+                });
+        })
     );
 
     return {
@@ -340,25 +398,31 @@ const ingestPreview = async (
         result.urlHash,
         startedAt
     );
+    const album = selectAlbum(staging.staged, startedAt);
     const loaded =
         result.urlHash === null
             ? { bodies: [], skipped: [] }
-            : await loadBodies(req, linkImport, result.urlHash, staging.staged);
+            : await loadBodies(
+                  req,
+                  linkImport,
+                  result.urlHash,
+                  staging,
+                  album.selected
+              );
     const { fileIds, rejected } = await deliverPreview(
         req,
         linkImport,
         wish,
         loaded.bodies
     );
-
-    if (fileIds.length > 0) {
-        await createWishScreenServices(req).wishes.reorderImages(
+    const stored =
+        fileIds.length > 0 &&
+        (await createWishScreenServices(req).wishes.reorderImages(
             wish.id,
             user.id,
             fileIds,
             EMPTY_IMAGES_JSON
-        );
-    }
+        )) !== null;
 
     const unsupported =
         countUnsupported(staging.skipped.map(toReason)) +
@@ -368,8 +432,12 @@ const ingestPreview = async (
     return {
         counts: {
             staged: staging.staged.length,
-            skipped: staging.skipped.length + loaded.skipped.length + rejected,
-            ingested: fileIds.length
+            skipped:
+                staging.skipped.length +
+                album.dropped +
+                loaded.skipped.length +
+                rejected,
+            ingested: stored ? fileIds.length : 0
         },
         unsupported
     };
@@ -387,27 +455,25 @@ const countUnsupported = (reasons: readonly StagingSkipReason[]) => {
 
 const finishWithoutWish = async (
     req: BotRequest,
-    url: string,
-    marker: number,
+    claim: ImportClaim,
     result: LinkImportResult
 ) => {
-    const claimed = await claimImport(req, marker, {
+    const claimed = await claimImport(req, claim.marker, {
         kind: 'wishTitleNew',
-        link: url
+        link: claim.url
     });
+    const { failed, rateLimited } = req.LL.wishlist.add.import;
+    const message = result.outcome === 'rateLimited' ? rateLimited() : failed();
 
     reportCompleted(req, result);
 
     if (!claimed) {
+        await recoverLostClaim(req, claim, message);
+
         return;
     }
 
-    const { failed, rateLimited } = req.LL.wishlist.add.import;
-
-    await req.send.text(
-        result.outcome === 'rateLimited' ? rateLimited() : failed(),
-        removeReplyKeyboard()
-    );
+    await req.send.text(message, removeReplyKeyboard());
 };
 
 const buildNewWishFields = (
@@ -431,17 +497,17 @@ const buildNewWishFields = (
 const finishWithWish = async (
     req: BotRequest,
     linkImport: BotLinkImport,
-    url: string,
-    marker: number,
+    claim: ImportClaim,
     result: LinkImportResult,
     product: ExtractedProduct,
     startedAt: number
 ) => {
+    const { url } = claim;
     const draft = linkImport.toDraft(product, url);
     const title = cutTitle((draft.title ?? '').trim());
 
     if (title === '') {
-        await finishWithoutWish(req, url, marker, {
+        await finishWithoutWish(req, claim, {
             ...result,
             outcome: 'notProduct',
             product: null
@@ -450,10 +516,11 @@ const finishWithWish = async (
         return;
     }
 
-    const claimed = await claimImport(req, marker, null);
+    const claimed = await claimImport(req, claim.marker, null);
 
     if (!claimed) {
         reportCompleted(req, result);
+        await recoverLostClaim(req, claim, req.LL.wishlist.add.import.failed());
 
         return;
     }
@@ -511,11 +578,7 @@ const finishWithWish = async (
     });
 };
 
-export const completeLinkImport = async (
-    req: BotRequest,
-    url: string,
-    marker: number
-) => {
+const completeLinkImport = async (req: BotRequest, claim: ImportClaim) => {
     const linkImport = req.services.linkImport;
 
     if (linkImport === undefined) {
@@ -523,10 +586,10 @@ export const completeLinkImport = async (
     }
 
     const startedAt = Date.now();
-    const result = await runWithinBudget(req, linkImport, url, startedAt);
+    const result = await runWithinBudget(req, linkImport, claim.url, startedAt);
 
     if (result.product === null) {
-        await finishWithoutWish(req, url, marker, result);
+        await finishWithoutWish(req, claim, result);
 
         return;
     }
@@ -534,8 +597,7 @@ export const completeLinkImport = async (
     await finishWithWish(
         req,
         linkImport,
-        url,
-        marker,
+        claim,
         result,
         result.product,
         startedAt
@@ -566,19 +628,24 @@ export const startLinkImport = async (req: BotRequest, url: string) => {
     }
 
     if (gate !== 'allowed') {
-        req.telemetry.importRateLimiterGap?.(gate);
+        req.telemetry.rateLimiterGap?.('import', gate);
     }
 
-    const marker = req.ctx.update.update_id;
+    const claim: ImportClaim = {
+        url,
+        marker: req.ctx.update.update_id,
+        markedAt: new Date()
+    };
 
     updateSession(req, {
-        pendingInput: { kind: 'wishTitleNew', importMarker: marker }
+        pendingInput: { kind: 'wishTitleNew', importMarker: claim.marker }
     });
+    await req.persistSession(claim.markedAt);
     await req.send.text(
         LL.wishlist.add.import.searching(),
         removeReplyKeyboard()
     );
     req.defer(() => {
-        return completeLinkImport(req, url, marker);
+        return completeLinkImport(req, claim);
     }, 0);
 };

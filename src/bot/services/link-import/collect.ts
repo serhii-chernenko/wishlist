@@ -1,7 +1,11 @@
 import { LINK_IMPORT_HTML_MAX_BYTES } from '../../../shared/app-api';
+import { LINK_MAX_LENGTH } from '../../input/limits';
 import type { CollectPageSignals, ItemPropSignal, PageSignals } from './types';
 
 const MAX_TEXT_LENGTH = 2000;
+const MAX_ATTRIBUTE_LENGTH = LINK_MAX_LENGTH;
+const MAX_OPEN_SINKS = 32;
+const MAX_SCOPE_DEPTH = 64;
 const MAX_JSON_LD_LENGTH = LINK_IMPORT_HTML_MAX_BYTES;
 const MAX_ITEMPROPS = 300;
 const MAX_JSON_LD_BLOCKS = 30;
@@ -103,7 +107,7 @@ const openSink = (
 ) => {
     const sink: TextSink = { value: '', maxLength };
 
-    if (!canHaveEndTag(element)) {
+    if (!canHaveEndTag(element) || state.openSinks.size >= MAX_OPEN_SINKS) {
         onClose('');
 
         return;
@@ -118,14 +122,20 @@ const openSink = (
 
 const appendText = (state: CollectorState, text: Text) => {
     for (const sink of state.openSinks) {
-        if (sink.value.length < sink.maxLength) {
-            sink.value += text.text;
+        sink.value += text.text.slice(0, sink.maxLength - sink.value.length);
+
+        if (sink.value.length >= sink.maxLength) {
+            state.openSinks.delete(sink);
         }
     }
 };
 
 const nonEmpty = (value: string | null) => {
     return value !== null && value.trim().length > 0 ? value : null;
+};
+
+const readAttribute = (element: Element, name: string) => {
+    return element.getAttribute(name)?.slice(0, MAX_ATTRIBUTE_LENGTH) ?? null;
 };
 
 const isCollectedMetaKey = (key: string) => {
@@ -143,7 +153,7 @@ const recordMeta = (state: CollectorState, element: Element) => {
         element.getAttribute('name') ||
         ''
     ).toLowerCase();
-    const content = nonEmpty(element.getAttribute('content'));
+    const content = nonEmpty(readAttribute(element, 'content'));
 
     if (content === null || !isCollectedMetaKey(key)) {
         return;
@@ -209,7 +219,7 @@ const classifyScope = (state: CollectorState, itemtype: string) => {
 };
 
 const openScope = (state: CollectorState, element: Element) => {
-    if (!canHaveEndTag(element)) {
+    if (!canHaveEndTag(element) || state.scopes.length >= MAX_SCOPE_DEPTH) {
         return;
     }
 
@@ -267,10 +277,10 @@ const markStruck = (scope: Scope, element: Element) => {
 
 const itemPropContent = (element: Element) => {
     return nonEmpty(
-        element.getAttribute('content') ??
-            element.getAttribute('src') ??
-            element.getAttribute('href') ??
-            element.getAttribute('value')
+        readAttribute(element, 'content') ??
+            readAttribute(element, 'src') ??
+            readAttribute(element, 'href') ??
+            readAttribute(element, 'value')
     );
 };
 

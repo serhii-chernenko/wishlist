@@ -109,6 +109,36 @@ describe('address validation', () => {
             reason: 'containsLink'
         });
     });
+
+    it('rejects text that Telegram would turn into a link', () => {
+        for (const text of [
+            'Locker www.np.test/x',
+            'Write to t.me/someone',
+            'Ask @someone_here',
+            'Open tg://resolve?domain=x',
+            'Kyiv, np-locker.com.ua 12',
+            'Warszawa, paczka.pl/12'
+        ]) {
+            assert.deepEqual(
+                parseAddress(text),
+                { ok: false, reason: 'containsLink' },
+                text
+            );
+        }
+    });
+
+    it('keeps abbreviations common in real addresses', () => {
+        for (const text of [
+            'вул. Шевченка 12, кв. 5',
+            'ul.Polna 5, Warszawa',
+            'al.Jerozolimskie 12',
+            'Kraków, pl. Wolnica 3',
+            'Office @ 5th floor',
+            'Apt. 4b, bldg.2'
+        ]) {
+            assert.equal(parseAddress(text).ok, true, text);
+        }
+    });
 });
 
 describe('visible contact', () => {

@@ -159,7 +159,7 @@ const FIXTURES: readonly FixtureExpectation[] = [
             'https://www.decathlon.pl/p/plecak-turystyczny-quechua-escape-500-23-litry/334344/c382c152c71m8649342',
         source: 'jsonld',
         title: 'Plecak turystyczny Quechua Escape 500 23 litry',
-        price: 120,
+        price: 119.99,
         currency: 'PLN',
         imageCount: 1,
         firstImage:
@@ -202,7 +202,7 @@ const FIXTURES: readonly FixtureExpectation[] = [
             'https://www.temu.com/goods.html?_bg_fs=1&goods_id=601099712900528',
         source: 'jsonld',
         title: 'F75 2.4G wireless mechanical keyboard wired gaming RGB',
-        price: 90,
+        price: 89.62,
         currency: 'PLN',
         imageCount: 0
     }
@@ -313,7 +313,7 @@ describe('extractProduct JSON-LD shapes', () => {
         );
 
         assert.equal(product.title, 'Kettle & Cup');
-        assert.equal(product.price, 1300);
+        assert.equal(product.price, 1299.5);
         assert.equal(product.currency, 'UAH');
         assert.deepEqual(product.images, [
             'https://shop.example.com/img/1.jpg'
@@ -473,7 +473,7 @@ describe('extractProduct fallbacks and helpers', () => {
         );
 
         assert.equal(product.source, 'jsonld');
-        assert.equal(product.price, 50);
+        assert.equal(product.price, 49.99);
         assert.equal(product.currency, 'GBP');
     });
 
@@ -544,5 +544,161 @@ describe('extractProduct fallbacks and helpers', () => {
             decodeHtmlEntities('A &amp; B &#8211; C &#x20AC; &unknown;'),
             'A & B – C € &unknown;'
         );
+    });
+
+    it('never resolves inherited object keys as entities', () => {
+        assert.equal(
+            decodeHtmlEntities('A &constructor; &toString; &amp;'),
+            'A &constructor; &toString; &'
+        );
+    });
+});
+
+describe('extractProduct prices', () => {
+    const priceOf = (price: unknown) => {
+        return extractFromJsonLd({
+            '@type': 'Product',
+            name: 'Kettle',
+            offers: { price, priceCurrency: 'EUR' }
+        })?.price;
+    };
+
+    it('reads machine-readable prices with a decimal point', () => {
+        for (const [raw, expected] of [
+            ['2.500', 2.5],
+            ['199.999', 199.999],
+            ['10.000', 10],
+            ['49.99', 49.99],
+            ['1 299,50', 1299.5],
+            ['49,99', 49.99],
+            [1299, 1299]
+        ] as const) {
+            assert.equal(priceOf(raw), expected, String(raw));
+        }
+    });
+
+    it('drops machine-readable prices it cannot read unambiguously', () => {
+        for (const raw of ['1,299.00', '1.299,00', 'EUR 10', '', '0']) {
+            assert.equal(priceOf(raw), null, raw);
+        }
+    });
+
+    it('reads og price tags as machine-readable values', () => {
+        const product = extractProduct(
+            emptySignals({
+                meta: {
+                    'og:title': ['Kettle'],
+                    'og:price:amount': ['2.500'],
+                    'og:price:currency': ['EUR']
+                }
+            }),
+            SHOP_URL
+        );
+
+        assert.equal(product?.price, 2.5);
+    });
+
+    it('strips currency and wording before visible microdata prices', () => {
+        const visiblePrice = (text: string) => {
+            return extractProduct(
+                emptySignals({
+                    itemprops: [
+                        {
+                            prop: 'name',
+                            content: null,
+                            text: 'Kettle',
+                            inOffer: false
+                        },
+                        { prop: 'price', content: null, text, inOffer: true }
+                    ]
+                }),
+                SHOP_URL
+            )?.price;
+        };
+
+        assert.equal(visiblePrice('€49.99'), 49.99);
+        assert.equal(visiblePrice('from 49.99'), 49.99);
+        assert.equal(visiblePrice('від 1 299 грн'), 1299);
+        assert.equal(visiblePrice('2.500 zł'), 2500);
+    });
+
+    it('resolves offers and images given as @id references', () => {
+        const product = requireProduct(
+            extractFromJsonLd({
+                '@graph': [
+                    {
+                        '@type': 'Product',
+                        name: 'Kettle',
+                        offers: { '@id': '#offer' },
+                        image: [{ '@id': '#image' }]
+                    },
+                    {
+                        '@id': '#offer',
+                        '@type': 'Offer',
+                        price: '19.90',
+                        priceCurrency: 'PLN'
+                    },
+                    {
+                        '@id': '#image',
+                        '@type': 'ImageObject',
+                        contentUrl: 'https://cdn.example.com/kettle.jpg'
+                    }
+                ]
+            })
+        );
+
+        assert.equal(product.price, 19.9);
+        assert.equal(product.currency, 'PLN');
+        assert.deepEqual(product.images, [
+            'https://cdn.example.com/kettle.jpg'
+        ]);
+    });
+});
+
+describe('extractProduct on hostile input', () => {
+    const HOSTILE_BUDGET_MS = 2000;
+
+    const timed = (signals: PageSignals) => {
+        const startedAt = performance.now();
+        const product = extractProduct(signals, SHOP_URL);
+
+        return { product, elapsedMs: performance.now() - startedAt };
+    };
+
+    it('strips tags in linear time from a title full of angle brackets', () => {
+        const { product, elapsedMs } = timed(
+            emptySignals({
+                meta: { 'og:title': [`Kettle ${'<'.repeat(200_000)}`] },
+                jsonLd: [
+                    JSON.stringify({
+                        '@type': 'Product',
+                        name: `Kettle ${'<'.repeat(200_000)}`
+                    })
+                ]
+            })
+        );
+
+        assert.ok(elapsedMs < HOSTILE_BUDGET_MS, String(elapsedMs));
+        assert.ok(product?.title.startsWith('Kettle'));
+    });
+
+    it('bounds the product group join on huge JSON-LD graphs', () => {
+        const groups = Array.from({ length: 20_000 }, (_, index) => {
+            return { '@type': 'ProductGroup', '@id': `#g${index}`, name: 'G' };
+        });
+        const variants = Array.from({ length: 20_000 }, (_, index) => {
+            return {
+                '@type': 'Product',
+                name: 'V',
+                isVariantOf: { '@id': `#g${index}` }
+            };
+        });
+        const { elapsedMs } = timed(
+            emptySignals({
+                jsonLd: [JSON.stringify({ '@graph': [...groups, ...variants] })]
+            })
+        );
+
+        assert.ok(elapsedMs < HOSTILE_BUDGET_MS, String(elapsedMs));
     });
 });

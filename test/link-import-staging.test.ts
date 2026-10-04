@@ -59,7 +59,10 @@ interface Harness {
     staging: ReturnType<typeof createImageStaging>;
 }
 
-const createHarness = (input: { responses: FakeImageResponse[] }): Harness => {
+const createHarness = (input: {
+    responses: FakeImageResponse[];
+    hostLimiter?: unknown;
+}): Harness => {
     const memory = createMemoryBucket();
     const fetcher = createFakeSafeFetcher({
         images: Object.fromEntries(
@@ -70,7 +73,10 @@ const createHarness = (input: { responses: FakeImageResponse[] }): Harness => {
     });
     const clock = { now: NOW };
     const deps: LinkImportDeps = {
-        env: createLinkImportEnv({ bucket: memory.bucket }),
+        env: createLinkImportEnv({
+            bucket: memory.bucket,
+            hostLimiter: input.hostLimiter
+        }),
         now: () => clock.now
     };
     const staging = createImageStaging(() => fetcher);
@@ -252,6 +258,48 @@ describe('image staging', () => {
                 bytes: JPEG_BYTES.byteLength
             }
         ]);
+    });
+
+    it('asks the host limiter once per image domain and skips a limited host', async () => {
+        const keys: string[] = [];
+        const harness = createHarness({
+            responses: [{ bytes: JPEG_BYTES }, { bytes: PNG_BYTES }],
+            hostLimiter: {
+                async limit(options: { key: string }) {
+                    keys.push(options.key);
+
+                    return { success: false };
+                }
+            }
+        });
+        const outcome = await harness.stage([0, 1]);
+
+        assert.deepEqual(keys, ['host:shop.example']);
+        assert.equal(harness.fetcher.imageCalls.length, 0);
+        assert.deepEqual(outcome.staged, []);
+        assert.deepEqual(
+            outcome.skipped.map(skipped => {
+                return skipped.reason;
+            }),
+            ['failed', 'failed']
+        );
+    });
+
+    it('returns the downloaded bytes only when asked to keep them', async () => {
+        const harness = createHarness({ responses: [{ bytes: JPEG_BYTES }] });
+        const kept = await harness.staging.stageImages(harness.deps, {
+            urlHash: URL_HASH,
+            imageUrls: [imageUrl(0)],
+            indexes: [0],
+            budgetMs: BUDGET_MS,
+            keepBodies: true
+        });
+
+        assert.equal(
+            kept.bodies?.get(0)?.body.byteLength,
+            JPEG_BYTES.byteLength
+        );
+        assert.equal((await harness.stage([0])).bodies, undefined);
     });
 
     it('ignores out-of-range and duplicate indexes', async () => {

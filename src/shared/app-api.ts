@@ -97,6 +97,7 @@ export const LINK_IMPORT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const LINK_IMPORT_MAX_IMAGE_CANDIDATES = 9;
 export const LINK_IMPORT_PRESELECTED_IMAGES = 5;
 export const LINK_IMPORT_BOT_IMAGES = 5;
+export const LINK_IMPORT_BOT_ALBUM_MAX_BYTES = 20 * 1024 * 1024;
 export const LINK_IMPORT_TOKEN_TTL_SECONDS = 2 * 60 * 60;
 export const LINK_IMPORT_CACHE_TTL_SECONDS = 24 * 60 * 60;
 export const LINK_IMPORT_NEGATIVE_CACHE_TTL_SECONDS = 60 * 60;
@@ -310,6 +311,7 @@ export const FIELD_ERROR_CODES = [
     'empty',
     'tooLong',
     'tooShort',
+    'tooManyLines',
     'containsLink',
     'invalid',
     'usernameRequired',

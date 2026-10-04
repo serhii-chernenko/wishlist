@@ -144,6 +144,19 @@ describe('D1 repositories', () => {
             const tooShortPhone = await run(
                 repositories.users.findSearchable({ phoneDigits: '930340658' })
             );
+            const phonePrefix = await run(
+                repositories.users.findSearchable({ phoneDigits: '3809303406' })
+            );
+            const phoneMiddle = await run(
+                repositories.users.findSearchable({
+                    phoneDigits: '80930340650'
+                })
+            );
+            const phoneLonger = await run(
+                repositories.users.findSearchable({
+                    phoneDigits: '1380930340658'
+                })
+            );
             const notSearchable = await run(
                 repositories.users.findSearchable({ username: 'quiet_one' })
             );
@@ -156,6 +169,9 @@ describe('D1 repositories', () => {
             assert.equal(foundByFullPhone?.id, byPhone.id);
             assert.equal(foundByPhone?.phoneDigits, '380930340658');
             assert.equal(tooShortPhone, null);
+            assert.equal(phonePrefix, null);
+            assert.equal(phoneMiddle, null);
+            assert.equal(phoneLonger, null);
             assert.equal(notSearchable, null);
             assert.equal(nothingRequested, null);
             assert.notEqual(hidden.id, byName.id);

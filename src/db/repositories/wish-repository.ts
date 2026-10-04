@@ -186,6 +186,16 @@ const isImageIndex = (index: number) => {
     return Number.isSafeInteger(index) && index >= 0;
 };
 
+const imageSlot = (index: number) => {
+    return sql<
+        string | null
+    >`json_extract(${wishes.images}, ${imageSlotPath(index)})`;
+};
+
+const toImageFileId = (value: string | null | undefined) => {
+    return typeof value === 'string' && value !== '' ? value : null;
+};
+
 export const createWishRepository = (db: AppDb) => {
     return {
         create(userId: number, title: string, currency: Currency, now: Date) {
@@ -631,18 +641,38 @@ export const createWishRepository = (db: AppDb) => {
                 }
 
                 const [row] = await db
-                    .select({
-                        fileId: sql<
-                            string | null
-                        >`json_extract(${wishes.images}, ${imageSlotPath(index)})`
-                    })
+                    .select({ fileId: imageSlot(index) })
                     .from(wishes)
                     .where(and(eq(wishes.id, wishId), isActiveOrShownGifted()))
                     .limit(1);
 
-                return typeof row?.fileId === 'string' && row.fileId !== ''
-                    ? row.fileId
-                    : null;
+                return toImageFileId(row?.fileId);
+            });
+        },
+        findViewerImageFileId(wishId: number, index: number) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [row] = await db
+                    .select({ fileId: imageSlot(index) })
+                    .from(wishes)
+                    .leftJoin(users, eq(users.id, wishes.userId))
+                    .where(
+                        and(
+                            eq(wishes.id, wishId),
+                            eq(wishes.hidden, false),
+                            or(isNull(users.id), isNull(users.blockedAt)),
+                            or(
+                                eq(wishes.removed, false),
+                                and(isShownGifted(), eq(users.showGifted, true))
+                            )
+                        )
+                    )
+                    .limit(1);
+
+                return toImageFileId(row?.fileId);
             });
         },
         findSharedWishImages(publicId: string, wishId: number) {

@@ -6,6 +6,7 @@ import { after, before, describe, it } from 'node:test';
 
 import { unstable_dev, type Unstable_DevWorker } from 'wrangler';
 
+import { LINK_MAX_LENGTH } from '../../src/bot/input/limits';
 import type { PageSignals } from '../../src/bot/services/link-import/types';
 import { LINK_IMPORT_HTML_MAX_BYTES } from '../../src/shared/app-api';
 
@@ -22,6 +23,7 @@ const updateSnapshots = process.env.LINK_IMPORT_UPDATE_SIGNALS === '1';
 const compatibilityDate = '2026-05-09';
 const OVERSIZED_PATH = '/oversized';
 const OVERSIZED_EXTRA_BYTES = 512 * 1024;
+const HOSTILE_PAGE_BUDGET_MS = 3000;
 const PAGE_CONTENT_TYPE_HEADER = 'x-page-content-type';
 const WINDOWS_1251_TITLE = [
     ...Buffer.from('<html><head><title>'),
@@ -223,5 +225,29 @@ describe('link-import collector under workerd', () => {
 
         assert.equal(signals.truncated, true);
         assert.deepEqual(signals.jsonLd, ['{"@type":"Product","name":"Big"}']);
+    });
+
+    it('stays fast on hostile nesting and caps attribute values', async () => {
+        const unclosedNames = '<span itemprop="name">x'.repeat(40_000);
+        const nestedScopes =
+            '<div itemscope itemtype="https://schema.org/Product">'.repeat(
+                5_000
+            );
+        const startedAt = performance.now();
+        const signals = await collect(
+            worker,
+            [
+                `<head><meta property="og:title" content="${'a'.repeat(100_000)}"></head>`,
+                '<body><div itemscope itemtype="https://schema.org/Product">',
+                unclosedNames,
+                nestedScopes,
+                '</body>'
+            ].join('')
+        );
+        const elapsedMs = performance.now() - startedAt;
+
+        assert.ok(elapsedMs < HOSTILE_PAGE_BUDGET_MS, String(elapsedMs));
+        assert.equal(signals.meta['og:title']?.[0]?.length, LINK_MAX_LENGTH);
+        assert.ok(signals.itemprops.length <= 300);
     });
 });

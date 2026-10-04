@@ -81,7 +81,18 @@ const SAFE_FETCH_FAILURE_OUTCOMES = {
     network: 'timeout'
 } as const satisfies Record<SafeFetchFailure, LinkImportOutcome>;
 
+const TOO_MANY_REQUESTS_STATUS = 429;
+const FIRST_SERVER_ERROR_STATUS = 500;
+
 type ResultFields = Omit<LinkImportResult, 'elapsedMs'>;
+
+const isTransientStatus = (status: number | null) => {
+    return (
+        status !== null &&
+        (status === TOO_MANY_REQUESTS_STATUS ||
+            status >= FIRST_SERVER_ERROR_STATUS)
+    );
+};
 
 const toTelemetryContext = (deps: LinkImportDeps): TelemetryContext => {
     const { waitUntil } = deps;
@@ -128,17 +139,22 @@ const toPositivePrice = (price: number | null) => {
     return price !== null && Number.isFinite(price) && price > 0 ? price : null;
 };
 
+const toStoredPrice = (price: number | null) => {
+    return toPositivePrice(price === null ? null : Math.round(price));
+};
+
 /** Keeps `price` and `currency` only for currencies in `CURRENCIES`; any other priced currency becomes `sourcePrice`. */
 export const toImportedDraft: ToImportedDraft = (product, link) => {
     const price = toPositivePrice(product?.price ?? null);
+    const storedPrice = toStoredPrice(price);
     const currency = product?.currency?.trim().toUpperCase() ?? null;
-    const isOwnCurrency = price !== null && isCurrency(currency);
+    const isOwnCurrency = storedPrice !== null && isCurrency(currency);
 
     return {
         title: product?.title ?? null,
         description: product?.description ?? null,
         link,
-        price: isOwnCurrency ? price : null,
+        price: isOwnCurrency ? storedPrice : null,
         currency: isOwnCurrency ? currency : null,
         sourcePrice:
             price !== null && !isOwnCurrency && currency
@@ -287,7 +303,9 @@ const createRunLinkImport = (
             ? classifyProduct(product)
             : SAFE_FETCH_FAILURE_OUTCOMES[page.failure];
 
-        if (isCacheableOutcome(outcome)) {
+        const transient = !page.ok && isTransientStatus(page.status);
+
+        if (isCacheableOutcome(outcome) && !transient) {
             await runInBackground(
                 deps,
                 cache.put(
@@ -331,11 +349,15 @@ const createPreparePreviewImages = (
             urlHash,
             imageUrls: product.images,
             indexes: firstIndexes(product.images.length, limit),
-            budgetMs: LINK_IMPORT_IMAGE_BUDGET_MS
+            budgetMs: LINK_IMPORT_IMAGE_BUDGET_MS,
+            keepBodies: true
         });
         const loaded = await Promise.all(
             outcome.staged.map(image => {
-                return loadStagedImage(deps, { urlHash, index: image.index });
+                return (
+                    outcome.bodies?.get(image.index) ??
+                    loadStagedImage(deps, { urlHash, index: image.index })
+                );
             })
         );
         const images = loaded.filter((image): image is StagedImageBody => {

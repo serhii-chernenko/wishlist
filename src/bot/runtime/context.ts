@@ -9,6 +9,7 @@ import {
 import type { WorkerBindings } from '../../worker/env';
 import { getMessages } from '../content/messages';
 import type { AppLocale } from '../i18n';
+import { saveSessionIfChanged } from './session-store';
 import type {
     BotRequest,
     BotServices,
@@ -20,7 +21,7 @@ import type {
 } from './types';
 
 export interface SessionHolder {
-    readonly initial: SessionState;
+    initial: SessionState;
     current: SessionState;
 }
 
@@ -81,6 +82,18 @@ export const createBotRequest = (
         defer: seed.defer,
         setSession(next) {
             holder.current = next;
+        },
+        async persistSession(now) {
+            const next = holder.current;
+
+            await saveSessionIfChanged(
+                seed.repos,
+                seed.actor.id,
+                holder.initial,
+                next,
+                now
+            );
+            holder.initial = next;
         }
     };
 };

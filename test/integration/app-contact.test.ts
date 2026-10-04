@@ -89,9 +89,11 @@ describe('Mini App contact and disclosure API', () => {
                 ['x'.repeat(301), 'tooLong'],
                 [
                     ['a1', 'b2', 'c3', 'd4', 'e5', 'f6', 'g7'].join('\n'),
-                    'tooLong'
+                    'tooManyLines'
                 ],
-                ['Locker https://np.test/1', 'containsLink']
+                ['Locker https://np.test/1', 'containsLink'],
+                ['Locker www.np.test/1', 'containsLink'],
+                ['Ask t.me/someone at locker 5', 'containsLink']
             ];
 
             for (const [text, code] of cases) {

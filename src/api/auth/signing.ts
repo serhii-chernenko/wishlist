@@ -25,10 +25,13 @@ export type ImageSignatureVerification =
     | { ok: true }
     | { ok: false; reason: SignatureRejectReason };
 
+export type ImageAudience = 'owner' | 'viewer';
+
 export interface ImageReference {
     wishId: number;
     index: number;
     hash: string;
+    audience?: ImageAudience;
 }
 
 export interface SignedImageParams {
@@ -45,6 +48,8 @@ export interface SignerOptions {
 const SECONDS_PER_HOUR = 3600;
 const OWNER_TOKEN_VERSION = 'o1';
 const IMAGE_SIGNATURE_VERSION = 'i1';
+const VIEWER_IMAGE_MESSAGE_SUFFIX = 'v';
+export const VIEWER_IMAGE_AUDIENCE_PARAM = 'v';
 const TOKEN_SEPARATOR = '.';
 const BASE36_RADIX = 36;
 const BASE36_PATTERN = /^[0-9a-z]{1,11}$/;
@@ -111,7 +116,11 @@ const ownerTokenMessage = (
 };
 
 const imageMessage = (reference: ImageReference, expiresAt: number) => {
-    return `${IMAGE_SIGNATURE_VERSION}|${reference.wishId}|${reference.index}|${reference.hash}|${expiresAt}`;
+    const base = `${IMAGE_SIGNATURE_VERSION}|${reference.wishId}|${reference.index}|${reference.hash}|${expiresAt}`;
+
+    return reference.audience === 'viewer'
+        ? `${base}|${VIEWER_IMAGE_MESSAGE_SUFFIX}`
+        : base;
 };
 
 const isImageReference = (reference: ImageReference) => {
@@ -241,7 +250,10 @@ export const createSigner = (options: SignerOptions) => {
             const { expiresAt, signature } = await signImage(reference, now);
             const query = new URLSearchParams({
                 e: String(expiresAt),
-                s: signature
+                s: signature,
+                ...(reference.audience === 'viewer' && {
+                    a: VIEWER_IMAGE_AUDIENCE_PARAM
+                })
             });
 
             return `${APP_IMAGE_PATH_PREFIX}/${reference.wishId}/${reference.index}/${reference.hash}?${query.toString()}`;

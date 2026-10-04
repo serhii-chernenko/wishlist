@@ -15,6 +15,7 @@ import type {
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import type {
     ContactDisclosureField,
+    RateLimitBucket,
     WishPriorityLevel
 } from '../../shared/app-api';
 import type {
@@ -207,8 +208,16 @@ export interface WishMessage {
     captions?: readonly string[];
 }
 
+export interface TextOptions {
+    disableLinkPreview?: boolean;
+}
+
 export interface Sender {
-    text(html: string, keyboard?: ReplyMarkup): Promise<void>;
+    text(
+        html: string,
+        keyboard?: ReplyMarkup,
+        options?: TextOptions
+    ): Promise<void>;
     wish(item: WishMessage, keyboard?: InlineKeyboardMarkup): Promise<void>;
     toast(text: string): Promise<void>;
     removeKeyboard(): Promise<void>;
@@ -276,7 +285,7 @@ export interface WishlistBotTelemetry {
         errorType: string;
     }): void;
     linkImportCompleted?(input: LinkImportCompletedInput): void;
-    importRateLimiterGap?(result: 'missing' | 'error'): void;
+    rateLimiterGap?(bucket: RateLimitBucket, result: 'missing' | 'error'): void;
 }
 
 export interface BotLinkImport {
@@ -313,6 +322,7 @@ export interface BotRequest {
     send: Sender;
     defer(task: () => Promise<void>, delayMs: number): void;
     setSession(next: SessionState): void;
+    persistSession(now: Date): Promise<void>;
 }
 
 export interface ScreenModule<P = undefined> {

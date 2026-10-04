@@ -681,13 +681,17 @@ describe('gifted wishes', () => {
     });
 
     describe('photos', () => {
-        const signedAppUrl = async (wishId: number, fileId: string) => {
+        const signedAppUrl = async (
+            wishId: number,
+            fileId: string,
+            audience: 'owner' | 'viewer' = 'owner'
+        ) => {
             return createSigner({
                 botToken: TEST_BOT_TOKEN,
                 environment: 'production',
                 crypto
             }).buildImageUrl(
-                { wishId, index: 0, hash: await imageHash(fileId) },
+                { wishId, index: 0, hash: await imageHash(fileId), audience },
                 NOW
             );
         };
@@ -730,6 +734,70 @@ describe('gifted wishes', () => {
                 )
             );
             assert.equal((await fetchPath(giftedUrl)).status, 404);
+        });
+
+        it('serves viewer photo urls only while the wish stays visible to others', async () => {
+            const owner = await registerUser(OWNER);
+            const gifted = await addWish(owner.id, 'Gifted kettle');
+            const active = await addWish(owner.id, 'Active kettle');
+
+            await appendImage(gifted, 'viewer-gift');
+            await appendImage(active, 'viewer-active');
+            await storeImage('viewer-gift');
+            await storeImage('viewer-active');
+            await markGifted(gifted);
+            await setShowGifted(owner, true);
+
+            const giftedViewerUrl = await signedAppUrl(
+                gifted.id,
+                'viewer-gift',
+                'viewer'
+            );
+            const giftedOwnerUrl = await signedAppUrl(gifted.id, 'viewer-gift');
+            const activeViewerUrl = await signedAppUrl(
+                active.id,
+                'viewer-active',
+                'viewer'
+            );
+            const activeOwnerUrl = await signedAppUrl(
+                active.id,
+                'viewer-active'
+            );
+            const statusOf = async (url: string) => {
+                return (await fetchPath(url)).status;
+            };
+
+            assert.equal(await statusOf(giftedViewerUrl), 200);
+            assert.equal(await statusOf(activeViewerUrl), 200);
+            assert.equal(
+                await statusOf(giftedViewerUrl.replace('&a=v', '')),
+                403
+            );
+
+            await setShowGifted(owner, false);
+            assert.equal(await statusOf(giftedViewerUrl), 404);
+            assert.equal(await statusOf(giftedOwnerUrl), 200);
+
+            await harness.env.DB.prepare(
+                'UPDATE wishes SET hidden = 1 WHERE id = ?'
+            )
+                .bind(active.id)
+                .run();
+            assert.equal(await statusOf(activeViewerUrl), 404);
+            assert.equal(await statusOf(activeOwnerUrl), 200);
+
+            await harness.env.DB.prepare(
+                'UPDATE wishes SET hidden = 0 WHERE id = ?'
+            )
+                .bind(active.id)
+                .run();
+            assert.equal(await statusOf(activeViewerUrl), 200);
+            await harness.env.DB.prepare(
+                'UPDATE users SET blocked_at = 1 WHERE id = ?'
+            )
+                .bind(owner.id)
+                .run();
+            assert.equal(await statusOf(activeViewerUrl), 404);
         });
 
         it('serves share photos of gifted wishes only while the owner shows them', async () => {

@@ -54,6 +54,10 @@ interface ImportScenario {
     stagedIndexes?: number[] | 'all';
     unsupportedIndexes?: number[];
     rejectedByTelegram?: number;
+    stagedBytes?: number;
+    keepBodies?: boolean;
+    beforePreviewResolves?: () => Promise<void>;
+    onRun?: () => Promise<void>;
     gate?: Promise<void>;
     limiterAllows?: boolean;
     enabled?: boolean;
@@ -113,6 +117,7 @@ describe('Bot link import', () => {
     let runCalls: string[];
     let stageCalls: StageImagesInput[];
     let previewCalls: ImportPreviewInput[];
+    let loadCalls: number[];
 
     const alice = createTestUser(301, {
         first_name: 'Alice',
@@ -142,6 +147,7 @@ describe('Bot link import', () => {
         return {
             async run(_deps, request) {
                 runCalls.push(request.url);
+                await scenario.onRun?.();
                 await scenario.gate;
 
                 if (scenario.throws) {
@@ -164,15 +170,31 @@ describe('Bot link import', () => {
                         return {
                             index,
                             contentType: 'image/jpeg' as const,
-                            bytes: 1000
+                            bytes: scenario.stagedBytes ?? 1000
                         };
                     }),
                     skipped: (scenario.unsupportedIndexes ?? []).map(index => {
                         return { index, reason: 'unsupportedFormat' as const };
-                    })
+                    }),
+                    ...(scenario.keepBodies === true &&
+                        input.keepBodies === true && {
+                            bodies: new Map(
+                                indexes.map(index => {
+                                    return [
+                                        index,
+                                        {
+                                            body: new ArrayBuffer(index + 1),
+                                            contentType: 'image/jpeg' as const
+                                        }
+                                    ];
+                                })
+                            )
+                        })
                 };
             },
             async loadStagedImage(_deps, input) {
+                loadCalls.push(input.index);
+
                 return {
                     body: new ArrayBuffer(input.index + 1),
                     contentType: 'image/jpeg' as const
@@ -181,6 +203,7 @@ describe('Bot link import', () => {
             toDraft: toFakeDraft,
             async sendPreview(_api, input) {
                 previewCalls.push(input);
+                await scenario.beforePreviewResolves?.();
 
                 const rejected = scenario.rejectedByTelegram ?? 0;
 
@@ -307,6 +330,7 @@ describe('Bot link import', () => {
         runCalls = [];
         stageCalls = [];
         previewCalls = [];
+        loadCalls = [];
         await webhook.registerUser(alice);
     });
 
@@ -554,6 +578,40 @@ describe('Bot link import', () => {
             );
         });
 
+        it('reuses the bytes staging downloaded instead of reading them back', async () => {
+            scenario.keepBodies = true;
+            await sendText(PRODUCT_URL);
+
+            assert.deepEqual(loadCalls, []);
+            assert.equal(previewCalls[0]?.images.length, 3);
+        });
+
+        it('caps the album size and drops the photos past the limit', async () => {
+            scenario.stagedBytes = 8 * 1024 * 1024;
+            await sendText(PRODUCT_URL);
+
+            assert.equal(previewCalls[0]?.images.length, 2);
+            assert.deepEqual(loadCalls, [0, 1]);
+            assert.equal(events[0]?.imagesSkipped, 1);
+        });
+
+        it('says the photos failed when the wish changed before they were stored', async () => {
+            scenario.beforePreviewResolves = async () => {
+                await webhook.d1.env.DB.prepare(
+                    `UPDATE wishes SET images = '["edited"]'`
+                ).run();
+            };
+            await sendText(PRODUCT_URL);
+
+            const [wish] = await readWishes();
+
+            assert.equal(wish?.images, '["edited"]');
+            assert.equal(events[0]?.imagesIngested, 0);
+            assert.ok(
+                webhook.lastMessage().text.includes(IMPORT.photosFailed())
+            );
+        });
+
         it('imports a product without images and sends the wish card as text', async () => {
             scenario.product = { images: [] };
             await sendText(PRODUCT_URL);
@@ -642,6 +700,50 @@ describe('Bot link import', () => {
                 false
             );
             assert.equal(events.length, 1);
+        });
+
+        it('recovers when the import marker never reached the stored session', async () => {
+            let release = () => {};
+
+            scenario.gate = new Promise<void>(resolve => {
+                release = resolve;
+            });
+
+            await deliver(webhook.builders.message(alice, PRODUCT_URL));
+            await webhook.d1.env.DB.prepare(
+                `UPDATE sessions SET state = '{"v":1,"pendingInput":null,"find":null}', updated_at = 0 WHERE telegram_user_id = ?`
+            )
+                .bind(alice.id)
+                .run();
+            release();
+            await drain();
+
+            assert.equal((await readWishes()).length, 0);
+            assert.equal(lastText(), IMPORT.failed());
+            assert.deepEqual(await readPendingInput(), {
+                kind: 'wishTitleNew',
+                link: PRODUCT_URL
+            });
+        });
+
+        it('stores the import marker before the deferred import starts', async () => {
+            let pendingAtRun: unknown;
+
+            scenario.onRun = async () => {
+                pendingAtRun = await readPendingInput();
+            };
+            await sendText(PRODUCT_URL);
+
+            assert.equal(
+                (pendingAtRun as { kind?: string } | undefined)?.kind,
+                'wishTitleNew'
+            );
+            assert.equal(
+                typeof (pendingAtRun as { importMarker?: unknown })
+                    .importMarker,
+                'number'
+            );
+            assert.equal((await readWishes()).length, 1);
         });
 
         it('drops the result when the user typed a title while the import was running', async () => {

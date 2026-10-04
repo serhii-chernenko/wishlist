@@ -157,6 +157,7 @@ export const createWebhookHarness = async (
         options.adminId === undefined ? DEFAULT_ADMIN_ID : options.adminId;
     let holdSleeps = true;
     let messageCounter = 1;
+    let extraBindings: Record<string, unknown> = {};
 
     const loggedErrors: string[] = [];
     const originalConsole = {
@@ -234,13 +235,16 @@ export const createWebhookHarness = async (
         update: Update | object,
         deliverOptions: DeliverOptions = {}
     ) => {
-        const env = createWorkerEnv(d1, {
-            BOT_TOKEN,
-            TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET,
-            TELEGRAM_WEBHOOK_PATH: WEBHOOK_PATH,
-            BOT_ENVIRONMENT: options.botEnvironment ?? 'production',
-            ...(adminId === null ? { ADMIN_ID: '' } : { ADMIN_ID: adminId })
-        });
+        const env = {
+            ...createWorkerEnv(d1, {
+                BOT_TOKEN,
+                TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET,
+                TELEGRAM_WEBHOOK_PATH: WEBHOOK_PATH,
+                BOT_ENVIRONMENT: options.botEnvironment ?? 'production',
+                ...(adminId === null ? { ADMIN_ID: '' } : { ADMIN_ID: adminId })
+            }),
+            ...extraBindings
+        };
 
         return worker.fetch(
             new Request(
@@ -428,6 +432,7 @@ export const createWebhookHarness = async (
         loggedErrors.length = 0;
         sleepRequests.length = 0;
         apiResponder = null;
+        extraBindings = {};
         adminId =
             options.adminId === undefined ? DEFAULT_ADMIN_ID : options.adminId;
         clearCachedBotInfo();
@@ -477,6 +482,9 @@ export const createWebhookHarness = async (
         },
         setAdminId(next: string | null) {
             adminId = next;
+        },
+        setBindings(next: Record<string, unknown>) {
+            extraBindings = next;
         },
         clearApiCalls() {
             apiCalls.length = 0;

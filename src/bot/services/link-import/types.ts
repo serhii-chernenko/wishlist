@@ -168,6 +168,7 @@ export interface StageImagesInput {
     imageUrls: readonly string[];
     indexes: readonly number[];
     budgetMs: number;
+    keepBodies?: boolean;
 }
 
 /**
@@ -182,9 +183,11 @@ export interface SkippedImage {
     reason: StagingSkipReason;
 }
 
+/** `bodies` holds the bytes downloaded in this call, by index, when `keepBodies` was asked for. */
 export interface StageImagesOutcome {
     staged: StagedImage[];
     skipped: SkippedImage[];
+    bodies?: ReadonlyMap<number, StagedImageBody>;
 }
 
 export interface SkippedStagedImage {

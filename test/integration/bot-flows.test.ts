@@ -1088,7 +1088,7 @@ describe('Bot flows through the Worker on D1', () => {
             );
         });
 
-        it('finds by a phone substring of ten digits or more only', async () => {
+        it('finds by a national phone number of ten digits or more only', async () => {
             await seedOwner();
             await webhook.registerUser(bob);
             await tap(bob, 'n:find');
@@ -1102,6 +1102,61 @@ describe('Bot flows through the Worker on D1', () => {
 
             assert.ok(
                 webhook.messageTexts().some(text => text.includes('Bicycle'))
+            );
+        });
+
+        it('finds by the full number or its national tail, never by a prefix', async () => {
+            await seedOwner();
+            await webhook.registerUser(bob);
+            await tap(bob, 'n:find');
+            await say(bob, '3805011122');
+
+            assert.ok(
+                webhook.messageTexts().includes(LL.findList.errors.notFound())
+            );
+
+            for (const query of ['+380 50 111 22 33', '380501112233']) {
+                webhook.clearApiCalls();
+                await tap(bob, 'n:find');
+                await say(bob, query);
+
+                assert.ok(
+                    webhook
+                        .messageTexts()
+                        .some(text => text.includes('Bicycle')),
+                    query
+                );
+            }
+        });
+
+        it('rate limits searches with the sensitive bucket', async () => {
+            const keys: string[] = [];
+
+            await seedOwner();
+            await webhook.registerUser(bob);
+            webhook.setBindings({
+                APP_SENSITIVE_LIMITER: {
+                    async limit({ key }: { key: string }) {
+                        keys.push(key);
+
+                        return { success: false };
+                    }
+                }
+            });
+            await tap(bob, 'n:find');
+            await say(bob, '0501112233');
+
+            const texts = webhook.messageTexts();
+
+            assert.deepEqual(keys, [`tg:${bob.id}`]);
+            assert.ok(texts.includes(LL.findList.errors.rateLimited()));
+            assert.equal(
+                texts.some(text => text.includes('Bicycle')),
+                false
+            );
+            assert.equal(
+                (await readSession(bob.id))?.state.pendingInput?.kind,
+                'findQuery'
             );
         });
 

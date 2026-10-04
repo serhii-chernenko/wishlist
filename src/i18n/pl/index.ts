@@ -177,8 +177,6 @@ const pl: Translation = {
                 updateImages: '🌅 Zaktualizuj zdjęcia',
                 addLink: '🔗 Dodaj link',
                 updateLink: '🔗 Zaktualizuj link',
-                setPriority: '❗️Bardzo tego chcę',
-                unsetPriority: '❗Już nie tak bardzo tego chcę',
                 priority: '🎯 Priorytet: {level}',
                 imagesOrder: '🔀 Kolejność zdjęć',
                 hide: '🫣 Ukryj przed innymi',
@@ -341,7 +339,9 @@ const pl: Translation = {
             notFound: '❌ Nie znaleziono osoby, spróbuj jeszcze raz!',
             foundYourself: '❌ Sprytnie, ale siebie nie wyszukasz! 😘',
             tooLong:
-                '❌ To zapytanie jest za długie! Maksymalna liczba znaków: {0}. Spróbuj jeszcze raz.'
+                '❌ To zapytanie jest za długie! Maksymalna liczba znaków: {0}. Spróbuj jeszcze raz.',
+            rateLimited:
+                '⏳ Za dużo wyszukiwań z rzędu. Spróbuj ponownie za minutę.'
         },
         success: {
             give: '✅ Zarezerwowano! Życzenie trafiło na listę <b>Chcę podarować</b>.',
@@ -801,6 +801,7 @@ const pl: Translation = {
             empty: 'To pole nie może być puste.',
             tooLong: 'Za dużo znaków: maksymalnie {max}.',
             tooShort: 'Za mało informacji: dodaj trochę więcej szczegółów.',
+            tooManyLines: 'Za dużo wierszy.',
             containsLink:
                 'Nazwa nie może zawierać linku. Dodaj go w polu „Link”.',
             invalid: 'Nieprawidłowa wartość.',

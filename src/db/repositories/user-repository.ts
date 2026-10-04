@@ -49,8 +49,25 @@ const PHONE_DISCLOSURE_RESET = {
     showAddress: false
 } as const;
 
-const phoneDisclosureFor = (phone: string | null) => {
-    return phone === null ? PHONE_DISCLOSURE_RESET : {};
+const keptWhenPhoneUnchanged = (
+    flag: typeof users.showPhone,
+    phoneDigits: string | null
+) => {
+    return sql<boolean>`case when ${users.phoneDigits} is ${phoneDigits} then ${flag} else 0 end`;
+};
+
+const phoneDisclosureFor = (
+    phone: string | null,
+    phoneDigits: string | null
+) => {
+    if (phone === null) {
+        return PHONE_DISCLOSURE_RESET;
+    }
+
+    return {
+        showPhone: keptWhenPhoneUnchanged(users.showPhone, phoneDigits),
+        showAddress: keptWhenPhoneUnchanged(users.showAddress, phoneDigits)
+    };
 };
 
 const releaseHolderStatements = (
@@ -276,7 +293,10 @@ export const createUserRepository = (db: AppDb) => {
                             usernameSearchable: input.usernameSearchable,
                             phone: input.phone,
                             phoneDigits: input.phoneDigits,
-                            ...phoneDisclosureFor(input.phone),
+                            ...phoneDisclosureFor(
+                                input.phone,
+                                input.phoneDigits
+                            ),
                             username: input.username,
                             updatedAt: now
                         })
@@ -430,7 +450,7 @@ export const createUserRepository = (db: AppDb) => {
                     conditions.push(
                         and(
                             sql`${users.phone} is not null`,
-                            sql`${users.phoneDigits} like ${`%${phoneDigits}%`}`
+                            sql`substr(${users.phoneDigits}, ${-phoneDigits.length}) = ${phoneDigits}`
                         )
                     );
                 }

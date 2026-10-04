@@ -385,11 +385,11 @@ export const handleUpdateWithWishlistBot = async (
                 linkImportCompletedEvent({ ...input, channel: 'bot' })
             );
         },
-        importRateLimiterGap(result) {
+        rateLimiterGap(bucket, result) {
             emitTelemetryEvent(
                 env,
                 context,
-                appRateLimiterMissingEvent('import', result)
+                appRateLimiterMissingEvent(bucket, result)
             );
         }
     };

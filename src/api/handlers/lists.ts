@@ -48,7 +48,7 @@ import { ApiError } from '../errors';
 import { readIdParam, readOffset, readOptionalQueryInteger } from '../validate';
 import { emitAppAction } from '../telemetry';
 import {
-    getImageMintingContext,
+    getViewerImageMintingContext,
     getPublicOwnerUsername,
     loadGivers
 } from './gives';
@@ -206,7 +206,7 @@ export const openSharedList: ApiHandler = async c => {
             limit: APP_PAGE_SIZE
         })
     );
-    const mintingContext = getImageMintingContext(c);
+    const mintingContext = getViewerImageMintingContext(c);
     const items = await toSharedWishItems(
         mintingContext,
         share.publicId,
@@ -287,7 +287,7 @@ export const listOwnerWishes: ApiHandler = async c => {
             return wish.id;
         })
     );
-    const mintingContext = getImageMintingContext(c);
+    const mintingContext = getViewerImageMintingContext(c);
     const items = await toThirdWishItems(
         mintingContext,
         viewer.id,
@@ -348,7 +348,7 @@ export const giveWish: ApiHandler = async c => {
 
     const giversByWish = await loadGivers(repos, [wish.id]);
     const [item] = await toThirdWishItems(
-        getImageMintingContext(c),
+        getViewerImageMintingContext(c),
         viewer.id,
         [wish],
         giversByWish

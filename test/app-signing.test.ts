@@ -221,3 +221,32 @@ test('image signatures reject a different wish, index, hash or expiry', async ()
         });
     }
 });
+
+test('viewer image urls carry their audience and never verify as owner urls', async () => {
+    const signer = signerFor();
+    const viewerImage = { ...IMAGE, audience: 'viewer' as const };
+    const viewerUrl = await signer.buildImageUrl(viewerImage, NOW);
+    const ownerUrl = await signer.buildImageUrl(IMAGE, NOW);
+    const viewerParams = parseImageUrl(viewerUrl);
+    const ownerParams = parseImageUrl(ownerUrl);
+
+    assert.equal(
+        new URL(viewerUrl, 'https://wishlist.test').searchParams.get('a'),
+        'v'
+    );
+    assert.equal(
+        new URL(ownerUrl, 'https://wishlist.test').searchParams.has('a'),
+        false
+    );
+    assert.deepEqual(await signer.verifyImage(viewerImage, viewerParams, NOW), {
+        ok: true
+    });
+    assert.deepEqual(await signer.verifyImage(IMAGE, viewerParams, NOW), {
+        ok: false,
+        reason: 'invalid'
+    });
+    assert.deepEqual(await signer.verifyImage(viewerImage, ownerParams, NOW), {
+        ok: false,
+        reason: 'invalid'
+    });
+});

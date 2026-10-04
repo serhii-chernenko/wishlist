@@ -31,6 +31,7 @@ test('every pending input variant round-trips', () => {
         { v: 1, pendingInput: { kind: 'findQuery' }, find: null },
         { v: 1, pendingInput: { kind: 'feedback' }, find: null },
         { v: 1, pendingInput: { kind: 'payments' }, find: null },
+        { v: 1, pendingInput: { kind: 'deliveryAddress' }, find: null },
         {
             v: 1,
             pendingInput: { kind: 'contact', authType: 'both' },

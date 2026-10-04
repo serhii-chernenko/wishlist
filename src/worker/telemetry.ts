@@ -355,7 +355,11 @@ const navigationScreens: Readonly<Record<string, string>> = {
     don: 'donate',
     pay: 'payments',
     lang: 'language',
-    rel: 'releases'
+    rel: 'releases',
+    set: 'settings',
+    cur: 'currency',
+    dlv: 'delivery',
+    dsc: 'disclosure'
 };
 
 const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
@@ -369,12 +373,18 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^wl:share:new$/, 'wishlist:shareRotate'],
     [/^wl:share:new:y$/, 'wishlist:shareRotateConfirm'],
     [/^wl:share:u$/, 'wishlist:shareUsername'],
+    [/^wl:share:idx$/, 'wishlist:shareIndexing'],
+    [/^wl:share:g$/, 'wishlist:shareGifted'],
     [/^wl:f(?::[0-4x])?$/, 'wishlist:filter'],
     [/^w:e:\d{1,12}$/, 'wish:edit'],
     [/^w:r:\d{1,12}$/, 'wish:remove'],
     [/^w:r:y:\d{1,12}$/, 'wish:removeDone'],
     [/^w:r:n:\d{1,12}$/, 'wish:removeNotDone'],
-    [/^w:t:\d{1,12}$/, 'wish:priority'],
+    [/^w:(?:t|pm):\d{1,12}$/, 'wish:priorityMenu'],
+    [/^w:pl:\d{1,12}:[0-3]$/, 'wish:prioritySet'],
+    [/^w:cu:\d{1,12}:[A-Z]{3}$/, 'wish:currency'],
+    [/^w:io:\d{1,12}$/, 'wish:imagesOrder'],
+    [/^w:if:\d{1,12}:[0-8]:[0-9a-f]{8}$/, 'wish:imageFirst'],
     [/^w:v:\d{1,12}$/, 'wish:visibility'],
     [/^w:f:[tdilp]:\d{1,12}$/, 'wish:field'],
     [/^w:back:\d{1,12}$/, 'wish:back'],
@@ -391,6 +401,10 @@ const callbackCategoryRules: readonly (readonly [RegExp, string])[] = [
     [/^g:clean:y$/, 'give:cleanConfirm'],
     [/^a:[upb]$/, 'auth:type'],
     [/^p:rm$/, 'payments:remove'],
+    [/^cur:[A-Z]{3}$/, 'currency'],
+    [/^dsc:[pha]$/, 'disclosure:toggle'],
+    [/^dsc:[ha]:y$/, 'disclosure:confirm'],
+    [/^dlv:rm$/, 'delivery:remove'],
     [/^l:(?:uk|en|pl|auto)$/, 'language:set'],
     [/^x$/, 'noop']
 ];

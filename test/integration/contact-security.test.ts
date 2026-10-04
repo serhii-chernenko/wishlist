@@ -330,6 +330,40 @@ describe('contact disclosure security', () => {
             assert.equal(previous.showAddress, false);
         });
 
+        it('clears both flags when the owner switches to another number', async () => {
+            const owner = await registerOwnerWithContact();
+            const setPhone = (phone: string, phoneDigits: string) => {
+                return run(
+                    harness.repositories.users.setVisibility(
+                        owner.id,
+                        {
+                            usernameSearchable: true,
+                            phone,
+                            phoneDigits,
+                            username: OWNER.username ?? null
+                        },
+                        new Date()
+                    )
+                );
+            };
+
+            await setPhone(`+${FIXTURE_PHONE_DIGITS}`, FIXTURE_PHONE_DIGITS);
+
+            const unchanged = await findUser(owner.id);
+
+            assert.equal(unchanged.showPhone, true);
+            assert.equal(unchanged.showAddress, true);
+
+            await setPhone('+380671112233', '380671112233');
+
+            const switched = await findUser(owner.id);
+
+            assert.equal(switched.phoneDigits, '380671112233');
+            assert.equal(switched.showPhone, false);
+            assert.equal(switched.showAddress, false);
+            assert.equal(switched.deliveryAddress, FIXTURE_ADDRESS);
+        });
+
         it('requires a new consent after the phone comes back', async () => {
             const owner = await registerOwnerWithContact();
 

@@ -1,6 +1,6 @@
 import { LINK_IMPORT_MAX_IMAGE_CANDIDATES } from '../../../shared/app-api';
 import { PRICE_MAX_VALUE, cutDescription, cutTitle } from '../../input/limits';
-import { parsePrice } from '../../input/price';
+import { readPriceAmount } from '../../input/price';
 import { registrableDomain } from './normalize-url';
 import type {
     ExtractProduct,
@@ -39,10 +39,14 @@ interface OfferReading {
 interface ProductGraph {
     candidates: JsonObject[];
     variantsOf: (node: JsonObject) => JsonObject[];
+    resolve: (value: unknown) => unknown;
 }
 
 const WIDE_PRICE_RANGE_RATIO = 3;
 const MAX_GRAPH_DEPTH = 4;
+const MAX_GRAPH_NODES = 500;
+const MAX_CLEAN_TEXT_LENGTH = 4000;
+const ID_KEY = '@id';
 const MIN_TOKEN_LENGTH = 2;
 const MIN_SITE_NAME_LENGTH = 3;
 const PRODUCT_TYPES: ReadonlySet<string> = new Set([
@@ -59,7 +63,11 @@ const HTTP_PROTOCOLS: ReadonlySet<string> = new Set(['http:', 'https:']);
 const IMAGE_PROTOCOL = 'https:';
 const ISO_CURRENCY_PATTERN = /^[A-Z]{3}$/;
 const ENTITY_PATTERN = /&(#x[\da-f]+|#\d+|[a-z]+\d*);/gi;
-const TAG_PATTERN = /<[^>]*>/g;
+const TAG_PATTERN = /<[^<>]*>/g;
+const MACHINE_DECIMAL_PATTERN = /^\d+(?:\.\d+)?$/;
+const MACHINE_COMMA_DECIMAL_PATTERN = /^\d+,\d{1,2}$/;
+const MACHINE_SPACES_PATTERN = /[\s\u00a0\u202f]+/g;
+const LEADING_NON_DIGITS_PATTERN = /^\D+/;
 const WHITESPACE_PATTERN = /\s+/gu;
 const CONTROL_CHARACTERS_PATTERN = /\p{Cc}+/gu;
 const MARKUP_WRAPPER_PATTERN =
@@ -135,7 +143,9 @@ const decodeEntity = (match: string, body: string) => {
             : match;
     }
 
-    return NAMED_ENTITIES[body] ?? match;
+    return Object.hasOwn(NAMED_ENTITIES, body)
+        ? (NAMED_ENTITIES[body] ?? match)
+        : match;
 };
 
 export const decodeHtmlEntities = (value: string) => {
@@ -147,7 +157,7 @@ const cleanText = (value: string | null) => {
         return null;
     }
 
-    const cleaned = decodeHtmlEntities(value)
+    const cleaned = decodeHtmlEntities(value.slice(0, MAX_CLEAN_TEXT_LENGTH))
         .replace(TAG_PATTERN, ' ')
         .replace(WHITESPACE_PATTERN, ' ')
         .trim();
@@ -208,20 +218,46 @@ const allMeta = (signals: PageSignals, keys: readonly string[]) => {
     });
 };
 
-const readAmount = (value: unknown) => {
-    let amount: number | null = null;
-
-    if (typeof value === 'number' && Number.isFinite(value)) {
-        amount = Math.round(value);
-    } else if (typeof value === 'string') {
-        const parsed = parsePrice(decodeHtmlEntities(value), []);
-
-        amount = parsed.ok ? parsed.value : null;
-    }
-
-    return amount !== null && amount > 0 && amount <= PRICE_MAX_VALUE
+const toPriceAmount = (amount: number | null) => {
+    return amount !== null &&
+        Number.isFinite(amount) &&
+        amount > 0 &&
+        amount <= PRICE_MAX_VALUE
         ? amount
         : null;
+};
+
+const parseMachineAmount = (text: string) => {
+    const compact = decodeHtmlEntities(text).replace(
+        MACHINE_SPACES_PATTERN,
+        ''
+    );
+
+    if (MACHINE_DECIMAL_PATTERN.test(compact)) {
+        return Number(compact);
+    }
+
+    return MACHINE_COMMA_DECIMAL_PATTERN.test(compact)
+        ? Number(compact.replace(',', '.'))
+        : null;
+};
+
+const readAmount = (value: unknown) => {
+    if (typeof value === 'number') {
+        return toPriceAmount(value);
+    }
+
+    return typeof value === 'string'
+        ? toPriceAmount(parseMachineAmount(value))
+        : null;
+};
+
+const readVisibleAmount = (text: string) => {
+    const visible = decodeHtmlEntities(text.slice(0, MAX_CLEAN_TEXT_LENGTH));
+
+    return toPriceAmount(
+        readPriceAmount(visible.replace(LEADING_NON_DIGITS_PATTERN, ''))
+    );
 };
 
 const readCurrency = (value: unknown) => {
@@ -273,7 +309,7 @@ const parseJsonLd = (block: string): unknown => {
 };
 
 const collectNodes = (value: unknown, into: JsonObject[], depth: number) => {
-    if (depth > MAX_GRAPH_DEPTH) {
+    if (depth > MAX_GRAPH_DEPTH || into.length >= MAX_GRAPH_NODES) {
         return;
     }
 
@@ -294,6 +330,44 @@ const collectNodes = (value: unknown, into: JsonObject[], depth: number) => {
     collectNodes(value['mainEntity'], into, depth + 1);
 };
 
+const isReferenceOnly = (value: unknown): value is JsonObject => {
+    if (!isObject(value)) {
+        return false;
+    }
+
+    const keys = Object.keys(value);
+
+    return keys.length === 1 && keys[0] === ID_KEY;
+};
+
+const indexVariantsByParent = (products: readonly JsonObject[]) => {
+    const linkedByParent = new Map<unknown, JsonObject[]>();
+    const link = (key: unknown, product: JsonObject) => {
+        const linked = linkedByParent.get(key);
+
+        if (linked === undefined) {
+            linkedByParent.set(key, [product]);
+        } else {
+            linked.push(product);
+        }
+    };
+
+    for (const product of products) {
+        const parent = product['isVariantOf'];
+        const parentId = referenceId(parent);
+
+        if (isObject(parent)) {
+            link(parent, product);
+        }
+
+        if (parentId !== null) {
+            link(parentId, product);
+        }
+    }
+
+    return linkedByParent;
+};
+
 const buildProductGraph = (signals: PageSignals): ProductGraph => {
     const nodes: JsonObject[] = [];
 
@@ -304,14 +378,15 @@ const buildProductGraph = (signals: PageSignals): ProductGraph => {
     const products = [...new Set(nodes.filter(isProductNode))];
     const byId = new Map(
         nodes.flatMap(node => {
-            const id = asString(node['@id']);
+            const id = asString(node[ID_KEY]);
 
             return id === null ? [] : [[id, node] as const];
         })
     );
+    const linkedByParent = indexVariantsByParent(products);
     const groups = products.filter(isGroupNode);
     const variantsOf = (group: JsonObject) => {
-        const groupId = asString(group['@id']);
+        const groupId = asString(group[ID_KEY]);
         const declared = asArray(group['hasVariant']).flatMap(variant => {
             const resolved = isObject(variant)
                 ? variant
@@ -319,24 +394,28 @@ const buildProductGraph = (signals: PageSignals): ProductGraph => {
 
             return resolved === undefined ? [] : [resolved];
         });
-        const linked = products.filter(product => {
-            const parent = product['isVariantOf'];
-
-            return (
-                parent === group ||
-                (groupId !== null && referenceId(parent) === groupId)
-            );
-        });
+        const linked = [
+            ...(linkedByParent.get(group) ?? []),
+            ...(groupId === null ? [] : (linkedByParent.get(groupId) ?? []))
+        ];
 
         return [...new Set([...declared, ...linked])].filter(isObject);
     };
     const variants = new Set(groups.flatMap(variantsOf));
+    const resolve = (value: unknown) => {
+        if (!isReferenceOnly(value)) {
+            return value;
+        }
+
+        return byId.get(asString(value[ID_KEY]) ?? '') ?? value;
+    };
 
     return {
         candidates: products.filter(product => {
             return !variants.has(product);
         }),
-        variantsOf
+        variantsOf,
+        resolve
     };
 };
 
@@ -474,12 +553,23 @@ const readOffer = (offer: JsonObject): OfferReading => {
     };
 };
 
-const readOffers = (node: JsonObject | null): OfferReading | null => {
+type Resolve = ProductGraph['resolve'];
+
+const resolveAll = (value: unknown, resolve: Resolve) => {
+    return asArray(value).map(resolve);
+};
+
+const readOffers = (
+    node: JsonObject | null,
+    resolve: Resolve
+): OfferReading | null => {
     if (node === null) {
         return null;
     }
 
-    const readings = asObjects(node['offers']).map(readOffer);
+    const readings = resolveAll(node['offers'], resolve)
+        .filter(isObject)
+        .map(readOffer);
     const priced = readings.find(reading => {
         return reading.price !== null;
     });
@@ -496,9 +586,12 @@ const readOffers = (node: JsonObject | null): OfferReading | null => {
     };
 };
 
-const lowestVariantOffer = (variants: JsonObject[]): OfferReading | null => {
+const lowestVariantOffer = (
+    variants: JsonObject[],
+    resolve: Resolve
+): OfferReading | null => {
     const readings = variants.flatMap(variant => {
-        const reading = readOffers(variant);
+        const reading = readOffers(variant, resolve);
 
         return reading === null ? [] : [reading];
     });
@@ -515,12 +608,15 @@ const lowestVariantOffer = (variants: JsonObject[]): OfferReading | null => {
         }, null);
 };
 
-const imageUrlsOf = (node: JsonObject | null | undefined): string[] => {
+const imageUrlsOf = (
+    node: JsonObject | null | undefined,
+    resolve: Resolve
+): string[] => {
     if (node === null || node === undefined) {
         return [];
     }
 
-    return asArray(node['image']).flatMap(image => {
+    return resolveAll(node['image'], resolve).flatMap(image => {
         if (typeof image === 'string') {
             return [image];
         }
@@ -550,9 +646,12 @@ const firstText = (
     return null;
 };
 
-const firstImages = (nodes: readonly (JsonObject | null | undefined)[]) => {
+const firstImages = (
+    nodes: readonly (JsonObject | null | undefined)[],
+    resolve: Resolve
+) => {
     for (const node of nodes) {
-        const images = imageUrlsOf(node);
+        const images = imageUrlsOf(node, resolve);
 
         if (images.length > 0) {
             return images;
@@ -587,9 +686,9 @@ const jsonLdDraft = (
     const variant = pickVariant(variants, context);
     const nodes = [variant, product, variants[0]];
     const offer =
-        readOffers(variant) ??
-        readOffers(product) ??
-        lowestVariantOffer(variants);
+        readOffers(variant, graph.resolve) ??
+        readOffers(product, graph.resolve) ??
+        lowestVariantOffer(variants, graph.resolve);
     const title = firstText(nodes, 'name');
 
     if (
@@ -606,12 +705,20 @@ const jsonLdDraft = (
         description: firstText(nodes, 'description'),
         price: offer?.price ?? null,
         currency: offer?.currency ?? null,
-        images: firstImages(nodes)
+        images: firstImages(nodes, graph.resolve)
     };
 };
 
 const itemPropValue = (signal: ItemPropSignal) => {
     return signal.content ?? signal.text;
+};
+
+const itemPropAmount = (signal: ItemPropSignal) => {
+    if (signal.content !== null) {
+        return readAmount(signal.content);
+    }
+
+    return signal.text === null ? null : readVisibleAmount(signal.text);
 };
 
 const itemPropsNamed = (signals: PageSignals, name: string) => {
@@ -633,7 +740,7 @@ const microdataPrice = (signals: PageSignals) => {
         ...itemPropsNamed(signals, 'price'),
         ...itemPropsNamed(signals, 'lowprice')
     ]).flatMap(signal => {
-        const amount = readAmount(itemPropValue(signal));
+        const amount = itemPropAmount(signal);
 
         return amount === null ? [] : [amount];
     });

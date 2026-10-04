@@ -60,6 +60,7 @@ const expectedMethods: Record<string, string[]> = {
         'removeImageAt',
         'replaceImages',
         'findImageFileId',
+        'findViewerImageFileId',
         'findSharedWishImages',
         'appendImage',
         'clearImages',

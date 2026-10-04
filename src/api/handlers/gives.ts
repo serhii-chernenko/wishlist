@@ -29,11 +29,14 @@ import { readIdParam, readOffset } from '../validate';
 
 export type GiversLookup = ReadonlyMap<number, readonly number[]>;
 
-export const getImageMintingContext = (c: ApiContext): ImageMintingContext => {
+export const getViewerImageMintingContext = (
+    c: ApiContext
+): ImageMintingContext => {
     return {
         crypto: c.var.deps.crypto,
         signer: getSigner(c),
-        now: c.var.deps.now()
+        now: c.var.deps.now(),
+        audience: 'viewer'
     };
 };
 
@@ -81,7 +84,7 @@ export const listGives: ApiHandler = async c => {
             return entry.wish.id;
         })
     );
-    const context = getImageMintingContext(c);
+    const context = getViewerImageMintingContext(c);
     const items = await Promise.all(
         page.items.map(entry => {
             return toGiveEntryDto(context, user.id, entry, giversByWish);

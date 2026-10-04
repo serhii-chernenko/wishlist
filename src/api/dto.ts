@@ -47,7 +47,7 @@ import {
 import { toWishPriority } from '../shared/priority';
 import { isLinkImportEnabled, type WorkerBindings } from '../worker/env';
 import { sha256Hex, type ApiCrypto } from './auth/crypto';
-import type { Signer } from './auth/signing';
+import type { ImageAudience, Signer } from './auth/signing';
 import { getNextOffset } from './validate';
 
 const PHONE_MASK = '•• •••';
@@ -128,6 +128,7 @@ export interface ImageMintingContext {
     crypto: ApiCrypto;
     signer: Signer;
     now: Date;
+    audience: ImageAudience;
 }
 
 export const mintWishImages = (
@@ -141,7 +142,12 @@ export const mintWishImages = (
             return {
                 hash,
                 url: await context.signer.buildImageUrl(
-                    { wishId: wish.id, index, hash },
+                    {
+                        wishId: wish.id,
+                        index,
+                        hash,
+                        audience: context.audience
+                    },
                     context.now
                 )
             };

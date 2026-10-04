@@ -189,10 +189,51 @@ const exceedsDeclaredLength = (response: Response, maxBytes: number) => {
     return length !== null && length > maxBytes;
 };
 
+const cancelReader = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>
+) => {
+    await reader.cancel().catch(() => {
+        return undefined;
+    });
+};
+
+const readIntoDeclaredLength = async (
+    body: ReadableStream<Uint8Array>,
+    declared: number
+): Promise<ArrayBuffer | null> => {
+    const reader = body.getReader();
+    const target = new Uint8Array(declared);
+    let offset = 0;
+
+    for (;;) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+            break;
+        }
+
+        if (offset + value.byteLength > declared) {
+            await cancelReader(reader);
+
+            return null;
+        }
+
+        target.set(value, offset);
+        offset += value.byteLength;
+    }
+
+    return offset === declared ? target.buffer : target.slice(0, offset).buffer;
+};
+
 const readCapped = async (
     body: ReadableStream<Uint8Array>,
-    maxBytes: number
+    maxBytes: number,
+    declared: number | null
 ): Promise<ArrayBuffer | null> => {
+    if (declared !== null && declared <= maxBytes) {
+        return readIntoDeclaredLength(body, declared);
+    }
+
     const reader = body.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;
@@ -207,9 +248,7 @@ const readCapped = async (
         total += value.byteLength;
 
         if (total > maxBytes) {
-            await reader.cancel().catch(() => {
-                return undefined;
-            });
+            await cancelReader(reader);
 
             return null;
         }
@@ -346,7 +385,11 @@ const fetchImage = async (
             );
         }
 
-        const bytes = await readCapped(response.body, maxBytes);
+        const bytes = await readCapped(
+            response.body,
+            maxBytes,
+            declaredLength(response)
+        );
 
         if (bytes === null) {
             return fail('tooLarge', response.status);

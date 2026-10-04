@@ -1,7 +1,11 @@
 import type { Context } from 'hono';
 
 import { sha256Hex } from '../../api/auth/crypto';
-import { createSigner } from '../../api/auth/signing';
+import {
+    createSigner,
+    VIEWER_IMAGE_AUDIENCE_PARAM,
+    type ImageAudience
+} from '../../api/auth/signing';
 import {
     getTelemetryContext,
     resolveApiDeps,
@@ -185,6 +189,14 @@ const authorizeImage = async (
         : NOT_FOUND;
 };
 
+const readImageAudience = (raw: string | undefined): ImageAudience | null => {
+    if (raw === undefined) {
+        return 'owner';
+    }
+
+    return raw === VIEWER_IMAGE_AUDIENCE_PARAM ? 'viewer' : null;
+};
+
 const authorizeAppImage = async (
     c: ProxyContext,
     deps: ProxyDeps
@@ -194,6 +206,7 @@ const authorizeAppImage = async (
     const hash = readParam(c, 'hash');
     const expiry = c.req.query('e') ?? '';
     const signature = c.req.query('s') ?? '';
+    const audience = readImageAudience(c.req.query('a'));
 
     if (
         !WISH_ID_PATTERN.test(wishId) ||
@@ -203,7 +216,7 @@ const authorizeAppImage = async (
         return NOT_FOUND;
     }
 
-    if (!EXPIRY_PATTERN.test(expiry)) {
+    if (!EXPIRY_PATTERN.test(expiry) || audience === null) {
         return FORBIDDEN;
     }
 
@@ -213,7 +226,7 @@ const authorizeAppImage = async (
         crypto: deps.crypto
     });
     const verification = await signer.verifyImage(
-        { wishId: Number(wishId), index: Number(index), hash },
+        { wishId: Number(wishId), index: Number(index), hash, audience },
         { expiresAt: Number(expiry), signature },
         deps.now()
     );
@@ -223,11 +236,12 @@ const authorizeAppImage = async (
     }
 
     const wishes = createWishService(deps.createRepositories(c.env), deps.now);
+    const fileId =
+        audience === 'viewer'
+            ? await wishes.findViewerImageFileId(Number(wishId), Number(index))
+            : await wishes.findImageFileId(Number(wishId), Number(index));
 
-    return authorizeImage(deps, {
-        hash,
-        fileId: await wishes.findImageFileId(Number(wishId), Number(index))
-    });
+    return authorizeImage(deps, { hash, fileId });
 };
 
 const authorizeShareImage = async (

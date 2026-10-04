@@ -61,7 +61,8 @@ export const restoreWish: ApiHandler = async c => {
         {
             crypto: c.var.deps.crypto,
             signer: getSigner(c),
-            now: c.var.deps.now()
+            now: c.var.deps.now(),
+            audience: 'owner'
         },
         outcome.wish
     );

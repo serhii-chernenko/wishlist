@@ -10,6 +10,12 @@ import {
     type SniffedImageType
 } from '../../../api/photos/image-signature';
 import { normalizeImageContentType } from '../../../api/photos/image-store';
+import {
+    checkRateLimit,
+    linkHostRateLimitKey,
+    selectLinkHostLimiter
+} from '../../../api/rate-limit';
+import { registrableDomain } from './normalize-url';
 import { readCacheEntry } from './result-cache';
 import { EXPIRES_AT_METADATA_KEY, importImageKey } from './storage-keys';
 import type {
@@ -35,6 +41,7 @@ interface StagingContext {
     fetcher: SafeFetcher;
     now: () => number;
     deadline: number;
+    isHostAllowed: (imageUrl: string) => Promise<boolean>;
 }
 
 type ImageAttempt =
@@ -130,7 +137,7 @@ const stageOne = async (
 
         const remainingMs = context.deadline - context.now();
 
-        if (remainingMs <= 0) {
+        if (remainingMs <= 0 || !(await context.isHostAllowed(imageUrl))) {
             return FAILED;
         }
 
@@ -237,6 +244,44 @@ export const countUnsupportedSkips = (outcome: StageImagesOutcome) => {
  * WebP up to Telegram's 10 MiB multipart limit are kept, and every other image
  * is skipped as `unsupportedFormat`.
  */
+const imageHostDomain = (imageUrl: string) => {
+    try {
+        return registrableDomain(new URL(imageUrl).hostname);
+    } catch {
+        return null;
+    }
+};
+
+const createHostGate = (deps: LinkImportDeps) => {
+    const decisions = new Map<string, Promise<boolean>>();
+    const limiter = selectLinkHostLimiter(deps.env);
+
+    return (imageUrl: string) => {
+        const domain = imageHostDomain(imageUrl);
+
+        if (domain === null) {
+            return Promise.resolve(false);
+        }
+
+        const known = decisions.get(domain);
+
+        if (known !== undefined) {
+            return known;
+        }
+
+        const decision = checkRateLimit(
+            limiter,
+            linkHostRateLimitKey(domain)
+        ).then(outcome => {
+            return outcome !== 'limited';
+        });
+
+        decisions.set(domain, decision);
+
+        return decision;
+    };
+};
+
 export const createImageStaging = (createSafeFetcher: CreateSafeFetcher) => {
     const createContext = (
         deps: LinkImportDeps,
@@ -248,7 +293,8 @@ export const createImageStaging = (createSafeFetcher: CreateSafeFetcher) => {
             bucket: deps.env.IMAGES,
             fetcher: createSafeFetcher(deps.fetch),
             now,
-            deadline: now() + budgetMs
+            deadline: now() + budgetMs,
+            isHostAllowed: createHostGate(deps)
         };
     };
 
@@ -268,18 +314,25 @@ export const createImageStaging = (createSafeFetcher: CreateSafeFetcher) => {
             }
         );
         const outcome: StageImagesOutcome = { staged: [], skipped: [] };
+        const bodies = new Map<number, StagedImageBody>();
 
         attempts.forEach((attempt, position) => {
             const index = indexes[position] as number;
 
-            if (attempt.kind === 'staged') {
-                outcome.staged.push(attempt.image);
-            } else {
+            if (attempt.kind === 'skipped') {
                 outcome.skipped.push({ index, reason: attempt.reason });
+
+                return;
+            }
+
+            outcome.staged.push(attempt.image);
+
+            if (input.keepBodies === true && attempt.body !== null) {
+                bodies.set(index, attempt.body);
             }
         });
 
-        return outcome;
+        return input.keepBodies === true ? { ...outcome, bodies } : outcome;
     };
 
     const loadStagedImage: LoadStagedImage = async (deps, input) => {

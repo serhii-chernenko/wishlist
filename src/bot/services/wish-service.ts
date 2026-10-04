@@ -186,6 +186,11 @@ export const createWishService = (
                 repositories.wishes.findImageFileId(wishId, index)
             );
         },
+        findViewerImageFileId(wishId: number, index: number) {
+            return runRepository(
+                repositories.wishes.findViewerImageFileId(wishId, index)
+            );
+        },
         async findSharedWishImages(publicId: string, wishId: number) {
             const images = await runRepository(
                 repositories.wishes.findSharedWishImages(publicId, wishId)

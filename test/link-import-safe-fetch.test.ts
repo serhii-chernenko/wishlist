@@ -388,6 +388,50 @@ describe('safe fetch: status, content type and size', () => {
     });
 });
 
+describe('safe fetch: declared image lengths', () => {
+    const declaredImage = (
+        chunkSize: number,
+        chunks: number,
+        declared: number
+    ) => {
+        return createFakeFetch(() => {
+            return new Response(chunkedStream(chunkSize, chunks), {
+                status: 200,
+                headers: {
+                    'content-type': 'image/png',
+                    'content-length': String(declared)
+                }
+            });
+        }).fakeFetch;
+    };
+
+    it('reads an image of the declared length into one buffer', async () => {
+        const result = await createSafeFetcher(
+            declaredImage(100, 4, 400)
+        ).fetchImage('https://cdn.example.com/a.png', { maxBytes: 1000 });
+
+        assert.ok(result.ok);
+        assert.equal(result.value.bytes.byteLength, 400);
+    });
+
+    it('keeps a body shorter than declared and refuses a longer one', async () => {
+        const shorter = await createSafeFetcher(
+            declaredImage(100, 3, 400)
+        ).fetchImage('https://cdn.example.com/a.png', { maxBytes: 1000 });
+        const longer = await createSafeFetcher(
+            declaredImage(100, 5, 400)
+        ).fetchImage('https://cdn.example.com/a.png', { maxBytes: 1000 });
+
+        assert.ok(shorter.ok);
+        assert.equal(shorter.value.bytes.byteLength, 300);
+        assert.deepEqual(longer, {
+            ok: false,
+            failure: 'tooLarge',
+            status: 200
+        });
+    });
+});
+
 describe('safe fetch: failures', () => {
     it('maps a stalled request to timeout', async () => {
         const { fakeFetch } = createFakeFetch((_, init) => {

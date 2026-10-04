@@ -18,7 +18,7 @@ const ADDRESS_FIELD = 'text';
 const ADDRESS_ERROR_CODES = {
     tooShort: 'tooShort',
     tooLong: 'tooLong',
-    tooManyLines: 'tooLong',
+    tooManyLines: 'tooManyLines',
     containsLink: 'containsLink'
 } as const satisfies Record<AddressRejection, FieldErrorCode>;
 

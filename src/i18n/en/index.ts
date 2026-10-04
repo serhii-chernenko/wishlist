@@ -175,8 +175,6 @@ const en: Translation = {
                 updateImages: '🌅 Update photos',
                 addLink: '🔗 Add link',
                 updateLink: '🔗 Update link',
-                setPriority: '❗️I really want this',
-                unsetPriority: '❗I don’t want it that much anymore',
                 priority: '🎯 Priority: {level}',
                 imagesOrder: '🔀 Photo order',
                 hide: '🫣 Hide from others',
@@ -338,7 +336,8 @@ const en: Translation = {
                 '❌ No one found. Check the username or number and try again.',
             foundYourself: '❌ Nice try! You can’t look yourself up 😘',
             tooLong:
-                '❌ That search is too long! The limit is {0} characters. Try again.'
+                '❌ That search is too long! The limit is {0} characters. Try again.',
+            rateLimited: '⏳ Too many searches in a row. Try again in a minute.'
         },
         success: {
             give: '✅ Reserved! The wish was added to your <b>Gifts to give</b> list.',
@@ -790,6 +789,7 @@ const en: Translation = {
             empty: 'This field can’t be empty.',
             tooLong: 'Too many characters: {max} at most.',
             tooShort: 'Not enough details yet: add a little more.',
+            tooManyLines: 'Too many lines.',
             containsLink:
                 'The title can’t contain a link. Put it in the Link field.',
             invalid: 'This value isn’t valid.',
