@@ -933,7 +933,8 @@ const pl: Translation = {
             releases: 'Co nowego',
             about: 'O aplikacji',
             currency: 'Waluta',
-            delivery: 'Adres dostawy'
+            delivery: 'Adres dostawy',
+            listImport: 'Import listy życzeń'
         },
         contact: {
             title: 'Dane kontaktowe',

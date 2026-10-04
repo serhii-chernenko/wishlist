@@ -920,7 +920,8 @@ const en: Translation = {
             releases: 'What’s new',
             about: 'About',
             currency: 'Currency',
-            delivery: 'Delivery address'
+            delivery: 'Delivery address',
+            listImport: 'Import a wish list'
         },
         contact: {
             title: 'Contact details',

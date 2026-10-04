@@ -2862,6 +2862,10 @@ type RootTranslation = {
 			 * А​д​р​е​с​а​ ​д​о​с​т​а​в​к​и
 			 */
 			delivery: string
+			/**
+			 * І​м​п​о​р​т​ ​л​и​с​т​а​ ​б​а​ж​а​н​ь
+			 */
+			listImport: string
 		}
 		contact: {
 			/**
@@ -7737,6 +7741,10 @@ export type TranslationFunctions = {
 			 * Адреса доставки
 			 */
 			delivery: () => LocalizedString
+			/**
+			 * Імпорт листа бажань
+			 */
+			listImport: () => LocalizedString
 		}
 		contact: {
 			/**

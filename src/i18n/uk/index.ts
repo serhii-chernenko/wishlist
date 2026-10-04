@@ -927,7 +927,8 @@ const uk: BaseTranslation = {
             releases: 'Що нового',
             about: 'Про застосунок',
             currency: 'Валюта',
-            delivery: 'Адреса доставки'
+            delivery: 'Адреса доставки',
+            listImport: 'Імпорт листа бажань'
         },
         contact: {
             title: 'Контакти',

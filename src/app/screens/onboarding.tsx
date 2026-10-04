@@ -33,6 +33,7 @@ export type MenuScreen = Extract<
     | 'currency'
     | 'delivery'
     | 'language'
+    | 'listImport'
     | 'feedback'
     | 'stats'
     | 'donate'
