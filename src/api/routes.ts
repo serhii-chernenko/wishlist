@@ -32,13 +32,14 @@ import { cleanGives, listGives, removeGive } from './handlers/gives';
 import { hideGiftedWish, restoreWish, setShowGifted } from './handlers/gifted';
 import {
     clearWishImages,
+    importWishImage,
     removeWishImage,
     reorderWishImages,
     startImageChatIntent,
     uploadWishImage
 } from './handlers/images';
 import { getStats, listReleases } from './handlers/info';
-import { importLink, importWishImage } from './handlers/link-import';
+import { importLink } from './handlers/link-import';
 import { giveWish, listOwnerWishes, openSharedList } from './handlers/lists';
 import {
     cancelContactIntent,

@@ -10,21 +10,27 @@ import {
     saveSessionIfChanged
 } from '../../bot/runtime/session-store';
 import { createWishService } from '../../bot/services/wish-service';
-import type { WishRecord } from '../../db/repositories';
+import type { UserRecord, WishRecord } from '../../db/repositories';
 import {
     APP_MAX_WISH_IMAGES,
     APP_UPLOAD_MAX_BYTES,
     IMAGE_REORDER_SOURCES,
+    LINK_IMPORT_MAX_IMAGE_CANDIDATES,
+    type AppUploadContentType,
     type OwnWishDto
 } from '../../shared/app-api';
+import { isLinkImportEnabled } from '../../worker/env';
 import {
     appPhotoUploadedEvent,
     type AppPhotoUploadResult
 } from '../../worker/telemetry';
 import {
     emitApiTelemetry,
+    getImportSigner,
+    getLinkImportDeps,
     getSigner,
     getTelegramApi,
+    requireLinkImportServices,
     requireUser,
     runInBackground,
     type ApiContext,
@@ -40,6 +46,7 @@ import { TelegramApiError, type TelegramApi } from '../telegram-api';
 import { emitAppAction } from '../telemetry';
 import {
     createBodyReader,
+    type BodyReader,
     readIdParam,
     readIndexParam,
     readJsonBody,
@@ -114,7 +121,7 @@ const sendUploadedPhoto = async (
     c: ApiContext,
     api: TelegramApi,
     bytes: ArrayBuffer,
-    contentType: keyof typeof UPLOAD_FILE_EXTENSIONS
+    contentType: AppUploadContentType
 ) => {
     try {
         return await api.sendPhoto(
@@ -158,25 +165,16 @@ const readUploadBody = async (c: ApiContext) => {
     return bytes;
 };
 
-export const uploadWishImage: ApiHandler = async c => {
-    const { user, wishId, wish } = await requireOwnedWish(c);
-
-    if (parseWishImages(wish.images).length >= APP_MAX_WISH_IMAGES) {
-        return rejectUpload(c, 'full', new ApiError('imagesFull'));
+const ingestPhotoBytes = async (
+    c: ApiContext,
+    input: {
+        user: UserRecord;
+        wishId: number;
+        bytes: ArrayBuffer;
+        contentType: AppUploadContentType;
     }
-
-    const contentType = normalizeImageContentType(c.req.header('Content-Type'));
-
-    if (contentType === null) {
-        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
-    }
-
-    const bytes = await readUploadBody(c);
-
-    if (!matchesDeclaredImageType(bytes, contentType)) {
-        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
-    }
-
+) => {
+    const { user, wishId, bytes, contentType } = input;
     const api = getTelegramApi(c);
     const sent = await sendUploadedPhoto(c, api, bytes, contentType);
     const cleanUp = runInBackground(
@@ -210,6 +208,125 @@ export const uploadWishImage: ApiHandler = async c => {
 
             return respondWithWish(c, await reloadOwnedWish(c, wishId));
     }
+};
+
+export const uploadWishImage: ApiHandler = async c => {
+    const { user, wishId, wish } = await requireOwnedWish(c);
+
+    if (parseWishImages(wish.images).length >= APP_MAX_WISH_IMAGES) {
+        return rejectUpload(c, 'full', new ApiError('imagesFull'));
+    }
+
+    const contentType = normalizeImageContentType(c.req.header('Content-Type'));
+
+    if (contentType === null) {
+        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
+    }
+
+    const bytes = await readUploadBody(c);
+
+    if (!matchesDeclaredImageType(bytes, contentType)) {
+        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
+    }
+
+    return ingestPhotoBytes(c, { user, wishId, bytes, contentType });
+};
+
+const IMPORT_TOKEN_MAX_LENGTH = 160;
+
+const readImportIndex = (reader: BodyReader) => {
+    const raw = reader.body['index'];
+
+    if (!reader.has('index')) {
+        reader.fail('index', 'required');
+
+        return undefined;
+    }
+
+    if (
+        typeof raw !== 'number' ||
+        !Number.isInteger(raw) ||
+        raw < 0 ||
+        raw >= LINK_IMPORT_MAX_IMAGE_CANDIDATES
+    ) {
+        reader.fail('index', 'invalid');
+
+        return undefined;
+    }
+
+    return raw;
+};
+
+const readImportInput = async (c: ApiContext) => {
+    const reader = createBodyReader(await readJsonBody(c));
+    const importToken = reader.requiredString('importToken', {
+        maxLength: IMPORT_TOKEN_MAX_LENGTH
+    });
+    const index = readImportIndex(reader);
+
+    reader.finish();
+
+    if (importToken === undefined || index === undefined) {
+        throw new ApiError('validation');
+    }
+
+    return { importToken, index };
+};
+
+const requireImportClaims = async (
+    c: ApiContext,
+    userId: number,
+    importToken: string
+) => {
+    const verified = await getImportSigner(c).verifyImportToken(
+        importToken,
+        c.var.deps.now()
+    );
+
+    if (!verified.ok || verified.claims.userId !== userId) {
+        throw validationError('importToken', 'invalid');
+    }
+
+    return verified.claims;
+};
+
+export const importWishImage: ApiHandler = async c => {
+    if (!isLinkImportEnabled(c.env)) {
+        throw new ApiError('disabled');
+    }
+
+    const services = requireLinkImportServices(c);
+    const { user, wishId, wish } = await requireOwnedWish(c);
+
+    if (parseWishImages(wish.images).length >= APP_MAX_WISH_IMAGES) {
+        return rejectUpload(c, 'full', new ApiError('imagesFull'));
+    }
+
+    const { importToken, index } = await readImportInput(c);
+    const claims = await requireImportClaims(c, user.id, importToken);
+    const staged = await services.loadStagedImage(getLinkImportDeps(c), {
+        urlHash: claims.urlHash,
+        index
+    });
+
+    if (staged === null) {
+        return rejectUpload(c, 'unsupported', new ApiError('upstream'));
+    }
+
+    if (staged.body.byteLength > APP_UPLOAD_MAX_BYTES) {
+        return rejectUpload(c, 'tooLarge', new ApiError('payloadTooLarge'));
+    }
+
+    if (!matchesDeclaredImageType(staged.body, staged.contentType)) {
+        return rejectUpload(c, 'unsupported', new ApiError('unsupportedMedia'));
+    }
+
+    return ingestPhotoBytes(c, {
+        user,
+        wishId,
+        bytes: staged.body,
+        contentType: staged.contentType
+    });
 };
 
 const readHashQuery = (c: ApiContext) => {
