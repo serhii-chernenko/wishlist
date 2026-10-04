@@ -65,7 +65,14 @@ const expectedMethods: Record<string, string[]> = {
         'appendImage',
         'clearImages',
         'softRemove',
-        'softRemoveAll'
+        'softRemoveAll',
+        'listDedupeKeys',
+        'insertImported',
+        'listPendingPhotos',
+        'countPendingPhotos',
+        'appendImportedImage',
+        'clearSourceImage',
+        'clearAllSourceImages'
     ],
     gives: ['add', 'remove', 'removeAll', 'listForGiver', 'giversByWishIds'],
     sessions: [
@@ -109,7 +116,30 @@ const expectedMethods: Record<string, string[]> = {
         'setAllowIndexing',
         'findPublicFingerprint'
     ],
-    exchangeRates: ['listAll', 'upsertMany']
+    exchangeRates: ['listAll', 'upsertMany'],
+    listImports: [
+        'findById',
+        'findOwned',
+        'findCommitting',
+        'createPreviewed',
+        'setVisibility',
+        'startCommit',
+        'expirePreview',
+        'expireStalePreviews',
+        'setPlanned',
+        'cancelPreview',
+        'listStaleCommitting',
+        'claimStale',
+        'recordCommitStep',
+        'markDone',
+        'markFailed',
+        'releaseCommitLease',
+        'listDrainCandidates',
+        'acquireDrainLease',
+        'releaseDrainLease',
+        'touchShare',
+        'pruneFinishedBefore'
+    ]
 };
 
 test('createRepositories exposes exactly the contracted repositories and methods', () => {

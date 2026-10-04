@@ -95,6 +95,15 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 - Images are never transcoded: only JPEG, PNG and WebP up to 10 MiB are staged, everything else is reported as unsupported.
 - Respect `LINK_IMPORT_ENABLED` in every entry point (app, API, `/img/i`, bot); see `docs/OPERATIONS.md` section 19.
 
+## List import
+
+- The list import (rewish.io first) lives in `src/bot/services/list-import/`; every caller uses the one `ListImportService` built in `src/worker/list-import.ts`. A new source adds one adapter in `registry.ts` and one parser branch in `src/shared/list-import-url.ts`.
+- Rewish responses are untrusted: validate every response with the guards in `rewish/schema.ts`, send requests only through `safeFetcher.fetchJson` with the adapter's host allowlist, and map any mismatch to `schemaChanged`.
+- Never log, emit or return the share link, its slug or access code (`list_imports.source_url`), item titles, prices or image URLs. `source_url` is set to null on every terminal job state.
+- Imported wish inserts stay at 7 rows per statement (13 bound parameters per row) and at most 7 statements per batch; keep the constant columns as SQL literals.
+- The photo drain only touches owners with a `done` or `failed` job row, never changes `wishes.updated_at`, and keeps uploads to one chat at least 1.2 s apart. Wishes copied into preview without a job row are never drained.
+- The service emits `list_import_completed` and `list_import_photos_drained`; callers emit only `list_import_previewed`. See `docs/OPERATIONS.md` section 20.
+
 ## Releases
 
 - `CHANGELOG.md` is the human-owned release history.

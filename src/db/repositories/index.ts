@@ -1,6 +1,7 @@
 import type { AppDb } from '../client';
 import { createExchangeRateRepository } from './exchange-rate-repository';
 import { createGiveRepository } from './give-repository';
+import { createListImportRepository } from './list-import-repository';
 import { createReleaseAnnouncementRepository } from './release-announcement-repository';
 import { createSessionRepository } from './session-repository';
 import { createShareRepository } from './share-repository';
@@ -19,7 +20,8 @@ export const createRepositories = (db: AppDb) => {
         releaseAnnouncements: createReleaseAnnouncementRepository(db),
         stats: createStatsRepository(db),
         shares: createShareRepository(db),
-        exchangeRates: createExchangeRateRepository(db)
+        exchangeRates: createExchangeRateRepository(db),
+        listImports: createListImportRepository(db)
     };
 };
 
@@ -35,6 +37,14 @@ export type {
     ExchangeRateRecord,
     ExchangeRateRepository
 } from './exchange-rate-repository';
+export type {
+    CommitProgress,
+    CommitStartResult,
+    DrainCandidate,
+    ListImportRecord,
+    ListImportRepository,
+    NewListImport
+} from './list-import-repository';
 export type { SessionRecord, SessionLanguage } from './session-repository';
 export type { PublicShareFingerprint, ShareRecord } from './share-repository';
 export { SHARE_DISPLAY_NAME_MAX_LENGTH } from './share-repository';
@@ -49,6 +59,9 @@ export type {
     VisibilityInput
 } from './user-repository';
 export type {
+    ImportedWishRow,
+    PendingPhotoWish,
+    WishDedupeKey,
     WishFieldsPatch,
     WishListOptions,
     WishPage,

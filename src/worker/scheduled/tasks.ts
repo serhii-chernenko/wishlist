@@ -11,11 +11,16 @@ import type {
     RatesRefreshFailureReason,
     RatesRefreshResult
 } from '../../bot/services/exchange-rate-service';
-import type { WorkerBindings } from '../env';
+import type {
+    ListImportDeps,
+    ListImportService
+} from '../../bot/services/list-import/types';
+import { isListImportEnabled, type WorkerBindings } from '../env';
 import {
     emitRatesRefreshTelemetry,
     refreshStoredExchangeRates
 } from '../exchange-rates';
+import { runListImportDrain } from '../list-import';
 import { emitTelemetryEvent } from '../telemetry';
 import {
     readBotStateSnapshot,
@@ -28,18 +33,31 @@ const TASKS = {
     prune: 'maintenance:prune',
     exchangeRates: 'rates:refresh',
     releaseBroadcast: 'release:broadcast',
-    stateSnapshot: 'bot:state-snapshot'
+    stateSnapshot: 'bot:state-snapshot',
+    listImportDrain: 'import:drain',
+    listImportPrune: 'import:prune'
 } as const;
 
 export const RELEASE_BROADCAST_CRON = '*/10 * * * *';
 export const SESSION_RETENTION_MILLISECONDS = 90 * 24 * 60 * 60 * 1000;
 
-const getScheduledTaskNames = (cron: string): string[] => {
+const getScheduledTaskNames = (
+    cron: string,
+    listImportActive: boolean
+): string[] => {
     if (cron === RELEASE_BROADCAST_CRON) {
-        return [TASKS.releaseBroadcast, TASKS.stateSnapshot];
+        return [
+            TASKS.releaseBroadcast,
+            TASKS.stateSnapshot,
+            ...(listImportActive ? [TASKS.listImportDrain] : [])
+        ];
     }
 
-    return [TASKS.exchangeRates, TASKS.prune];
+    return [
+        TASKS.exchangeRates,
+        TASKS.prune,
+        ...(listImportActive ? [TASKS.listImportPrune] : [])
+    ];
 };
 
 interface ScheduledTaskDependencies {
@@ -65,6 +83,7 @@ interface ScheduledTaskDependencies {
         env: WorkerBindings,
         now: number
     ) => Promise<number>;
+    listImport?: ListImportService;
 }
 
 export interface ScheduledTasksSummary {
@@ -154,13 +173,94 @@ const runLinkImportPurge = async (
     }
 };
 
+const toListImportDeps = (
+    env: WorkerBindings,
+    ctx: ExecutionContext
+): ListImportDeps => {
+    return typeof ctx.waitUntil === 'function'
+        ? {
+              env,
+              waitUntil: (promise: Promise<unknown>) => {
+                  ctx.waitUntil(promise);
+              }
+          }
+        : { env };
+};
+
+const runListImportTask = async (
+    controller: ScheduledController,
+    env: WorkerBindings,
+    failureEvent: string,
+    task: () => Promise<unknown>
+) => {
+    try {
+        await task();
+    } catch (error) {
+        console.error(
+            JSON.stringify({
+                event: failureEvent,
+                botEnvironment: env.BOT_ENVIRONMENT,
+                cron: controller.cron,
+                errorType: getErrorType(error)
+            })
+        );
+    }
+};
+
+const runListImportTasks = async (
+    controller: ScheduledController,
+    env: WorkerBindings,
+    ctx: ExecutionContext,
+    service: ListImportService,
+    taskNames: readonly string[]
+) => {
+    const deps = toListImportDeps(env, ctx);
+
+    if (taskNames.includes(TASKS.listImportDrain)) {
+        await runListImportTask(
+            controller,
+            env,
+            'list_import_drain_failed',
+            () => {
+                return runListImportDrain(service, deps);
+            }
+        );
+    }
+
+    if (taskNames.includes(TASKS.listImportPrune)) {
+        await runListImportTask(
+            controller,
+            env,
+            'list_import_prune_failed',
+            async () => {
+                const prunedListImports = await service.prune(deps);
+
+                console.log(
+                    JSON.stringify({
+                        event: 'list_imports_pruned',
+                        botEnvironment: env.BOT_ENVIRONMENT,
+                        cron: controller.cron,
+                        prunedListImports
+                    })
+                );
+            }
+        );
+    }
+};
+
 export const runScheduledTasks = async (
     controller: ScheduledController,
     env: WorkerBindings,
     ctx: ExecutionContext,
     dependencies: ScheduledTaskDependencies = {}
 ) => {
-    const taskNames = getScheduledTaskNames(controller.cron);
+    const listImport = isListImportEnabled(env)
+        ? dependencies.listImport
+        : undefined;
+    const taskNames = getScheduledTaskNames(
+        controller.cron,
+        listImport !== undefined
+    );
     let prunedProcessedTelegramUpdates = 0;
     let prunedAbandonedTelegramUpdates = 0;
     let prunedSessions = 0;
@@ -340,6 +440,10 @@ export const runScheduledTasks = async (
             );
             throw error;
         }
+    }
+
+    if (listImport !== undefined) {
+        await runListImportTasks(controller, env, ctx, listImport, taskNames);
     }
 
     console.log(

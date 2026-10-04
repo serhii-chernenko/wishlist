@@ -1,13 +1,21 @@
 import { createApp } from './app';
 import type { WorkerBindings } from './env';
 import { createWorkerLinkImport } from './link-import';
+import { createWorkerListImport } from './list-import';
 import type { ReleaseAnnouncementJob } from './queues/release-announcement-job';
 import { handleReleaseAnnouncementQueue } from './queues/release-announcements-handler';
 import { runScheduledTasks } from './scheduled/tasks';
 import { emitHttpRequestTelemetry, emitTelemetryEvent } from './telemetry';
 
 const linkImport = createWorkerLinkImport();
-const app = createApp({ linkImport }, {}, {}, { linkImport }, { linkImport });
+const listImport = createWorkerListImport();
+const app = createApp(
+    { linkImport, listImport },
+    {},
+    {},
+    { linkImport, listImport },
+    { linkImport }
+);
 
 export default {
     async fetch(request, env, ctx) {
@@ -35,7 +43,9 @@ export default {
         const startedAt = Date.now();
 
         try {
-            const summary = await runScheduledTasks(controller, env, ctx);
+            const summary = await runScheduledTasks(controller, env, ctx, {
+                listImport
+            });
 
             emitTelemetryEvent(env, ctx, {
                 event: 'scheduled_run_completed',
