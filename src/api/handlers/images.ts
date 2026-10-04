@@ -36,7 +36,13 @@ import { getImageIdentity, IMAGE_HASH_PATTERN } from '../photos/image-key';
 import { matchesDeclaredImageType } from '../photos/image-signature';
 import { normalizeImageContentType } from '../photos/image-store';
 import { TelegramApiError, type TelegramApi } from '../telegram-api';
-import { readIdParam, readIndexParam, validationError } from '../validate';
+import { emitAppAction } from '../telemetry';
+import {
+    readIdParam,
+    readIndexParam,
+    readJsonBody,
+    validationError
+} from '../validate';
 
 const TELEGRAM_FORBIDDEN_CODE = 403;
 const UPLOAD_FILE_EXTENSIONS = {
@@ -301,6 +307,90 @@ export const startImageChatIntent: ApiHandler = async c => {
     return c.body(null, 204);
 };
 
-export const reorderWishImages: ApiHandler = () => {
-    throw new ApiError('notImplemented');
+const isImageHash = (value: unknown): value is string => {
+    return typeof value === 'string' && IMAGE_HASH_PATTERN.test(value);
+};
+
+const readOrderedHashes = async (c: ApiContext) => {
+    const body = await readJsonBody(c);
+    const raw = body['hashes'];
+
+    if (raw === undefined) {
+        throw validationError('hashes', 'required');
+    }
+
+    if (
+        !Array.isArray(raw) ||
+        raw.length > APP_MAX_WISH_IMAGES ||
+        !raw.every(isImageHash) ||
+        new Set(raw).size !== raw.length
+    ) {
+        throw validationError('hashes', 'invalid');
+    }
+
+    return raw;
+};
+
+const mapHashesToFileIds = async (
+    c: ApiContext,
+    fileIds: readonly string[],
+    hashes: readonly string[]
+) => {
+    const entries = await Promise.all(
+        fileIds.map(async fileId => {
+            const { hash } = await getImageIdentity(c.var.deps.crypto, fileId);
+
+            return [hash, fileId] as const;
+        })
+    );
+    const fileIdByHash = new Map(entries);
+
+    if (
+        hashes.length !== fileIds.length ||
+        fileIdByHash.size !== fileIds.length
+    ) {
+        return null;
+    }
+
+    const ordered = hashes.map(hash => fileIdByHash.get(hash));
+
+    return ordered.every((fileId): fileId is string => fileId !== undefined)
+        ? ordered
+        : null;
+};
+
+const isSameFileOrder = (left: readonly string[], right: readonly string[]) => {
+    return left.every((fileId, index) => fileId === right[index]);
+};
+
+export const reorderWishImages: ApiHandler = async c => {
+    const { user, wishId, wish } = await requireOwnedWish(c);
+    const hashes = await readOrderedHashes(c);
+    const current = parseWishImages(wish.images);
+    const ordered = await mapHashesToFileIds(c, current, hashes);
+
+    if (ordered === null) {
+        throw new ApiError('imageChanged');
+    }
+
+    if (isSameFileOrder(ordered, current)) {
+        return respondWithWish(c, wish);
+    }
+
+    const updated = await getWishService(c).reorderImages(
+        wishId,
+        user.id,
+        ordered,
+        wish.images
+    );
+
+    if (updated === null) {
+        await reloadOwnedWish(c, wishId);
+
+        throw new ApiError('imageChanged');
+    }
+
+    emitAppAction(c, 'wish_images_reordered');
+
+    return respondWithWish(c, updated);
 };
