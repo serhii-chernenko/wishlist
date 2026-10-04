@@ -6,7 +6,7 @@ export const DEFAULT_CURRENCY = 'UAH';
 
 const LOCALE_TAGS = {
     uk: 'uk-UA',
-    en: 'en-GB',
+    en: 'en-US',
     pl: 'pl-PL'
 } as const satisfies Record<AppLocale, string>;
 

@@ -21,6 +21,7 @@ const createShare = (overrides: Partial<ShareRecord> = {}): ShareRecord => {
         publicId: '01j9z0000000000000000000ab',
         displayName: 'Serhii',
         showUsername: false,
+        allowIndexing: true,
         revokedAt: null,
         createdAt: now,
         updatedAt: now,

@@ -22,6 +22,7 @@ export const PENDING_INPUT_SCREENS = {
     findQuery: 'findList',
     feedback: 'feedback',
     payments: 'payments',
+    deliveryAddress: 'delivery',
     contact: 'auth'
 } as const satisfies Record<PendingInputKind, ScreenId>;
 
@@ -35,7 +36,13 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'findList',
     'thirdWishlist',
     'giveList',
-    'payments'
+    'payments',
+    'settings',
+    'currency',
+    'delivery',
+    'disclosure',
+    'wishPriority',
+    'wishImages'
 ]);
 
 const GUEST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([

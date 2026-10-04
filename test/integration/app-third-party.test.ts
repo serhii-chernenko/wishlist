@@ -167,7 +167,7 @@ describe('Mini App API third-party lists, search and gives', () => {
         const created = await run(
             harness.repositories.wishes.createWithFields(
                 userId,
-                { title, ...fields },
+                { currency: 'UAH', title, ...fields },
                 NOW
             )
         );
@@ -219,7 +219,7 @@ describe('Mini App API third-party lists, search and gives', () => {
     describe('POST /search', () => {
         it('finds a searchable owner and mints a token only on success', async () => {
             await registerUser(VIEWER);
-            const owner = await registerUser(OWNER_A, { payments: 'IBAN 1' });
+            await registerUser(OWNER_A, { payments: 'IBAN 1' });
             const result = await search(VIEWER, '@Alice_A');
 
             assert.equal(result.status, 'found');
@@ -228,7 +228,6 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(result.owner.source, 'search');
             assert.equal(result.owner.canGive, true);
             assert.equal(result.owner.payments, 'IBAN 1');
-            assert.equal(result.owner.currency, owner.currency);
             assert.match(
                 result.owner.token ?? '',
                 /^[0-9a-z]+\.[0-9a-z]+\.[\w-]{43}$/
@@ -316,15 +315,20 @@ describe('Mini App API third-party lists, search and gives', () => {
     });
 
     describe('GET /lists/:token/wishes', () => {
-        it('lists visible wishes with givers, owner currency and truncated payments', async () => {
+        it('lists visible wishes with givers, wish currency and truncated payments', async () => {
             const viewer = await registerUser(VIEWER, { currency: 'PLN' });
             const other = await registerUser(STRANGER);
             const owner = await registerUser(OWNER_A, {
                 currency: 'EUR',
                 payments: 'p'.repeat(APP_THIRD_PARTY_PAYMENTS_MAX_LENGTH + 500)
             });
-            const plain = await addWish(owner.id, 'Plain', { price: 100 });
-            const taken = await addWish(owner.id, 'Taken', { priority: true });
+            const plain = await addWish(owner.id, 'Plain', {
+                price: 100,
+                currency: 'EUR'
+            });
+            const taken = await addWish(owner.id, 'Taken', {
+                priorityLevel: 3
+            });
             const mine = await addWish(owner.id, 'Mine');
             const hidden = await addWish(owner.id, 'Hidden', { hidden: true });
             const removed = await addWish(owner.id, 'Removed');
@@ -379,7 +383,8 @@ describe('Mini App API third-party lists, search and gives', () => {
                 count: 1
             });
             assert.equal(plain.price, byTitle.get('Plain')?.price);
-            assert.equal(body.owner.currency, 'EUR');
+            assert.equal(byTitle.get('Plain')?.currency, 'EUR');
+            assert.equal('currency' in body.owner, false);
             assert.equal(body.owner.token, token);
             assert.equal(body.owner.label, '@alice_a');
             assert.equal(
@@ -429,7 +434,7 @@ describe('Mini App API third-party lists, search and gives', () => {
         });
 
         it('filters by the viewer euro ranges converted into the owner hryvnias', async () => {
-            await registerUser(VIEWER, { language: 'en' });
+            await registerUser(VIEWER, { language: 'en', currency: 'EUR' });
             const owner = await registerUser(OWNER_A);
 
             await addWish(owner.id, 'Below', { price: 980 });
@@ -553,7 +558,10 @@ describe('Mini App API third-party lists, search and gives', () => {
             await registerUser(VIEWER);
             const other = await registerUser(STRANGER);
             const owner = await registerUser(OWNER_A, { currency: 'EUR' });
-            const wish = await addWish(owner.id, 'Gift', { price: 25 });
+            const wish = await addWish(owner.id, 'Gift', {
+                price: 25,
+                currency: 'EUR'
+            });
 
             await run(harness.repositories.gives.add(other.id, wish.id, NOW));
 
@@ -594,7 +602,7 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(list.total, 1);
             assert.equal(list.nextOffset, null);
             assert.equal(list.items[0]?.wish.id, wish.id);
-            assert.equal(list.items[0]?.currency, 'EUR');
+            assert.equal(list.items[0]?.wish.currency, 'EUR');
             assert.equal(list.items[0]?.ownerUsername, 'alice_a');
             assert.equal(list.items[0]?.otherGivers, 1);
             assert.equal('givers' in (list.items[0]?.wish ?? {}), false);
@@ -864,7 +872,9 @@ describe('Mini App API third-party lists, search and gives', () => {
 
             const owner = await registerUser(OWNER_A);
             const plain = await addWish(owner.id, 'Plain');
-            const photo = await addWish(owner.id, 'Photo', { priority: true });
+            const photo = await addWish(owner.id, 'Photo', {
+                priorityLevel: 3
+            });
             const hidden = await addWish(owner.id, 'Hidden', { hidden: true });
             const removed = await addWish(owner.id, 'Removed');
 

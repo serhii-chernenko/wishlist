@@ -174,24 +174,26 @@ const seedSourceDatabase = async (harness: D1Harness) => {
     const { DB } = harness.env;
 
     await DB.prepare(
-        `INSERT INTO users (telegram_id, username, username_searchable, phone, phone_digits, language, currency, payments, wishlist_filter, release_version, created_at, updated_at)
+        `INSERT INTO users (telegram_id, username, username_searchable, phone, phone_digits, language, currency, payments, delivery_address, show_payments, show_phone, show_address, wishlist_filter, release_version, created_at, updated_at)
         WITH RECURSIVE sequence(n) AS (
             SELECT 1 UNION ALL SELECT n + 1 FROM sequence WHERE n < ?
         )
         SELECT n + 5000000000, 'User_' || n, n % 2, CASE WHEN n % 3 = 0 THEN '+38099' || n END, CASE WHEN n % 3 = 0 THEN '38099' || n END,
             CASE n % 4 WHEN 0 THEN 'pl' WHEN 1 THEN 'uk' ELSE NULL END, 'UAH', CASE WHEN n % 5 = 0 THEN 'jar ' || n END,
+            CASE WHEN n % 4 = 0 THEN 'Branch ' || n || char(10) || 'Kyiv' END, n % 2, n % 3 = 0, n % 6 = 0,
             CASE WHEN n % 7 = 0 THEN n % 5 END, '1.7.1', ?, ?
         FROM sequence`
     )
         .bind(seededUserTotal, seededTimestamp, seededTimestamp)
         .run();
     await DB.prepare(
-        `INSERT INTO wishes (user_id, title, description, link, images, priority, hidden, removed, done, price, created_at, updated_at)
+        `INSERT INTO wishes (user_id, title, description, link, images, priority, priority_level, hidden, removed, done, price, currency, created_at, updated_at)
         WITH RECURSIVE sequence(n) AS (
             SELECT 1 UNION ALL SELECT n + 1 FROM sequence WHERE n < ?
         )
         SELECT CASE WHEN n % 10 = 0 THEN NULL ELSE (n % ?) + 1 END, 'wish ' || n, CASE WHEN n % 2 = 0 THEN ? END, CASE WHEN n % 3 = 0 THEN 'https://example.com/' || n END,
-            json_array('file-' || n || '-a', 'file-' || n || '-b'), n % 7 = 0, n % 11 = 0, n % 13 = 0, n % 17 = 0, n * 10, ?, ?
+            json_array('file-' || n || '-a', 'file-' || n || '-b'), n % 4 = 3, n % 4, n % 11 = 0, n % 13 = 0, n % 17 = 0, n * 10,
+            CASE n % 4 WHEN 0 THEN 'USD' WHEN 1 THEN 'EUR' WHEN 2 THEN 'PLN' ELSE 'UAH' END, ?, ?
         FROM sequence`
     )
         .bind(

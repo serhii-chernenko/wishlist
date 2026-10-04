@@ -3,9 +3,9 @@ import type { InlineKeyboardMarkup } from 'telegraf/types';
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import {
     formatMoney,
-    getDisplayCurrency,
     getPriceFilterRange,
-    WISH_FILTER_VALUES
+    WISH_FILTER_VALUES,
+    type Currency
 } from '../../shared/money';
 import type { EncodableCallbackAction } from '../callback-data';
 import type { AppLocale } from '../i18n';
@@ -30,9 +30,9 @@ export const toWishFilter = (value: number | null | undefined) => {
 export const getFilterTitle = (
     LL: TranslationFunctions,
     locale: AppLocale,
+    currency: Currency,
     filter: WishFilter
 ) => {
-    const currency = getDisplayCurrency(locale);
     const { from, to } = getPriceFilterRange(currency, filter);
     const formatAmount = (value: number) => {
         return formatMoney(value, locale, currency);
@@ -56,12 +56,13 @@ export const getFilterMarker = (filter: WishFilter | null) => {
 export const buildFilterKeyboard = (
     LL: TranslationFunctions,
     locale: AppLocale,
+    currency: Currency,
     toAction: (filter: WishFilter | null) => EncodableCallbackAction
 ): InlineKeyboardMarkup => {
     return singleColumnKeyboard([
         ...WISH_FILTERS.map(filter => {
             return callbackButton(
-                getFilterTitle(LL, locale, filter),
+                getFilterTitle(LL, locale, currency, filter),
                 toAction(filter)
             );
         }),

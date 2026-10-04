@@ -23,7 +23,11 @@ import {
     runOptimistic,
     type KeyOf
 } from '../logic/optimistic';
-import type { DraftFlag } from '../logic/wish-draft';
+import {
+    isHighPriority,
+    toToggledPriority,
+    type DraftFlag
+} from '../logic/wish-draft';
 import type { ScreenProps } from '../nav/routes';
 import {
     useApp,
@@ -204,7 +208,10 @@ export const useWishFlagToggle = () => {
 
     return (wish: OwnWishDto, flag: DraftFlag, value: boolean) => {
         const { api, cache, toast } = services;
-        const applied: Partial<OwnWishDto> = { [flag]: value };
+        const applied: Partial<OwnWishDto> =
+            flag === 'priority'
+                ? { priority: toToggledPriority(value) }
+                : { hidden: value };
         const previous = pickFields(wish, [flag]);
 
         void runOptimistic({
@@ -215,7 +222,7 @@ export const useWishFlagToggle = () => {
             commit() {
                 return api.request('updateWish', {
                     params: { id: wish.id },
-                    body: { [flag]: value }
+                    body: applied
                 });
             },
             rollback() {
@@ -282,12 +289,16 @@ export const WishQuickToggles = ({ wish }: { wish: OwnWishDto }) => {
             <button
                 type='button'
                 class='icon-toggle icon-toggle-heart'
-                aria-pressed={String(wish.priority)}
+                aria-pressed={String(isHighPriority(wish.priority))}
                 aria-label={LL.wishes.priorityToggle()}
                 title={LL.wishes.priorityToggle()}
                 onClick={() => {
                     haptics.selection();
-                    toggleFlag(wish, 'priority', !wish.priority);
+                    toggleFlag(
+                        wish,
+                        'priority',
+                        !isHighPriority(wish.priority)
+                    );
                 }}
             >
                 <HeartIcon />
@@ -464,12 +475,12 @@ type FilterChoice = WishFilterValue | null;
 
 const useFilterOptions = (): ChipOption<FilterChoice>[] => {
     const LL = useLL();
-    const { config, locale } = useSession();
+    const { config, locale, me } = useSession();
 
     return [
         { value: null, label: LL.filters.all() },
-        ...selectPriceFilters(config.priceFilters, locale).map(filter => {
-            const label = describePriceFilter(filter, locale);
+        ...selectPriceFilters(config.priceFilters, me.currency).map(filter => {
+            const label = describePriceFilter(filter, locale, me.currency);
             const text =
                 label.kind === 'upTo'
                     ? LL.filters.upTo({ amount: label.amount })
@@ -488,7 +499,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const services = useApp();
     const { api, nav, toast } = services;
     const LL = useLL();
-    const { me, counts } = useSession();
+    const { counts } = useSession();
     const filterOptions = useFilterOptions();
     const [gate] = useState(createLatestGate);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -719,7 +730,6 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                                         <WishTag
                                             key={wish.id}
                                             wish={wish}
-                                            currency={me.currency}
                                             onOpen={() => {
                                                 nav.push({
                                                     screen: 'wishEditor',

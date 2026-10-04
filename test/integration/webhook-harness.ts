@@ -379,7 +379,7 @@ export const createWebhookHarness = async (
         }> = {}
     ) => {
         const wish = await run(
-            d1.repositories.wishes.create(owner.id, title, new Date())
+            d1.repositories.wishes.create(owner.id, title, 'UAH', new Date())
         );
 
         assert.ok(wish);
@@ -399,9 +399,10 @@ export const createWebhookHarness = async (
 
         if (priority) {
             await run(
-                d1.repositories.wishes.togglePriority(
+                d1.repositories.wishes.setPriorityLevel(
                     wish.id,
                     owner.id,
+                    3,
                     new Date()
                 )
             );

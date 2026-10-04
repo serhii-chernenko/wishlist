@@ -1,6 +1,13 @@
+import {
+    WISH_PRIORITY_LEVELS,
+    type ContactDisclosureField,
+    type WishPriorityLevel
+} from '../shared/app-api';
+import { CURRENCIES, type Currency } from '../shared/money';
 import type {
     AuthType,
     CallbackAction,
+    ConfirmableDisclosureField,
     LanguageChoice,
     NavigationScreenId,
     WishField,
@@ -22,7 +29,11 @@ const NAVIGATION_CODES = {
     donate: 'don',
     payments: 'pay',
     language: 'lang',
-    releases: 'rel'
+    releases: 'rel',
+    settings: 'set',
+    currency: 'cur',
+    delivery: 'dlv',
+    disclosure: 'dsc'
 } as const satisfies Record<NavigationScreenId, string>;
 
 const WISH_FIELD_CODES = {
@@ -39,7 +50,18 @@ const AUTH_TYPE_CODES = {
     both: 'b'
 } as const satisfies Record<AuthType, string>;
 
+const DISCLOSURE_FIELD_CODES = {
+    payments: 'p',
+    phone: 'h',
+    address: 'a'
+} as const satisfies Record<ContactDisclosureField, string>;
+
+const CONFIRM_SUFFIX = 'y';
+
 const LANGUAGE_CHOICES: readonly LanguageChoice[] = ['uk', 'en', 'pl', 'auto'];
+
+const PRIORITY_LEVEL_VALUES: readonly WishPriorityLevel[] =
+    Object.values(WISH_PRIORITY_LEVELS);
 
 const LEGACY_NAVIGATION: Readonly<Record<string, NavigationScreenId>> = {
     greeting: 'home',
@@ -68,11 +90,15 @@ const invertRecord = <K extends string, V extends string>(
 const SCREEN_BY_NAVIGATION_CODE = invertRecord(NAVIGATION_CODES);
 const FIELD_BY_CODE = invertRecord(WISH_FIELD_CODES);
 const AUTH_TYPE_BY_CODE = invertRecord(AUTH_TYPE_CODES);
+const DISCLOSURE_FIELD_BY_CODE = invertRecord(DISCLOSURE_FIELD_CODES);
 
 const ENTITY_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const OFFSET_PATTERN = /^(0|[1-9]\d{0,8})$/;
 const FILTER_PATTERN = /^[0-4]$/;
 const FILTER_RESET_CODE = 'x';
+const IMAGE_INDEX_PATTERN = /^[0-8]$/;
+const IMAGE_HASH_PREFIX_PATTERN = /^[0-9a-f]{8}$/;
+export const IMAGE_HASH_PREFIX_LENGTH = 8;
 
 const encodeFilter = (filter: WishFilter | null): string => {
     return filter === null ? FILTER_RESET_CODE : String(filter);
@@ -149,6 +175,8 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'wl:share:new:y';
         case 'wishlistShareUsername':
             return 'wl:share:u';
+        case 'wishlistShareIndexing':
+            return 'wl:share:idx';
         case 'wishlistFilterMenu':
             return 'wl:f';
         case 'wishlistFilter':
@@ -159,8 +187,16 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `w:r:${action.wishId}`;
         case 'wishRemoveConfirm':
             return `w:r:${action.done ? 'y' : 'n'}:${action.wishId}`;
-        case 'wishTogglePriority':
-            return `w:t:${action.wishId}`;
+        case 'wishPriorityMenu':
+            return `w:pm:${action.wishId}`;
+        case 'wishPrioritySet':
+            return `w:pl:${action.wishId}:${action.level}`;
+        case 'wishCurrencySet':
+            return `w:cu:${action.wishId}:${action.currency}`;
+        case 'wishImagesOrder':
+            return `w:io:${action.wishId}`;
+        case 'wishImageFirst':
+            return `w:if:${action.wishId}:${action.index}:${action.hash8}`;
         case 'wishToggleVisibility':
             return `w:v:${action.wishId}`;
         case 'wishFieldPrompt':
@@ -191,6 +227,14 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `a:${AUTH_TYPE_CODES[action.authType]}`;
         case 'paymentsRemove':
             return 'p:rm';
+        case 'currencySet':
+            return `cur:${action.currency}`;
+        case 'disclosureToggle':
+            return `dsc:${DISCLOSURE_FIELD_CODES[action.field]}`;
+        case 'disclosureConfirm':
+            return `dsc:${DISCLOSURE_FIELD_CODES[action.field]}:${CONFIRM_SUFFIX}`;
+        case 'deliveryRemove':
+            return 'dlv:rm';
         case 'language':
             return `l:${action.choice}`;
         case 'noop':
@@ -241,7 +285,8 @@ const SHARE_ACTIONS_BY_SUFFIX: ReadonlyMap<string, CallbackAction> = new Map([
     ['stop:y', { type: 'wishlistShareStopConfirm' }],
     ['new', { type: 'wishlistShareRotate' }],
     ['new:y', { type: 'wishlistShareRotateConfirm' }],
-    ['u', { type: 'wishlistShareUsername' }]
+    ['u', { type: 'wishlistShareUsername' }],
+    ['idx', { type: 'wishlistShareIndexing' }]
 ]);
 
 const decodeWishlistShare = (suffixParts: readonly string[]) => {
@@ -314,11 +359,85 @@ const decodeWishRemove = (parts: readonly string[]): CallbackAction => {
     });
 };
 
+const findCurrency = (raw: string | undefined): Currency | undefined => {
+    return CURRENCIES.find(currency => {
+        return currency === raw;
+    });
+};
+
+const findPriorityLevel = (
+    raw: string | undefined
+): WishPriorityLevel | undefined => {
+    return PRIORITY_LEVEL_VALUES.find(level => {
+        return String(level) === raw;
+    });
+};
+
+const decodeWishPrioritySet = (parts: readonly string[]): CallbackAction => {
+    const [, , wishIdPart, levelPart, ...rest] = parts;
+    const level = findPriorityLevel(levelPart);
+
+    if (level === undefined || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    return withWishId(wishIdPart, wishId => {
+        return { type: 'wishPrioritySet', wishId, level };
+    });
+};
+
+const decodeWishCurrencySet = (parts: readonly string[]): CallbackAction => {
+    const [, , wishIdPart, currencyPart, ...rest] = parts;
+    const currency = findCurrency(currencyPart);
+
+    if (currency === undefined || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    return withWishId(wishIdPart, wishId => {
+        return { type: 'wishCurrencySet', wishId, currency };
+    });
+};
+
+const decodeWishImageFirst = (parts: readonly string[]): CallbackAction => {
+    const [, , wishIdPart, indexPart, hash8, ...rest] = parts;
+
+    if (
+        indexPart === undefined ||
+        !IMAGE_INDEX_PATTERN.test(indexPart) ||
+        hash8 === undefined ||
+        !IMAGE_HASH_PREFIX_PATTERN.test(hash8) ||
+        rest.length > 0
+    ) {
+        return OUTDATED;
+    }
+
+    return withWishId(wishIdPart, wishId => {
+        return {
+            type: 'wishImageFirst',
+            wishId,
+            index: Number(indexPart),
+            hash8
+        };
+    });
+};
+
+const WISH_DECODERS_BY_COMMAND: Readonly<
+    Record<string, (parts: readonly string[]) => CallbackAction>
+> = {
+    r: decodeWishRemove,
+    pl: decodeWishPrioritySet,
+    cu: decodeWishCurrencySet,
+    if: decodeWishImageFirst
+};
+
 const decodeWish = (parts: readonly string[]): CallbackAction => {
     const [, command, first, second, ...rest] = parts;
+    const commandDecoder =
+        command === undefined ? undefined : WISH_DECODERS_BY_COMMAND[command];
 
-    if (command === 'r') {
-        return decodeWishRemove(parts);
+    if (commandDecoder !== undefined) {
+        return commandDecoder(parts);
     }
 
     if (command === 'add') {
@@ -348,8 +467,13 @@ const decodeWish = (parts: readonly string[]): CallbackAction => {
                 return { type: 'wishEdit', wishId };
             });
         case 't':
+        case 'pm':
             return withWishId(first, wishId => {
-                return { type: 'wishTogglePriority', wishId };
+                return { type: 'wishPriorityMenu', wishId };
+            });
+        case 'io':
+            return withWishId(first, wishId => {
+                return { type: 'wishImagesOrder', wishId };
             });
         case 'v':
             return withWishId(first, wishId => {
@@ -481,6 +605,47 @@ const decodePayments = (parts: readonly string[]): CallbackAction => {
         : OUTDATED;
 };
 
+const decodeCurrency = (parts: readonly string[]): CallbackAction => {
+    const [, code, ...rest] = parts;
+    const currency = findCurrency(code);
+
+    if (currency === undefined || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    return { type: 'currencySet', currency };
+};
+
+const isConfirmableDisclosureField = (
+    field: ContactDisclosureField
+): field is ConfirmableDisclosureField => {
+    return field !== 'payments';
+};
+
+const decodeDisclosure = (parts: readonly string[]): CallbackAction => {
+    const [, code, suffix, ...rest] = parts;
+    const field =
+        code === undefined ? undefined : DISCLOSURE_FIELD_BY_CODE.get(code);
+
+    if (field === undefined || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    if (suffix === undefined) {
+        return { type: 'disclosureToggle', field };
+    }
+
+    return suffix === CONFIRM_SUFFIX && isConfirmableDisclosureField(field)
+        ? { type: 'disclosureConfirm', field }
+        : OUTDATED;
+};
+
+const decodeDelivery = (parts: readonly string[]): CallbackAction => {
+    return parts.length === 2 && parts[1] === 'rm'
+        ? { type: 'deliveryRemove' }
+        : OUTDATED;
+};
+
 const DECODERS_BY_PREFIX: Readonly<
     Record<string, (parts: readonly string[]) => CallbackAction>
 > = {
@@ -491,7 +656,10 @@ const DECODERS_BY_PREFIX: Readonly<
     g: decodeGiveList,
     a: decodeAuth,
     p: decodePayments,
-    l: decodeLanguage
+    l: decodeLanguage,
+    cur: decodeCurrency,
+    dsc: decodeDisclosure,
+    dlv: decodeDelivery
 };
 
 const decodeLegacyNavigation = (data: string): CallbackAction | null => {
@@ -549,12 +717,17 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishlistShareRotate: 'wishlist:shareRotate',
     wishlistShareRotateConfirm: 'wishlist:shareRotateConfirm',
     wishlistShareUsername: 'wishlist:shareUsername',
+    wishlistShareIndexing: 'wishlist:shareIndexing',
     wishlistFilterMenu: 'wishlist:filterMenu',
     wishlistFilter: 'wishlist:filter',
     wishEdit: 'wish:edit',
     wishRemove: 'wish:remove',
     wishRemoveConfirm: 'wish:removeConfirm',
-    wishTogglePriority: 'wish:priority',
+    wishPriorityMenu: 'wish:priorityMenu',
+    wishPrioritySet: 'wish:prioritySet',
+    wishCurrencySet: 'wish:currency',
+    wishImagesOrder: 'wish:imagesOrder',
+    wishImageFirst: 'wish:imageFirst',
     wishToggleVisibility: 'wish:visibility',
     wishFieldPrompt: 'wish:field',
     wishBack: 'wish:back',
@@ -570,6 +743,10 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     giveListCleanConfirm: 'giveList:cleanConfirm',
     authType: 'auth:type',
     paymentsRemove: 'payments:remove',
+    currencySet: 'currency',
+    disclosureToggle: 'disclosure:toggle',
+    disclosureConfirm: 'disclosure:confirm',
+    deliveryRemove: 'delivery:remove',
     language: 'language',
     noop: 'noop',
     outdated: 'invalid'

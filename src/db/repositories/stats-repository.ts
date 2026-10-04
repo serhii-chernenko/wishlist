@@ -1,5 +1,6 @@
 import { count, isNull, sql } from 'drizzle-orm';
 
+import { WISH_PRIORITY_LEVELS } from '../../shared/app-api';
 import type { AppDb } from '../client';
 import { gives, users, wishes } from '../schema';
 import { createTryDb } from './try-db';
@@ -146,7 +147,7 @@ export const createStatsRepository = (db: AppDb) => {
                                 sql`${wishes.removed} = 0 and ${wishes.hidden} = 1`
                             ),
                             priorityWishes: countWhere(
-                                sql`${wishes.removed} = 0 and ${wishes.priority} = 1`
+                                sql`${wishes.removed} = 0 and ${wishes.priorityLevel} = ${WISH_PRIORITY_LEVELS.high}`
                             ),
                             doneWishes: countWhere(sql`${wishes.done} = 1`)
                         })

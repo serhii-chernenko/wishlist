@@ -8,8 +8,11 @@ import type {
     FieldErrors,
     OwnWishDto,
     WishDraftInput,
-    WishPatchInput
+    WishPatchInput,
+    WishPriority
 } from '../../shared/app-api';
+import { DEFAULT_CURRENCY } from '../../bot/content/intl';
+import type { Currency } from '../../shared/money';
 
 export const DRAFT_TEXT_FIELDS = [
     'title',
@@ -27,20 +30,34 @@ export interface WishDraft {
     description: string;
     price: string;
     link: string;
-    priority: boolean;
+    currency: Currency;
+    priority: WishPriority;
     hidden: boolean;
 }
 
 export type DraftErrors = Partial<Record<DraftTextField, FieldErrorCode>>;
 
-export const EMPTY_DRAFT: WishDraft = Object.freeze({
-    title: '',
-    description: '',
-    price: '',
-    link: '',
-    priority: false,
-    hidden: false
-});
+export const createEmptyDraft = (currency: Currency): WishDraft => {
+    return Object.freeze({
+        title: '',
+        description: '',
+        price: '',
+        link: '',
+        currency,
+        priority: 'none',
+        hidden: false
+    });
+};
+
+export const EMPTY_DRAFT: WishDraft = createEmptyDraft(DEFAULT_CURRENCY);
+
+export const isHighPriority = (priority: WishPriority) => {
+    return priority === 'high';
+};
+
+export const toToggledPriority = (pressed: boolean): WishPriority => {
+    return pressed ? 'high' : 'none';
+};
 
 const IMMEDIATE_ERROR_CODES: ReadonlySet<FieldErrorCode> = new Set([
     'tooLong',
@@ -57,6 +74,7 @@ export const draftFromWish = (wish: OwnWishDto): WishDraft => {
         description: wish.description ?? '',
         price: wish.price > 0 ? String(wish.price) : '',
         link: wish.link ?? '',
+        currency: wish.currency,
         priority: wish.priority,
         hidden: wish.hidden
     };
@@ -106,6 +124,7 @@ export const isDraftDirty = (baseline: WishDraft, draft: WishDraft) => {
         DRAFT_TEXT_FIELDS.some(field => {
             return baseline[field].trim() !== draft[field].trim();
         }) ||
+        baseline.currency !== draft.currency ||
         baseline.priority !== draft.priority ||
         baseline.hidden !== draft.hidden
     );
@@ -182,6 +201,7 @@ export const toCreateInput = (draft: WishDraft): WishDraftInput => {
         description: toNullableText(draft.description),
         link: toNullableText(draft.link),
         price: toNullableText(draft.price),
+        currency: draft.currency,
         priority: draft.priority,
         hidden: draft.hidden
     };
@@ -207,6 +227,10 @@ export const toPatchInput = (
 
     if (baseline.link.trim() !== draft.link.trim()) {
         patch.link = toNullableText(draft.link);
+    }
+
+    if (baseline.currency !== draft.currency) {
+        patch.currency = draft.currency;
     }
 
     if (baseline.priority !== draft.priority) {

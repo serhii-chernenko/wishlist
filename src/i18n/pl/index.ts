@@ -50,7 +50,7 @@ const pl: Translation = {
         title: '🧐 Dowiedz się więcej',
         description: {
             sensitive:
-                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nTe dane posłużą wyłącznie do wyszukiwania list życzeń innych użytkowników, jeśli znasz ich numer.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu.\nŻadnych imion, żadnych nazwisk, dopóki sam(-a) nie udostępnisz listy życzeń: wtedy bot zapisze imię z twojego Telegrama, żeby pokazać je na publicznej stronie. Gdy wyłączysz udostępnianie, imię zostanie usunięte.\nDzięki za zainteresowanie tak ważnym tematem ❤️',
+                '<b>Dane prywatne</b>\n\nNumer telefonu to prywatna informacja każdego użytkownika!\nTe dane posłużą wyłącznie do wyszukiwania list życzeń innych użytkowników, jeśli znasz ich numer.\nBot ma otwarty kod (open source), który możesz obejrzeć pod linkiem do GitHuba.\nBaza użytkowników jest przechowywana w Cloudflare z solidną ochroną!\nBot zapisuje wyłącznie twoją nazwę użytkownika i/lub numer telefonu.\nŻadnych imion, żadnych nazwisk, dopóki sam(-a) nie udostępnisz listy życzeń: wtedy bot zapisze imię z twojego Telegrama, żeby pokazać je na publicznej stronie. Gdy wyłączysz udostępnianie, imię zostanie usunięte.\nNumer telefonu i adres dostawy, jeśli je włączysz, są pokazywane tylko w Telegramie i nigdy na stronie w przeglądarce.\nDzięki za zainteresowanie tak ważnym tematem ❤️',
             openSource:
                 '\n\n<b>Otwarty kod (Open Source)</b>\n\nOtwarty kod oznacza, że każdy chętny może\n- włączyć się w ulepszanie projektu\n- zobaczyć, jak napisany jest kod\n- ponadto projekt ma licencję GNU AGPLv3, co oznacza, że kod można w pełni skopiować do dowolnego innego projektu, nawet komercyjnego.',
             languages:
@@ -158,6 +158,8 @@ const pl: Translation = {
                 updateLink: '🔗 Zaktualizuj link',
                 setPriority: '❗️Bardzo tego chcę',
                 unsetPriority: '❗Już nie tak bardzo tego chcę',
+                priority: '🎯 Priorytet: {level}',
+                imagesOrder: '🔀 Kolejność zdjęć',
                 hide: '🫣 Ukryj przed innymi',
                 show: '👀 Przywróć widoczność',
                 addPrice: '💸 Podaj cenę',
@@ -197,12 +199,26 @@ const pl: Translation = {
                 updateImages: '✅ Zdjęcia zostały dodane!',
                 removeLink: '✅ Link został usunięty!',
                 updateLink: '✅ Link został zaktualizowany!',
-                priority: '✅ Priorytet został zmieniony!',
+                priority: '✅ Priorytet został zaktualizowany!',
                 visibility: '✅ Widoczność została zmieniona!',
                 removePrice: '✅ Cena została usunięta!',
                 updatePrice: '✅ Cena została zmieniona!',
                 imagesLimit:
                     'ℹ️ Zapisano tylko 9 zdjęć: więcej do jednego życzenia dodać nie można.'
+            },
+            currency: {
+                hint: 'Wybierz walutę tego życzenia. Teraz: {currency}.',
+                success: '✅ Zmieniono walutę życzenia: {currency}'
+            },
+            images: {
+                order: {
+                    prompt: '🔀 Wybierz zdjęcie, które ma zostać zdjęciem głównym.',
+                    caption: 'Zdjęcie {n}',
+                    makeFirst: '⬆️ Ustaw zdjęcie {n} jako główne',
+                    success: '✅ Kolejność zdjęć została zmieniona!',
+                    changed:
+                        'ℹ️ Zdjęcia w międzyczasie się zmieniły, więc kolejność nie została zapisana. Spróbuj jeszcze raz.'
+                }
             }
         },
         remove: {
@@ -220,7 +236,7 @@ const pl: Translation = {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
             empty: '❌ Na razie nie ma czym się dzielić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
             consent:
-                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
+                '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu na Telegramie: {name}\n• twój @username, tylko jeśli sam(-a) go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• twoje dane płatnicze, jeśli je dodałeś(-aś)\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Twój numer telefonu i lista „Chcę podarować” nigdy nie są tam pokazywane. Numer telefonu i adres dostawy, jeśli je włączysz, są pokazywane tylko w Telegramie, a na stronie w przeglądarce nigdy.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest gotowa!\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
             stopConfirm:
                 '❓ Wyłączyć udostępnianie listy życzeń?\n\nStrona przestanie się otwierać, a zapisane imię zostanie usunięte. Jeśli później udostępnisz ją ponownie, zadziała ten sam link, więc każdy, kto go ma, znów zobaczy twoją listę.',
@@ -275,7 +291,12 @@ const pl: Translation = {
             before: 'Oto lista życzeń <b>{0}</b>:',
             payments:
                 'Jeśli nie możesz podarować konkretnego prezentu, użytkownik podał swoje dane płatnicze, za pomocą których możesz przesłać pieniądze, żeby ta osoba mogła kupić prezent samodzielnie:\n\n{0}',
-            after: '❓<b>Co chcesz zrobić?</b>\n\n🎁 Zarezerwować życzenie\n❌ Anulować rezerwację życzenia'
+            after: '❓<b>Co chcesz zrobić?</b>\n\n🎁 Zarezerwować życzenie\n❌ Anulować rezerwację życzenia',
+            contact: {
+                title: '📇 <b>Kontakt i dostawa</b>',
+                phone: '📱 Telefon: {phone}',
+                address: '📦 Adres dostawy:\n{address}'
+            }
         },
         givers: {
             you: '\n\n👥 <i>Zarezerwowane przez ciebie</i>',
@@ -337,9 +358,21 @@ const pl: Translation = {
         title: '❤️ <b>{0}</b>',
         description: '\n\n✏️ Opis:\n{0}',
         priority: {
-            owner: '\n\n<blockquote>❗️ <b>Bardzo tego teraz chcę!</b></blockquote>',
-            watcher:
-                '\n\n<blockquote>❗️ <b>Ta osoba bardzo tego teraz chce!</b></blockquote>'
+            low: {
+                owner: '\n\n<blockquote>🟢 <b>Trochę tego teraz chcę</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>🟢 <b>Ta osoba trochę tego teraz chce</b></blockquote>'
+            },
+            medium: {
+                owner: '\n\n<blockquote>🟡 <b>Chcę tego teraz</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>🟡 <b>Ta osoba chce tego teraz</b></blockquote>'
+            },
+            high: {
+                owner: '\n\n<blockquote>❗️ <b>Bardzo tego teraz chcę!</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>❗️ <b>Ta osoba bardzo tego teraz chce!</b></blockquote>'
+            }
         },
         hidden: '\n\n🫣 <i>To życzenie jest ukryte przed innymi!</i>',
         price: '\n\n💸 Orientacyjna cena: <b>{0}</b>',
@@ -367,6 +400,91 @@ const pl: Translation = {
         remove: {
             success:
                 '✅ Dane płatnicze zostały usunięte! Zawsze możesz tu wrócić, żeby dodać je ponownie!'
+        }
+    },
+    settings: {
+        title: '⚙️ Ustawienia',
+        description:
+            'Wybierz, co chcesz ustawić: język, walutę, dane płatnicze, adres dostawy albo to, co widzą inni.'
+    },
+    currency: {
+        title: '💱 Waluta',
+        description:
+            'Wybierz walutę, w której podajesz cenę nowych życzeń. Każde życzenie zachowuje własną walutę, a inni widzą kwoty orientacyjnie, przeliczone według kursu Narodowego Banku Ukrainy.\n\nAktualna waluta: <b>{current}</b>',
+        options: {
+            UAH: '🇺🇦 ₴ Hrywna',
+            USD: '🇺🇸 $ Dolar amerykański',
+            EUR: '🇪🇺 € Euro',
+            PLN: '🇵🇱 zł Złoty'
+        },
+        success: '✅ Zmieniono walutę: {currency}'
+    },
+    priority: {
+        title: '🎯 Priorytet',
+        levels: {
+            none: '⚪ Brak priorytetu',
+            low: '🟢 Niski',
+            medium: '🟡 Średni',
+            high: '🔴 Wysoki'
+        },
+        success: '✅ Zmieniono priorytet: {level}'
+    },
+    delivery: {
+        title: {
+            add: '📦 Dodaj adres dostawy',
+            update: '📦 Zaktualizuj adres dostawy'
+        },
+        description:
+            'Napisz, dokąd wysyłać prezenty, na przykład do paczkomatu lub punktu odbioru. Od 5 do 300 znaków, maksymalnie 6 wierszy, bez linków.{current}\n\n<b>Wyślij nowy adres w następnej wiadomości</b>.',
+        phoneWarning:
+            'ℹ️ Adres jest pokazywany innym tylko razem z numerem telefonu. Możesz to włączyć w sekcji „Co widzą inni”.',
+        errors: {
+            tooShort:
+                '❌ Za mało informacji: dodaj trochę więcej szczegółów.\nSpróbuj jeszcze raz.',
+            tooLong:
+                '❌ Adres jest za długi! Maksymalnie {max} znaków.\nSpróbuj jeszcze raz.',
+            containsLink:
+                '❌ Adres nie może zawierać linków.\nSpróbuj jeszcze raz.'
+        },
+        success: {
+            update: '✅ Adres dostawy został zapisany!',
+            remove: '✅ Adres dostawy został usunięty! Zawsze możesz tu wrócić, żeby dodać go ponownie!'
+        }
+    },
+    disclosure: {
+        title: '👀 Co widzą inni',
+        description:
+            'Wybierz, co zobaczą inni, gdy otworzą twoją listę życzeń. Numer telefonu i adres dostawy są pokazywane tylko w Telegramie i nigdy na stronie w przeglądarce. Domyślnie są wyłączone.',
+        toggle: {
+            payments: {
+                on: '✅ Dane płatnicze: widoczne',
+                off: '🚫 Dane płatnicze: ukryte'
+            },
+            phone: {
+                on: '✅ Numer telefonu: widoczny',
+                off: '🚫 Numer telefonu: ukryty'
+            },
+            address: {
+                on: '✅ Adres dostawy: widoczny',
+                off: '🚫 Adres dostawy: ukryty'
+            }
+        },
+        confirm: {
+            phone: '❓ Pokazywać twój numer telefonu?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce numer nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
+            address:
+                '❓ Pokazywać twój adres dostawy?\n\nZobaczy go każdy, kto otworzy twoją listę życzeń w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
+        },
+        needsPhone:
+            '❌ Najpierw włącz pokazywanie numeru telefonu: adres jest pokazywany tylko razem z nim.',
+        needsAddress: '❌ Najpierw dodaj adres dostawy.',
+        phoneMissing:
+            '❌ Bot nie ma twojego numeru telefonu. Najpierw pozwól, żeby inni mogli cię znajdować po numerze, w sekcji „Zmień widoczność”.',
+        saved: '✅ Ustawienia zostały zapisane!',
+        indexing: {
+            title: 'Pokazuj w wyszukiwarkach',
+            hint: 'Gdy ta opcja jest włączona, Google i inne wyszukiwarki mogą pokazywać stronę twojej listy życzeń, w tym znajdujące się na niej dane płatnicze. Po wyłączeniu do strony zostanie dodany znacznik noindex, ale kopie, które już trafiły do indeksu, mogą znikać dopiero po pewnym czasie.',
+            on: '✅ Wyszukiwarki: dozwolone',
+            off: '🚫 Wyszukiwarki: zablokowane'
         }
     },
     filters: {
@@ -412,7 +530,11 @@ const pl: Translation = {
             title: 'Można podarować pieniądze'
         },
         wish: {
-            priority: 'Bardzo chce',
+            priority: {
+                low: 'Trochę chce',
+                medium: 'Chce',
+                high: 'Bardzo chce'
+            },
             price: 'Orientacyjna cena:',
             approx: '≈ {amount}',
             original: '(cena pierwotna {amount})',
@@ -425,12 +547,24 @@ const pl: Translation = {
         empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
         truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
         ratesNote:
-            'Ceny orientacyjne, w {currency} według kursu Narodowego Banku Ukrainy z {date}',
+            'Ceny w innych walutach są orientacyjne, przeliczone na {currency} według kursu Narodowego Banku Ukrainy z {date}',
         footer: {
             cta: 'Utwórz własną listę życzeń',
             support: 'Wesprzyj autora',
             openSource: 'Otwarty kod na GitHubie',
             openInApp: 'Otwórz w Telegramie i zarezerwuj życzenie'
+        },
+        currency: {
+            label: 'Waluta',
+            auto: 'Automatycznie',
+            UAH: '₴ Hrywna',
+            USD: '$ Dolar amerykański',
+            EUR: '€ Euro',
+            PLN: 'zł Złoty'
+        },
+        delivery: {
+            inTelegram: 'Szczegóły dostawy są dostępne w Telegramie',
+            cta: 'Otwórz w Telegramie'
         },
         language: {
             label: 'Język'
@@ -567,7 +701,11 @@ const pl: Translation = {
             newBadge: 'Nowe'
         },
         a11y: {
-            priority: 'Bardzo chcę',
+            priority: {
+                low: 'Trochę chcę',
+                medium: 'Chcę',
+                high: 'Bardzo chcę'
+            },
             priorityThird: 'Bardzo chce',
             hidden: 'Ukryte życzenie, widzisz je tylko ty',
             photo: 'Zdjęcie {index} z {total}: {title}',
@@ -635,7 +773,10 @@ const pl: Translation = {
             usernameRequired:
                 'Nie masz nazwy użytkownika w Telegramie. Dodaj ją w ustawieniach Telegrama i wróć.',
             usernameUnavailable:
-                'Nazwę użytkownika można pokazać tylko wtedy, gdy inni mogą cię po niej znaleźć.'
+                'Nazwę użytkownika można pokazać tylko wtedy, gdy inni mogą cię po niej znaleźć.',
+            phoneRequired:
+                'Potrzebny jest numer telefonu: pozwól, żeby inni mogli cię po nim znajdować, w sekcji „Widoczność”.',
+            addressRequired: 'Potrzebny jest adres dostawy. Najpierw go dodaj.'
         },
         outside: {
             title: 'Otwórz w Telegramie',
@@ -685,7 +826,52 @@ const pl: Translation = {
             stats: 'Statystyki',
             donate: 'Wesprzyj autora',
             releases: 'Co nowego',
-            about: 'O aplikacji'
+            about: 'O aplikacji',
+            currency: 'Waluta',
+            delivery: 'Adres dostawy'
+        },
+        contact: {
+            title: 'Dane kontaktowe',
+            phone: 'Telefon',
+            address: 'Adres dostawy',
+            copy: 'Kopiuj',
+            copied: 'Skopiowano',
+            call: 'Zadzwoń'
+        },
+        currency: {
+            title: 'Waluta',
+            lead: 'Wybierz walutę, w której podajesz cenę nowych życzeń. Każde życzenie zachowuje własną walutę, a inni widzą kwoty orientacyjnie, według kursu Narodowego Banku Ukrainy.',
+            options: {
+                UAH: {
+                    title: 'Hrywna (₴)',
+                    hint: 'Kod waluty: UAH'
+                },
+                USD: {
+                    title: 'Dolar amerykański ($)',
+                    hint: 'Kod waluty: USD'
+                },
+                EUR: {
+                    title: 'Euro (€)',
+                    hint: 'Kod waluty: EUR'
+                },
+                PLN: {
+                    title: 'Złoty (zł)',
+                    hint: 'Kod waluty: PLN'
+                }
+            }
+        },
+        delivery: {
+            title: 'Adres dostawy',
+            lead: 'Dokąd wysyłać prezenty, na przykład do paczkomatu lub punktu odbioru. Inni zobaczą adres tylko w Telegramie i tylko jeśli to włączysz.',
+            label: 'Adres dostawy',
+            placeholder: 'Na przykład paczkomat, Warszawa, ul. Marszałkowska 1',
+            hint: 'Od 5 do 300 znaków, maksymalnie 6 wierszy, bez linków.',
+            phoneWarning:
+                'Adres jest pokazywany tylko razem z numerem telefonu. Możesz to włączyć w sekcji „Udostępnij listę”.',
+            save: 'Zapisz',
+            remove: 'Usuń adres',
+            saved: 'Zapisano adres',
+            removed: 'Usunięto adres'
         },
         home: {
             title: 'Lista życzeń',
@@ -696,6 +882,13 @@ const pl: Translation = {
                 '{count} {{count:|prezent||prezenty|prezentów|prezentu}} w planach',
             addWish: 'Dodaj życzenie',
             themeToggle: 'Motyw: {current}. Zmień',
+            pairs: {
+                stats: 'Statystyki',
+                donate: 'Wesprzyj',
+                feedback: 'Opinia',
+                releases: 'Co nowego',
+                about: 'O aplikacji'
+            },
             tiles: {
                 wishes: {
                     title: 'Moje życzenia',
@@ -755,7 +948,7 @@ const pl: Translation = {
                 cta: 'Wyczyść filtr'
             },
             hiddenBadge: 'Widzisz tylko ty',
-            priorityToggle: 'Bardzo chcę',
+            priorityToggle: 'Wysoki priorytet',
             hiddenToggle: 'Ukryj przed innymi',
             photoCount: 'Zdjęcia: {count}',
             edit: 'Edytuj',
@@ -771,8 +964,8 @@ const pl: Translation = {
                 empty: 'Lista życzeń jest już pusta'
             },
             toasts: {
-                priorityOn: 'Oznaczono „Bardzo chcę”',
-                priorityOff: 'Zdjęto oznaczenie „Bardzo chcę”',
+                priorityOn: 'Ustawiono wysoki priorytet',
+                priorityOff: 'Zdjęto priorytet',
                 hidden: 'Teraz to życzenie widzisz tylko ty',
                 shown: 'Teraz to życzenie widzą inni'
             }
@@ -818,8 +1011,17 @@ const pl: Translation = {
                 host: 'Otworzy się na {host}'
             },
             priority: {
-                label: 'Bardzo chcę',
-                hint: 'Takie życzenia dostają serduszko i są na początku listy.'
+                label: 'Priorytet',
+                hint: 'Im wyższy priorytet, tym wyżej życzenie na liście. Serduszko dostają tylko życzenia z wysokim priorytetem.',
+                levels: {
+                    none: 'Brak',
+                    low: 'Niski',
+                    medium: 'Średni',
+                    high: 'Wysoki'
+                }
+            },
+            currency: {
+                label: 'Waluta'
             },
             hidden: {
                 label: 'Ukryj przed innymi',
@@ -878,6 +1080,16 @@ const pl: Translation = {
             unsupported: 'Ten format nie jest obsługiwany',
             queued: 'Zdjęcia prześlą się po zapisaniu',
             removed: 'Usunięto zdjęcie',
+            reorder: {
+                handle: 'Przeciągnij zdjęcie, aby zmienić kolejność',
+                makeFirst: 'Ustaw jako główne',
+                instructions:
+                    'Przytrzymaj zdjęcie i przeciągnij je, aby zmienić kolejność. Pierwsze zdjęcie będzie zdjęciem głównym.',
+                moved: 'Zdjęcie {position} z {total}',
+                saved: 'Zapisano kolejność zdjęć',
+                conflict:
+                    'Zdjęcia już się zmieniły. Odśwież ekran i spróbuj ponownie.'
+            },
             chatFallback: {
                 action: 'Dodaj zdjęcia w czacie',
                 hint: 'Jeśli zdjęcia nie dodają się tutaj, wyślij je botowi w czacie.',
@@ -971,11 +1183,42 @@ const pl: Translation = {
                 name: 'imię z twojego Telegrama: {name}',
                 username: 'twój @username, tylko jeśli go włączysz',
                 wishes: 'wszystkie życzenia poza ukrytymi, wraz z ich zdjęciami',
-                payments: 'twoje dane płatnicze, jeśli są dodane',
+                payments:
+                    'twoje dane płatnicze, jeśli są dodane (numer telefonu i adres dostawy nie są tam pokazywane, nawet jeśli je włączysz)',
                 public: 'Stronę otworzy każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek.',
                 private:
                     'Numer telefonu i lista „Chcę podarować” nigdy tam nie są pokazywane.',
                 stop: 'Udostępnianie możesz zakończyć w każdej chwili.'
+            },
+            details: {
+                title: 'Co widzą inni',
+                lead: 'Wybierz, co zobaczą osoby, które otworzą twoją listę w Telegramie. Numer telefonu i adres dostawy nigdy nie są pokazywane na stronie w przeglądarce.',
+                payments: {
+                    label: 'Dane płatnicze',
+                    hint: 'Osoby, które otworzą listę, zobaczą, jak mogą przesłać ci pieniądze.'
+                },
+                phone: {
+                    label: 'Numer telefonu',
+                    hint: 'Tylko w Telegramie, nigdy na stronie w przeglądarce.'
+                },
+                address: {
+                    label: 'Adres dostawy',
+                    hint: 'Tylko w Telegramie i tylko razem z numerem telefonu.'
+                },
+                confirm: {
+                    phone: 'Twój numer telefonu zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Na stronie w przeglądarce nigdy nie jest pokazywany. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.',
+                    address:
+                        'Twój adres dostawy zobaczy każdy, kto otworzy twoją listę w Telegramie: przez twój link albo wyszukując cię po nazwie użytkownika lub numerze. Adres jest pokazywany tylko razem z numerem telefonu i nigdy na stronie w przeglądarce. Wiadomości, które już zostały wysłane, pozostaną w czacie osoby, która je dostała.'
+                },
+                phoneMissing:
+                    'Najpierw pozwól, żeby inni mogli cię znajdować po numerze, w sekcji „Widoczność”.',
+                addressMissing: 'Najpierw dodaj adres dostawy.',
+                needsPhone:
+                    'Adres można pokazywać tylko razem z numerem telefonu.'
+            },
+            indexing: {
+                title: 'Pokazuj w wyszukiwarkach',
+                hint: 'Gdy ta opcja jest włączona, Google i inne wyszukiwarki mogą pokazywać stronę twojej listy życzeń, w tym znajdujące się na niej dane płatnicze. Po wyłączeniu do strony zostanie dodany znacznik noindex, ale kopie, które już trafiły do indeksu, mogą znikać dopiero po pewnym czasie.'
             },
             publish: 'Udostępnij',
             published: 'Teraz udostępniasz swoją listę życzeń',
@@ -1181,6 +1424,10 @@ const pl: Translation = {
             paymentsSet: 'Dodane',
             paymentsEmpty: 'Nie dodano',
             visibilityNone: 'Nie ustawiono',
+            currency: 'Waluta',
+            delivery: 'Adres dostawy',
+            deliverySet: 'Dodany',
+            deliveryEmpty: 'Nie dodano',
             theme: {
                 title: 'Motyw',
                 system: 'Jak w Telegramie',

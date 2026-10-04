@@ -34,19 +34,33 @@ test('five price filters cover the legacy hryvnia ranges', () => {
 });
 
 test('filter titles use the open-ended and bounded translations', () => {
-    assert.equal(normalizeSpaces(getFilterTitle(LL, 'uk', 0)), 'До 999 ₴');
     assert.equal(
-        normalizeSpaces(getFilterTitle(LL, 'uk', 1)),
+        normalizeSpaces(getFilterTitle(LL, 'uk', 'UAH', 0)),
+        'До 999 ₴'
+    );
+    assert.equal(
+        normalizeSpaces(getFilterTitle(LL, 'uk', 'UAH', 1)),
         'Від 1 000 ₴ до 1 999 ₴'
     );
-    assert.equal(normalizeSpaces(getFilterTitle(LL, 'uk', 4)), 'Від 10 000 ₴');
+    assert.equal(
+        normalizeSpaces(getFilterTitle(LL, 'uk', 'UAH', 4)),
+        'Від 10 000 ₴'
+    );
 });
 
-test('filter titles use the display currency of the locale with exact amounts', () => {
-    assert.equal(getFilterTitle(i18nObject('en'), 'en', 0), 'Up to €19');
+test('filter titles use the chosen currency with exact amounts', () => {
+    assert.equal(getFilterTitle(i18nObject('en'), 'en', 'EUR', 0), 'Up to €19');
     assert.equal(
-        normalizeSpaces(getFilterTitle(i18nObject('pl'), 'pl', 4)),
+        normalizeSpaces(getFilterTitle(i18nObject('pl'), 'pl', 'PLN', 4)),
         'Od 1000 zł'
+    );
+});
+
+test('filter titles follow the viewer currency regardless of the locale', () => {
+    assert.equal(getFilterTitle(i18nObject('en'), 'en', 'USD', 0), 'Up to $19');
+    assert.equal(
+        normalizeSpaces(getFilterTitle(i18nObject('pl'), 'pl', 'UAH', 4)),
+        'Od 10 000 ₴'
     );
 });
 

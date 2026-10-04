@@ -1,4 +1,4 @@
-import { describePrice } from '../../shared/money';
+import { describePrice, type Currency } from '../../shared/money';
 import { useLL, useSession } from '../state/context';
 
 export const PriceChip = ({
@@ -6,16 +6,22 @@ export const PriceChip = ({
     currency
 }: {
     price: number;
-    currency: string | null;
+    currency: Currency;
 }) => {
-    const { locale, config } = useSession();
+    const { locale, config, me } = useSession();
     const LL = useLL();
 
     if (price <= 0) {
         return null;
     }
 
-    const display = describePrice(price, currency, locale, config.rates);
+    const display = describePrice(
+        price,
+        currency,
+        me.currency,
+        locale,
+        config.rates
+    );
 
     if (display.kind === 'exact') {
         return (

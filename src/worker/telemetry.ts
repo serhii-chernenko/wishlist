@@ -19,6 +19,7 @@ import {
     type RateLimitBucket
 } from '../shared/app-api';
 import { APP_SHELL_PATH, type StartKind } from '../shared/app-links';
+import type { Currency } from '../shared/money';
 import { getTelegramWebhookPath, type WorkerBindings } from './env';
 
 initWorkersLogger({
@@ -63,7 +64,15 @@ export type TelemetryAction =
     | 'payments_updated'
     | 'payments_removed'
     | 'feedback_sent'
-    | 'language_changed';
+    | 'language_changed'
+    | 'currency_changed'
+    | 'wish_priority_set'
+    | 'wish_images_reordered'
+    | 'contact_disclosure_changed'
+    | 'delivery_address_updated'
+    | 'delivery_address_removed';
+
+export type SharePageCurrencySource = 'cookie' | 'language';
 
 export type TelemetryLocale = 'uk' | 'en' | 'pl' | 'auto';
 
@@ -131,6 +140,8 @@ export interface SharePageServedInput {
     status: number;
     elapsedMs: number;
     visibleWishes?: number;
+    displayCurrency?: Currency;
+    currencySource?: SharePageCurrencySource;
 }
 
 export type TelemetryFields = {
@@ -201,6 +212,8 @@ export type TelemetryFields = {
     screen?: ClientScreen;
     code?: FieldErrorCode;
     theme?: AppTheme;
+    displayCurrency?: Currency;
+    currencySource?: SharePageCurrencySource;
 };
 
 const knownPaths = new Set([
@@ -240,7 +253,9 @@ const labelFieldNames = [
     'kind',
     'screen',
     'code',
-    'theme'
+    'theme',
+    'displayCurrency',
+    'currencySource'
 ] as const;
 
 const knownApiRoutes: ReadonlySet<string> = new Set([

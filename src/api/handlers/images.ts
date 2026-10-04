@@ -300,3 +300,7 @@ export const startImageChatIntent: ApiHandler = async c => {
 
     return c.body(null, 204);
 };
+
+export const reorderWishImages: ApiHandler = () => {
+    throw new ApiError('notImplemented');
+};

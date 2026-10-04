@@ -25,10 +25,12 @@ export const wishes = snakeCase.table(
         link: text(),
         images: text().notNull().default('[]'),
         priority: integer({ mode: 'boolean' }).notNull().default(false),
+        priorityLevel: integer().notNull().default(0),
         hidden: integer({ mode: 'boolean' }).notNull().default(false),
         removed: integer({ mode: 'boolean' }).notNull().default(false),
         done: integer({ mode: 'boolean' }).notNull().default(false),
         price: integer().notNull().default(0),
+        currency: text().notNull().default('UAH'),
         createdAt: integer({ mode: 'timestamp_ms' })
             .notNull()
             .$defaultFn(() => new Date()),
@@ -43,6 +45,12 @@ export const wishes = snakeCase.table(
                 table.userId,
                 table.removed,
                 table.priority,
+                table.updatedAt
+            ),
+            index('wishes_owner_priority_level_index').on(
+                table.userId,
+                table.removed,
+                table.priorityLevel,
                 table.updatedAt
             ),
             index('wishes_share_fingerprint_index').on(

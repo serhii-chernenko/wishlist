@@ -13,7 +13,11 @@ import type {
     UserRecord as DbUserRecord
 } from '../../db/repositories';
 import type { TranslationFunctions } from '../../i18n/i18n-types';
-import type { ExchangeRates } from '../../shared/money';
+import type {
+    ContactDisclosureField,
+    WishPriorityLevel
+} from '../../shared/app-api';
+import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
 import type { StatsService } from '../services/stats-service';
@@ -39,7 +43,13 @@ export type ScreenId =
     | 'donate'
     | 'payments'
     | 'language'
-    | 'releases';
+    | 'releases'
+    | 'settings'
+    | 'currency'
+    | 'delivery'
+    | 'disclosure'
+    | 'wishPriority'
+    | 'wishImages';
 
 export type NavigationScreenId = Extract<
     ScreenId,
@@ -56,6 +66,10 @@ export type NavigationScreenId = Extract<
     | 'payments'
     | 'language'
     | 'releases'
+    | 'settings'
+    | 'currency'
+    | 'delivery'
+    | 'disclosure'
 >;
 
 export type WishField = 'title' | 'description' | 'images' | 'link' | 'price';
@@ -66,12 +80,18 @@ export type AuthType = 'username' | 'phone' | 'both';
 
 export type LanguageChoice = I18nLanguageChoice;
 
+export type ConfirmableDisclosureField = Exclude<
+    ContactDisclosureField,
+    'payments'
+>;
+
 export type PendingInput =
     | { kind: 'wishTitleNew' }
     | { kind: 'wishField'; wishId: number; field: WishField }
     | { kind: 'findQuery' }
     | { kind: 'feedback' }
     | { kind: 'payments' }
+    | { kind: 'deliveryAddress' }
     | {
           kind: 'contact';
           authType: 'phone' | 'both';
@@ -111,12 +131,22 @@ export type CallbackAction =
     | { type: 'wishlistShareRotate' }
     | { type: 'wishlistShareRotateConfirm' }
     | { type: 'wishlistShareUsername' }
+    | { type: 'wishlistShareIndexing' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
     | { type: 'wishEdit'; wishId: number }
     | { type: 'wishRemove'; wishId: number }
     | { type: 'wishRemoveConfirm'; wishId: number; done: boolean }
-    | { type: 'wishTogglePriority'; wishId: number }
+    | { type: 'wishPriorityMenu'; wishId: number }
+    | { type: 'wishPrioritySet'; wishId: number; level: WishPriorityLevel }
+    | { type: 'wishCurrencySet'; wishId: number; currency: Currency }
+    | { type: 'wishImagesOrder'; wishId: number }
+    | {
+          type: 'wishImageFirst';
+          wishId: number;
+          index: number;
+          hash8: string;
+      }
     | { type: 'wishToggleVisibility'; wishId: number }
     | { type: 'wishFieldPrompt'; wishId: number; field: WishField }
     | { type: 'wishBack'; wishId: number }
@@ -132,6 +162,10 @@ export type CallbackAction =
     | { type: 'giveListCleanConfirm' }
     | { type: 'authType'; authType: AuthType }
     | { type: 'paymentsRemove' }
+    | { type: 'currencySet'; currency: Currency }
+    | { type: 'disclosureToggle'; field: ContactDisclosureField }
+    | { type: 'disclosureConfirm'; field: ConfirmableDisclosureField }
+    | { type: 'deliveryRemove' }
     | { type: 'language'; choice: LanguageChoice }
     | { type: 'noop' }
     | { type: 'outdated' };
@@ -182,7 +216,13 @@ export type BotActionName =
     | 'payments_updated'
     | 'payments_removed'
     | 'feedback_sent'
-    | 'language_changed';
+    | 'language_changed'
+    | 'currency_changed'
+    | 'wish_priority_set'
+    | 'wish_images_reordered'
+    | 'contact_disclosure_changed'
+    | 'delivery_address_updated'
+    | 'delivery_address_removed';
 
 export type InternalFailureEvent =
     | 'generic_error_reply_failed'
@@ -232,6 +272,7 @@ export interface BotRequest {
     isAdmin: boolean;
     repos: Repositories;
     rates: ExchangeRates;
+    displayCurrency: Currency;
     services: BotServices;
     telemetry: WishlistBotTelemetry;
     send: Sender;

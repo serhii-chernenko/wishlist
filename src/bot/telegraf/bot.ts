@@ -56,6 +56,9 @@ import type {
     WishlistBotTelemetry
 } from '../runtime/types';
 import * as authScreen from '../screens/auth';
+import * as currencyScreen from '../screens/currency';
+import * as deliveryScreen from '../screens/delivery';
+import * as disclosureScreen from '../screens/disclosure';
 import * as donateScreen from '../screens/donate';
 import * as feedbackScreen from '../screens/feedback';
 import * as findListScreen from '../screens/find-list';
@@ -66,10 +69,13 @@ import * as languageScreen from '../screens/language';
 import * as paymentsScreen from '../screens/payments';
 import * as privacyScreen from '../screens/privacy';
 import * as releasesScreen from '../screens/releases';
+import * as settingsScreen from '../screens/settings';
 import * as statsScreen from '../screens/stats';
 import * as thirdWishlistScreen from '../screens/third-wishlist';
 import * as wishAddScreen from '../screens/wish-add';
 import * as wishEditScreen from '../screens/wish-edit';
+import * as wishImagesScreen from '../screens/wish-images';
+import * as wishPriorityScreen from '../screens/wish-priority';
 import * as wishRemoveScreen from '../screens/wish-remove';
 import * as wishlistScreen from '../screens/wishlist';
 import { readExchangeRates } from '../services/exchange-rate-service';
@@ -110,7 +116,13 @@ const SCREEN_MODULES: readonly ScreenExports[] = [
     wishRemoveScreen,
     findListScreen,
     thirdWishlistScreen,
-    giveListScreen
+    giveListScreen,
+    settingsScreen,
+    currencyScreen,
+    deliveryScreen,
+    disclosureScreen,
+    wishPriorityScreen,
+    wishImagesScreen
 ];
 
 const noopTelemetry: WishlistBotTelemetry = {

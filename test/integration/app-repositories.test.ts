@@ -38,7 +38,7 @@ describe('mini app repository additions', () => {
     };
     const createWish = async (userId: number, title = 'wish') => {
         const created = await run(
-            repositories.wishes.create(userId, title, nextNow())
+            repositories.wishes.create(userId, title, 'UAH', nextNow())
         );
 
         assert.ok(created);
@@ -100,7 +100,8 @@ describe('mini app repository additions', () => {
                         description: 'Red one',
                         link: 'https://example.com/kettle',
                         price: 1500,
-                        priority: true,
+                        currency: 'EUR',
+                        priorityLevel: 3,
                         hidden: true
                     },
                     now
@@ -114,6 +115,8 @@ describe('mini app repository additions', () => {
             assert.equal(created.link, 'https://example.com/kettle');
             assert.equal(created.price, 1500);
             assert.equal(created.priority, true);
+            assert.equal(created.priorityLevel, 3);
+            assert.equal(created.currency, 'EUR');
             assert.equal(created.hidden, true);
             assert.equal(created.removed, false);
             assert.equal(created.images, '[]');
@@ -126,7 +129,7 @@ describe('mini app repository additions', () => {
             const created = await run(
                 repositories.wishes.createWithFields(
                     owner.id,
-                    { title: 'Only title' },
+                    { title: 'Only title', currency: 'UAH' },
                     nextNow()
                 )
             );
@@ -136,6 +139,8 @@ describe('mini app repository additions', () => {
             assert.equal(created.link, null);
             assert.equal(created.price, 0);
             assert.equal(created.priority, false);
+            assert.equal(created.priorityLevel, 0);
+            assert.equal(created.currency, 'UAH');
             assert.equal(created.hidden, false);
             assert.deepEqual(
                 await run(repositories.wishes.findOwned(created.id, owner.id)),
@@ -154,7 +159,7 @@ describe('mini app repository additions', () => {
                 repositories.wishes.setFlags(
                     wish.id,
                     owner.id,
-                    { priority: true },
+                    { priorityLevel: 3 },
                     now
                 )
             );
@@ -168,7 +173,7 @@ describe('mini app repository additions', () => {
                 repositories.wishes.setFlags(
                     wish.id,
                     owner.id,
-                    { priority: true },
+                    { priorityLevel: 3 },
                     nextNow()
                 )
             );
@@ -179,7 +184,7 @@ describe('mini app repository additions', () => {
                 repositories.wishes.setFlags(
                     wish.id,
                     owner.id,
-                    { priority: false, hidden: true },
+                    { priorityLevel: 0, hidden: true },
                     nextNow()
                 )
             );
@@ -208,7 +213,7 @@ describe('mini app repository additions', () => {
                     repositories.wishes.setFlags(
                         wish.id,
                         stranger.id,
-                        { priority: true },
+                        { priorityLevel: 3 },
                         nextNow()
                     )
                 ),

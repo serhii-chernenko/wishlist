@@ -1,6 +1,8 @@
 import type { PublicShareFingerprint } from '../../db/repositories';
-import { getDisplayCurrency, type ExchangeRates } from '../../shared/money';
+import type { Currency, ExchangeRates } from '../../shared/money';
+import type { WebTheme } from '../theme';
 import type { SharePageLanguage } from './public-id';
+import type { WebCurrencyChoice } from './view-model';
 
 export const FALLBACK_DEPLOY_ID = 'dev';
 
@@ -32,6 +34,32 @@ export const resolvePublicUsername = (
         : null;
 };
 
+export const resolvePublicPayments = (
+    share: Pick<PublicShareFingerprint, 'showPayments' | 'payments'>
+) => {
+    return share.showPayments ? share.payments : null;
+};
+
+/** The address is only ever served together with a visible phone, so a visible phone is the single condition for any delivery detail being available in Telegram. */
+export const isDeliveryHintShown = (
+    share: Pick<PublicShareFingerprint, 'showPhone' | 'hasPhone'>
+) => {
+    return share.showPhone && share.hasPhone;
+};
+
+export const isShareIndexable = (
+    share: Pick<PublicShareFingerprint, 'allowIndexing' | 'visibleCount'>,
+    isCanonicalHost: boolean
+) => {
+    return isCanonicalHost && share.allowIndexing && share.visibleCount > 0;
+};
+
+export interface ShareFingerprintInput {
+    displayCurrency: Currency;
+    showPayments: boolean;
+    deliveryHintShown: boolean;
+}
+
 const digestFields = async (fields: readonly unknown[]) => {
     const digest = await crypto.subtle.digest(
         'SHA-256',
@@ -52,25 +80,40 @@ export const computeShareFingerprint = (
     deployId: string,
     language: SharePageLanguage,
     share: PublicShareFingerprint,
-    rates: ExchangeRates
+    rates: ExchangeRates,
+    input: ShareFingerprintInput
 ) => {
     const fields = [
         deployId,
         language,
-        getDisplayCurrency(language),
+        input.displayCurrency,
         rates.date,
         rates.perUnit,
         share.publicId,
         share.shareUpdatedAt.getTime(),
         share.showUsername,
+        share.allowIndexing,
         resolvePublicUsername(share),
-        share.payments,
-        share.currency,
+        input.showPayments,
+        resolvePublicPayments(share),
+        input.deliveryHintShown,
         share.visibleCount,
         share.lastUpdatedAt?.getTime() ?? null
     ];
 
     return digestFields(fields);
+};
+
+export const variantFingerprint = (
+    fingerprint: string,
+    theme: WebTheme,
+    currencyChoice: WebCurrencyChoice
+) => {
+    const themed = theme === 'system' ? fingerprint : `${fingerprint}-${theme}`;
+
+    return currencyChoice === 'auto'
+        ? themed
+        : `${themed}-${currencyChoice.toLowerCase()}`;
 };
 
 export const etagMatches = (

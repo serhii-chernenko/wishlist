@@ -8,6 +8,12 @@ import { getRuntimeCrypto } from '../api/auth/crypto';
 import { createDb } from '../db/client';
 import { createRepositories } from '../db/repositories';
 import type { PublicShareFingerprint, Repositories } from '../db/repositories';
+import {
+    getDefaultCurrency,
+    toWishCurrency,
+    type Currency
+} from '../shared/money';
+import { toWishPriority } from '../shared/priority';
 import type { WorkerApp } from '../worker/app';
 import type { WorkerBindings } from '../worker/env';
 import {
@@ -17,6 +23,7 @@ import {
 import {
     emitSharePageServedTelemetry,
     type ShareCacheOutcome,
+    type SharePageCurrencySource,
     type SharePageResult
 } from '../worker/telemetry';
 import { getTranslator } from '../bot/i18n';
@@ -28,7 +35,11 @@ import {
     computeShareFingerprint,
     etagMatches,
     getDeployId,
-    resolvePublicUsername
+    isDeliveryHintShown,
+    isShareIndexable,
+    resolvePublicPayments,
+    resolvePublicUsername,
+    variantFingerprint
 } from './share/fingerprint';
 import {
     buildHomePath,
@@ -47,7 +58,11 @@ import {
     renderSharePage
 } from './share/render';
 import { buildSitemap } from './share/sitemap';
-import type { SharePageModel, ShareWishView } from './share/view-model';
+import type {
+    SharePageModel,
+    ShareWishView,
+    WebCurrencyChoice
+} from './share/view-model';
 import {
     buildThemeCookie,
     isWebTheme,
@@ -181,11 +196,29 @@ const getErrorStatus = (kind: SharePageErrorKind) => {
     return kind === 'gone' ? 410 : 404;
 };
 
+interface ShareCurrencyTelemetry {
+    displayCurrency: Currency;
+    currencySource: SharePageCurrencySource;
+}
+
 type FinishShareResponse = (
     response: Response,
     result: SharePageResult,
-    cacheOutcome: ShareCacheOutcome
+    cacheOutcome: ShareCacheOutcome,
+    currency?: ShareCurrencyTelemetry
 ) => Response;
+
+interface ShareCurrency extends ShareCurrencyTelemetry {
+    currencyChoice: WebCurrencyChoice;
+}
+
+const resolveShareCurrency = (language: SharePageLanguage): ShareCurrency => {
+    return {
+        currencyChoice: 'auto',
+        displayCurrency: getDefaultCurrency(language),
+        currencySource: 'language'
+    };
+};
 
 type CachedHtmlResult = 'notModified' | 'cached' | 'rendered';
 
@@ -322,13 +355,23 @@ const servePage = async ({
         getExecutionContext(c),
         repositories.exchangeRates
     );
-    const fingerprint = themedFingerprint(
-        await computeShareFingerprint(deployId, language, share, rates),
-        theme
+    const { currencyChoice, displayCurrency, currencySource } =
+        resolveShareCurrency(language);
+    const deliveryHintShown = isDeliveryHintShown(share);
+    const fingerprint = variantFingerprint(
+        await computeShareFingerprint(deployId, language, share, rates, {
+            displayCurrency,
+            showPayments: share.showPayments,
+            deliveryHintShown
+        }),
+        theme,
+        currencyChoice
     );
     const origin = new URL(c.req.url).origin;
-    const indexable =
-        isProductionCanonicalHost(c.env, c.req.url) && share.visibleCount > 0;
+    const indexable = isShareIndexable(
+        share,
+        isProductionCanonicalHost(c.env, c.req.url)
+    );
     const { response, result, cacheOutcome } = await serveCachedHtml({
         c,
         language,
@@ -349,7 +392,8 @@ const servePage = async ({
                         description: wish.description,
                         link: wish.link,
                         price: wish.price,
-                        priority: wish.priority,
+                        currency: toWishCurrency(wish.currency),
+                        priority: toWishPriority(wish.priorityLevel),
                         createdAt: wish.createdAt,
                         updatedAt: wish.updatedAt,
                         photos: await buildShareWishPhotos({
@@ -369,8 +413,10 @@ const servePage = async ({
                 assetVersion: deployId,
                 displayName: share.displayName,
                 username: resolvePublicUsername(share),
-                payments: share.payments,
-                currency: share.currency,
+                payments: resolvePublicPayments(share),
+                displayCurrency,
+                currencyChoice,
+                deliveryHintShown,
                 rates,
                 visibleCount: share.visibleCount,
                 lastUpdatedAt: share.lastUpdatedAt,
@@ -385,7 +431,10 @@ const servePage = async ({
         }
     });
 
-    return finish(response, result, cacheOutcome);
+    return finish(response, result, cacheOutcome, {
+        displayCurrency,
+        currencySource
+    });
 };
 
 export const registerShareRoutes = (
@@ -407,12 +456,14 @@ export const registerShareRoutes = (
         const finish = (
             response: Response,
             result: SharePageResult,
-            cacheOutcome: ShareCacheOutcome
+            cacheOutcome: ShareCacheOutcome,
+            currency?: ShareCurrencyTelemetry
         ) => {
             emitSharePageServedTelemetry(c.env, getExecutionContext(c), {
                 method: c.req.method,
                 result,
                 cacheOutcome,
+                ...currency,
                 status: response.status,
                 elapsedMs: Math.max(0, now().getTime() - startedAt),
                 ...(telemetryLanguage && {

@@ -216,7 +216,7 @@ test('Mongo import applies defaults and converts empty strings to NULL', async c
     );
     assert.match(
         sql,
-        /\(1, '[0-9a-f]{24}', 1, 'Bare wish', NULL, NULL, '\[\]', 0, 0, 0, 0, 0, \d+, \d+\)/
+        /\(1, '[0-9a-f]{24}', 1, 'Bare wish', NULL, NULL, '\[\]', 0, 0, 0, 0, 0, 0, 'UAH', \d+, \d+\)/
     );
 });
 

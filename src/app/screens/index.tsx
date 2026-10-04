@@ -2,6 +2,8 @@ import type { FC } from 'hono/jsx';
 
 import type { ScreenId, ScreenProps } from '../nav/routes';
 import { AboutScreen } from './about';
+import { CurrencyScreen } from './currency';
+import { DeliveryScreen } from './delivery';
 import { DonateScreen } from './donate';
 import { FeedbackScreen } from './feedback';
 import { FindScreen } from './find';
@@ -33,6 +35,8 @@ export const SCREENS: { [Screen in ScreenId]: FC<ScreenProps<Screen>> } = {
     settings: SettingsScreen,
     visibility: VisibilityScreen,
     payments: PaymentsScreen,
+    currency: CurrencyScreen,
+    delivery: DeliveryScreen,
     language: LanguageScreen,
     feedback: FeedbackScreen,
     stats: StatsScreen,

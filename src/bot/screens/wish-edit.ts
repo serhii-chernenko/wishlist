@@ -1,7 +1,8 @@
 import type { Message } from 'telegraf/types';
 
 import type { WishRecord } from '../../db/repositories';
-import { getCurrencySymbol } from '../../shared/money';
+import { getCurrencySymbol, toWishCurrency } from '../../shared/money';
+import { toWishPriority } from '../../shared/priority';
 import {
     appEntryButton,
     callbackButton,
@@ -11,7 +12,6 @@ import {
     removeValueKeyboard,
     singleColumnKeyboard
 } from '../content/keyboards';
-import { DEFAULT_CURRENCY } from '../content/intl';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
 import { getErrorType } from '../errors';
 import { parseDescription } from '../input/description';
@@ -50,7 +50,9 @@ type WishFieldInput = Extract<PendingInput, { kind: 'wishField' }>;
 
 export const ALBUM_DEBOUNCE_MS = 1500;
 
-const renderStaleWish = async (req: BotRequest) => {
+const MINIMUM_IMAGES_TO_ORDER = 2;
+
+export const renderStaleWish = async (req: BotRequest) => {
     updateSession(req, { pendingInput: null });
     await req.send.text(req.LL.errors.outdatedButton(), removeReplyKeyboard());
     await wishlistScreen.render(req, undefined);
@@ -59,7 +61,8 @@ const renderStaleWish = async (req: BotRequest) => {
 const buildEditMenu = (req: BotRequest, wish: WishRecord) => {
     const { LL } = req;
     const actions = LL.wishlist.edit.actions;
-    const hasImages = parseWishImages(wish.images).length > 0;
+    const imageCount = parseWishImages(wish.images).length;
+    const hasImages = imageCount > 0;
     const promptButton = (label: string, field: WishField) => {
         return callbackButton(label, {
             type: 'wishFieldPrompt',
@@ -80,13 +83,21 @@ const buildEditMenu = (req: BotRequest, wish: WishRecord) => {
             hasImages ? actions.updateImages() : actions.addImages(),
             'images'
         ),
+        imageCount >= MINIMUM_IMAGES_TO_ORDER
+            ? callbackButton(actions.imagesOrder(), {
+                  type: 'wishImagesOrder',
+                  wishId: wish.id
+              })
+            : null,
         promptButton(
             wish.link ? actions.updateLink() : actions.addLink(),
             'link'
         ),
         callbackButton(
-            wish.priority ? actions.unsetPriority() : actions.setPriority(),
-            { type: 'wishTogglePriority', wishId: wish.id }
+            actions.priority({
+                level: LL.priority.levels[toWishPriority(wish.priorityLevel)]()
+            }),
+            { type: 'wishPriorityMenu', wishId: wish.id }
         ),
         callbackButton(wish.hidden ? actions.show() : actions.hide(), {
             type: 'wishToggleVisibility',
@@ -120,16 +131,11 @@ const renderEdit = async (req: BotRequest, params: WishEditParams) => {
 
     updateSession(req, { pendingInput: null });
 
-    const html = renderWishHtml(
-        LL,
-        wish,
-        createWishFormatters(req, user.currency),
-        {
-            audience: 'owner',
-            detail: 'full',
-            showHidden: true
-        }
-    );
+    const html = renderWishHtml(LL, wish, createWishFormatters(req), {
+        audience: 'owner',
+        detail: 'full',
+        showHidden: true
+    });
     const linkRow = openLinkButton(req, wish.link);
 
     await req.send.wish(
@@ -157,16 +163,17 @@ const hasFieldValue = (wish: WishRecord, field: WishField) => {
     }
 };
 
-const getPricePromptText = (req: BotRequest, hasValue: boolean) => {
+const getPricePromptText = (req: BotRequest, wish: WishRecord) => {
     const scenes = req.LL.wishlist.edit.scenes;
-    const prompt = hasValue ? scenes.updatePrice() : scenes.addPrice();
-    const currency = req.user?.currency || DEFAULT_CURRENCY;
+    const prompt = wish.price > 0 ? scenes.updatePrice() : scenes.addPrice();
+    const currency = toWishCurrency(wish.currency);
 
     return `${prompt}\n${scenes.priceCurrency(getCurrencySymbol(req.locale, currency))}`;
 };
 
 const getFieldPromptText = (
     req: BotRequest,
+    wish: WishRecord,
     field: WishField,
     hasValue: boolean
 ) => {
@@ -184,7 +191,7 @@ const getFieldPromptText = (
         case 'link':
             return hasValue ? scenes.updateLink() : scenes.addLink();
         case 'price':
-            return getPricePromptText(req, hasValue);
+            return getPricePromptText(req, wish);
     }
 };
 
@@ -199,7 +206,7 @@ const sendFieldPrompt = async (
         pendingInput: { kind: 'wishField', wishId: wish.id, field }
     });
     await req.send.text(
-        getFieldPromptText(req, field, hasValue),
+        getFieldPromptText(req, wish, field, hasValue),
         hasValue ? removeValueKeyboard(req.LL) : removeReplyKeyboard()
     );
 };
@@ -588,18 +595,10 @@ export const screen: ScreenModule<WishEditParams> = {
     }
 };
 
-const toggleWish = async (
-    req: BotRequest,
-    wishId: number,
-    kind: 'priority' | 'visibility'
-) => {
-    const { LL } = req;
+const toggleVisibility = async (req: BotRequest, wishId: number) => {
     const user = requireUser(req);
     const { wishes } = createWishScreenServices(req);
-    const toggled =
-        kind === 'priority'
-            ? await wishes.togglePriority(wishId, user.id)
-            : await wishes.toggleHidden(wishId, user.id);
+    const toggled = await wishes.toggleHidden(wishId, user.id);
 
     if (!toggled) {
         await renderStaleWish(req);
@@ -609,13 +608,9 @@ const toggleWish = async (
 
     req.telemetry.botActionCompleted({
         action: 'wish_updated',
-        field: kind
+        field: 'visibility'
     });
-    await req.send.text(
-        kind === 'priority'
-            ? LL.wishlist.edit.success.priority()
-            : LL.wishlist.edit.success.visibility()
-    );
+    await req.send.text(req.LL.wishlist.edit.success.visibility());
     await renderEdit(req, { wishId });
 };
 
@@ -636,11 +631,8 @@ export const callbacks: CallbackTable = {
 
         await sendFieldPrompt(req, wish, action.field);
     },
-    wishTogglePriority: async (req, action) => {
-        await toggleWish(req, action.wishId, 'priority');
-    },
     wishToggleVisibility: async (req, action) => {
-        await toggleWish(req, action.wishId, 'visibility');
+        await toggleVisibility(req, action.wishId);
     },
     wishBack: async req => {
         await wishlistScreen.render(req, undefined);

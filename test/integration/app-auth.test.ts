@@ -367,7 +367,9 @@ describe('Mini App API auth and bootstrap', () => {
             telegramUsername: 'admin_user',
             phoneMasked: null,
             payments: null,
-            currency: 'UAH',
+            deliveryAddress: null,
+            disclosure: { payments: true, phone: false, address: false },
+            currency: 'EUR',
             languageChoice: 'auto',
             locale: 'en',
             wishlistFilter: null,
@@ -493,7 +495,7 @@ describe('Mini App API auth and bootstrap', () => {
             blockedAt: new Date(NOW.getTime() - 1000)
         });
         const wish = await run(
-            harness.repositories.wishes.create(user.id, 'Bicycle', NOW)
+            harness.repositories.wishes.create(user.id, 'Bicycle', 'UAH', NOW)
         );
 
         assert.ok(wish);

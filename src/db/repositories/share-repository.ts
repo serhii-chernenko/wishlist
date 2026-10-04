@@ -14,11 +14,16 @@ export interface PublicShareFingerprint {
     revokedAt: Date | null;
     shareUpdatedAt: Date;
     showUsername: boolean;
+    allowIndexing: boolean;
     userId: number;
     username: string | null;
     usernameSearchable: boolean;
     payments: string | null;
-    currency: string;
+    showPayments: boolean;
+    showPhone: boolean;
+    showAddress: boolean;
+    hasPhone: boolean;
+    hasDeliveryAddress: boolean;
     language: UserLanguage | null;
     telegramLanguageCode: string | null;
     visibleCount: number;
@@ -164,6 +169,22 @@ export const createShareRepository = (db: AppDb) => {
                 return updated ?? null;
             });
         },
+        setAllowIndexing(userId: number, allowIndexing: boolean, now: Date) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishlistShares)
+                    .set({ allowIndexing, updatedAt: now })
+                    .where(
+                        and(
+                            eq(wishlistShares.userId, userId),
+                            isNull(wishlistShares.revokedAt)
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
         findPublicFingerprint(publicId: string) {
             return tryDb(async (): Promise<PublicShareFingerprint | null> => {
                 const [row] = await db
@@ -173,11 +194,16 @@ export const createShareRepository = (db: AppDb) => {
                         revokedAt: wishlistShares.revokedAt,
                         shareUpdatedAt: wishlistShares.updatedAt,
                         showUsername: wishlistShares.showUsername,
+                        allowIndexing: wishlistShares.allowIndexing,
                         userId: users.id,
                         username: users.username,
                         usernameSearchable: users.usernameSearchable,
                         payments: users.payments,
-                        currency: users.currency,
+                        showPayments: users.showPayments,
+                        showPhone: users.showPhone,
+                        showAddress: users.showAddress,
+                        hasPhone: sql<number>`${users.phone} is not null`,
+                        hasDeliveryAddress: sql<number>`${users.deliveryAddress} is not null`,
                         language: users.language,
                         telegramLanguageCode: users.telegramLanguageCode,
                         visibleCount: sql<number>`(select count(*) from ${wishes} where ${visibleWishesOfOwner})`,
@@ -201,6 +227,8 @@ export const createShareRepository = (db: AppDb) => {
 
                 return {
                     ...row,
+                    hasPhone: Boolean(row.hasPhone),
+                    hasDeliveryAddress: Boolean(row.hasDeliveryAddress),
                     visibleCount: Number(row.visibleCount),
                     lastUpdatedAt: toDateOrNull(row.lastUpdatedAt)
                 };

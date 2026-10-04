@@ -54,6 +54,7 @@ interface WishRow {
     link: string | null;
     images: string;
     priority: number;
+    priority_level: number;
     hidden: number;
     removed: number;
     done: number;
@@ -227,8 +228,8 @@ describe('Bot flows through the Worker on D1', () => {
                 'n:wl',
                 'n:gl',
                 'n:find',
-                'n:auth',
-                'n:pay'
+                'n:set',
+                'n:auth'
             ]);
         });
 
@@ -422,7 +423,7 @@ describe('Bot flows through the Worker on D1', () => {
                 `w:f:d:${wish.id}`,
                 `w:f:i:${wish.id}`,
                 `w:f:l:${wish.id}`,
-                `w:t:${wish.id}`,
+                `w:pm:${wish.id}`,
                 `w:v:${wish.id}`,
                 `w:f:p:${wish.id}`,
                 'w:add',
@@ -531,16 +532,18 @@ describe('Bot flows through the Worker on D1', () => {
 
             const wish = await createWishViaChat('Bicycle');
 
-            await tap(alice, `w:t:${wish.id}`);
+            await tap(alice, `w:pm:${wish.id}`);
             await tap(alice, `w:v:${wish.id}`);
 
             assert.equal((await ownWishes(alice))[0]?.priority, 1);
+            assert.equal((await ownWishes(alice))[0]?.priority_level, 3);
             assert.equal((await ownWishes(alice))[0]?.hidden, 1);
 
-            await tap(alice, `w:t:${wish.id}`);
+            await tap(alice, `w:pm:${wish.id}`);
             await tap(alice, `w:v:${wish.id}`);
 
             assert.equal((await ownWishes(alice))[0]?.priority, 0);
+            assert.equal((await ownWishes(alice))[0]?.priority_level, 0);
             assert.equal((await ownWishes(alice))[0]?.hidden, 0);
         });
 
@@ -681,7 +684,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(
                 listed.includes(
                     LL.wishlist.filled.before() +
-                        LL.filters.applied(getFilterTitle(LL, 'uk', 2))
+                        LL.filters.applied(getFilterTitle(LL, 'uk', 'UAH', 2))
                 )
             );
 

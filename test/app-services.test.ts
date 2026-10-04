@@ -124,6 +124,7 @@ const createShare = (overrides: Partial<ShareRecord> = {}): ShareRecord => {
         publicId: '01j9z0000000000000000000ab',
         displayName: 'Serhii',
         showUsername: false,
+        allowIndexing: true,
         revokedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -239,7 +240,11 @@ test('wish service forwards the app methods with the injected clock', async () =
     } as unknown as Parameters<typeof createWishService>[0];
     const service = createWishService(repositories, () => now);
 
-    await service.createWithFields(7, { title: 'Kettle', price: 5 });
+    await service.createWithFields(7, {
+        title: 'Kettle',
+        price: 5,
+        currency: 'UAH'
+    });
     await service.setFlags(1, 7, { hidden: true });
     await service.removeImageAt(1, 7, 2, '["a","b","c"]');
 
@@ -249,7 +254,12 @@ test('wish service forwards the app methods with the injected clock', async () =
         'b'
     ]);
     assert.deepEqual(calls.slice(0, 3), [
-        ['createWithFields', 7, { title: 'Kettle', price: 5 }, now],
+        [
+            'createWithFields',
+            7,
+            { title: 'Kettle', price: 5, currency: 'UAH' },
+            now
+        ],
         ['setFlags', 1, 7, { hidden: true }, now],
         ['removeImageAt', 1, 7, 2, '["a","b","c"]', now]
     ]);

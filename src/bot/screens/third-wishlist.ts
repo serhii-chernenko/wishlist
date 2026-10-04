@@ -29,7 +29,7 @@ import { summarizeGivers, type GiverSummary } from '../services/give-service';
 import {
     createWishFormatters,
     createWishScreenServices,
-    getOwnerPriceBounds,
+    getPriceBoundsByCurrency,
     isFindableOwner,
     openLinkButton,
     requireUser,
@@ -151,9 +151,9 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
     }
 
     const { wishes, gives } = createWishScreenServices(req);
-    const formatters = createWishFormatters(req, owner.currency);
+    const formatters = createWishFormatters(req);
     const filter = getOwnerFilter(req, owner.id);
-    const priceBounds = getOwnerPriceBounds(req, filter, owner.currency);
+    const priceBounds = getPriceBoundsByCurrency(req, filter);
     const query = resolveQueryLabel(req, owner, params.query);
     const requestedOffset = params.offset ?? 0;
     let offset = requestedOffset;
@@ -203,7 +203,14 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
             filter === null
                 ? ''
                 : LL.filters.applied(
-                      escapeHtml(getFilterTitle(LL, req.locale, filter))
+                      escapeHtml(
+                          getFilterTitle(
+                              LL,
+                              req.locale,
+                              req.displayCurrency,
+                              filter
+                          )
+                      )
                   );
 
         await req.send.text(
@@ -330,13 +337,18 @@ export const callbacks: CallbackTable = {
 
         await req.send.text(
             req.LL.filters.description(),
-            buildFilterKeyboard(req.LL, req.locale, filter => {
-                return {
-                    type: 'thirdFilter',
-                    ownerId: action.ownerId,
-                    filter
-                };
-            })
+            buildFilterKeyboard(
+                req.LL,
+                req.locale,
+                req.displayCurrency,
+                filter => {
+                    return {
+                        type: 'thirdFilter',
+                        ownerId: action.ownerId,
+                        filter
+                    };
+                }
+            )
         );
     },
     thirdFilter: async (req, action) => {

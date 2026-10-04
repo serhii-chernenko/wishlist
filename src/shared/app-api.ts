@@ -1,4 +1,6 @@
 import {
+    ADDRESS_MAX_LENGTH,
+    ADDRESS_MIN_MEANINGFUL_CHARACTERS,
     DESCRIPTION_MAX_LENGTH,
     FEEDBACK_MAX_LENGTH,
     FIND_QUERY_MAX_LENGTH,
@@ -9,7 +11,7 @@ import {
 } from '../bot/input/limits';
 import { PAYMENTS_MIN_MEANINGFUL_CHARACTERS } from '../bot/input/payments';
 import type { Translation } from '../i18n/i18n-types';
-import type { DisplayCurrency, ExchangeRates } from './money';
+import type { Currency, ExchangeRates } from './money';
 
 export type AppDictionary = Translation['app'];
 
@@ -31,6 +33,35 @@ export type ReleaseGroupKey =
     | 'notes';
 
 export type AppLinkId = 'github' | 'princess' | 'youtube' | 'telegram' | 'x';
+
+export const WISH_PRIORITIES = ['none', 'low', 'medium', 'high'] as const;
+
+export type WishPriority = (typeof WISH_PRIORITIES)[number];
+
+export const WISH_PRIORITY_LEVELS = {
+    none: 0,
+    low: 1,
+    medium: 2,
+    high: 3
+} as const satisfies Record<WishPriority, number>;
+
+export type WishPriorityLevel = (typeof WISH_PRIORITY_LEVELS)[WishPriority];
+
+export const CONTACT_DISCLOSURE_FIELDS = [
+    'payments',
+    'phone',
+    'address'
+] as const;
+
+export type ContactDisclosureField = (typeof CONTACT_DISCLOSURE_FIELDS)[number];
+
+export type ContactDisclosureDto = Record<ContactDisclosureField, boolean>;
+
+export type OwnerContactDto = {
+    phone: string | null;
+    phoneHref: string | null;
+    address: string | null;
+};
 
 export const APP_API_PREFIX = '/api/app';
 export const APP_AUTH_SCHEME = 'tma';
@@ -69,6 +100,8 @@ export interface AppLimits {
     priceMax: number;
     payments: number;
     paymentsMinMeaningful: number;
+    address: number;
+    addressMinMeaningful: number;
     feedback: number;
     findQuery: number;
     images: number;
@@ -83,6 +116,8 @@ export const APP_LIMITS: AppLimits = {
     priceMax: PRICE_MAX_VALUE,
     payments: PAYMENTS_MAX_LENGTH,
     paymentsMinMeaningful: PAYMENTS_MIN_MEANINGFUL_CHARACTERS,
+    address: ADDRESS_MAX_LENGTH,
+    addressMinMeaningful: ADDRESS_MIN_MEANINGFUL_CHARACTERS,
     feedback: FEEDBACK_MAX_LENGTH,
     findQuery: FIND_QUERY_MAX_LENGTH,
     images: APP_MAX_WISH_IMAGES,
@@ -122,7 +157,8 @@ export const CLIENT_EVENT_FIELDS = [
     'link',
     'query',
     'payments',
-    'feedback'
+    'feedback',
+    'address'
 ] as const;
 
 export type ClientEventField = (typeof CLIENT_EVENT_FIELDS)[number];
@@ -147,6 +183,8 @@ export const CLIENT_SCREENS = [
     'releases',
     'about',
     'settings',
+    'currency',
+    'delivery',
     'outsideTelegram',
     'sessionExpired',
     'unavailable',
@@ -210,7 +248,9 @@ export const FIELD_ERROR_CODES = [
     'containsLink',
     'invalid',
     'usernameRequired',
-    'usernameUnavailable'
+    'usernameUnavailable',
+    'phoneRequired',
+    'addressRequired'
 ] as const;
 
 export type FieldErrorCode = (typeof FIELD_ERROR_CODES)[number];
@@ -237,7 +277,8 @@ export type OwnWishDto = {
     link: string | null;
     linkHost: string | null;
     price: number;
-    priority: boolean;
+    currency: Currency;
+    priority: WishPriority;
     hidden: boolean;
     images: ApiImage[];
     createdAt: string;
@@ -257,14 +298,13 @@ export type OwnerDto = {
     token: string | null;
     label: string;
     payments: string | null;
-    currency: string;
+    contact: OwnerContactDto | null;
     source: 'search' | 'share';
     canGive: boolean;
 };
 
 export type GiveEntryDto = {
     wish: Omit<ThirdWishDto, 'givers'>;
-    currency: string;
     ownerUsername: string | null;
     otherGivers: number;
 };
@@ -275,7 +315,9 @@ export type MeDto = {
     telegramUsername: string | null;
     phoneMasked: string | null;
     payments: string | null;
-    currency: string;
+    deliveryAddress: string | null;
+    disclosure: ContactDisclosureDto;
+    currency: Currency;
     languageChoice: AppLanguageChoice;
     locale: AppLocale;
     wishlistFilter: WishFilterValue | null;
@@ -288,6 +330,7 @@ export type ShareDto = {
     appUrl: string | null;
     showUsername: boolean;
     canShowUsername: boolean;
+    allowIndexing: boolean;
     consent: { name: string; host: string };
 };
 
@@ -307,7 +350,7 @@ export type BootstrapDto = {
         botUrl: string;
         limits: AppLimits;
         rates: ExchangeRates;
-        priceFilters: Record<DisplayCurrency, PriceFilterDto[]>;
+        priceFilters: Record<Currency, PriceFilterDto[]>;
         supportLinks: SupportLinkDto[];
         links: Record<AppLinkId, string | null>;
     };
@@ -318,7 +361,8 @@ export type WishDraftInput = {
     description?: string | null;
     link?: string | null;
     price?: string | number | null;
-    priority?: boolean;
+    currency?: Currency;
+    priority?: WishPriority | boolean;
     hidden?: boolean;
 };
 
@@ -369,7 +413,17 @@ export type LanguageResultDto = { me: MeDto; messages: AppDictionary };
 
 export type PaymentsInput = { text: string };
 
+export type CurrencyInput = { currency: Currency };
+
+export type DeliveryAddressInput = { text: string };
+
+export type ContactDisclosureInput = Partial<ContactDisclosureDto>;
+
+export type ReorderImagesInput = { hashes: string[] };
+
 export type ShareUsernameInput = { show: boolean };
+
+export type ShareIndexingInput = { allowIndexing: boolean };
 
 export type FeedbackInput = { text: string };
 
@@ -498,6 +552,38 @@ export const APP_API_ROUTES = {
         body: 'none',
         status: 200
     },
+    setCurrency: {
+        method: 'PUT',
+        path: '/me/currency',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 200
+    },
+    setDeliveryAddress: {
+        method: 'PUT',
+        path: '/me/address',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 200
+    },
+    removeDeliveryAddress: {
+        method: 'DELETE',
+        path: '/me/address',
+        access: 'user',
+        bucket: 'api',
+        body: 'none',
+        status: 200
+    },
+    setContactDisclosure: {
+        method: 'PUT',
+        path: '/me/disclosure',
+        access: 'user',
+        bucket: 'sensitive',
+        body: 'json',
+        status: 200
+    },
     listWishes: {
         method: 'GET',
         path: '/wishes',
@@ -576,6 +662,14 @@ export const APP_API_ROUTES = {
         access: 'user',
         bucket: 'api',
         body: 'none',
+        status: 200
+    },
+    reorderWishImages: {
+        method: 'PUT',
+        path: '/wishes/:id/images/order',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
         status: 200
     },
     startImageChatIntent: {
@@ -666,6 +760,14 @@ export const APP_API_ROUTES = {
         body: 'json',
         status: 200
     },
+    setShareIndexing: {
+        method: 'PUT',
+        path: '/share/indexing',
+        access: 'user',
+        bucket: 'api',
+        body: 'json',
+        status: 200
+    },
     rotateShare: {
         method: 'POST',
         path: '/share/rotate',
@@ -737,6 +839,18 @@ export interface AppApiEndpoints {
     };
     setPayments: { query: null; body: PaymentsInput; response: MeDto };
     removePayments: { query: null; body: null; response: MeDto };
+    setCurrency: { query: null; body: CurrencyInput; response: MeDto };
+    setDeliveryAddress: {
+        query: null;
+        body: DeliveryAddressInput;
+        response: MeDto;
+    };
+    removeDeliveryAddress: { query: null; body: null; response: MeDto };
+    setContactDisclosure: {
+        query: null;
+        body: ContactDisclosureInput;
+        response: MeDto;
+    };
     listWishes: { query: OffsetQuery; body: null; response: WishListDto };
     setWishFilter: {
         query: null;
@@ -755,6 +869,11 @@ export interface AppApiEndpoints {
         response: OwnWishDto;
     };
     clearWishImages: { query: null; body: null; response: OwnWishDto };
+    reorderWishImages: {
+        query: null;
+        body: ReorderImagesInput;
+        response: OwnWishDto;
+    };
     startImageChatIntent: { query: null; body: null; response: NoContent };
     listGives: { query: OffsetQuery; body: null; response: GiveListDto };
     removeGive: { query: null; body: null; response: NoContent };
@@ -776,6 +895,11 @@ export interface AppApiEndpoints {
     setShareUsername: {
         query: null;
         body: ShareUsernameInput;
+        response: ShareDto;
+    };
+    setShareIndexing: {
+        query: null;
+        body: ShareIndexingInput;
         response: ShareDto;
     };
     rotateShare: { query: null; body: null; response: ShareDto };

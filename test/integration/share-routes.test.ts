@@ -117,7 +117,7 @@ describe('share page routes', () => {
         patch: Parameters<typeof repositories.wishes.updateFields>[2] = {}
     ) => {
         const wish = await run(
-            repositories.wishes.create(userId, title, nextNow())
+            repositories.wishes.create(userId, title, 'UAH', nextNow())
         );
 
         assert.ok(wish);
@@ -259,7 +259,12 @@ describe('share page routes', () => {
                 'create',
                 () => {
                     return run(
-                        repositories.wishes.create(owner.id, 'Third', nextNow())
+                        repositories.wishes.create(
+                            owner.id,
+                            'Third',
+                            'UAH',
+                            nextNow()
+                        )
                     );
                 }
             ],
@@ -277,12 +282,13 @@ describe('share page routes', () => {
                 }
             ],
             [
-                'togglePriority',
+                'setPriorityLevel',
                 () => {
                     return run(
-                        repositories.wishes.togglePriority(
+                        repositories.wishes.setPriorityLevel(
                             wish.id,
                             owner.id,
+                            3,
                             nextNow()
                         )
                     );

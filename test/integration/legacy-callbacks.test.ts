@@ -304,6 +304,7 @@ describe('Legacy and malformed callbacks through the Worker on D1', () => {
                 `w:r:y:${wish.id}`,
                 `w:r:n:${wish.id}`,
                 `w:t:${wish.id}`,
+                `w:pm:${wish.id}`,
                 `w:v:${wish.id}`,
                 `w:f:t:${wish.id}`,
                 `w:f:d:${wish.id}`,

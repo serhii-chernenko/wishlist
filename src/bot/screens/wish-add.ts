@@ -68,7 +68,11 @@ export const screen: ScreenModule<undefined> = {
             return;
         }
 
-        const wish = await wishes.create(user.id, parsed.value);
+        const wish = await wishes.create(
+            user.id,
+            parsed.value,
+            req.displayCurrency
+        );
 
         if (wish === null) {
             await req.send.text(LL.wishlist.add.error(), removeReplyKeyboard());

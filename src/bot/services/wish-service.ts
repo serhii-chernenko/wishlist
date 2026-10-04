@@ -12,14 +12,15 @@ import { MAX_ACTIVE_WISHES_PER_USER } from '../input/limits';
 import { toWishFilter } from '../content/filters';
 import type { WishFilter } from '../runtime/types';
 import { parseWishImages } from '../input/wish-images';
-import type { PriceBounds } from '../../shared/money';
+import type { WishPriorityLevel } from '../../shared/app-api';
+import type { Currency, PriceBoundsByCurrency } from '../../shared/money';
 import { runRepository } from './run-repository';
 
 type WishRepositories = Pick<Repositories, 'wishes' | 'users' | 'gives'>;
 
 export interface WishPageRequest {
     ownerId: number;
-    priceBounds: PriceBounds | null;
+    priceBounds: PriceBoundsByCurrency | null;
     offset: number;
 }
 
@@ -76,9 +77,9 @@ export const createWishService = (
         findVisible(wishId: number) {
             return runRepository(repositories.wishes.findVisible(wishId));
         },
-        create(userId: number, title: string) {
+        create(userId: number, title: string, currency: Currency) {
             return runRepository(
-                repositories.wishes.create(userId, title, clock())
+                repositories.wishes.create(userId, title, currency, clock())
             );
         },
         createWithFields(userId: number, fields: NewWishFields) {
@@ -91,9 +92,14 @@ export const createWishService = (
                 repositories.wishes.updateFields(wishId, userId, patch, clock())
             );
         },
-        togglePriority(wishId: number, userId: number) {
+        setPriority(wishId: number, userId: number, level: WishPriorityLevel) {
             return runRepository(
-                repositories.wishes.togglePriority(wishId, userId, clock())
+                repositories.wishes.setPriorityLevel(
+                    wishId,
+                    userId,
+                    level,
+                    clock()
+                )
             );
         },
         toggleHidden(wishId: number, userId: number) {
@@ -118,6 +124,59 @@ export const createWishService = (
                     userId,
                     index,
                     expectedJson,
+                    clock()
+                )
+            );
+        },
+        reorderImages(
+            wishId: number,
+            userId: number,
+            orderedFileIds: readonly string[],
+            expectedJson: string
+        ) {
+            return runRepository(
+                repositories.wishes.replaceImages(
+                    wishId,
+                    userId,
+                    expectedJson,
+                    JSON.stringify(orderedFileIds),
+                    clock()
+                )
+            );
+        },
+        async moveImageToFront(
+            wishId: number,
+            userId: number,
+            index: number,
+            expectedFileId: string
+        ) {
+            const wish = await runRepository(
+                repositories.wishes.findOwned(wishId, userId)
+            );
+
+            if (wish === null) {
+                return null;
+            }
+
+            const fileIds = parseWishImages(wish.images);
+
+            if (fileIds[index] !== expectedFileId) {
+                return null;
+            }
+
+            const reordered = [
+                expectedFileId,
+                ...fileIds.filter((_fileId, position) => {
+                    return position !== index;
+                })
+            ];
+
+            return runRepository(
+                repositories.wishes.replaceImages(
+                    wishId,
+                    userId,
+                    wish.images,
+                    JSON.stringify(reordered),
                     clock()
                 )
             );

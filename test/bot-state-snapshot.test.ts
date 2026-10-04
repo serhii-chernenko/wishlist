@@ -60,12 +60,12 @@ test('bot state snapshot aggregates users, wishes, gives and languages without i
             .run();
         await harness.env.DB.prepare(
             `INSERT INTO wishes
-                (user_id, title, hidden, priority, removed, done, created_at, updated_at)
-             VALUES (1, 'active', 0, 0, 0, 0, 0, 0),
-                    (1, 'hidden', 1, 0, 0, 0, 0, 0),
-                    (2, 'priority', 0, 1, 0, 0, 0, 0),
-                    (2, 'done and removed', 0, 0, 1, 1, 0, 0),
-                    (3, 'done', 0, 0, 0, 1, 0, 0)`
+                (user_id, title, hidden, priority, priority_level, removed, done, created_at, updated_at)
+             VALUES (1, 'active', 0, 0, 0, 0, 0, 0, 0),
+                    (1, 'hidden', 1, 0, 0, 0, 0, 0, 0),
+                    (2, 'priority', 0, 1, 3, 0, 0, 0, 0),
+                    (2, 'done and removed', 0, 0, 0, 1, 1, 0, 0),
+                    (3, 'done', 0, 0, 0, 0, 1, 0, 0)`
         ).run();
         await harness.env.DB.prepare(
             `INSERT INTO gives (user_id, wish_id, created_at)

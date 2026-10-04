@@ -21,7 +21,9 @@ import {
     DRAFT_TEXT_FIELDS,
     createPhotoQueue,
     draftFromWish,
-    EMPTY_DRAFT,
+    createEmptyDraft,
+    isHighPriority,
+    toToggledPriority,
     enqueuePhotos,
     failQueuedPhotos,
     isDraftDirty,
@@ -387,7 +389,9 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
     const toggleFlag = useWishFlagToggle();
     const limits = config.limits;
     const [baseline, setBaseline] = useState<WishDraft>(() => {
-        return wish === null ? EMPTY_DRAFT : draftFromWish(wish);
+        return wish === null
+            ? createEmptyDraft(me.currency)
+            : draftFromWish(wish);
     });
     const [draft, setDraft] = useState<WishDraft>(baseline);
     const [touched, setTouched] = useState<ReadonlySet<DraftTextField>>(
@@ -465,7 +469,11 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
 
     const setFlag = (flag: DraftFlag, value: boolean) => {
         if (wish === null) {
-            setDraft(previous => ({ ...previous, [flag]: value }));
+            setDraft(previous => {
+                return flag === 'priority'
+                    ? { ...previous, priority: toToggledPriority(value) }
+                    : { ...previous, hidden: value };
+            });
 
             return;
         }
@@ -764,6 +772,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
         clientErrors.link === undefined ? getLinkHost(draft.link.trim()) : null;
     const approximatePrice = getApproximateDraftPrice(
         draft.price,
+        draft.currency,
         me.currency,
         locale,
         config.rates
@@ -820,7 +829,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     id={fieldId('price')}
                     label={LL.editor.price.label()}
                     hint={LL.editor.price.hint({
-                        currency: getCurrencySymbol(locale, me.currency)
+                        currency: getCurrencySymbol(locale, draft.currency)
                     })}
                     placeholder={LL.editor.price.placeholder()}
                     value={draft.price}
@@ -828,7 +837,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     onBlur={touch('price')}
                     error={errorFor('price')}
                     inputMode='decimal'
-                    suffix={getCurrencySymbol(locale, me.currency)}
+                    suffix={getCurrencySymbol(locale, draft.currency)}
                     optionalMark={LL.common.optional()}
                     showCounter={false}
                     after={
@@ -890,7 +899,7 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                     id='wish-priority'
                     label={LL.editor.priority.label()}
                     hint={LL.editor.priority.hint()}
-                    pressed={draft.priority}
+                    pressed={isHighPriority(draft.priority)}
                     onToggle={next => {
                         setFlag('priority', next);
                     }}

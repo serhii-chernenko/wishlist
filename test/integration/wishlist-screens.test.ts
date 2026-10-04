@@ -42,12 +42,14 @@ import {
     callbacks as wishEditCallbacks,
     screen as wishEditScreen
 } from '../../src/bot/screens/wish-edit';
+import { callbacks as wishPriorityCallbacks } from '../../src/bot/screens/wish-priority';
 import { callbacks as wishRemoveCallbacks } from '../../src/bot/screens/wish-remove';
 import {
     callbacks as wishlistCallbacks,
     screen as wishlistScreen
 } from '../../src/bot/screens/wishlist';
 import type { UserRecord } from '../../src/db/repositories';
+import { FALLBACK_RATES, resolveDisplayCurrency } from '../../src/shared/money';
 import { createApp } from '../../src/worker/app';
 import type { WorkerBindings } from '../../src/worker/env';
 import {
@@ -71,6 +73,7 @@ type SentEvent =
 const allCallbacks: CallbackTable[] = [
     wishlistCallbacks,
     wishEditCallbacks,
+    wishPriorityCallbacks,
     wishAddCallbacks,
     wishRemoveCallbacks,
     findListCallbacks,
@@ -135,6 +138,8 @@ describe('wishlist screens on D1', () => {
                     : { BOT_ENVIRONMENT: options.environment })
             },
             locale: 'uk',
+            rates: FALLBACK_RATES,
+            displayCurrency: resolveDisplayCurrency(user.currency, 'uk'),
             LL: getMessages('uk'),
             actor: {
                 id: user.telegramId,
@@ -365,6 +370,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'cheap',
+                    'UAH',
                     new Date()
                 )
             );
@@ -411,7 +417,12 @@ describe('wishlist screens on D1', () => {
                 usernameSearchable: true
             });
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -461,6 +472,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'Bicycle',
+                    'UAH',
                     new Date()
                 )
             );
@@ -493,6 +505,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'Bicycle',
+                    'UAH',
                     new Date()
                 )
             );
@@ -754,6 +767,7 @@ describe('wishlist screens on D1', () => {
                     harness.repositories.wishes.create(
                         owner.id,
                         'Bicycle',
+                        'UAH',
                         new Date()
                     )
                 );
@@ -820,6 +834,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     noUsername.id,
                     'Book',
+                    'UAH',
                     new Date()
                 )
             );
@@ -1183,7 +1198,12 @@ describe('wishlist screens on D1', () => {
         it('updates price, link, description and title through field prompts', async () => {
             const owner = await createUser();
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'old', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'old',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1250,21 +1270,26 @@ describe('wishlist screens on D1', () => {
             const owner = await createUser();
             const stranger = await createUser();
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
 
             const own = createRequest(owner);
 
-            await dispatch(own.request, `w:t:${wish.id}`);
+            await dispatch(own.request, `w:pm:${wish.id}`);
             await dispatch(own.request, `w:v:${wish.id}`);
             assert.equal((await readWish(wish.id))?.['priority'], 1);
             assert.equal((await readWish(wish.id))?.['hidden'], 1);
 
             const foreign = createRequest(stranger);
 
-            await dispatch(foreign.request, `w:t:${wish.id}`);
+            await dispatch(foreign.request, `w:pm:${wish.id}`);
             assert.equal((await readWish(wish.id))?.['priority'], 1);
             assert.ok(lastText(foreign.events).html.length > 0);
         });
@@ -1272,7 +1297,12 @@ describe('wishlist screens on D1', () => {
         it('debounces an album so only the last photo renders the edit menu', async () => {
             const owner = await createUser();
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1350,7 +1380,12 @@ describe('wishlist screens on D1', () => {
         it('caps images at nine and clears them with the remove label', async () => {
             const owner = await createUser();
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1406,7 +1441,12 @@ describe('wishlist screens on D1', () => {
         it('removes a wish as done or dropped with confirmation', async () => {
             const owner = await createUser();
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1462,7 +1502,12 @@ describe('wishlist screens on D1', () => {
             fileIds: string[]
         ) => {
             const wish = await run(
-                harness.repositories.wishes.create(userId, 'wish', new Date())
+                harness.repositories.wishes.create(
+                    userId,
+                    'wish',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1603,7 +1648,12 @@ describe('wishlist screens on D1', () => {
                 payments: 'mono <jar>'
             });
             const wish = await run(
-                harness.repositories.wishes.create(owner.id, 'Gift', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'Gift',
+                    'UAH',
+                    new Date()
+                )
             );
 
             assert.ok(wish);
@@ -1745,7 +1795,12 @@ describe('wishlist screens on D1', () => {
             const viewer = await createUser();
 
             await run(
-                harness.repositories.wishes.create(owner.id, 'Gift', new Date())
+                harness.repositories.wishes.create(
+                    owner.id,
+                    'Gift',
+                    'UAH',
+                    new Date()
+                )
             );
 
             const hit = createRequest(viewer);
@@ -1794,6 +1849,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'Visible',
+                    'UAH',
                     new Date()
                 )
             );
@@ -1956,6 +2012,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'First',
+                    'UAH',
                     new Date()
                 )
             );
@@ -1963,6 +2020,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     phoneOwner.id,
                     'Second',
+                    'UAH',
                     new Date()
                 )
             );
@@ -2031,6 +2089,7 @@ describe('wishlist screens on D1', () => {
                 harness.repositories.wishes.create(
                     owner.id,
                     'First',
+                    'UAH',
                     new Date()
                 )
             );

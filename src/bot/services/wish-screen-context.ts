@@ -2,7 +2,11 @@ import type { InlineKeyboardButton } from 'telegraf/types';
 
 import { releaseOrphanedImages } from '../../api/photos/image-cleanup';
 import type { UserRecord } from '../../db/repositories';
-import { describePrice, resolvePriceBounds } from '../../shared/money';
+import {
+    describePrice,
+    resolvePriceBounds,
+    type Currency
+} from '../../shared/money';
 import { getAllLocaleTexts } from '../content/messages';
 import { formatDate } from '../content/intl';
 import { urlButton } from '../content/keyboards';
@@ -26,22 +30,25 @@ export const requireUser = (req: BotRequest): UserRecord => {
 export const formatWishPrice = (
     req: BotRequest,
     price: number,
-    ownerCurrency: string | null | undefined
+    wishCurrency: Currency
 ) => {
-    const display = describePrice(price, ownerCurrency, req.locale, req.rates);
+    const display = describePrice(
+        price,
+        wishCurrency,
+        req.displayCurrency,
+        req.locale,
+        req.rates
+    );
 
     return display.kind === 'exact'
         ? display.amount
         : req.LL.markup.approx(display.amount, display.original);
 };
 
-export const createWishFormatters = (
-    req: BotRequest,
-    ownerCurrency: string | null | undefined
-): WishMarkupFormatters => {
+export const createWishFormatters = (req: BotRequest): WishMarkupFormatters => {
     return {
-        formatMoney: value => {
-            return formatWishPrice(req, value, ownerCurrency);
+        formatMoney: (value, currency) => {
+            return formatWishPrice(req, value, currency);
         },
         formatDate: value => {
             return formatDate(value, req.locale);
@@ -49,12 +56,11 @@ export const createWishFormatters = (
     };
 };
 
-export const getOwnerPriceBounds = (
+export const getPriceBoundsByCurrency = (
     req: BotRequest,
-    filter: WishFilter | null,
-    ownerCurrency: string | null | undefined
+    filter: WishFilter | null
 ) => {
-    return resolvePriceBounds(filter, req.locale, ownerCurrency, req.rates);
+    return resolvePriceBounds(filter, req.displayCurrency, req.rates);
 };
 
 export const getRemoveLabels = () => {

@@ -26,6 +26,10 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'navigate', screen: 'payments' }, 'n:pay'],
     [{ type: 'navigate', screen: 'language' }, 'n:lang'],
     [{ type: 'navigate', screen: 'releases' }, 'n:rel'],
+    [{ type: 'navigate', screen: 'settings' }, 'n:set'],
+    [{ type: 'navigate', screen: 'currency' }, 'n:cur'],
+    [{ type: 'navigate', screen: 'delivery' }, 'n:dlv'],
+    [{ type: 'navigate', screen: 'disclosure' }, 'n:dsc'],
     [{ type: 'wishlistPage', offset: 0 }, 'wl:p:0'],
     [{ type: 'wishlistPage', offset: 20 }, 'wl:p:20'],
     [{ type: 'wishlistClean' }, 'wl:clean'],
@@ -37,6 +41,7 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishlistShareRotate' }, 'wl:share:new'],
     [{ type: 'wishlistShareRotateConfirm' }, 'wl:share:new:y'],
     [{ type: 'wishlistShareUsername' }, 'wl:share:u'],
+    [{ type: 'wishlistShareIndexing' }, 'wl:share:idx'],
     [{ type: 'wishlistFilterMenu' }, 'wl:f'],
     [{ type: 'wishlistFilter', filter: 0 }, 'wl:f:0'],
     [{ type: 'wishlistFilter', filter: 4 }, 'wl:f:4'],
@@ -45,7 +50,15 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishRemove', wishId: 12 }, 'w:r:12'],
     [{ type: 'wishRemoveConfirm', wishId: 12, done: true }, 'w:r:y:12'],
     [{ type: 'wishRemoveConfirm', wishId: 12, done: false }, 'w:r:n:12'],
-    [{ type: 'wishTogglePriority', wishId: 7 }, 'w:t:7'],
+    [{ type: 'wishPriorityMenu', wishId: 7 }, 'w:pm:7'],
+    [{ type: 'wishPrioritySet', wishId: 7, level: 0 }, 'w:pl:7:0'],
+    [{ type: 'wishPrioritySet', wishId: 7, level: 3 }, 'w:pl:7:3'],
+    [{ type: 'wishCurrencySet', wishId: 7, currency: 'USD' }, 'w:cu:7:USD'],
+    [{ type: 'wishImagesOrder', wishId: 7 }, 'w:io:7'],
+    [
+        { type: 'wishImageFirst', wishId: 7, index: 8, hash8: 'a1b2c3d4' },
+        'w:if:7:8:a1b2c3d4'
+    ],
     [{ type: 'wishToggleVisibility', wishId: 7 }, 'w:v:7'],
     [{ type: 'wishFieldPrompt', wishId: 3, field: 'title' }, 'w:f:t:3'],
     [{ type: 'wishFieldPrompt', wishId: 3, field: 'description' }, 'w:f:d:3'],
@@ -68,6 +81,13 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'authType', authType: 'phone' }, 'a:p'],
     [{ type: 'authType', authType: 'both' }, 'a:b'],
     [{ type: 'paymentsRemove' }, 'p:rm'],
+    [{ type: 'currencySet', currency: 'PLN' }, 'cur:PLN'],
+    [{ type: 'disclosureToggle', field: 'payments' }, 'dsc:p'],
+    [{ type: 'disclosureToggle', field: 'phone' }, 'dsc:h'],
+    [{ type: 'disclosureToggle', field: 'address' }, 'dsc:a'],
+    [{ type: 'disclosureConfirm', field: 'phone' }, 'dsc:h:y'],
+    [{ type: 'disclosureConfirm', field: 'address' }, 'dsc:a:y'],
+    [{ type: 'deliveryRemove' }, 'dlv:rm'],
     [{ type: 'language', choice: 'uk' }, 'l:uk'],
     [{ type: 'language', choice: 'en' }, 'l:en'],
     [{ type: 'language', choice: 'pl' }, 'l:pl'],
@@ -94,6 +114,14 @@ test('every C2 variant encodes to the documented data and round-trips', () => {
         assert.equal(encodeCallbackData(action), data);
         assert.deepEqual(decodeCallbackData(data), action);
     }
+});
+
+test('the legacy priority toggle decodes to the priority menu', () => {
+    assert.deepEqual(decodeCallbackData('w:t:7'), {
+        type: 'wishPriorityMenu',
+        wishId: 7
+    });
+    assert.equal(getCallbackCategory('w:t:7'), 'wish:priorityMenu');
 });
 
 test('worst-case ids and offsets stay within the 64-byte limit', () => {
@@ -186,6 +214,15 @@ test('malformed new-style data decodes as outdated', () => {
         'a:x',
         'l:ru',
         'p:add',
+        'w:pl:7:4',
+        'w:pl:7',
+        'w:cu:7:GBP',
+        'w:if:7:9:a1b2c3d4',
+        'w:if:7:0:xyz',
+        'cur:GBP',
+        'dsc:p:y',
+        'dsc:x',
+        'dlv:x',
         'zz:1'
     ];
 
@@ -201,6 +238,10 @@ test('callback categories are closed and never contain ids', () => {
     assert.equal(getCallbackCategory('n:wl'), 'nav:wishlist');
     assert.equal(getCallbackCategory('w:e:12345'), 'wish:edit');
     assert.equal(getCallbackCategory('t:g:12345'), 'third:give');
+    assert.equal(getCallbackCategory('w:pm:12345'), 'wish:priorityMenu');
+    assert.equal(getCallbackCategory('w:pl:12345:2'), 'wish:prioritySet');
+    assert.equal(getCallbackCategory('cur:EUR'), 'currency');
+    assert.equal(getCallbackCategory('dsc:h:y'), 'disclosure:confirm');
     assert.equal(getCallbackCategory('x'), 'noop');
     assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
     assert.equal(

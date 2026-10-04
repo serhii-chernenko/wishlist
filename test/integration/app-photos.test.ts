@@ -269,7 +269,7 @@ describe('Mini App photo endpoints', () => {
     const seedWish = async (telegramId = OWNER_TELEGRAM_ID) => {
         const user = await createUser(telegramId, `user_${telegramId}`);
         const wish = await run(
-            harness.repositories.wishes.create(user.id, 'Camera', NOW)
+            harness.repositories.wishes.create(user.id, 'Camera', 'UAH', NOW)
         );
 
         assert.ok(wish);
@@ -748,7 +748,7 @@ describe('Mini App photo endpoints', () => {
 
         const createSecondWish = async (userId: number) => {
             const second = await run(
-                harness.repositories.wishes.create(userId, 'Lens', NOW)
+                harness.repositories.wishes.create(userId, 'Lens', 'UAH', NOW)
             );
 
             assert.ok(second);

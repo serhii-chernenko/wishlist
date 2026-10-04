@@ -7,8 +7,8 @@ import type { UserRecord } from '../../src/db/repositories';
 import type { WishFilterValue } from '../../src/shared/app-api';
 import {
     FALLBACK_RATES,
-    toOwnerPriceBounds,
-    type DisplayCurrency
+    toPriceBoundsByCurrency,
+    type Currency
 } from '../../src/shared/money';
 import {
     countRows,
@@ -50,7 +50,7 @@ describe('D1 repositories', () => {
     };
     const createWish = async (userId: number, title = 'wish') => {
         const created = await run(
-            repositories.wishes.create(userId, title, now)
+            repositories.wishes.create(userId, title, 'UAH', now)
         );
 
         assert.ok(created);
@@ -467,14 +467,13 @@ describe('D1 repositories', () => {
 
         const titlesForFilter = async (
             filter: WishFilterValue,
-            viewerCurrency: DisplayCurrency = 'UAH'
+            viewerCurrency: Currency = 'UAH'
         ) => {
             const page = await run(
                 repositories.wishes.listOwned(owner.id, {
-                    filter: toOwnerPriceBounds(
+                    filter: toPriceBoundsByCurrency(
                         filter,
                         viewerCurrency,
-                        owner.currency,
                         FALLBACK_RATES
                     ),
                     offset: 0,
@@ -517,7 +516,12 @@ describe('D1 repositories', () => {
                 )
             );
             await run(
-                repositories.wishes.togglePriority(urgent.id, owner.id, now)
+                repositories.wishes.setPriorityLevel(
+                    urgent.id,
+                    owner.id,
+                    3,
+                    now
+                )
             );
 
             const all = await run(
@@ -718,9 +722,10 @@ describe('D1 repositories', () => {
             );
             assert.equal(
                 await run(
-                    repositories.wishes.togglePriority(
+                    repositories.wishes.setPriorityLevel(
                         wish.id,
                         stranger.id,
+                        3,
                         now
                     )
                 ),
@@ -788,7 +793,12 @@ describe('D1 repositories', () => {
                 true
             );
             await run(
-                repositories.wishes.togglePriority(wish.id, owner.id, later)
+                repositories.wishes.setPriorityLevel(
+                    wish.id,
+                    owner.id,
+                    3,
+                    later
+                )
             );
             await run(
                 repositories.wishes.toggleHidden(wish.id, owner.id, later)
@@ -805,7 +815,12 @@ describe('D1 repositories', () => {
             assert.equal(toggled?.updatedAt.getTime(), later.getTime());
 
             await run(
-                repositories.wishes.togglePriority(wish.id, owner.id, later)
+                repositories.wishes.setPriorityLevel(
+                    wish.id,
+                    owner.id,
+                    0,
+                    later
+                )
             );
             await run(
                 repositories.wishes.updateFields(
@@ -1450,7 +1465,12 @@ describe('D1 repositories', () => {
             const done = await createWish(weekly.id, 'done');
 
             await run(
-                repositories.wishes.togglePriority(priority.id, active.id, now)
+                repositories.wishes.setPriorityLevel(
+                    priority.id,
+                    active.id,
+                    3,
+                    now
+                )
             );
             await run(
                 repositories.wishes.toggleHidden(hidden.id, weekly.id, now)

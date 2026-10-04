@@ -5,11 +5,7 @@ import {
     truncateWithMark
 } from '../../../bot/input/limits';
 import { SHAREABLE_WISHES_LIMIT } from '../../../db/repositories/wish-repository';
-import {
-    formatRatesDate,
-    getDisplayCurrency,
-    isPriceConverted
-} from '../../../shared/money';
+import { formatRatesDate, isPriceConverted } from '../../../shared/money';
 import { inlineMarkup, trimEdgeWhitespace } from '../inline-markup';
 import { buildSharePath } from '../public-id';
 import type { SharePageModel } from '../view-model';
@@ -101,12 +97,12 @@ const ShareHero = ({ model }: { model: SharePageModel }) => {
 };
 
 const hasConvertedPrices = (model: SharePageModel) => {
-    return (
-        isPriceConverted(model.currency, model.language, model.rates) &&
-        model.wishes.some(wish => {
-            return wish.price > 0;
-        })
-    );
+    return model.wishes.some(wish => {
+        return (
+            wish.price > 0 &&
+            isPriceConverted(wish.currency, model.displayCurrency, model.rates)
+        );
+    });
 };
 
 const RatesNote = ({ model }: { model: SharePageModel }) => {
@@ -115,7 +111,7 @@ const RatesNote = ({ model }: { model: SharePageModel }) => {
     return (
         <p class='notice'>
             {LL.web.ratesNote({
-                currency: getDisplayCurrency(model.language),
+                currency: model.displayCurrency,
                 date: formatRatesDate(model.rates.date, model.language)
             })}
         </p>
@@ -157,7 +153,7 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                                 <WishCard
                                     wish={wish}
                                     language={model.language}
-                                    currency={model.currency}
+                                    displayCurrency={model.displayCurrency}
                                     rates={model.rates}
                                 />
                             );

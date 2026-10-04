@@ -1,7 +1,6 @@
 import type { User } from 'telegraf/types';
 
 import { toWishFilter } from '../bot/content/filters';
-import { DEFAULT_CURRENCY } from '../bot/content/intl';
 import { getSupportLinks } from '../bot/content/support-links';
 import { getTranslator, resolveAppLocale, type AppLocale } from '../bot/i18n';
 import {
@@ -29,14 +28,22 @@ import {
     type AppLinkId,
     type BootstrapDto,
     type GiverSummaryDto,
+    type ContactDisclosureDto,
     type MeDto,
+    type OwnerContactDto,
     type OwnerDto,
     type OwnWishDto,
     type PageDto,
     type ShareDto,
     type ThirdWishDto
 } from '../shared/app-api';
-import { getPriceFiltersByCurrency, type ExchangeRates } from '../shared/money';
+import {
+    getPriceFiltersByCurrency,
+    resolveDisplayCurrency,
+    toWishCurrency,
+    type ExchangeRates
+} from '../shared/money';
+import { toWishPriority } from '../shared/priority';
 import type { WorkerBindings } from '../worker/env';
 import { sha256Hex, type ApiCrypto } from './auth/crypto';
 import type { Signer } from './auth/signing';
@@ -155,7 +162,8 @@ export const toOwnWishDto = (
         link,
         linkHost: getLinkHost(link),
         price: wish.price,
-        priority: wish.priority,
+        currency: toWishCurrency(wish.currency),
+        priority: toWishPriority(wish.priorityLevel),
         hidden: wish.hidden,
         images,
         createdAt: wish.createdAt.toISOString(),
@@ -203,18 +211,39 @@ export const toThirdPartyPayments = (payments: string | null) => {
 };
 
 export const toOwnerDto = (input: {
-    owner: Pick<UserRecord, 'payments' | 'currency'>;
+    owner: Pick<UserRecord, 'payments' | 'showPayments'>;
     token: string | null;
     label: string;
     source: OwnerDto['source'];
+    contact: OwnerContactDto | null;
 }): OwnerDto => {
     return {
         token: input.token,
         label: input.label,
-        payments: toThirdPartyPayments(input.owner.payments),
-        currency: input.owner.currency || DEFAULT_CURRENCY,
+        payments: input.owner.showPayments
+            ? toThirdPartyPayments(input.owner.payments)
+            : null,
+        contact: input.contact,
         source: input.source,
         canGive: input.token !== null
+    };
+};
+
+const GUEST_DISCLOSURE: ContactDisclosureDto = {
+    payments: true,
+    phone: false,
+    address: false
+};
+
+const toDisclosureDto = (user: UserRecord | null): ContactDisclosureDto => {
+    if (user === null) {
+        return GUEST_DISCLOSURE;
+    }
+
+    return {
+        payments: user.showPayments,
+        phone: user.showPhone,
+        address: user.showAddress
     };
 };
 
@@ -232,7 +261,9 @@ export const toMeDto = (input: {
         telegramUsername: input.actor.username ?? null,
         phoneMasked: maskPhone(user?.phone ?? null),
         payments: user?.payments ?? null,
-        currency: user?.currency || DEFAULT_CURRENCY,
+        deliveryAddress: user?.deliveryAddress ?? null,
+        disclosure: toDisclosureDto(user),
+        currency: resolveDisplayCurrency(user?.currency, input.locale),
         languageChoice: getStoredLanguageChoice(user, input.sessionLanguage),
         locale: input.locale,
         wishlistFilter: toWishFilter(user?.wishlistFilter),
@@ -256,6 +287,7 @@ export const toShareDto = (input: {
         appUrl: input.state === 'shared' ? input.appUrl : null,
         showUsername: input.share?.showUsername ?? false,
         canShowUsername: canShowPublicUsername(input.user),
+        allowIndexing: input.share?.allowIndexing ?? true,
         consent: { name: input.consentName, host: input.host }
     };
 };

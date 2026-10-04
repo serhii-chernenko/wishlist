@@ -584,7 +584,8 @@ const fixtureWish = (
         link: null,
         linkHost: null,
         price,
-        priority: false,
+        currency: 'UAH',
+        priority: 'none',
         hidden: false,
         images: [],
         createdAt: FIXTURE_DATE,
@@ -595,7 +596,7 @@ const fixtureWish = (
 
 const createFixtureWishes = () => {
     return [
-        fixtureWish(1, 'Board game Carcassonne', 1500, { priority: true }),
+        fixtureWish(1, 'Board game Carcassonne', 1500, { priority: 'high' }),
         fixtureWish(2, 'Coffee grinder', 3200, {
             link: 'https://example.com/grinder',
             linkHost: 'example.com'
@@ -672,7 +673,7 @@ const readTotal = (payload: unknown) => {
 };
 
 const SEED_WISHES = [
-    { title: 'Настільна гра «Каркасон»', price: 1500, priority: true },
+    { title: 'Настільна гра «Каркасон»', price: 1500, priority: 'high' },
     { title: 'Кавомолка', price: 3200, link: 'https://example.com/grinder' },
     { title: 'Ліхтар для кемпінгу', hidden: true }
 ];

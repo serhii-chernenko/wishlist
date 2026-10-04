@@ -21,7 +21,7 @@ test('changelog dates in DD.MM.YYYY parse to the same calendar day', () => {
 });
 
 test('release dates render as long localized dates', () => {
-    assert.equal(formatReleaseDate('02.10.2026', 'en'), '2 October 2026');
+    assert.equal(formatReleaseDate('02.10.2026', 'en'), 'October 2, 2026');
     assert.match(formatReleaseDate('02.10.2026', 'uk'), /^2 жовтня 2026/);
     assert.match(formatReleaseDate('24.12.2023', 'pl'), /^24 grudnia 2023/);
     assert.equal(formatReleaseDate('soon', 'en'), 'soon');

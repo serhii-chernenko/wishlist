@@ -1,6 +1,7 @@
 import type { Child } from 'hono/jsx';
 
-import type { ApiImage } from '../../shared/app-api';
+import type { ApiImage, WishPriority } from '../../shared/app-api';
+import type { Currency } from '../../shared/money';
 import { getLinkHost } from '../logic/format';
 import { useLL } from '../state/context';
 import { openLink } from '../telegram/links';
@@ -12,7 +13,8 @@ export interface WishTagModel {
     id: number;
     title: string;
     price: number;
-    priority: boolean;
+    currency: Currency;
+    priority: WishPriority;
     images: readonly ApiImage[];
     link: string | null;
     linkHost: string | null;
@@ -21,7 +23,6 @@ export interface WishTagModel {
 
 export interface WishTagProps {
     wish: WishTagModel;
-    currency: string | null;
     owner?: 'self' | 'other';
     onOpen?: () => void;
     badges?: Child;
@@ -62,7 +63,6 @@ const WishCover = ({
 /** The compact gift-tag card shared with the share page markup (`.wish` / `.wish-tag`). */
 export const WishTag = ({
     wish,
-    currency,
     owner = 'self',
     onOpen,
     badges,
@@ -73,7 +73,7 @@ export const WishTag = ({
 
     return (
         <li class='wish' data-wish-id={String(wish.id)}>
-            {wish.priority ? <HeartSticker /> : null}
+            {wish.priority === 'high' ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>
                     {onOpen === undefined ? (
@@ -89,10 +89,10 @@ export const WishTag = ({
                     )}
                 </h2>
                 <WishCover images={wish.images} title={wish.title} />
-                {wish.priority ? (
+                {wish.priority === 'high' ? (
                     <p class='sr-only'>
                         {owner === 'self'
-                            ? LL.a11y.priority()
+                            ? LL.a11y.priority.high()
                             : LL.a11y.priorityThird()}
                     </p>
                 ) : null}
@@ -100,7 +100,7 @@ export const WishTag = ({
                     <p class='wish-badge'>{LL.wishes.hiddenBadge()}</p>
                 ) : null}
                 {badges}
-                <PriceChip price={wish.price} currency={currency} />
+                <PriceChip price={wish.price} currency={wish.currency} />
                 {wish.link !== null && host !== null ? (
                     <a
                         class='wish-link'

@@ -187,7 +187,7 @@ describe('image proxy', () => {
         assert.ok(owner);
 
         const wish = await run(
-            harness.repositories.wishes.create(owner.id, 'Camera', NOW)
+            harness.repositories.wishes.create(owner.id, 'Camera', 'UAH', NOW)
         );
 
         assert.ok(wish);

@@ -86,6 +86,7 @@ describe('D1 migrations', () => {
             'wishes_owner_list_index',
             'wishes_share_fingerprint_index',
             'wishes_done_index',
+            'wishes_owner_priority_level_index',
             'gives_wish_index',
             'sessions_updated_at_index',
             'release_announcements_user_id_index'

@@ -17,6 +17,8 @@ export type Route =
     | { screen: 'settings' }
     | { screen: 'visibility' }
     | { screen: 'payments' }
+    | { screen: 'currency' }
+    | { screen: 'delivery' }
     | { screen: 'language' }
     | { screen: 'feedback' }
     | { screen: 'stats' }
@@ -53,6 +55,8 @@ export const SCREEN_IDS = [
     'settings',
     'visibility',
     'payments',
+    'currency',
+    'delivery',
     'language',
     'feedback',
     'stats',
@@ -68,7 +72,9 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'find',
     'thirdList',
     'share',
-    'payments'
+    'payments',
+    'currency',
+    'delivery'
 ]);
 
 const SIMPLE_START_ROUTES = {

@@ -1,5 +1,6 @@
 import {
     ChartColumn,
+    Coins,
     Eye,
     Gift,
     HandHeart,
@@ -10,6 +11,7 @@ import {
     Search,
     Share2,
     Sparkles,
+    Truck,
     Wallet
 } from 'lucide';
 
@@ -34,6 +36,8 @@ const PRIMARY_MENU: readonly MenuEntry[] = [
 const SETTINGS_MENU: readonly MenuEntry[] = [
     { screen: 'visibility', icon: Eye },
     { screen: 'payments', icon: Wallet },
+    { screen: 'currency', icon: Coins },
+    { screen: 'delivery', icon: Truck },
     { screen: 'language', icon: Languages }
 ];
 

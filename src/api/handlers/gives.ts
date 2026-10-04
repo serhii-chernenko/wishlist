@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
 
-import { DEFAULT_CURRENCY } from '../../bot/content/intl';
 import { createGiveService } from '../../bot/services/give-service';
 import type {
     GiveListEntry,
@@ -62,7 +61,6 @@ const toGiveEntryDto = async (
 
     return {
         wish: toVisibleWishDto(wish, await mintWishImages(context, wish)),
-        currency: owner?.currency || DEFAULT_CURRENCY,
         ownerUsername: owner === null ? null : getPublicOwnerUsername(owner),
         otherGivers: givers.filter(giverId => {
             return giverId !== viewerId;

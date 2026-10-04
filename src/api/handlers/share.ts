@@ -125,3 +125,7 @@ export const stopShare: ApiHandler = async c => {
 
     return respondWithShare(c, user);
 };
+
+export const setShareIndexing: ApiHandler = () => {
+    throw new ApiError('notImplemented');
+};

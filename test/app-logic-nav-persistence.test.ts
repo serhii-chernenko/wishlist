@@ -24,7 +24,7 @@ const OWNER_ROUTE: Route = {
             token: 'tok.en.sig',
             label: '@olena',
             payments: 'Card 4444 0000 1111 2222',
-            currency: 'UAH',
+            contact: null,
             source: 'search',
             canGive: true
         }
@@ -130,7 +130,7 @@ test('owner routes are stored without payment details and restored with a fresh 
                 token: 'tok.en.sig',
                 label: '@olena',
                 payments: null,
-                currency: 'UAH',
+                contact: null,
                 source: 'search',
                 canGive: true
             }

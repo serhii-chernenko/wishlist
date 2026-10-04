@@ -1,12 +1,14 @@
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import type { WishRecord } from '../../db/repositories';
+import { WISH_PRIORITY_LEVELS } from '../../shared/app-api';
+import { toWishCurrency, type Currency } from '../../shared/money';
 import { cutDescription, cutTitle } from '../input/limits';
 import { parseWishImages } from '../input/wish-images';
 import type { WishMessage } from '../runtime/types';
 import { escapeHtml } from '../utils/strings';
 
 export interface WishMarkupFormatters {
-    formatMoney(value: number): string;
+    formatMoney(value: number, currency: Currency): string;
     formatDate(value: Date): string;
 }
 
@@ -25,7 +27,8 @@ export type WishMarkupSource = Pick<
     | 'title'
     | 'description'
     | 'price'
-    | 'priority'
+    | 'currency'
+    | 'priorityLevel'
     | 'hidden'
     | 'createdAt'
     | 'updatedAt'
@@ -36,8 +39,8 @@ const getPriorityBlock = (
     audience: WishMarkupAudience
 ) => {
     return audience === 'owner'
-        ? LL.markup.priority.owner()
-        : LL.markup.priority.watcher();
+        ? LL.markup.priority.high.owner()
+        : LL.markup.priority.high.watcher();
 };
 
 export const renderWishHtml = (
@@ -55,7 +58,14 @@ export const renderWishHtml = (
     const hidden = wish.hidden && options.showHidden ? LL.markup.hidden() : '';
     const price =
         wish.price > 0
-            ? LL.markup.price(escapeHtml(formatters.formatMoney(wish.price)))
+            ? LL.markup.price(
+                  escapeHtml(
+                      formatters.formatMoney(
+                          wish.price,
+                          toWishCurrency(wish.currency)
+                      )
+                  )
+              )
             : '';
 
     if (options.detail === 'summary') {
@@ -64,9 +74,10 @@ export const renderWishHtml = (
         return title + price + dateLines + hidden;
     }
 
-    const priority = wish.priority
-        ? getPriorityBlock(LL, options.audience)
-        : '';
+    const priority =
+        wish.priorityLevel === WISH_PRIORITY_LEVELS.high
+            ? getPriorityBlock(LL, options.audience)
+            : '';
     const description = wish.description
         ? LL.markup.description(escapeHtml(cutDescription(wish.description)))
         : '';

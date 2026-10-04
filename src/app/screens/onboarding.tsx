@@ -29,6 +29,8 @@ export type MenuScreen = Extract<
     | 'share'
     | 'visibility'
     | 'payments'
+    | 'currency'
+    | 'delivery'
     | 'language'
     | 'feedback'
     | 'stats'

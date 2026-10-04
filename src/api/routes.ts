@@ -22,10 +22,17 @@ import { apiErrorResponse, toApiErrorResponse } from './errors';
 import { bootstrap } from './handlers/bootstrap';
 import { reportClientEvent } from './handlers/client-events';
 import { sendFeedback } from './handlers/feedback';
+import {
+    removeDeliveryAddress,
+    setContactDisclosure,
+    setDeliveryAddress
+} from './handlers/contact';
+import { setCurrency } from './handlers/currency';
 import { cleanGives, listGives, removeGive } from './handlers/gives';
 import {
     clearWishImages,
     removeWishImage,
+    reorderWishImages,
     startImageChatIntent,
     uploadWishImage
 } from './handlers/images';
@@ -45,6 +52,7 @@ import {
     getShare,
     publishShare,
     rotateShare,
+    setShareIndexing,
     setShareUsername,
     stopShare
 } from './handlers/share';
@@ -68,6 +76,10 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     setLanguage,
     setPayments,
     removePayments,
+    setCurrency,
+    setDeliveryAddress,
+    removeDeliveryAddress,
+    setContactDisclosure,
     listWishes,
     setWishFilter,
     createWish,
@@ -78,6 +90,7 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     uploadWishImage,
     removeWishImage,
     clearWishImages,
+    reorderWishImages,
     startImageChatIntent,
     listGives,
     removeGive,
@@ -89,6 +102,7 @@ export const APP_API_HANDLERS: Readonly<Record<AppApiRouteKey, ApiHandler>> = {
     getShare,
     publishShare,
     setShareUsername,
+    setShareIndexing,
     rotateShare,
     stopShare,
     sendFeedback,

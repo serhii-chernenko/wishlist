@@ -37,6 +37,7 @@ const userKeyboard = (req: BotRequest, user: UserRecord) => {
         navigationButton(LL.wishlist.title(), 'wishlist'),
         navigationButton(LL.giveList.title(), 'giveList'),
         navigationButton(LL.findList.title(), 'findList'),
+        navigationButton(LL.settings.title(), 'settings'),
         navigationButton(LL.auth.title.user(), 'auth'),
         navigationButton(
             user.payments

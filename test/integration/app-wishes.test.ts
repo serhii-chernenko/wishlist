@@ -152,7 +152,7 @@ describe('Mini App API own wishes', () => {
 
     const createWish = async (userId: number, title = 'Kettle') => {
         const created = await run(
-            harness.repositories.wishes.create(userId, title, NOW)
+            harness.repositories.wishes.create(userId, title, 'UAH', NOW)
         );
 
         assert.ok(created);
@@ -269,7 +269,7 @@ describe('Mini App API own wishes', () => {
             assert.equal(wish.link, 'https://www.example.com/kettle');
             assert.equal(wish.linkHost, 'example.com');
             assert.equal(wish.price, 1500);
-            assert.equal(wish.priority, true);
+            assert.equal(wish.priority, 'high');
             assert.equal(wish.hidden, true);
             assert.deepEqual(wish.images, []);
             assert.equal(wish.createdAt, NOW.toISOString());
@@ -291,7 +291,7 @@ describe('Mini App API own wishes', () => {
             assert.equal(minimal.link, null);
             assert.equal(minimal.linkHost, null);
             assert.equal(minimal.price, 0);
-            assert.equal(minimal.priority, false);
+            assert.equal(minimal.priority, 'none');
             assert.equal(minimal.hidden, false);
 
             const numeric = await readJson<OwnWishDto>(
@@ -553,19 +553,19 @@ describe('Mini App API own wishes', () => {
                 );
             };
 
-            assert.equal((await patch({ priority: true })).priority, true);
-            assert.equal((await patch({ priority: true })).priority, true);
+            assert.equal((await patch({ priority: true })).priority, 'high');
+            assert.equal((await patch({ priority: true })).priority, 'high');
             assert.equal((await patch({ hidden: true })).hidden, true);
 
             const both = await patch({ priority: false, hidden: true });
 
-            assert.equal(both.priority, false);
+            assert.equal(both.priority, 'none');
             assert.equal(both.hidden, true);
 
             const unhidden = await patch({ hidden: false });
 
             assert.equal(unhidden.hidden, false);
-            assert.equal(unhidden.priority, false);
+            assert.equal(unhidden.priority, 'none');
             assert.deepEqual(await readWishRow(wish.id), {
                 removed: 0,
                 done: 0,
@@ -586,7 +586,7 @@ describe('Mini App API own wishes', () => {
             );
 
             assert.equal(combined.title, 'After');
-            assert.equal(combined.priority, true);
+            assert.equal(combined.priority, 'high');
 
             const empty = await call('PATCH', path, { body: {} });
 
@@ -643,7 +643,7 @@ describe('Mini App API own wishes', () => {
             const intact = await readJson<OwnWishDto>(await call('GET', path));
 
             assert.equal(intact.title, 'Secret');
-            assert.equal(intact.priority, false);
+            assert.equal(intact.priority, 'none');
             assert.equal((await readWishRow(wish.id)).removed, 0);
         });
 
@@ -679,7 +679,7 @@ describe('Mini App API own wishes', () => {
                 harness.repositories.wishes.setFlags(
                     flagged.id,
                     owner.id,
-                    { priority: true },
+                    { priorityLevel: 3 },
                     NOW
                 )
             );

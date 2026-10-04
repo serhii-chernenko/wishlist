@@ -148,10 +148,12 @@ export interface WishRow {
     link: string | null;
     images: string[];
     priority: boolean;
+    priorityLevel: number;
     hidden: boolean;
     removed: boolean;
     done: boolean;
     price: number;
+    currency: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -1125,27 +1127,36 @@ const transformUsers = (records: MongoUserRecord[]): UserRow[] => {
     });
 };
 
+const highPriorityLevel = 3;
+const noPriorityLevel = 0;
+
 const transformWishes = (
     records: MongoWishRecord[],
-    userIdsByMongoId: Map<string, number>
+    owners: Map<string, Pick<UserRow, 'id' | 'currency'>>
 ): WishRow[] => {
     return sortByMongoId(records).map((record, index) => {
+        const owner =
+            record.userMongoId === null
+                ? undefined
+                : owners.get(record.userMongoId);
+
         return {
             id: index + 1,
             mongoId: record.mongoId,
-            userId:
-                record.userMongoId === null
-                    ? null
-                    : (userIdsByMongoId.get(record.userMongoId) ?? null),
+            userId: owner?.id ?? null,
             title: record.title,
             description: record.description,
             link: record.link,
             images: record.images,
             priority: record.priority,
+            priorityLevel: record.priority
+                ? highPriorityLevel
+                : noPriorityLevel,
             hidden: record.hidden,
             removed: record.removed,
             done: record.done,
             price: record.price,
+            currency: owner?.currency ?? defaultCurrency,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt
         };
@@ -1231,7 +1242,12 @@ export const transformCollections = (collections: {
             return [user.mongoId, user.id] as const;
         })
     );
-    const wishRows = transformWishes(collections.wishes, userIdsByMongoId);
+    const ownersByMongoId = new Map(
+        userRows.map(user => {
+            return [user.mongoId, user] as const;
+        })
+    );
+    const wishRows = transformWishes(collections.wishes, ownersByMongoId);
     const { giveRows, skipped } = transformGives(
         collections.gives,
         userIdsByMongoId,
@@ -1339,10 +1355,12 @@ const formatWishTuple = (row: WishRow): string => {
         quoteNullableString(row.link),
         quoteString(JSON.stringify(row.images)),
         quoteBoolean(row.priority),
+        row.priorityLevel,
         quoteBoolean(row.hidden),
         quoteBoolean(row.removed),
         quoteBoolean(row.done),
         row.price,
+        quoteString(row.currency),
         row.createdAt,
         row.updatedAt
     ].join(', ')})`;
@@ -1361,7 +1379,7 @@ const formatGiveTuple = (row: GiveRow): string => {
 const userColumns =
     '"id", "mongo_id", "telegram_id", "username", "username_searchable", "phone", "phone_digits", "currency", "telegraph_access_token", "payments", "wishlist_filter", "release_version", "language", "created_at", "updated_at"';
 const wishColumns =
-    '"id", "mongo_id", "user_id", "title", "description", "link", "images", "priority", "hidden", "removed", "done", "price", "created_at", "updated_at"';
+    '"id", "mongo_id", "user_id", "title", "description", "link", "images", "priority", "priority_level", "hidden", "removed", "done", "price", "currency", "created_at", "updated_at"';
 const giveColumns = '"id", "mongo_id", "user_id", "wish_id", "created_at"';
 
 const byteLength = (value: string) => {

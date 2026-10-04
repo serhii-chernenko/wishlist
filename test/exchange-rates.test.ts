@@ -101,6 +101,12 @@ const createFakeRepository = (initial: ExchangeRateRecord[] = []) => {
 const storedRows = (fetchedAt: Date, eur = 50.5333): ExchangeRateRecord[] => {
     return [
         {
+            currency: 'USD',
+            uahPerUnit: 44.9857,
+            rateDate: '2026-10-05',
+            fetchedAt
+        },
+        {
             currency: 'EUR',
             uahPerUnit: eur,
             rateDate: '2026-10-05',
@@ -126,10 +132,11 @@ const jsonFetcher = (payload: unknown, status = 200) => {
     return { fetcher, requests };
 };
 
-test('a valid NBU payload yields euro and złoty rates with ISO dates', () => {
+test('a valid NBU payload yields dollar, euro and złoty rates with ISO dates', () => {
     assert.deepEqual(parseNbuRates(NBU_PAYLOAD), {
         ok: true,
         rates: [
+            { currency: 'USD', uahPerUnit: 44.9857, rateDate: '2026-10-05' },
             { currency: 'EUR', uahPerUnit: 50.5333, rateDate: '2026-10-05' },
             { currency: 'PLN', uahPerUnit: 11.5442, rateDate: '2026-10-05' }
         ]
@@ -143,6 +150,14 @@ test('NBU payloads without a usable currency, rate or date are rejected', () => 
         });
     };
 
+    assert.deepEqual(
+        parseNbuRates(
+            NBU_PAYLOAD.filter(entry => {
+                return entry.cc !== 'USD';
+            })
+        ),
+        { ok: false, reason: 'missingCurrency' }
+    );
     assert.deepEqual(parseNbuRates({ cc: 'EUR' }), {
         ok: false,
         reason: 'invalidPayload'
@@ -255,22 +270,47 @@ test('a storage failure is reported without throwing', async () => {
     );
 });
 
-test('incomplete stored rates fall back to the baked-in snapshot', () => {
+test('stored rates fall back per currency and mark the snapshot as stale', () => {
+    const [usd, eur, pln] = storedRows(START, 51);
+
     assert.deepEqual(toRatesSnapshot([]), {
-        rates: FALLBACK_RATES,
-        fetchedAt: null
-    });
-    assert.deepEqual(toRatesSnapshot(storedRows(START).slice(0, 1)), {
         rates: FALLBACK_RATES,
         fetchedAt: null
     });
     assert.deepEqual(toRatesSnapshot(storedRows(START, 51)), {
         rates: {
             date: '2026-10-05',
-            perUnit: { UAH: 1, EUR: 51, PLN: 11.5442 }
+            perUnit: { UAH: 1, USD: 44.9857, EUR: 51, PLN: 11.5442 }
         },
         fetchedAt: START
     });
+    assert.deepEqual(toRatesSnapshot([eur!]), {
+        rates: {
+            date: '2026-10-05',
+            perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
+        },
+        fetchedAt: null
+    });
+    assert.deepEqual(
+        toRatesSnapshot([usd!, eur!, { ...pln!, uahPerUnit: 0 }]),
+        {
+            rates: {
+                date: '2026-10-05',
+                perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
+            },
+            fetchedAt: null
+        }
+    );
+    assert.deepEqual(
+        toRatesSnapshot([usd!, eur!, { ...pln!, rateDate: 'bad' }]),
+        {
+            rates: {
+                date: '2026-10-05',
+                perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
+            },
+            fetchedAt: null
+        }
+    );
 });
 
 const createBackground = (fetcher: RatesFetcher) => {

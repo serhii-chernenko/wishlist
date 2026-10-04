@@ -87,6 +87,21 @@ Decisions:
 - [ ] Production rollout: apply `20261003214556_many_harry_osborn` and `20261004011719_careless_mulholland_black` (`exchange_rates`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
 - [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
+### Batch 2 (in 2.0.0, started 2026-10-04)
+
+- [x] Plan: per-wish currency with a user setting (UAH, USD, EUR, PLN), priority levels, delivery address and disclosure toggles (Telegram only, never on the web), photo reordering, UI polish
+- [x] Polish and US English copy reviews
+- [ ] Foundation: one combined additive migration, contract, seams, i18n skeleton
+- [ ] Currency setting, editor currency picker, web currency switcher
+- [ ] Priority levels with colored badges (bot single-column menu, app segmented picker)
+- [ ] Delivery address, phone and payment disclosure toggles
+- [ ] Photo reordering (drag and drop, keyboard, "make first", bot)
+- [ ] Polish: sun-moon theme icon, icon and title alignment, short home grid labels, required badge, textarea autosize, muted OFF toggles
+- [ ] Copy pass (Polish, US English) over all strings
+- [ ] Review, security audit, preview test
+- [ ] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order
+- [ ] Production rollout additions: Time Travel bookmark, priority count check, new migration, post-deploy priority repair
+
 ### Cutover
 
 - [x] Preview rehearsal: real snapshot imported and reconciled

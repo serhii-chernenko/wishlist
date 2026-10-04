@@ -13,9 +13,9 @@ const normalizeSpaces = (value: string) => {
     return value.replace(/[  ]/g, ' ');
 };
 
-test('locale tags map to uk-UA, en-GB and pl-PL', () => {
+test('locale tags map to uk-UA, en-US and pl-PL', () => {
     assert.equal(getLocaleTag('uk'), 'uk-UA');
-    assert.equal(getLocaleTag('en'), 'en-GB');
+    assert.equal(getLocaleTag('en'), 'en-US');
     assert.equal(getLocaleTag('pl'), 'pl-PL');
 });
 
@@ -23,7 +23,7 @@ test('dates are rendered in the Europe/Kyiv time zone', () => {
     const lateEveningUtc = new Date('2024-08-16T22:30:00Z');
 
     assert.match(formatDate(lateEveningUtc, 'uk'), /^17 серпня 2024/);
-    assert.equal(formatDate(lateEveningUtc, 'en'), '17 August 2024');
+    assert.equal(formatDate(lateEveningUtc, 'en'), 'August 17, 2024');
     assert.match(formatDate(lateEveningUtc, 'pl'), /^17 sierpnia 2024/);
 });
 

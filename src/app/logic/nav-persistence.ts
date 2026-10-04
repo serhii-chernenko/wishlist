@@ -14,7 +14,7 @@ export const NAV_STORAGE_KEY = 'wl.nav.v1';
 export const NAV_SNAPSHOT_VERSION = 1;
 export const NAV_SNAPSHOT_MAX_ROUTES = 24;
 
-type StoredOwner = Omit<OwnerDto, 'payments'>;
+type StoredOwner = Omit<OwnerDto, 'payments' | 'contact'>;
 
 type StoredRoute =
     | { screen: Exclude<ScreenId, 'wishEditor' | 'thirdList'> }
@@ -62,13 +62,13 @@ export const getLaunchIdentity = (initData: string): string | null => {
 
 const toStoredRoute = (route: Route): StoredRoute => {
     if (route.screen === 'thirdList' && route.source.kind === 'owner') {
-        const { token, label, currency, source, canGive } = route.source.owner;
+        const { token, label, source, canGive } = route.source.owner;
 
         return {
             screen: 'thirdList',
             source: {
                 kind: 'owner',
-                owner: { token, label, currency, source, canGive }
+                owner: { token, label, source, canGive }
             }
         };
     }
@@ -94,7 +94,6 @@ const parseOwner = (value: unknown): OwnerDto | null => {
         !isRecord(value) ||
         !(value.token === null || typeof value.token === 'string') ||
         typeof value.label !== 'string' ||
-        typeof value.currency !== 'string' ||
         !OWNER_SOURCES.has(value.source) ||
         typeof value.canGive !== 'boolean'
     ) {
@@ -105,7 +104,7 @@ const parseOwner = (value: unknown): OwnerDto | null => {
         token: value.token,
         label: value.label,
         payments: null,
-        currency: value.currency,
+        contact: null,
         source: value.source as OwnerDto['source'],
         canGive: value.canGive
     };

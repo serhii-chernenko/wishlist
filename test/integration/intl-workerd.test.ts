@@ -123,7 +123,7 @@ describe('Intl formatting under workerd', () => {
     });
 
     it('formats dates in Europe/Kyiv, not UTC', () => {
-        assert.match(sample.dateEn, /^3 October 2026$/);
+        assert.match(sample.dateEn, /^October 3, 2026$/);
         assert.equal(
             sample.dateUk,
             formatDate(new Date(sampleTimestamp), 'uk')

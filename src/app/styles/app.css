@@ -1968,3 +1968,10 @@
         }
     }
 }
+
+@import '../../web/styles/priority.css';
+@import './segmented.css';
+@import './priority.css';
+@import './currency.css';
+@import './contact.css';
+@import './photo-reorder.css';

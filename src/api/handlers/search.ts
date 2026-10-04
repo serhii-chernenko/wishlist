@@ -53,7 +53,8 @@ export const search: ApiHandler = async c => {
                 owner: outcome.user,
                 token: await mintOwnerToken(c, viewer, outcome.user),
                 label: input.query,
-                source: 'search'
+                source: 'search',
+                contact: null
             })
         },
         'found'

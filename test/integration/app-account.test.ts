@@ -200,7 +200,7 @@ describe('Mini App API account, share, feedback and info', () => {
 
     const addWish = async (userId: number, title: string) => {
         const wish = await run(
-            harness.repositories.wishes.create(userId, title, NOW)
+            harness.repositories.wishes.create(userId, title, 'UAH', NOW)
         );
 
         assert.ok(wish);
@@ -247,7 +247,9 @@ describe('Mini App API account, share, feedback and info', () => {
                 telegramUsername: 'guest_user',
                 phoneMasked: null,
                 payments: null,
-                currency: 'UAH',
+                deliveryAddress: null,
+                disclosure: { payments: true, phone: false, address: false },
+                currency: 'EUR',
                 languageChoice: 'auto',
                 locale: 'en',
                 wishlistFilter: null,
@@ -682,6 +684,7 @@ describe('Mini App API account, share, feedback and info', () => {
                 appUrl: null,
                 showUsername: false,
                 canShowUsername: true,
+                allowIndexing: true,
                 consent: { name: 'Olena Koval', host: 'wishlist.chernenko.dev' }
             });
 

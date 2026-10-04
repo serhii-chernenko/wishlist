@@ -14,6 +14,7 @@ export const wishlistShares = snakeCase.table(
         publicId: text().notNull().$defaultFn(generateSharePublicId),
         displayName: text(),
         showUsername: integer({ mode: 'boolean' }).notNull().default(false),
+        allowIndexing: integer({ mode: 'boolean' }).notNull().default(true),
         revokedAt: integer({ mode: 'timestamp_ms' }),
         createdAt: integer({ mode: 'timestamp_ms' })
             .notNull()

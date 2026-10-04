@@ -126,6 +126,7 @@ const createFakeScreens = (
         'stats',
         'donate',
         'payments',
+        'delivery',
         'language',
         'releases'
     ];

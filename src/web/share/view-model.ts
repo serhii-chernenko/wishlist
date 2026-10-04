@@ -1,7 +1,10 @@
-import type { ExchangeRates } from '../../shared/money';
+import type { WishPriority } from '../../shared/app-api';
+import type { Currency, ExchangeRates } from '../../shared/money';
 import type { WebTheme } from '../theme';
 import type { SupportLink } from '../../bot/content/support-links';
 import type { SharePageLanguage } from './public-id';
+
+export type WebCurrencyChoice = Currency | 'auto';
 
 export interface ShareWishPhoto {
     url: string;
@@ -13,7 +16,8 @@ export interface ShareWishView {
     description: string | null;
     link: string | null;
     price: number;
-    priority: boolean;
+    currency: Currency;
+    priority: WishPriority;
     createdAt: Date;
     updatedAt: Date;
     photos?: readonly ShareWishPhoto[];
@@ -28,7 +32,9 @@ export interface SharePageModel {
     displayName: string | null;
     username: string | null;
     payments: string | null;
-    currency: string;
+    displayCurrency: Currency;
+    currencyChoice: WebCurrencyChoice;
+    deliveryHintShown: boolean;
     rates: ExchangeRates;
     visibleCount: number;
     lastUpdatedAt: Date | null;

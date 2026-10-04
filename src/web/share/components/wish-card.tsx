@@ -2,7 +2,11 @@ import { getTranslator, type AppLocale } from '../../../bot/i18n';
 import { formatDate } from '../../../bot/content/intl';
 import { cutDescription, cutTitle } from '../../../bot/input/limits';
 import { isRenderableLink } from '../../../bot/input/link';
-import { describePrice, type ExchangeRates } from '../../../shared/money';
+import {
+    describePrice,
+    type Currency,
+    type ExchangeRates
+} from '../../../shared/money';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { HERO_LOGO_ID_PREFIX } from './hero';
@@ -25,16 +29,24 @@ export const getLinkHostname = (link: string) => {
 const WishPrice = ({
     price,
     language,
-    currency,
+    wishCurrency,
+    displayCurrency,
     rates
 }: {
     price: number;
     language: AppLocale;
-    currency: string;
+    wishCurrency: Currency;
+    displayCurrency: Currency;
     rates: ExchangeRates;
 }) => {
     const LL = getTranslator(language);
-    const display = describePrice(price, currency, language, rates);
+    const display = describePrice(
+        price,
+        wishCurrency,
+        displayCurrency,
+        language,
+        rates
+    );
 
     if (display.kind === 'exact') {
         return (
@@ -90,12 +102,12 @@ const WishCover = ({ photos }: { photos: readonly ShareWishPhoto[] }) => {
 export const WishCard = ({
     wish,
     language,
-    currency,
+    displayCurrency,
     rates
 }: {
     wish: ShareWishView;
     language: AppLocale;
-    currency: string;
+    displayCurrency: Currency;
     rates: ExchangeRates;
 }) => {
     const LL = getTranslator(language);
@@ -107,18 +119,19 @@ export const WishCard = ({
 
     return (
         <li class='wish'>
-            {wish.priority ? <HeartSticker /> : null}
+            {wish.priority === 'high' ? <HeartSticker /> : null}
             <article class='wish-tag'>
                 <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
                 <WishCover photos={wish.photos ?? NO_PHOTOS} />
-                {wish.priority ? (
-                    <p class='sr-only'>{LL.web.wish.priority()}</p>
+                {wish.priority === 'high' ? (
+                    <p class='sr-only'>{LL.web.wish.priority.high()}</p>
                 ) : null}
                 {wish.price > 0 ? (
                     <WishPrice
                         price={wish.price}
                         language={language}
-                        currency={currency}
+                        wishCurrency={wish.currency}
+                        displayCurrency={displayCurrency}
                         rates={rates}
                     />
                 ) : null}

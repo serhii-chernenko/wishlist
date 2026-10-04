@@ -52,7 +52,7 @@ export const aggregateSql = [
     '  (SELECT COUNT(*) FROM "wishes" WHERE "removed" = 1) AS "removed",',
     '  (SELECT COUNT(*) FROM "wishes" WHERE "done" = 1) AS "done",',
     '  (SELECT COUNT(*) FROM "wishes" WHERE "hidden" = 1) AS "hidden",',
-    '  (SELECT COUNT(*) FROM "wishes" WHERE "priority" = 1) AS "priority",',
+    '  (SELECT COUNT(*) FROM "wishes" WHERE "priority_level" = 3) AS "priority",',
     '  (SELECT COALESCE(SUM("price"), 0) FROM "wishes") AS "priceSum";'
 ].join('\n');
 

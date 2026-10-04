@@ -4,8 +4,7 @@ import type { AppLocale, PriceFilterDto } from '../../shared/app-api';
 import {
     describePrice,
     formatMoney,
-    getDisplayCurrency,
-    type DisplayCurrency,
+    type Currency,
     type ExchangeRates
 } from '../../shared/money';
 
@@ -58,17 +57,17 @@ export const formatReleaseDate = (value: string, locale: AppLocale) => {
 };
 
 export const selectPriceFilters = (
-    filtersByCurrency: Readonly<Record<DisplayCurrency, PriceFilterDto[]>>,
-    locale: AppLocale
+    filtersByCurrency: Readonly<Record<Currency, PriceFilterDto[]>>,
+    currency: Currency
 ) => {
-    return filtersByCurrency[getDisplayCurrency(locale)];
+    return filtersByCurrency[currency];
 };
 
 export const describePriceFilter = (
     filter: PriceFilterDto,
-    locale: AppLocale
+    locale: AppLocale,
+    currency: Currency
 ): PriceFilterLabel => {
-    const currency = getDisplayCurrency(locale);
     const money = (value: number) => formatMoney(value, locale, currency);
 
     if (filter.from !== null && filter.to !== null) {
@@ -90,7 +89,8 @@ export const describePriceFilter = (
 
 export const getApproximateDraftPrice = (
     draftPrice: string,
-    ownerCurrency: string,
+    wishCurrency: Currency,
+    displayCurrency: Currency,
     locale: AppLocale,
     rates: ExchangeRates
 ) => {
@@ -100,7 +100,13 @@ export const getApproximateDraftPrice = (
         return null;
     }
 
-    const display = describePrice(parsed.value, ownerCurrency, locale, rates);
+    const display = describePrice(
+        parsed.value,
+        wishCurrency,
+        displayCurrency,
+        locale,
+        rates
+    );
 
     return display.kind === 'approximate' ? display.amount : null;
 };

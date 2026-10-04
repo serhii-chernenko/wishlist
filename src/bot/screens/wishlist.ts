@@ -29,7 +29,7 @@ import type {
 import {
     createWishFormatters,
     createWishScreenServices,
-    getOwnerPriceBounds,
+    getPriceBoundsByCurrency,
     releaseRemovedImages,
     requireUser,
     updateSession
@@ -89,8 +89,8 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
     const user = requireUser(req);
     const { wishes, share } = createWishScreenServices(req);
     const filter = wishes.getOwnerFilter(user);
-    const priceBounds = getOwnerPriceBounds(req, filter, user.currency);
-    const formatters = createWishFormatters(req, user.currency);
+    const priceBounds = getPriceBoundsByCurrency(req, filter);
+    const formatters = createWishFormatters(req);
     let offset = params?.offset ?? 0;
     let page = await wishes.listOwned({
         ownerId: user.id,
@@ -130,7 +130,14 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
             filter === null
                 ? ''
                 : LL.filters.applied(
-                      escapeHtml(getFilterTitle(LL, req.locale, filter))
+                      escapeHtml(
+                          getFilterTitle(
+                              LL,
+                              req.locale,
+                              req.displayCurrency,
+                              filter
+                          )
+                      )
                   );
 
         await req.send.text(
@@ -202,7 +209,7 @@ const renderConfirmation = async (req: BotRequest) => {
 const renderFilterMenu = async (req: BotRequest) => {
     await req.send.text(
         req.LL.filters.description(),
-        buildFilterKeyboard(req.LL, req.locale, filter => {
+        buildFilterKeyboard(req.LL, req.locale, req.displayCurrency, filter => {
             return { type: 'wishlistFilter', filter };
         })
     );

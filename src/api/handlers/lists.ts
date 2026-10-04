@@ -19,7 +19,7 @@ import {
 } from '../../shared/app-api';
 import { buildShareImagePath } from '../../web/image-proxy/share-photos';
 import { normalizeSharePublicId } from '../../web/share/public-id';
-import { resolvePriceBounds } from '../../shared/money';
+import { resolveDisplayCurrency, resolvePriceBounds } from '../../shared/money';
 import {
     getSigner,
     readExchangeRates,
@@ -196,7 +196,8 @@ export const openSharedList: ApiHandler = async c => {
                 showUsername: share.showUsername,
                 owner
             }),
-            source: 'share'
+            source: 'share',
+            contact: null
         }),
         preview: toPageDto(items, page.total, offset)
     };
@@ -235,8 +236,10 @@ export const listOwnerWishes: ApiHandler = async c => {
             ? null
             : resolvePriceBounds(
                   filter,
-                  resolveViewerLocale(c.var.actor, viewer),
-                  owner.currency,
+                  resolveDisplayCurrency(
+                      viewer.currency,
+                      resolveViewerLocale(c.var.actor, viewer)
+                  ),
                   await readExchangeRates(c)
               );
     const page = await Effect.runPromise(
@@ -265,7 +268,8 @@ export const listOwnerWishes: ApiHandler = async c => {
             owner,
             token: c.req.param('token') ?? null,
             label: username === null ? '' : `@${username}`,
-            source: 'search'
+            source: 'search',
+            contact: null
         })
     };
 

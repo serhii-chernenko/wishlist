@@ -25,7 +25,12 @@ const fingerprintInputs = (row: PublicShareFingerprint | null) => {
         row.showUsername,
         resolvePublicUsername(row),
         row.payments,
-        row.currency,
+        row.allowIndexing,
+        row.showPayments,
+        row.showPhone,
+        row.showAddress,
+        row.hasPhone,
+        row.hasDeliveryAddress,
         row.visibleCount,
         row.lastUpdatedAt?.getTime() ?? null
     ]);
@@ -59,7 +64,7 @@ describe('share repository', () => {
     };
     const createWish = async (userId: number, title = 'wish') => {
         const created = await run(
-            repositories.wishes.create(userId, title, nextNow())
+            repositories.wishes.create(userId, title, 'UAH', nextNow())
         );
 
         assert.ok(created);
@@ -412,9 +417,14 @@ describe('share repository', () => {
         await expectChange('wishes.updateFields');
 
         await run(
-            repositories.wishes.togglePriority(first.id, owner.id, nextNow())
+            repositories.wishes.setPriorityLevel(
+                first.id,
+                owner.id,
+                3,
+                nextNow()
+            )
         );
-        await expectChange('wishes.togglePriority');
+        await expectChange('wishes.setPriorityLevel');
 
         await run(
             repositories.wishes.toggleHidden(second.id, owner.id, nextNow())

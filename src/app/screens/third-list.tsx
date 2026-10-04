@@ -146,7 +146,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const nav = useNav();
     const services = useApp();
     const { api, toast } = services;
-    const { locale, config } = useSession();
+    const { locale, config, me } = useSession();
     const publicId = source.kind === 'share' ? source.publicId : null;
     const [filter, setFilter] = useState<WishFilterValue | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -334,15 +334,17 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
 
     const filterOptions: ChipOption<WishFilterValue | null>[] = [
         { value: null, label: LL.filters.all() },
-        ...selectPriceFilters(config.priceFilters, locale).map(priceFilter => {
-            return {
-                value: priceFilter.filter as WishFilterValue,
-                label: describeFilterLabel(
-                    LL,
-                    describePriceFilter(priceFilter, locale)
-                )
-            };
-        })
+        ...selectPriceFilters(config.priceFilters, me.currency).map(
+            priceFilter => {
+                return {
+                    value: priceFilter.filter as WishFilterValue,
+                    label: describeFilterLabel(
+                        LL,
+                        describePriceFilter(priceFilter, locale, me.currency)
+                    )
+                };
+            }
+        )
     ];
 
     const renderWish = (wish: ThirdWishDto | SharedWishDto) => {
@@ -352,7 +354,6 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
             <WishTag
                 key={wish.id}
                 wish={wish}
-                currency={owner?.currency ?? null}
                 owner='other'
                 badges={
                     <>

@@ -211,41 +211,51 @@ type StoredRateRow = Pick<
     'currency' | 'uahPerUnit' | 'rateDate' | 'fetchedAt'
 >;
 
+const isUsableRateRow = (
+    row: StoredRateRow | undefined
+): row is StoredRateRow => {
+    return (
+        row !== undefined &&
+        isPositiveRate(row.uahPerUnit) &&
+        parseIsoDate(row.rateDate) !== null
+    );
+};
+
+/** Each currency falls back on its own; any fallback leaves `fetchedAt` null so the snapshot counts as stale and schedules a refresh. */
 export const toRatesSnapshot = (
     rows: readonly StoredRateRow[]
 ): RatesSnapshot => {
     const perUnit = { ...FALLBACK_RATES.perUnit, [RATE_PIVOT_CURRENCY]: 1 };
-    const used: StoredRateRow[] = [];
+    const rateDates: string[] = [];
+    const fetchedTimes: number[] = [];
+    let usesFallback = false;
 
     for (const currency of CONVERTED_CURRENCIES) {
         const row = rows.find(candidate => {
             return candidate.currency === currency;
         });
 
-        if (
-            row === undefined ||
-            !isPositiveRate(row.uahPerUnit) ||
-            parseIsoDate(row.rateDate) === null
-        ) {
-            return { rates: FALLBACK_RATES, fetchedAt: null };
+        if (!isUsableRateRow(row)) {
+            usesFallback = true;
+            rateDates.push(FALLBACK_RATES.date);
+            continue;
         }
 
         perUnit[currency] = row.uahPerUnit;
-        used.push(row);
+        rateDates.push(row.rateDate);
+        fetchedTimes.push(row.fetchedAt.getTime());
     }
 
-    const [date = FALLBACK_RATES.date] = used
-        .map(row => {
-            return row.rateDate;
-        })
-        .sort();
-    const fetchedAt = Math.min(
-        ...used.map(row => {
-            return row.fetchedAt.getTime();
-        })
-    );
+    if (fetchedTimes.length === 0) {
+        return { rates: FALLBACK_RATES, fetchedAt: null };
+    }
 
-    return { rates: { date, perUnit }, fetchedAt: new Date(fetchedAt) };
+    const [date = FALLBACK_RATES.date] = rateDates.sort();
+
+    return {
+        rates: { date, perUnit },
+        fetchedAt: usesFallback ? null : new Date(Math.min(...fetchedTimes))
+    };
 };
 
 const isSameRates = (

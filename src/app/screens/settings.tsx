@@ -1,4 +1,4 @@
-import { Eye, Info, Languages, Wallet } from 'lucide';
+import { Coins, Eye, Info, Languages, Truck, Wallet } from 'lucide';
 
 import type { ScreenProps } from '../nav/routes';
 import { useLL, useNav, useSession } from '../state/context';
@@ -99,6 +99,27 @@ export const SettingsScreen = (_props: ScreenProps<'settings'>) => {
                               : LL.settings.paymentsSet(),
                       onSelect: () => {
                           open({ screen: 'payments' });
+                      }
+                  },
+                  {
+                      id: 'currency',
+                      icon: Coins,
+                      label: LL.settings.currency(),
+                      value: me.currency,
+                      onSelect: () => {
+                          open({ screen: 'currency' });
+                      }
+                  },
+                  {
+                      id: 'delivery',
+                      icon: Truck,
+                      label: LL.settings.delivery(),
+                      value:
+                          me.deliveryAddress === null
+                              ? LL.settings.deliveryEmpty()
+                              : LL.settings.deliverySet(),
+                      onSelect: () => {
+                          open({ screen: 'delivery' });
                       }
                   }
               ]

@@ -12,35 +12,49 @@ import {
 import {
     convert,
     describePrice,
-    DISPLAY_CURRENCY_BY_LOCALE,
+    DEFAULT_CURRENCY_BY_LOCALE,
     FALLBACK_RATES,
     formatMoney,
     formatRatesDate,
+    getDefaultCurrency,
     getPriceFiltersByCurrency,
     isPriceConverted,
     PRICE_FILTER_RANGES,
     roundApproximate,
-    toOwnerPriceBounds,
+    resolveDisplayCurrency,
+    toPriceBoundsByCurrency,
+    toPriceBoundsInCurrency,
+    toWishCurrency,
     WISH_FILTER_VALUES,
-    type DisplayCurrency,
+    type Currency,
     type ExchangeRates
 } from '../src/shared/money';
 
 const RATES: ExchangeRates = {
     date: '2026-10-05',
-    perUnit: { UAH: 1, EUR: 50, PLN: 12.5 }
+    perUnit: { UAH: 1, USD: 40, EUR: 50, PLN: 12.5 }
 };
 
 const normalizeSpaces = (value: string) => {
     return value.replace(/[  ]/g, ' ');
 };
 
-test('every locale maps to its display currency', () => {
-    assert.deepEqual(DISPLAY_CURRENCY_BY_LOCALE, {
+test('every locale maps to its default currency', () => {
+    assert.deepEqual(DEFAULT_CURRENCY_BY_LOCALE, {
         uk: 'UAH',
         en: 'EUR',
         pl: 'PLN'
     });
+    assert.equal(getDefaultCurrency('en'), 'EUR');
+});
+
+test('wish currencies fall back to the hryvnia and display currencies to the locale default', () => {
+    assert.equal(toWishCurrency('USD'), 'USD');
+    assert.equal(toWishCurrency('GBP'), 'UAH');
+    assert.equal(toWishCurrency(null), 'UAH');
+    assert.equal(resolveDisplayCurrency('PLN', 'en'), 'PLN');
+    assert.equal(resolveDisplayCurrency('GBP', 'en'), 'EUR');
+    assert.equal(resolveDisplayCurrency(null, 'pl'), 'PLN');
 });
 
 test('convert pivots through the hryvnia for any pair', () => {
@@ -53,7 +67,8 @@ test('convert pivots through the hryvnia for any pair', () => {
 test('convert keeps the same currency exact and rejects unknown rates', () => {
     assert.equal(convert(999, 'UAH', 'UAH', RATES), 999);
     assert.equal(convert(5, 'USD', 'USD', RATES), 5);
-    assert.equal(convert(5, 'USD', 'EUR', RATES), null);
+    assert.equal(convert(5, 'GBP', 'EUR', RATES), null);
+    assert.equal(convert(40, 'USD', 'EUR', RATES), 32);
     assert.equal(
         convert(5, 'UAH', 'EUR', {
             ...RATES,
@@ -81,7 +96,7 @@ test('money formatting drops the fraction of whole amounts only', () => {
 });
 
 test('1000 hryvnias render as about 20 euros for English, never 1000 euros', () => {
-    const display = describePrice(1000, 'UAH', 'en', FALLBACK_RATES);
+    const display = describePrice(1000, 'UAH', 'EUR', 'en', FALLBACK_RATES);
 
     assert.deepEqual(display, {
         kind: 'approximate',
@@ -91,31 +106,49 @@ test('1000 hryvnias render as about 20 euros for English, never 1000 euros', () 
 });
 
 test('same currency prices stay exact and unmarked', () => {
-    const display = describePrice(999, 'UAH', 'uk', FALLBACK_RATES);
+    const display = describePrice(999, 'UAH', 'UAH', 'uk', FALLBACK_RATES);
 
     assert.equal(display.kind, 'exact');
     assert.equal(normalizeSpaces(display.amount), '999 ₴');
-    assert.equal(isPriceConverted('UAH', 'uk', FALLBACK_RATES), false);
-    assert.equal(isPriceConverted('UAH', 'en', FALLBACK_RATES), true);
+    assert.equal(isPriceConverted('UAH', 'UAH', FALLBACK_RATES), false);
+    assert.equal(isPriceConverted('UAH', 'EUR', FALLBACK_RATES), true);
 });
 
-test('an owner currency without a rate falls back to the exact price', () => {
-    assert.deepEqual(describePrice(15, 'USD', 'en', FALLBACK_RATES), {
+test('a wish currency without a rate falls back to the exact price', () => {
+    const ratesWithoutUsd: ExchangeRates = {
+        ...FALLBACK_RATES,
+        perUnit: { ...FALLBACK_RATES.perUnit, USD: 0 }
+    };
+
+    assert.deepEqual(describePrice(15, 'USD', 'EUR', 'en', ratesWithoutUsd), {
         kind: 'exact',
         amount: '$15'
+    });
+    assert.equal(isPriceConverted('USD', 'EUR', ratesWithoutUsd), false);
+});
+
+test('dollar prices convert for other display currencies', () => {
+    assert.deepEqual(describePrice(100, 'USD', 'EUR', 'en', RATES), {
+        kind: 'approximate',
+        amount: '€80',
+        original: '$100'
     });
 });
 
 test('small converted amounts keep one decimal and never show zero', () => {
-    assert.equal(describePrice(1, 'UAH', 'en', FALLBACK_RATES).amount, '€0.1');
-    assert.equal(describePrice(125, 'UAH', 'en', RATES).amount, '€2.5');
-    assert.equal(describePrice(250, 'UAH', 'en', RATES).amount, '€5');
-    assert.equal(describePrice(498, 'UAH', 'en', RATES).amount, '€10');
+    assert.equal(
+        describePrice(1, 'UAH', 'EUR', 'en', FALLBACK_RATES).amount,
+        '€0.1'
+    );
+    assert.equal(describePrice(125, 'UAH', 'EUR', 'en', RATES).amount, '€2.5');
+    assert.equal(describePrice(250, 'UAH', 'EUR', 'en', RATES).amount, '€5');
+    assert.equal(describePrice(498, 'UAH', 'EUR', 'en', RATES).amount, '€10');
 });
 
 test('the bot renders converted prices with the original in parentheses', () => {
     const req = {
         locale: 'en',
+        displayCurrency: 'EUR',
         LL: getMessages('en'),
         rates: FALLBACK_RATES
     } as unknown as BotRequest;
@@ -127,6 +160,7 @@ test('the bot renders converted prices with the original in parentheses', () => 
                 {
                     ...req,
                     locale: 'uk',
+                    displayCurrency: 'UAH',
                     LL: getMessages('uk')
                 } as BotRequest,
                 1000,
@@ -139,19 +173,19 @@ test('the bot renders converted prices with the original in parentheses', () => 
 
 test('the app editor shows a live approximation only for another display currency', () => {
     assert.equal(
-        getApproximateDraftPrice('1000', 'UAH', 'en', FALLBACK_RATES),
+        getApproximateDraftPrice('1000', 'UAH', 'EUR', 'en', FALLBACK_RATES),
         '€20'
     );
     assert.equal(
-        getApproximateDraftPrice('1000', 'UAH', 'uk', FALLBACK_RATES),
+        getApproximateDraftPrice('1000', 'UAH', 'UAH', 'uk', FALLBACK_RATES),
         null
     );
     assert.equal(
-        getApproximateDraftPrice('', 'UAH', 'en', FALLBACK_RATES),
+        getApproximateDraftPrice('', 'UAH', 'EUR', 'en', FALLBACK_RATES),
         null
     );
     assert.equal(
-        getApproximateDraftPrice('abc', 'UAH', 'en', FALLBACK_RATES),
+        getApproximateDraftPrice('abc', 'UAH', 'EUR', 'en', FALLBACK_RATES),
         null
     );
 });
@@ -182,6 +216,10 @@ test('every currency has five gapless filter ranges', () => {
         ]
     );
     assert.deepEqual(
+        getPriceFiltersByCurrency().USD,
+        getPriceFiltersByCurrency().EUR
+    );
+    assert.deepEqual(
         getPriceFiltersByCurrency().PLN.map(filter => {
             return [filter.from, filter.to];
         }),
@@ -196,26 +234,26 @@ test('every currency has five gapless filter ranges', () => {
 });
 
 test('hryvnia bounds for hryvnia viewers match the legacy inclusive ranges', () => {
-    assert.deepEqual(toOwnerPriceBounds(0, 'UAH', 'UAH', FALLBACK_RATES), {
+    assert.deepEqual(toPriceBoundsInCurrency(0, 'UAH', 'UAH', FALLBACK_RATES), {
         min: null,
         maxExclusive: 1000
     });
-    assert.deepEqual(toOwnerPriceBounds(1, 'UAH', 'UAH', FALLBACK_RATES), {
+    assert.deepEqual(toPriceBoundsInCurrency(1, 'UAH', 'UAH', FALLBACK_RATES), {
         min: 1000,
         maxExclusive: 2000
     });
-    assert.deepEqual(toOwnerPriceBounds(4, 'UAH', 'UAH', FALLBACK_RATES), {
+    assert.deepEqual(toPriceBoundsInCurrency(4, 'UAH', 'UAH', FALLBACK_RATES), {
         min: 10000,
         maxExclusive: null
     });
 });
 
 test('euro bounds convert into the owner currency with a half-open upper edge', () => {
-    const first = toOwnerPriceBounds(0, 'EUR', 'UAH', RATES);
-    const second = toOwnerPriceBounds(1, 'EUR', 'UAH', RATES);
+    const first = toPriceBoundsInCurrency(0, 'EUR', 'UAH', RATES);
+    const second = toPriceBoundsInCurrency(1, 'EUR', 'UAH', RATES);
     const isIn = (
         price: number,
-        bounds: ReturnType<typeof toOwnerPriceBounds>
+        bounds: ReturnType<typeof toPriceBoundsInCurrency>
     ) => {
         return (
             (bounds.min === null || price >= bounds.min) &&
@@ -230,53 +268,73 @@ test('euro bounds convert into the owner currency with a half-open upper edge', 
     assert.equal(isIn(999.9, first), true);
     assert.equal(isIn(1000, second), true);
 
-    const fallbackFirst = toOwnerPriceBounds(0, 'EUR', 'UAH', FALLBACK_RATES);
-    const fallbackSecond = toOwnerPriceBounds(1, 'EUR', 'UAH', FALLBACK_RATES);
+    const fallbackFirst = toPriceBoundsInCurrency(
+        0,
+        'EUR',
+        'UAH',
+        FALLBACK_RATES
+    );
+    const fallbackSecond = toPriceBoundsInCurrency(
+        1,
+        'EUR',
+        'UAH',
+        FALLBACK_RATES
+    );
 
     assert.equal(isIn(980, fallbackFirst), true);
     assert.equal(isIn(980, fallbackSecond), false);
 });
 
-test('unknown owner currencies keep the viewer bounds unconverted', () => {
-    assert.deepEqual(toOwnerPriceBounds(1, 'EUR', 'USD', RATES), {
-        min: 20,
-        maxExclusive: 40
+test('target currencies without a rate keep the viewer bounds unconverted', () => {
+    const ratesWithoutUsd: ExchangeRates = {
+        ...RATES,
+        perUnit: { ...RATES.perUnit, USD: 0 }
+    };
+
+    assert.deepEqual(
+        toPriceBoundsInCurrency(1, 'EUR', 'USD', ratesWithoutUsd),
+        {
+            min: 20,
+            maxExclusive: 40
+        }
+    );
+});
+
+test('bounds are built for every currency from the viewer ranges', () => {
+    assert.deepEqual(toPriceBoundsByCurrency(1, 'EUR', RATES), {
+        UAH: { min: 1000, maxExclusive: 2000 },
+        USD: { min: 25, maxExclusive: 50 },
+        EUR: { min: 20, maxExclusive: 40 },
+        PLN: { min: 80, maxExclusive: 160 }
     });
 });
 
 test('app filter labels pick the locale currency and stay exact', () => {
     const filters = getPriceFiltersByCurrency();
-    const labels = (locale: 'uk' | 'en' | 'pl') => {
-        return selectPriceFilters(filters, locale).map(filter => {
-            return describePriceFilter(filter, locale);
+    const labels = (locale: 'uk' | 'en' | 'pl', currency: Currency) => {
+        return selectPriceFilters(filters, currency).map(filter => {
+            return describePriceFilter(filter, locale, currency);
         });
     };
-    const currencies: Record<'uk' | 'en' | 'pl', DisplayCurrency> = {
-        uk: 'UAH',
-        en: 'EUR',
-        pl: 'PLN'
-    };
 
-    assert.deepEqual(labels('en')[0], { kind: 'upTo', amount: '€19' });
-    assert.deepEqual(labels('en')[4], { kind: 'from', amount: '€200' });
+    assert.deepEqual(labels('en', 'EUR')[0], { kind: 'upTo', amount: '€19' });
+    assert.deepEqual(labels('en', 'EUR')[4], { kind: 'from', amount: '€200' });
+    assert.deepEqual(labels('en', 'USD')[4], { kind: 'from', amount: '$200' });
     assert.equal(
         normalizeSpaces(
-            (labels('pl')[1] as { kind: 'range'; from: string }).from
+            (labels('pl', 'PLN')[1] as { kind: 'range'; from: string }).from
         ),
         '100 zł'
     );
 
-    for (const locale of ['uk', 'en', 'pl'] as const) {
-        assert.equal(
-            selectPriceFilters(filters, locale),
-            filters[currencies[locale]]
-        );
+    for (const currency of ['UAH', 'USD', 'EUR', 'PLN'] as const) {
+        assert.equal(selectPriceFilters(filters, currency), filters[currency]);
     }
 });
 
 test('rate dates are formatted per locale', () => {
     assert.equal(formatRatesDate('2026-10-05', 'uk'), '5 жовтня 2026 р.');
-    assert.equal(formatRatesDate('2026-10-05', 'en'), '5 October 2026');
+    assert.equal(formatRatesDate('2026-10-05', 'en'), 'October 5, 2026');
     assert.equal(formatRatesDate('2026-10-05', 'pl'), '5 października 2026');
     assert.equal(formatRatesDate('bad', 'en'), 'bad');
 });

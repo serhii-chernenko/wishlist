@@ -49,7 +49,7 @@ const en: Translation = {
         title: '🧐 Read more',
         description: {
             sensitive:
-                '<b>Private data</b>\n\nYour phone number is private information of every user!\nIt is used only to let other users find your wish list if they know your number.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number.\nNo first names, no last names, unless you share your wish list yourself: then the bot keeps the name from your Telegram to show it on the public page. When you stop sharing, the name is deleted.\nThanks for caring about this important topic ❤️',
+                '<b>Private data</b>\n\nYour phone number is private information of every user!\nIt is used only to let other users find your wish list if they know your number.\nThis bot is open source, and you can check the code on GitHub via the link below.\nThe user database is stored in Cloudflare with solid protection!\nThe bot stores only your username and/or phone number.\nNo first names, no last names, unless you share your wish list yourself: then the bot keeps the name from your Telegram to show it on the public page. When you stop sharing, the name is deleted.\nIf you turn them on, your phone number and delivery address are shown only in Telegram and never on the web page.\nThanks for caring about this important topic ❤️',
             openSource:
                 '\n\n<b>Open source</b>\n\nOpen source means that anyone can\n- help improve the project\n- see how the code is written\n- this project is also licensed under GNU AGPLv3, which means the code can be fully copied for any other project, even a commercial one.',
             languages:
@@ -154,6 +154,8 @@ const en: Translation = {
                 updateLink: '🔗 Update link',
                 setPriority: '❗️I really want this',
                 unsetPriority: `❗I don't want it that much anymore`,
+                priority: '🎯 Priority: {level}',
+                imagesOrder: '🔀 Photo order',
                 hide: '🫣 Hide from others',
                 show: '👀 Make visible again',
                 addPrice: '💸 Set price',
@@ -194,10 +196,24 @@ const en: Translation = {
                 imagesLimit: `ℹ️ Only 9 images were saved: you can't add more to one wish.`,
                 removeLink: '✅ The link was removed!',
                 updateLink: '✅ The link was updated!',
-                priority: '✅ The priority was changed!',
+                priority: '✅ The priority was updated!',
                 visibility: '✅ The visibility was changed!',
                 removePrice: '✅ The price was removed!',
                 updatePrice: '✅ The price was updated!'
+            },
+            currency: {
+                hint: 'Choose the currency of this wish. Right now: {currency}.',
+                success: '✅ The wish currency was changed: {currency}'
+            },
+            images: {
+                order: {
+                    prompt: '🔀 Pick the photo that should come first. The first photo is the cover of the wish.',
+                    caption: 'Photo {n}',
+                    makeFirst: '⬆️ Make photo {n} first',
+                    success: '✅ The photo order was changed!',
+                    changed:
+                        'ℹ️ The photos changed in the meantime, so the order was not saved. Try again.'
+                }
             }
         },
         remove: {
@@ -214,7 +230,7 @@ const en: Translation = {
             success: '✅ Here is the link to your wish list:\n{url}',
             empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
             consent:
-                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there.\n\nYou can stop sharing at any time.',
+                '🌐 Before you share\n\nThe bot will create a public page of your wish list on {host}. It will show:\n• the name from your Telegram profile: {name}\n• your @username, only if you turn it on yourself\n• all your wishes except hidden ones, with their photos\n• your payment details, if you have added them\n\nAnyone with the link can open the page, and it may appear in search engine results. Your phone number and your "I want to give" list are never shown there. If you turn them on, your phone number and delivery address are shown only in Telegram, never on the web page.\n\nYou can stop sharing at any time.',
             ready: '✅ Your wish list is ready!\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Page in the browser:\n{pageUrl}\n\nThe page updates itself after every change to your list.',
             stopConfirm:
                 '❓ Stop sharing your wish list?\n\nThe page will stop opening and the saved name will be deleted. If you share again later, the same link will work again, so everyone who has it will see your list again.',
@@ -268,7 +284,12 @@ const en: Translation = {
         filled: {
             before: 'Here is the wish list of <b>{0}</b>:',
             payments: `If you can't give a specific gift, the user has shared payment details you can send money to, so they can buy the gift themselves:\n\n{0}`,
-            after: `❓<b>What would you like to do?</b>\n\n🎁 Reserve a wish\n❌ Cancel the reservation of a wish`
+            after: `❓<b>What would you like to do?</b>\n\n🎁 Reserve a wish\n❌ Cancel the reservation of a wish`,
+            contact: {
+                title: '📇 <b>Contact and delivery</b>',
+                phone: '📱 Phone: {phone}',
+                address: '📦 Delivery address:\n{address}'
+            }
         },
         givers: {
             you: '\n\n👥 <i>Reserved by you</i>',
@@ -328,9 +349,21 @@ const en: Translation = {
         title: '❤️ <b>{0}</b>',
         description: '\n\n✏️ Description:\n{0}',
         priority: {
-            owner: '\n\n<blockquote>❗️ <b>I really want this right now!</b></blockquote>',
-            watcher:
-                '\n\n<blockquote>❗️ <b>They really want this right now!</b></blockquote>'
+            low: {
+                owner: '\n\n<blockquote>🟢 <b>I kind of want this right now</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>🟢 <b>They kind of want this right now</b></blockquote>'
+            },
+            medium: {
+                owner: '\n\n<blockquote>🟡 <b>I want this right now</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>🟡 <b>They want this right now</b></blockquote>'
+            },
+            high: {
+                owner: '\n\n<blockquote>❗️ <b>I really want this right now!</b></blockquote>',
+                watcher:
+                    '\n\n<blockquote>❗️ <b>They really want this right now!</b></blockquote>'
+            }
         },
         hidden: '\n\n🫣 <i>This wish is hidden from others!</i>',
         price: '\n\n💸 Estimated price: <b>{0}</b>',
@@ -358,6 +391,89 @@ const en: Translation = {
         remove: {
             success:
                 '✅ The payment details were removed! You can always come back here to add them again!'
+        }
+    },
+    settings: {
+        title: '⚙️ Settings',
+        description:
+            'Choose what to set up: language, currency, payment info, delivery address, or what others see.'
+    },
+    currency: {
+        title: '💱 Currency',
+        description:
+            'Choose the currency you use for the price of new wishes. Each wish keeps its own currency, and others see amounts approximately, converted at the National Bank of Ukraine rate.\n\nCurrent currency: <b>{current}</b>',
+        options: {
+            UAH: '🇺🇦 ₴ Hryvnia',
+            USD: '🇺🇸 $ US dollar',
+            EUR: '🇪🇺 € Euro',
+            PLN: '🇵🇱 zł Złoty'
+        },
+        success: '✅ Currency changed: {currency}'
+    },
+    priority: {
+        title: '🎯 Priority',
+        levels: {
+            none: '⚪ No priority',
+            low: '🟢 Low',
+            medium: '🟡 Medium',
+            high: '🔴 High'
+        },
+        success: '✅ Priority changed: {level}'
+    },
+    delivery: {
+        title: {
+            add: '📦 Add delivery address',
+            update: '📦 Update delivery address'
+        },
+        description:
+            'Say where gifts should be sent, for example a Nova Poshta branch or a parcel locker. 5 to 300 characters, up to 6 lines, no links.{current}\n\n<b>Send the new address in the next message</b>.',
+        phoneWarning:
+            'ℹ️ The address is shown to others only together with your phone number. You can turn this on in “What others see”.',
+        errors: {
+            tooShort: '❌ Not enough details: add a little more.\nTry again.',
+            tooLong:
+                '❌ The address is too long! The maximum is {max} characters.\nTry again.',
+            containsLink: '❌ Links are not allowed in the address.\nTry again.'
+        },
+        success: {
+            update: '✅ The delivery address was saved!',
+            remove: '✅ The delivery address was removed! You can always come back here to add it again!'
+        }
+    },
+    disclosure: {
+        title: '👀 What others see',
+        description:
+            'Choose what others see when they open your wish list. Your phone number and delivery address are shown only in Telegram, never on the web page. They are off by default.',
+        toggle: {
+            payments: {
+                on: '✅ Payment info: shown',
+                off: '🚫 Payment info: hidden'
+            },
+            phone: {
+                on: '✅ Phone number: shown',
+                off: '🚫 Phone number: hidden'
+            },
+            address: {
+                on: '✅ Delivery address: shown',
+                off: '🚫 Delivery address: hidden'
+            }
+        },
+        confirm: {
+            phone: '❓ Show your phone number?\n\nAnyone who opens your wish list in Telegram will see it: through your link, or by searching for your username or number. It is never shown on the web page. Messages that were already sent stay in the chat of whoever received them.',
+            address:
+                '❓ Show your delivery address?\n\nAnyone who opens your wish list in Telegram will see it: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the chat of whoever received them.'
+        },
+        needsPhone:
+            '❌ Turn on showing your phone number first: the address is shown only together with it.',
+        needsAddress: '❌ Add a delivery address first.',
+        phoneMissing:
+            '❌ The bot does not have your phone number. First allow others to find you by phone number in “Change visibility”.',
+        saved: '✅ Settings saved!',
+        indexing: {
+            title: 'Show in search engines',
+            hint: 'When this is on, Google and other search engines may show your wish list page, including the payment info on it. Turning it off adds noindex to the page, but copies that are already indexed can take some time to disappear.',
+            on: '✅ Search engines: allowed',
+            off: '🚫 Search engines: blocked'
         }
     },
     filters: {
@@ -402,7 +518,11 @@ const en: Translation = {
             title: 'You can also give money'
         },
         wish: {
-            priority: 'Really wants this',
+            priority: {
+                low: 'Kind of wants this',
+                medium: 'Wants this',
+                high: 'Really wants this'
+            },
             price: 'Approximate price:',
             approx: '≈ {amount}',
             original: '(original price {amount})',
@@ -415,12 +535,24 @@ const en: Translation = {
         empty: 'Nothing here yet. Wishes will appear as soon as they are added to the list.',
         truncated: 'Showing the first {limit} wishes of the list.',
         ratesNote:
-            'Prices are approximate, in {currency} at the National Bank of Ukraine rate for {date}',
+            'Prices in other currencies are approximate, converted to {currency} at the National Bank of Ukraine rate for {date}',
         footer: {
             cta: 'Create your own wish list',
             support: 'Support the author',
             openSource: 'Open source on GitHub',
             openInApp: 'Open in Telegram and reserve a wish'
+        },
+        currency: {
+            label: 'Currency',
+            auto: 'Auto',
+            UAH: '₴ Hryvnia',
+            USD: '$ US dollar',
+            EUR: '€ Euro',
+            PLN: 'zł Złoty'
+        },
+        delivery: {
+            inTelegram: 'Delivery details are available in Telegram',
+            cta: 'Open in Telegram'
         },
         language: {
             label: 'Language'
@@ -556,7 +688,11 @@ const en: Translation = {
             newBadge: 'New'
         },
         a11y: {
-            priority: 'Really want this',
+            priority: {
+                low: 'Kind of want this',
+                medium: 'Want this',
+                high: 'Really want this'
+            },
             priorityThird: 'Really wants this',
             hidden: 'Hidden wish, only you can see it',
             photo: 'Photo {index} of {total}: {title}',
@@ -624,7 +760,10 @@ const en: Translation = {
             usernameRequired:
                 'You have no Telegram username. Add one in Telegram settings and come back.',
             usernameUnavailable:
-                'Your username can be shown only when people can find you by it.'
+                'Your username can be shown only when people can find you by it.',
+            phoneRequired:
+                'A phone number is needed: allow others to find you by it in Visibility.',
+            addressRequired: 'A delivery address is needed. Add it first.'
         },
         outside: {
             title: 'Open in Telegram',
@@ -674,7 +813,52 @@ const en: Translation = {
             stats: 'Statistics',
             donate: 'Support the author',
             releases: 'What’s new',
-            about: 'About'
+            about: 'About',
+            currency: 'Currency',
+            delivery: 'Delivery address'
+        },
+        contact: {
+            title: 'Contact details',
+            phone: 'Phone',
+            address: 'Delivery address',
+            copy: 'Copy',
+            copied: 'Copied',
+            call: 'Call'
+        },
+        currency: {
+            title: 'Currency',
+            lead: 'Choose the currency you use for the price of new wishes. Each wish keeps its own currency, and others see amounts approximately, at the National Bank of Ukraine rate.',
+            options: {
+                UAH: {
+                    title: 'Hryvnia (₴)',
+                    hint: 'Currency code: UAH'
+                },
+                USD: {
+                    title: 'US dollar ($)',
+                    hint: 'Currency code: USD'
+                },
+                EUR: {
+                    title: 'Euro (€)',
+                    hint: 'Currency code: EUR'
+                },
+                PLN: {
+                    title: 'Złoty (zł)',
+                    hint: 'Currency code: PLN'
+                }
+            }
+        },
+        delivery: {
+            title: 'Delivery address',
+            lead: 'Where gifts should be sent, for example a Nova Poshta branch or a parcel locker. Others see the address only in Telegram, and only if you turn it on.',
+            label: 'Delivery address',
+            placeholder: 'For example, Nova Poshta branch 12, Kyiv',
+            hint: '5–300 characters, up to 6 lines, no links.',
+            phoneWarning:
+                'The address is shown only together with your phone number. You can turn this on in “Share your list”.',
+            save: 'Save',
+            remove: 'Remove the address',
+            saved: 'Delivery address saved',
+            removed: 'Delivery address removed'
         },
         home: {
             title: 'Wish list',
@@ -683,6 +867,13 @@ const en: Translation = {
             givesCount: '{count} {{count:gift|gifts}} planned',
             addWish: 'Add a wish',
             themeToggle: 'Theme: {current}. Change',
+            pairs: {
+                stats: 'Stats',
+                donate: 'Donate',
+                feedback: 'Feedback',
+                releases: 'What’s new',
+                about: 'About'
+            },
             tiles: {
                 wishes: {
                     title: 'My wishes',
@@ -742,7 +933,7 @@ const en: Translation = {
                 cta: 'Reset the filter'
             },
             hiddenBadge: 'Only you see this',
-            priorityToggle: 'Really want this',
+            priorityToggle: 'High priority',
             hiddenToggle: 'Hide from others',
             photoCount: 'Photos: {count}',
             edit: 'Edit',
@@ -758,8 +949,8 @@ const en: Translation = {
                 empty: 'Your wish list is already empty'
             },
             toasts: {
-                priorityOn: 'Marked “Really want this”',
-                priorityOff: '“Really want this” removed',
+                priorityOn: 'High priority set',
+                priorityOff: 'Priority removed',
                 hidden: 'Now only you can see this wish',
                 shown: 'Now others can see this wish'
             }
@@ -805,8 +996,17 @@ const en: Translation = {
                 host: 'Opens on {host}'
             },
             priority: {
-                label: 'Really want this',
-                hint: 'These wishes get a heart and come first.'
+                label: 'Priority',
+                hint: 'The higher the priority, the higher the wish sits in the list. Only high-priority wishes get a heart.',
+                levels: {
+                    none: 'None',
+                    low: 'Low',
+                    medium: 'Medium',
+                    high: 'High'
+                }
+            },
+            currency: {
+                label: 'Currency'
             },
             hidden: {
                 label: 'Hide from others',
@@ -866,6 +1066,16 @@ const en: Translation = {
             unsupported: 'This format is not supported',
             queued: 'Photos will upload after you save',
             removed: 'Photo removed',
+            reorder: {
+                handle: 'Drag to reorder the photo',
+                makeFirst: 'Make first',
+                instructions:
+                    'Press and hold a photo, then drag it to change the order. The first photo becomes the cover.',
+                moved: 'Photo {position} of {total}',
+                saved: 'Photo order saved',
+                conflict:
+                    'The photos have changed. Refresh the screen and try again.'
+            },
             chatFallback: {
                 action: 'Add photos in the chat',
                 hint: 'If photos don’t upload here, send them to the bot in the chat.',
@@ -958,11 +1168,42 @@ const en: Translation = {
                 name: 'the name from your Telegram: {name}',
                 username: 'your @username, only if you turn it on yourself',
                 wishes: 'all wishes except hidden ones, with their photos',
-                payments: 'your payment details, if you added them',
+                payments:
+                    'your payment details, if you added them (your phone number and delivery address are never shown there, even if you turn them on)',
                 public: 'Anyone with the link can open the page, and it may appear in search engine results.',
                 private:
                     'Your phone number and your “I want to give” list are never shown there.',
                 stop: 'You can stop sharing at any time.'
+            },
+            details: {
+                title: 'What others see',
+                lead: 'Choose what people see when they open your list in Telegram. Your phone number and delivery address never appear on the web page.',
+                payments: {
+                    label: 'Payment info',
+                    hint: 'People who open your list will see how to send you money.'
+                },
+                phone: {
+                    label: 'Phone number',
+                    hint: 'Only in Telegram, never on the web page.'
+                },
+                address: {
+                    label: 'Delivery address',
+                    hint: 'Only in Telegram, and only together with your phone number.'
+                },
+                confirm: {
+                    phone: 'Your phone number will be visible to anyone who opens your list in Telegram: through your link, or by searching for your username or number. It is never shown on the web page. Messages that were already sent stay in the viewer’s chat.',
+                    address:
+                        'Your delivery address will be visible to anyone who opens your list in Telegram: through your link, or by searching for your username or number. It is shown only together with your phone number, and never on the web page. Messages that were already sent stay in the viewer’s chat.'
+                },
+                phoneMissing:
+                    'First allow others to find you by phone number in Visibility.',
+                addressMissing: 'Add a delivery address first.',
+                needsPhone:
+                    'The address can be shown only together with your phone number.'
+            },
+            indexing: {
+                title: 'Show in search engines',
+                hint: 'When this is on, Google and other search engines may show your wish list page, including the payment info on it. Turning it off adds noindex to the page, but copies that are already indexed can take some time to disappear.'
             },
             publish: 'Share',
             published: 'You are now sharing your wish list',
@@ -1168,6 +1409,10 @@ const en: Translation = {
             paymentsSet: 'Added',
             paymentsEmpty: 'Not set',
             visibilityNone: 'Not set',
+            currency: 'Currency',
+            delivery: 'Delivery address',
+            deliverySet: 'Added',
+            deliveryEmpty: 'Not set',
             theme: {
                 title: 'Theme',
                 system: 'Match Telegram',

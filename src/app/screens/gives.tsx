@@ -240,7 +240,6 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                                 <WishTag
                                     key={entry.wish.id}
                                     wish={entry.wish}
-                                    currency={entry.currency}
                                     owner='other'
                                     badges={<GiveBadges entry={entry} />}
                                     actions={

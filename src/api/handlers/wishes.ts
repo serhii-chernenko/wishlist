@@ -15,12 +15,20 @@ import type {
 } from '../../db/repositories/wish-repository';
 import {
     APP_PAGE_SIZE,
+    WISH_PRIORITY_LEVELS,
     type OwnWishDto,
+    type WishPriorityLevel,
     type RemovedCountDto,
     type WishFilterDto,
     type WishListDto
 } from '../../shared/app-api';
-import { resolvePriceBounds } from '../../shared/money';
+import {
+    isCurrency,
+    resolveDisplayCurrency,
+    resolvePriceBounds,
+    type Currency
+} from '../../shared/money';
+import { isWishPriority, toWishPriorityLevel } from '../../shared/priority';
 import {
     getSigner,
     readExchangeRates,
@@ -203,12 +211,55 @@ const readPrice = (reader: BodyReader) => {
     return undefined;
 };
 
+const readCurrency = (reader: BodyReader): Currency | undefined => {
+    if (!reader.has('currency')) {
+        return undefined;
+    }
+
+    const raw = reader.body.currency;
+
+    if (isCurrency(raw)) {
+        return raw;
+    }
+
+    reader.fail('currency', 'invalid');
+
+    return undefined;
+};
+
+const toLegacyPriorityLevel = (value: boolean): WishPriorityLevel => {
+    return value ? WISH_PRIORITY_LEVELS.high : WISH_PRIORITY_LEVELS.none;
+};
+
+const readPriorityLevel = (
+    reader: BodyReader
+): WishPriorityLevel | undefined => {
+    if (!reader.has('priority')) {
+        return undefined;
+    }
+
+    const raw = reader.body.priority;
+
+    if (typeof raw === 'boolean') {
+        return toLegacyPriorityLevel(raw);
+    }
+
+    if (isWishPriority(raw)) {
+        return toWishPriorityLevel(raw);
+    }
+
+    reader.fail('priority', 'invalid');
+
+    return undefined;
+};
+
 interface WishInput {
     title: string | undefined;
     description: string | null | undefined;
     link: string | null | undefined;
     price: number | undefined;
-    priority: boolean | undefined;
+    currency: Currency | undefined;
+    priorityLevel: WishPriorityLevel | undefined;
     hidden: boolean | undefined;
 }
 
@@ -222,7 +273,8 @@ const readWishInput = async (
         description: readDescription(reader),
         link: readLink(reader),
         price: readPrice(reader),
-        priority: reader.optionalBoolean('priority'),
+        currency: readCurrency(reader),
+        priorityLevel: readPriorityLevel(reader),
         hidden: reader.optionalBoolean('hidden')
     };
 
@@ -236,6 +288,7 @@ type WishUpdateField =
     | 'description'
     | 'link'
     | 'price'
+    | 'currency'
     | 'priority'
     | 'visibility';
 
@@ -245,7 +298,8 @@ const getUpdatedFields = (input: WishInput): WishUpdateField[] => {
         ['description', input.description],
         ['link', input.link],
         ['price', input.price],
-        ['priority', input.priority],
+        ['currency', input.currency],
+        ['priority', input.priorityLevel],
         ['visibility', input.hidden]
     ];
 
@@ -305,8 +359,10 @@ export const listWishes: ApiHandler = async c => {
             ? null
             : resolvePriceBounds(
                   filter,
-                  resolveViewerLocale(c.var.actor, user),
-                  user.currency,
+                  resolveDisplayCurrency(
+                      user.currency,
+                      resolveViewerLocale(c.var.actor, user)
+                  ),
                   await readExchangeRates(c)
               );
     const page = await runRepository(
@@ -363,7 +419,13 @@ export const createWish: ApiHandler = async c => {
         description: input.description,
         link: input.link,
         price: input.price,
-        priority: input.priority,
+        currency:
+            input.currency ??
+            resolveDisplayCurrency(
+                user.currency,
+                resolveViewerLocale(c.var.actor, user)
+            ),
+        priorityLevel: input.priorityLevel,
         hidden: input.hidden
     }) as NewWishFields;
     const service = getWishService(c);
@@ -406,10 +468,11 @@ export const updateWish: ApiHandler = async c => {
         title: input.title,
         description: input.description,
         link: input.link,
-        price: input.price
+        price: input.price,
+        currency: input.currency
     }) as WishFieldsPatch;
     const flags = omitUndefined({
-        priority: input.priority,
+        priorityLevel: input.priorityLevel,
         hidden: input.hidden
     }) as WishFlags;
 

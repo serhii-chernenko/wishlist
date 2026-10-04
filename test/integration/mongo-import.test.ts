@@ -210,7 +210,7 @@ describe('Mongo import SQL on D1', () => {
                 users.create({ telegramId: 42 })
             );
             const createdWish = await Effect.runPromise(
-                wishes.create(created!.id, 'after import', new Date())
+                wishes.create(created!.id, 'after import', 'UAH', new Date())
             );
 
             assert.equal(byUsername?.telegramId, 7_000_001);

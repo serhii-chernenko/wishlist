@@ -29,7 +29,8 @@ const createWish = (
         title: 'Кавоварка',
         description: null,
         price: 0,
-        priority: false,
+        currency: 'UAH',
+        priorityLevel: 0,
         hidden: false,
         createdAt: new Date('2026-01-02T10:00:00Z'),
         updatedAt: new Date('2026-01-02T12:00:00Z'),
@@ -74,7 +75,7 @@ test('full owner markup lists title, priority, description, price and dates', ()
         createWish({
             description: 'Опис',
             price: 2500,
-            priority: true,
+            priorityLevel: 3,
             updatedAt: new Date('2026-02-03T10:00:00Z')
         }),
         formatters,
@@ -97,7 +98,7 @@ test('full owner markup lists title, priority, description, price and dates', ()
 test('watcher markup uses the watcher priority wording', () => {
     const html = renderWishHtml(
         LL,
-        createWish({ priority: true }),
+        createWish({ priorityLevel: 3 }),
         formatters,
         {
             audience: 'watcher',
@@ -108,6 +109,43 @@ test('watcher markup uses the watcher priority wording', () => {
 
     assert.ok(html.includes('Наразі дуже хоче це!'));
     assert.equal(html.includes('Наразі дуже хочу це!'), false);
+});
+
+test('only the high priority level adds the priority block', () => {
+    for (const priorityLevel of [0, 1, 2]) {
+        const html = renderWishHtml(
+            LL,
+            createWish({ priorityLevel }),
+            formatters,
+            ownerFull
+        );
+
+        assert.equal(
+            html.includes('<blockquote>'),
+            false,
+            String(priorityLevel)
+        );
+    }
+});
+
+test('prices are formatted in the wish currency', () => {
+    const currencies: string[] = [];
+
+    renderWishHtml(
+        LL,
+        createWish({ price: 15, currency: 'USD' }),
+        {
+            ...formatters,
+            formatMoney: (value, currency) => {
+                currencies.push(currency);
+
+                return `${value} ${currency}`;
+            }
+        },
+        ownerFull
+    );
+
+    assert.deepEqual(currencies, ['USD']);
 });
 
 test('the updated line is omitted when it falls on the creation day', () => {
@@ -140,7 +178,7 @@ test('summary markup shows title, price and one date line only', () => {
         createWish({
             description: 'Опис',
             price: 100,
-            priority: true,
+            priorityLevel: 3,
             updatedAt: new Date('2026-02-03T10:00:00Z')
         }),
         formatters,

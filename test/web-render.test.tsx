@@ -5,13 +5,16 @@ import { buildShareImagePath } from '../src/web/image-proxy/share-photos';
 import { renderErrorPage, renderSharePage } from '../src/web/share/render';
 import { matchAcceptLanguage } from '../src/web/share/accept-language';
 import {
-    computeShareFingerprint,
+    computeShareFingerprint as computeFingerprint,
     etagMatches,
     getDeployId,
-    resolvePublicUsername
+    resolvePublicPayments,
+    resolvePublicUsername,
+    variantFingerprint,
+    type ShareFingerprintInput
 } from '../src/web/share/fingerprint';
 import type { PublicShareFingerprint } from '../src/db/repositories';
-import { FALLBACK_RATES } from '../src/shared/money';
+import { FALLBACK_RATES, getDefaultCurrency } from '../src/shared/money';
 import type {
     SharePageModel,
     ShareWishView
@@ -26,7 +29,8 @@ const buildWish = (overrides: Partial<ShareWishView> = {}): ShareWishView => {
         description: null,
         link: null,
         price: 0,
-        priority: false,
+        currency: 'UAH',
+        priority: 'none',
         createdAt: new Date('2026-01-02T10:00:00Z'),
         updatedAt: new Date('2026-01-02T10:00:00Z'),
         ...overrides
@@ -36,15 +40,19 @@ const buildWish = (overrides: Partial<ShareWishView> = {}): ShareWishView => {
 const buildModel = (
     overrides: Partial<SharePageModel> = {}
 ): SharePageModel => {
+    const language = overrides.language ?? 'en';
+
     return {
-        language: 'en',
+        language,
         publicId: PUBLIC_ID,
         origin: 'https://wishlist.chernenko.dev',
         assetVersion: 'deploy-1',
         displayName: 'Alice',
         username: null,
         payments: null,
-        currency: 'UAH',
+        displayCurrency: getDefaultCurrency(language),
+        currencyChoice: 'auto',
+        deliveryHintShown: false,
         rates: FALLBACK_RATES,
         visibleCount: 1,
         lastUpdatedAt: new Date('2026-02-03T10:00:00Z'),
@@ -156,7 +164,7 @@ test('priority sticker, price chip and dates follow the page language', () => {
             language: 'uk',
             wishes: [
                 buildWish({
-                    priority: true,
+                    priority: 'high',
                     price: 2500,
                     createdAt: new Date('2026-01-02T10:00:00Z'),
                     updatedAt: new Date('2026-02-03T10:00:00Z')
@@ -189,7 +197,7 @@ test('an English page converts hryvnia prices to approximate euros', () => {
     assert.doesNotMatch(html, /€1,000/);
     assert.match(
         html,
-        /<p class="notice">Prices are approximate, in EUR at the National Bank of Ukraine rate for 5 October 2026<\/p>/
+        /<p class="notice">Prices in other currencies are approximate, converted to EUR at the National Bank of Ukraine rate for October 5, 2026<\/p>/
     );
 });
 
@@ -205,6 +213,48 @@ test('a Polish page converts to złoty and dates the note the Polish way', () =>
     assert.match(
         html,
         /według kursu Narodowego Banku Ukrainy z 5 października 2026/
+    );
+});
+
+test('wish prices follow the wish currency and the display currency of the page', () => {
+    const converted = renderSharePage(
+        buildModel({
+            wishes: [buildWish({ price: 100, currency: 'USD' })]
+        })
+    );
+    const exact = renderSharePage(
+        buildModel({
+            wishes: [buildWish({ price: 100, currency: 'EUR' })]
+        })
+    );
+    const chosen = renderSharePage(
+        buildModel({
+            displayCurrency: 'USD',
+            wishes: [buildWish({ price: 100, currency: 'USD' })]
+        })
+    );
+
+    assert.match(converted, /≈ €89/u);
+    assert.match(converted, /original price \$100/u);
+    assert.doesNotMatch(exact, /≈/);
+    assert.doesNotMatch(chosen, /≈/);
+    assert.doesNotMatch(chosen, /class="notice"/);
+});
+
+test('only the high priority shows the heart sticker', () => {
+    for (const priority of ['none', 'low', 'medium'] as const) {
+        assert.doesNotMatch(
+            renderSharePage(buildModel({ wishes: [buildWish({ priority })] })),
+            /wish-heart/,
+            priority
+        );
+    }
+
+    assert.match(
+        renderSharePage(
+            buildModel({ wishes: [buildWish({ priority: 'high' })] })
+        ),
+        /wish-heart/
     );
 });
 
@@ -240,8 +290,8 @@ test('regular wishes carry no priority sticker and free wishes no price chip', (
 test('the updated date is hidden when it equals the created date', () => {
     const html = renderSharePage(buildModel());
 
-    assert.match(html, /<p class="wish-dates">Added 2 January 2026<\/p>/);
-    assert.doesNotMatch(html, /updated 2 January 2026/);
+    assert.match(html, /<p class="wish-dates">Added January 2, 2026<\/p>/);
+    assert.doesNotMatch(html, /updated January 2, 2026/);
 });
 
 test('wishes without photos show the heart placeholder instead of an image', () => {
@@ -363,7 +413,7 @@ test('hreflang, canonical, open graph and twitter tags describe the page', () =>
     );
     assert.match(html, /<meta property="og:locale" content="pl_PL"/);
     assert.match(html, /<meta property="og:locale:alternate" content="uk_UA"/);
-    assert.match(html, /<meta property="og:locale:alternate" content="en_GB"/);
+    assert.match(html, /<meta property="og:locale:alternate" content="en_US"/);
     assert.match(
         html,
         /<meta name="twitter:card" content="summary_large_image"/
@@ -504,7 +554,7 @@ test('twenty maximum size wishes stay below 60 KB', () => {
             description: 'о'.repeat(500),
             link: `https://shop.test/items/${'p'.repeat(200)}${index}`,
             price: 1000 + index,
-            priority: index % 2 === 0
+            priority: index % 2 === 0 ? 'high' : 'none'
         });
     });
     const html = renderSharePage(
@@ -595,17 +645,38 @@ test('Accept-Language matching honours quality values and ignores unsupported ta
     assert.equal(matchAcceptLanguage('en, uk'), 'en');
 });
 
+const baseDisplayInput: ShareFingerprintInput = {
+    displayCurrency: 'UAH',
+    showPayments: true,
+    deliveryHintShown: false
+};
+
+const computeShareFingerprint = (
+    deployId: string,
+    language: Parameters<typeof computeFingerprint>[1],
+    share: PublicShareFingerprint,
+    rates: Parameters<typeof computeFingerprint>[3],
+    input: ShareFingerprintInput = baseDisplayInput
+) => {
+    return computeFingerprint(deployId, language, share, rates, input);
+};
+
 const baseFingerprintInput: PublicShareFingerprint = {
     publicId: PUBLIC_ID,
     displayName: 'Alice',
     revokedAt: null,
     shareUpdatedAt: new Date(1_000),
     showUsername: true,
+    allowIndexing: true,
     userId: 1,
     username: 'alice',
     usernameSearchable: true,
     payments: 'pay',
-    currency: 'UAH',
+    showPayments: true,
+    showPhone: false,
+    showAddress: false,
+    hasPhone: true,
+    hasDeliveryAddress: true,
     language: 'uk',
     telegramLanguageCode: 'uk',
     visibleCount: 3,
@@ -649,7 +720,7 @@ test('the fingerprint changes for every input that affects the page', async () =
                 ['username', { username: 'bob' }],
                 ['showUsername', { showUsername: false }],
                 ['payments', { payments: 'other' }],
-                ['currency', { currency: 'EUR' }],
+                ['allowIndexing', { allowIndexing: false }],
                 ['visibleCount', { visibleCount: 4 }],
                 ['lastUpdatedAt', { lastUpdatedAt: new Date(2_001) }]
             ] as [string, Partial<PublicShareFingerprint>][]
@@ -669,6 +740,42 @@ test('the fingerprint changes for every input that affects the page', async () =
                 }
             ];
         }),
+        [
+            'display currency',
+            () => {
+                return computeShareFingerprint(
+                    'deploy',
+                    'uk',
+                    baseFingerprintInput,
+                    FALLBACK_RATES,
+                    { ...baseDisplayInput, displayCurrency: 'EUR' }
+                );
+            }
+        ],
+        [
+            'show payments',
+            () => {
+                return computeShareFingerprint(
+                    'deploy',
+                    'uk',
+                    baseFingerprintInput,
+                    FALLBACK_RATES,
+                    { ...baseDisplayInput, showPayments: false }
+                );
+            }
+        ],
+        [
+            'delivery hint',
+            () => {
+                return computeShareFingerprint(
+                    'deploy',
+                    'uk',
+                    baseFingerprintInput,
+                    FALLBACK_RATES,
+                    { ...baseDisplayInput, deliveryHintShown: true }
+                );
+            }
+        ],
         [
             'rates date',
             () => {
@@ -752,6 +859,44 @@ test('the fingerprint ignores the username while the owner has not enabled it', 
     );
 
     assert.equal(first, second);
+});
+
+test('the fingerprint ignores payments the owner does not show', async () => {
+    const hidden = { ...baseFingerprintInput, showPayments: false };
+    const hiddenInput = { ...baseDisplayInput, showPayments: false };
+    const first = await computeShareFingerprint(
+        'd',
+        'uk',
+        hidden,
+        FALLBACK_RATES,
+        hiddenInput
+    );
+    const second = await computeShareFingerprint(
+        'd',
+        'uk',
+        { ...hidden, payments: 'changed' },
+        FALLBACK_RATES,
+        hiddenInput
+    );
+
+    assert.equal(first, second);
+});
+
+test('payments are public only while the owner shows them', () => {
+    const owner = { payments: 'pay', showPayments: true };
+
+    assert.equal(resolvePublicPayments(owner), 'pay');
+    assert.equal(
+        resolvePublicPayments({ ...owner, showPayments: false }),
+        null
+    );
+});
+
+test('the variant fingerprint adds the theme and a chosen currency only', () => {
+    assert.equal(variantFingerprint('abc', 'system', 'auto'), 'abc');
+    assert.equal(variantFingerprint('abc', 'dark', 'auto'), 'abc-dark');
+    assert.equal(variantFingerprint('abc', 'system', 'USD'), 'abc-usd');
+    assert.equal(variantFingerprint('abc', 'light', 'PLN'), 'abc-light-pln');
 });
 
 test('the public username needs both the owner choice and searchability', () => {

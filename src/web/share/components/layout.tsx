@@ -15,7 +15,7 @@ const DARK_THEME_COLOR = '#1a1220';
 
 export const OPEN_GRAPH_LOCALES = {
     uk: 'uk_UA',
-    en: 'en_GB',
+    en: 'en_US',
     pl: 'pl_PL'
 } as const satisfies Record<SharePageLanguage, string>;
 

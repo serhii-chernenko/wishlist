@@ -1,6 +1,7 @@
 import type { BatchItem } from 'drizzle-orm/batch';
 import { and, asc, eq, isNull, ne, notExists, or, sql } from 'drizzle-orm';
 
+import type { Currency } from '../../shared/money';
 import type { AppDb } from '../client';
 import { users } from '../schema';
 import { createTryDb } from './try-db';
@@ -28,6 +29,12 @@ export interface ProfileSyncInput {
     channel?: SeenChannel;
 }
 
+export interface DisclosurePatch {
+    showPayments?: boolean;
+    showPhone?: boolean;
+    showAddress?: boolean;
+}
+
 export interface SearchableUserQuery {
     username?: string | undefined;
     phoneDigits?: string | undefined;
@@ -36,6 +43,15 @@ export interface SearchableUserQuery {
 const tryDb = createTryDb('User repository');
 
 const stripNonDigits = (value: string) => value.replace(/\D/g, '');
+
+const PHONE_DISCLOSURE_RESET = {
+    showPhone: false,
+    showAddress: false
+} as const;
+
+const phoneDisclosureFor = (phone: string | null) => {
+    return phone === null ? PHONE_DISCLOSURE_RESET : {};
+};
 
 const releaseHolderStatements = (
     db: AppDb,
@@ -63,7 +79,12 @@ const releaseHolderStatements = (
         statements.push(
             db
                 .update(users)
-                .set({ phone: null, phoneDigits: null, updatedAt: now })
+                .set({
+                    phone: null,
+                    phoneDigits: null,
+                    ...PHONE_DISCLOSURE_RESET,
+                    updatedAt: now
+                })
                 .where(
                     and(
                         eq(users.phone, identifiers.phone),
@@ -255,6 +276,7 @@ export const createUserRepository = (db: AppDb) => {
                             usernameSearchable: input.usernameSearchable,
                             phone: input.phone,
                             phoneDigits: input.phoneDigits,
+                            ...phoneDisclosureFor(input.phone),
                             username: input.username,
                             updatedAt: now
                         })
@@ -293,6 +315,47 @@ export const createUserRepository = (db: AppDb) => {
                     .returning({ id: users.id });
 
                 return updated.length > 0;
+            });
+        },
+        setCurrency(id: number, currency: Currency, now: Date = new Date()) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(users)
+                    .set({ currency, updatedAt: now })
+                    .where(eq(users.id, id))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        setDeliveryAddress(
+            id: number,
+            deliveryAddress: string | null,
+            now: Date = new Date()
+        ) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(users)
+                    .set({ deliveryAddress, updatedAt: now })
+                    .where(eq(users.id, id))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        setDisclosure(
+            id: number,
+            patch: DisclosurePatch,
+            now: Date = new Date()
+        ) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(users)
+                    .set({ ...patch, updatedAt: now })
+                    .where(eq(users.id, id))
+                    .returning();
+
+                return updated ?? null;
             });
         },
         setWishlistFilter(

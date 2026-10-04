@@ -1,7 +1,11 @@
 import type { Context } from 'telegraf';
 import type { User } from 'telegraf/types';
 
-import { FALLBACK_RATES, type ExchangeRates } from '../../shared/money';
+import {
+    FALLBACK_RATES,
+    resolveDisplayCurrency,
+    type ExchangeRates
+} from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import { getMessages } from '../content/messages';
 import type { AppLocale } from '../i18n';
@@ -67,6 +71,10 @@ export const createBotRequest = (
         isAdmin: isAdminActor(seed.env, seed.actor),
         repos: seed.repos,
         rates: seed.rates ?? FALLBACK_RATES,
+        displayCurrency: resolveDisplayCurrency(
+            seed.user?.currency,
+            seed.locale
+        ),
         services: seed.services,
         telemetry: seed.telemetry,
         send: seed.send,
@@ -90,11 +98,13 @@ export const deriveRequest = (
     patch: RequestPatch
 ): BotRequest => {
     const locale = patch.locale ?? req.locale;
+    const user = patch.user === undefined ? req.user : patch.user;
     const derived: BotRequest = {
         ...req,
         ...patch,
         locale,
-        LL: locale === req.locale ? req.LL : getMessages(locale)
+        LL: locale === req.locale ? req.LL : getMessages(locale),
+        displayCurrency: resolveDisplayCurrency(user?.currency, locale)
     };
 
     return Object.defineProperty(derived, 'session', {

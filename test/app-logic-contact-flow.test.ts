@@ -27,6 +27,8 @@ const createMe = (visibility: MeDto['visibility']): MeDto => {
         telegramUsername: 'tester',
         phoneMasked: null,
         payments: null,
+        deliveryAddress: null,
+        disclosure: { payments: true, phone: false, address: false },
         currency: 'UAH',
         languageChoice: 'auto',
         locale: 'en',

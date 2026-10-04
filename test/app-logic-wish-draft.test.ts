@@ -34,7 +34,8 @@ const wish: OwnWishDto = {
     link: 'https://example.com/grinder',
     linkHost: 'example.com',
     price: 3200,
-    priority: true,
+    currency: 'UAH',
+    priority: 'high',
     hidden: false,
     images: [],
     createdAt: '2026-09-28T10:00:00.000Z',
@@ -51,7 +52,8 @@ test('a wish becomes a draft with empty strings for missing values', () => {
         description: 'Burr, not blade',
         price: '3200',
         link: 'https://example.com/grinder',
-        priority: true,
+        currency: 'UAH',
+        priority: 'high',
         hidden: false
     });
     assert.deepEqual(
@@ -61,7 +63,8 @@ test('a wish becomes a draft with empty strings for missing values', () => {
             description: '',
             price: '',
             link: '',
-            priority: true,
+            currency: 'UAH',
+            priority: 'high',
             hidden: false
         }
     );
@@ -115,7 +118,7 @@ test('dirty compares trimmed text and the flags', () => {
     assert.equal(isDraftDirty(baseline, { ...baseline, hidden: true }), true);
     assert.equal(isDraftDirty(EMPTY_DRAFT, EMPTY_DRAFT), false);
     assert.equal(
-        isDraftDirty(EMPTY_DRAFT, { ...EMPTY_DRAFT, priority: true }),
+        isDraftDirty(EMPTY_DRAFT, { ...EMPTY_DRAFT, priority: 'high' }),
         true
     );
 });
@@ -123,10 +126,10 @@ test('dirty compares trimmed text and the flags', () => {
 test('withFlags keeps the text and takes the flags', () => {
     assert.deepEqual(
         withFlags(draft({ description: 'kept' }), {
-            priority: true,
+            priority: 'high',
             hidden: true
         }),
-        draft({ description: 'kept', priority: true, hidden: true })
+        draft({ description: 'kept', priority: 'high', hidden: true })
     );
 });
 
@@ -168,7 +171,8 @@ test('the create input trims and sends cleared fields as null', () => {
             description: null,
             link: null,
             price: '1500',
-            priority: false,
+            currency: 'UAH',
+            priority: 'none',
             hidden: true
         }
     );
@@ -191,6 +195,14 @@ test('the patch carries only changed fields', () => {
     assert.deepEqual(
         toPatchInput(baseline, { ...baseline, title: 'Grinder', hidden: true }),
         { title: 'Grinder', hidden: true }
+    );
+    assert.deepEqual(
+        toPatchInput(baseline, {
+            ...baseline,
+            currency: 'EUR',
+            priority: 'medium'
+        }),
+        { currency: 'EUR', priority: 'medium' }
     );
 });
 

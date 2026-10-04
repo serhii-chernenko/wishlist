@@ -14,7 +14,16 @@ import {
     type SQL
 } from 'drizzle-orm';
 
-import type { PriceBounds } from '../../shared/money';
+import {
+    WISH_PRIORITY_LEVELS,
+    type WishPriorityLevel
+} from '../../shared/app-api';
+import {
+    CURRENCIES,
+    type Currency,
+    type PriceBounds,
+    type PriceBoundsByCurrency
+} from '../../shared/money';
 import type { AppDb } from '../client';
 import {
     gives,
@@ -29,24 +38,25 @@ import { createTryDb } from './try-db';
 export type WishRecord = typeof wishes.$inferSelect;
 export type WishFieldsPatch = Partial<
     Pick<WishRecord, 'title' | 'description' | 'link' | 'price'>
->;
+> & { currency?: Currency };
 
 export interface NewWishFields {
     title: string;
     description?: string | null;
     link?: string | null;
     price?: number;
-    priority?: boolean;
+    currency: Currency;
+    priorityLevel?: WishPriorityLevel;
     hidden?: boolean;
 }
 
 export interface WishFlags {
-    priority?: boolean;
+    priorityLevel?: WishPriorityLevel;
     hidden?: boolean;
 }
 
 export interface WishListOptions {
-    filter: PriceBounds | null;
+    filter: PriceBoundsByCurrency | null;
     offset: number;
     limit: number;
 }
@@ -67,12 +77,11 @@ const findableOwner = () => {
     );
 };
 
-const buildPriceCondition = (bounds: PriceBounds | null) => {
-    if (bounds === null) {
-        return undefined;
-    }
-
-    const conditions: SQL[] = [];
+const buildCurrencyPriceCondition = (
+    currency: Currency,
+    bounds: PriceBounds
+) => {
+    const conditions: SQL[] = [eq(wishes.currency, currency)];
 
     if (bounds.min !== null) {
         conditions.push(gte(wishes.price, bounds.min));
@@ -85,8 +94,29 @@ const buildPriceCondition = (bounds: PriceBounds | null) => {
     return and(...conditions);
 };
 
-const listOrder = [
-    desc(wishes.priority),
+export const buildPriceFilterCondition = (
+    bounds: PriceBoundsByCurrency | null
+) => {
+    if (bounds === null) {
+        return undefined;
+    }
+
+    return or(
+        ...CURRENCIES.map(currency => {
+            return buildCurrencyPriceCondition(currency, bounds[currency]);
+        })
+    );
+};
+
+const toPriorityColumns = (priorityLevel: WishPriorityLevel) => {
+    return {
+        priorityLevel,
+        priority: priorityLevel === WISH_PRIORITY_LEVELS.high
+    };
+};
+
+export const WISH_LIST_ORDER = [
+    desc(wishes.priorityLevel),
     desc(wishes.updatedAt),
     desc(wishes.id)
 ] as const;
@@ -109,13 +139,14 @@ const isImageIndex = (index: number) => {
 
 export const createWishRepository = (db: AppDb) => {
     return {
-        create(userId: number, title: string, now: Date) {
+        create(userId: number, title: string, currency: Currency, now: Date) {
             return tryDb(async () => {
                 const [created] = await db
                     .insert(wishes)
                     .values({
                         userId,
                         title,
+                        currency,
                         createdAt: now,
                         updatedAt: now
                     })
@@ -136,9 +167,10 @@ export const createWishRepository = (db: AppDb) => {
                         ...(fields.price === undefined
                             ? {}
                             : { price: fields.price }),
-                        ...(fields.priority === undefined
+                        currency: fields.currency,
+                        ...(fields.priorityLevel === undefined
                             ? {}
-                            : { priority: fields.priority }),
+                            : toPriorityColumns(fields.priorityLevel)),
                         ...(fields.hidden === undefined
                             ? {}
                             : { hidden: fields.hidden }),
@@ -240,14 +272,14 @@ export const createWishRepository = (db: AppDb) => {
                 const condition = and(
                     eq(wishes.userId, userId),
                     eq(wishes.removed, false),
-                    buildPriceCondition(options.filter)
+                    buildPriceFilterCondition(options.filter)
                 );
                 const [items, totals] = await db.batch([
                     db
                         .select()
                         .from(wishes)
                         .where(condition)
-                        .orderBy(...listOrder)
+                        .orderBy(...WISH_LIST_ORDER)
                         .limit(options.limit)
                         .offset(options.offset),
                     db.select({ total: count() }).from(wishes).where(condition)
@@ -263,7 +295,7 @@ export const createWishRepository = (db: AppDb) => {
                     eq(wishes.hidden, false),
                     eq(wishes.removed, false),
                     isNull(users.blockedAt),
-                    buildPriceCondition(options.filter)
+                    buildPriceFilterCondition(options.filter)
                 );
                 const [rows, totals] = await db.batch([
                     db
@@ -271,7 +303,7 @@ export const createWishRepository = (db: AppDb) => {
                         .from(wishes)
                         .innerJoin(users, eq(users.id, wishes.userId))
                         .where(condition)
-                        .orderBy(...listOrder)
+                        .orderBy(...WISH_LIST_ORDER)
                         .limit(options.limit)
                         .offset(options.offset),
                     db
@@ -318,7 +350,7 @@ export const createWishRepository = (db: AppDb) => {
                             eq(wishes.removed, false)
                         )
                     )
-                    .orderBy(...listOrder)
+                    .orderBy(...WISH_LIST_ORDER)
                     .limit(SHAREABLE_WISHES_LIMIT);
             });
         },
@@ -338,12 +370,17 @@ export const createWishRepository = (db: AppDb) => {
                 return updated.length > 0;
             });
         },
-        togglePriority(wishId: number, userId: number, now: Date) {
+        setPriorityLevel(
+            wishId: number,
+            userId: number,
+            priorityLevel: WishPriorityLevel,
+            now: Date
+        ) {
             return tryDb(async () => {
                 const updated = await db
                     .update(wishes)
                     .set({
-                        priority: sql`1 - ${wishes.priority}`,
+                        ...toPriorityColumns(priorityLevel),
                         updatedAt: now
                     })
                     .where(ownedAndActive(wishId, userId))
@@ -365,10 +402,10 @@ export const createWishRepository = (db: AppDb) => {
         },
         setFlags(wishId: number, userId: number, flags: WishFlags, now: Date) {
             return tryDb(async () => {
-                const changes: WishFlags = {
-                    ...(flags.priority === undefined
+                const changes = {
+                    ...(flags.priorityLevel === undefined
                         ? {}
-                        : { priority: flags.priority }),
+                        : toPriorityColumns(flags.priorityLevel)),
                     ...(flags.hidden === undefined
                         ? {}
                         : { hidden: flags.hidden })
@@ -416,6 +453,28 @@ export const createWishRepository = (db: AppDb) => {
                             ownedAndActive(wishId, userId),
                             eq(wishes.images, expectedJson),
                             sql`json_array_length(${wishes.images}) > ${index}`
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        replaceImages(
+            wishId: number,
+            userId: number,
+            expectedJson: string,
+            nextJson: string,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ images: nextJson, updatedAt: now })
+                    .where(
+                        and(
+                            ownedAndActive(wishId, userId),
+                            eq(wishes.images, expectedJson)
                         )
                     )
                     .returning();
