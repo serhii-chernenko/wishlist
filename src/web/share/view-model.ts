@@ -1,3 +1,4 @@
+import type { ExchangeRates } from '../../shared/money';
 import type { WebTheme } from '../theme';
 import type { SupportLink } from '../../bot/content/support-links';
 import type { SharePageLanguage } from './public-id';
@@ -28,6 +29,7 @@ export interface SharePageModel {
     username: string | null;
     payments: string | null;
     currency: string;
+    rates: ExchangeRates;
     visibleCount: number;
     lastUpdatedAt: Date | null;
     wishes: readonly ShareWishView[];

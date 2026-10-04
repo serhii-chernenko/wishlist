@@ -11,7 +11,11 @@ import {
 } from '../../shared/app-api';
 import { getStartKind } from '../../shared/app-links';
 import { appSessionStartedEvent } from '../../worker/telemetry';
-import { emitApiTelemetry, type ApiHandler } from '../context';
+import {
+    emitApiTelemetry,
+    readExchangeRates,
+    type ApiHandler
+} from '../context';
 import {
     buildAppConfig,
     getAppMessages,
@@ -72,11 +76,15 @@ export const bootstrap: ApiHandler = async c => {
               );
     const sessionLanguage = await readSessionLanguage(repos, actor.id, user);
     const locale = resolveRequestLocale(actor, user, sessionLanguage);
+    const [counts, rates] = await Promise.all([
+        readCounts(repos, user),
+        readExchangeRates(c)
+    ]);
     const body: BootstrapDto = {
         me: toMeDto({ actor, user, sessionLanguage, locale }),
         messages: getAppMessages(locale),
-        counts: await readCounts(repos, user),
-        config: buildAppConfig(c.env, locale)
+        counts,
+        config: buildAppConfig(c.env, locale, rates)
     };
 
     emitApiTelemetry(

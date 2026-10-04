@@ -1,4 +1,5 @@
 import type { PublicShareFingerprint } from '../../db/repositories';
+import { getDisplayCurrency, type ExchangeRates } from '../../shared/money';
 import type { SharePageLanguage } from './public-id';
 
 export const FALLBACK_DEPLOY_ID = 'dev';
@@ -50,11 +51,15 @@ export const computeHomeFingerprint = (
 export const computeShareFingerprint = (
     deployId: string,
     language: SharePageLanguage,
-    share: PublicShareFingerprint
+    share: PublicShareFingerprint,
+    rates: ExchangeRates
 ) => {
     const fields = [
         deployId,
         language,
+        getDisplayCurrency(language),
+        rates.date,
+        rates.perUnit,
         share.publicId,
         share.shareUpdatedAt.getTime(),
         share.showUsername,

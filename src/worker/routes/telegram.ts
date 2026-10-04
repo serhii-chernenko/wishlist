@@ -12,6 +12,7 @@ import {
     hasRequiredWorkerConfiguration,
     type WorkerBindings
 } from '../env';
+import { readWorkerExchangeRates } from '../exchange-rates';
 import {
     compareSecrets,
     TELEGRAM_SECRET_HEADER,
@@ -197,12 +198,8 @@ type LimitedJsonBodyResult =
           state: 'parsed';
           payload: unknown;
       }
-    | {
-          state: 'malformed';
-      }
-    | {
-          state: 'too-large';
-      };
+    | { state: 'malformed' }
+    | { state: 'too-large' };
 
 const cancelReaderIgnoringFailure = async (
     reader: ReadableStreamDefaultReader<Uint8Array>
@@ -339,9 +336,7 @@ const createD1UpdateLedger = (env: WorkerBindings): TelegramUpdateLedger => {
 type WishlistBot = Pick<
     ReturnType<typeof createWishlistBot>,
     'handleUpdate'
-> & {
-    botInfo?: UserFromGetMe;
-};
+> & { botInfo?: UserFromGetMe };
 
 type CreateWishlistBotDependencies = Parameters<typeof createWishlistBot>[1];
 
@@ -379,6 +374,9 @@ export const handleUpdateWithWishlistBot = async (
     };
     const bot = createBot(env, {
         telemetry,
+        readExchangeRates: repository => {
+            return readWorkerExchangeRates(env, context, repository);
+        },
         ...(publicOrigin === undefined ? {} : { publicOrigin }),
         ...(context && {
             waitUntil: (promise: Promise<unknown>) => {

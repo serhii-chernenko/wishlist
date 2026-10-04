@@ -1,3 +1,4 @@
+export { exchangeRates } from './exchange-rates';
 export { gives } from './gives';
 export {
     releaseAnnouncements,

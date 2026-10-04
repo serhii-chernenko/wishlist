@@ -175,7 +175,8 @@ const pl: Translation = {
                 addLink: '🔗 Dodaj link',
                 updateLink: '🔗 Zmień link albo ❌ usuń go',
                 addPrice: '💸 Podaj cenę',
-                updatePrice: '💸 Zaktualizuj cenę albo ❌ usuń ją'
+                updatePrice: '💸 Zaktualizuj cenę albo ❌ usuń ją',
+                priceCurrency: 'Tylko liczba, w {0}.'
             },
             errors: {
                 title: {
@@ -342,6 +343,7 @@ const pl: Translation = {
         },
         hidden: '\n\n🫣 <i>To życzenie jest ukryte przed innymi!</i>',
         price: '\n\n💸 Orientacyjna cena: <b>{0}</b>',
+        approx: '≈ {0} ({1})',
         date: {
             created: '\n\n🗓 <i>Utworzono: {0}</i>',
             updated: '\n🗓 <i>Zaktualizowano: {0}</i>'
@@ -412,6 +414,8 @@ const pl: Translation = {
         wish: {
             priority: 'Bardzo chce',
             price: 'Orientacyjna cena:',
+            approx: '≈ {amount}',
+            original: '(cena pierwotna {amount})',
             link: 'Otwórz na {host}',
             photo: 'Zdjęcie {index} z {total}',
             details: 'Szczegóły',
@@ -420,6 +424,8 @@ const pl: Translation = {
         },
         empty: 'Na razie nic tu nie ma. Życzenia pojawią się, gdy tylko zostaną dodane do listy.',
         truncated: 'Pokazano pierwsze {limit} życzeń z listy.',
+        ratesNote:
+            'Ceny orientacyjne, w {currency} według kursu Narodowego Banku Ukrainy z {date}',
         footer: {
             cta: 'Utwórz własną listę życzeń',
             support: 'Wesprzyj autora',
@@ -482,7 +488,7 @@ const pl: Translation = {
                 },
                 prices: {
                     title: 'Ceny i filtry',
-                    text: 'Podaj cenę w swojej walucie, a znajomi przefiltrują życzenia według swojego budżetu.'
+                    text: 'Podaj cenę, a znajomi zobaczą ją w swojej walucie i przefiltrują życzenia według swojego budżetu.'
                 },
                 priority: {
                     title: 'Priorytety',
@@ -771,6 +777,10 @@ const pl: Translation = {
                 shown: 'Teraz to życzenie widzą inni'
             }
         },
+        money: {
+            approx: '≈ {amount}',
+            original: '(cena pierwotna {amount})'
+        },
         filters: {
             title: 'Filtr według ceny',
             all: 'Wszystkie',
@@ -798,7 +808,7 @@ const pl: Translation = {
             },
             price: {
                 label: 'Orientacyjna cena',
-                hint: 'Tylko liczba, w walucie {currency}.',
+                hint: 'Tylko liczba, w {currency}.',
                 placeholder: '1500'
             },
             link: {

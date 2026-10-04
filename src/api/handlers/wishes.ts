@@ -20,13 +20,20 @@ import {
     type WishFilterDto,
     type WishListDto
 } from '../../shared/app-api';
+import { resolvePriceBounds } from '../../shared/money';
 import {
     getSigner,
+    readExchangeRates,
     requireUser,
     type ApiContext,
     type ApiHandler
 } from '../context';
-import { mintWishImages, toOwnWishDto, toPageDto } from '../dto';
+import {
+    mintWishImages,
+    resolveViewerLocale,
+    toOwnWishDto,
+    toPageDto
+} from '../dto';
 import { ApiError } from '../errors';
 import { releaseImagesInBackground } from '../photos/image-cleanup';
 import { emitAppAction } from '../telemetry';
@@ -293,9 +300,18 @@ export const listWishes: ApiHandler = async c => {
     const user = requireUser(c);
     const offset = readOffset(c);
     const filter = getWishService(c).getOwnerFilter(user);
+    const priceBounds =
+        filter === null
+            ? null
+            : resolvePriceBounds(
+                  filter,
+                  resolveViewerLocale(c.var.actor, user),
+                  user.currency,
+                  await readExchangeRates(c)
+              );
     const page = await runRepository(
         c.var.repos.wishes.listOwned(user.id, {
-            filter,
+            filter: priceBounds,
             offset,
             limit: APP_PAGE_SIZE
         })

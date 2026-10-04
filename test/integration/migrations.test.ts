@@ -60,7 +60,8 @@ describe('D1 migrations', () => {
             'sessions',
             'telegram_updates',
             'release_announcements',
-            'wishlist_shares'
+            'wishlist_shares',
+            'exchange_rates'
         ]) {
             assert.equal(findObject(tableName)?.type, 'table', tableName);
         }

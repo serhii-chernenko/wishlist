@@ -11,6 +11,10 @@ import type { PublicShareFingerprint, Repositories } from '../db/repositories';
 import type { WorkerApp } from '../worker/app';
 import type { WorkerBindings } from '../worker/env';
 import {
+    readWorkerExchangeRates,
+    type ExchangeRatesSource
+} from '../worker/exchange-rates';
+import {
     emitSharePageServedTelemetry,
     type ShareCacheOutcome,
     type SharePageResult
@@ -61,6 +65,7 @@ export interface CacheLike {
 export interface ShareRouteDependencies {
     cache?: CacheLike;
     now?: () => Date;
+    readExchangeRates?: ExchangeRatesSource;
 }
 
 type ShareContext = Context<{ Bindings: WorkerBindings }>;
@@ -299,6 +304,7 @@ const servePage = async ({
     share,
     repositories,
     cache,
+    readExchangeRates,
     finish
 }: {
     c: ShareContext;
@@ -306,12 +312,18 @@ const servePage = async ({
     share: PublicShareFingerprint;
     repositories: Repositories;
     cache: CacheLike | null;
+    readExchangeRates: ExchangeRatesSource;
     finish: FinishShareResponse;
 }) => {
     const deployId = getDeployId(c.env);
     const theme = readThemeCookie(c.req.header('Cookie'));
+    const rates = await readExchangeRates(
+        c.env,
+        getExecutionContext(c),
+        repositories.exchangeRates
+    );
     const fingerprint = themedFingerprint(
-        await computeShareFingerprint(deployId, language, share),
+        await computeShareFingerprint(deployId, language, share, rates),
         theme
     );
     const origin = new URL(c.req.url).origin;
@@ -359,6 +371,7 @@ const servePage = async ({
                 username: resolvePublicUsername(share),
                 payments: share.payments,
                 currency: share.currency,
+                rates,
                 visibleCount: share.visibleCount,
                 lastUpdatedAt: share.lastUpdatedAt,
                 wishes,
@@ -521,6 +534,8 @@ export const registerShareRoutes = (
                 share,
                 repositories,
                 cache: getCache(dependencies),
+                readExchangeRates:
+                    dependencies.readExchangeRates ?? readWorkerExchangeRates,
                 finish
             });
         } catch (error) {

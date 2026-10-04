@@ -1,10 +1,13 @@
-import {
-    DEFAULT_CURRENCY,
-    formatDate,
-    formatNumber,
-    getLocaleTag
-} from '../../bot/content/intl';
+import { formatDate, formatNumber } from '../../bot/content/intl';
+import { parsePrice } from '../../bot/input/price';
 import type { AppLocale, PriceFilterDto } from '../../shared/app-api';
+import {
+    describePrice,
+    formatMoney,
+    getDisplayCurrency,
+    type DisplayCurrency,
+    type ExchangeRates
+} from '../../shared/money';
 
 const WWW_PREFIX = /^www\./;
 
@@ -13,19 +16,6 @@ export type PriceFilterLabel =
     | { kind: 'upTo'; amount: string }
     | { kind: 'from'; amount: string }
     | { kind: 'range'; from: string; to: string };
-
-export const formatPrice = (
-    price: number,
-    locale: AppLocale,
-    currency: string | null | undefined
-) => {
-    return new Intl.NumberFormat(getLocaleTag(locale), {
-        style: 'currency',
-        currency: currency || DEFAULT_CURRENCY,
-        currencyDisplay: 'narrowSymbol',
-        ...(Number.isInteger(price) && { maximumFractionDigits: 0 })
-    }).format(price);
-};
 
 export const formatCount = (value: number, locale: AppLocale) => {
     return formatNumber(value, locale);
@@ -67,12 +57,19 @@ export const formatReleaseDate = (value: string, locale: AppLocale) => {
     return date === null ? value : formatDate(date, locale);
 };
 
+export const selectPriceFilters = (
+    filtersByCurrency: Readonly<Record<DisplayCurrency, PriceFilterDto[]>>,
+    locale: AppLocale
+) => {
+    return filtersByCurrency[getDisplayCurrency(locale)];
+};
+
 export const describePriceFilter = (
     filter: PriceFilterDto,
-    locale: AppLocale,
-    currency: string | null | undefined
+    locale: AppLocale
 ): PriceFilterLabel => {
-    const money = (value: number) => formatPrice(value, locale, currency);
+    const currency = getDisplayCurrency(locale);
+    const money = (value: number) => formatMoney(value, locale, currency);
 
     if (filter.from !== null && filter.to !== null) {
         return {
@@ -89,6 +86,23 @@ export const describePriceFilter = (
     return filter.from === null
         ? { kind: 'all' }
         : { kind: 'from', amount: money(filter.from) };
+};
+
+export const getApproximateDraftPrice = (
+    draftPrice: string,
+    ownerCurrency: string,
+    locale: AppLocale,
+    rates: ExchangeRates
+) => {
+    const parsed = parsePrice(draftPrice, []);
+
+    if (!parsed.ok || parsed.value <= 0) {
+        return null;
+    }
+
+    const display = describePrice(parsed.value, ownerCurrency, locale, rates);
+
+    return display.kind === 'approximate' ? display.amount : null;
 };
 
 export const getLinkHost = (link: string | null | undefined) => {

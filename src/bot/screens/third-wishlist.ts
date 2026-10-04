@@ -29,6 +29,7 @@ import { summarizeGivers, type GiverSummary } from '../services/give-service';
 import {
     createWishFormatters,
     createWishScreenServices,
+    getOwnerPriceBounds,
     isFindableOwner,
     openLinkButton,
     requireUser,
@@ -150,14 +151,15 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
     }
 
     const { wishes, gives } = createWishScreenServices(req);
-    const formatters = createWishFormatters(req);
+    const formatters = createWishFormatters(req, owner.currency);
     const filter = getOwnerFilter(req, owner.id);
+    const priceBounds = getOwnerPriceBounds(req, filter, owner.currency);
     const query = resolveQueryLabel(req, owner, params.query);
     const requestedOffset = params.offset ?? 0;
     let offset = requestedOffset;
     let page = await wishes.listVisibleOf({
         ownerId: owner.id,
-        filter,
+        priceBounds,
         offset
     });
 
@@ -165,7 +167,7 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
         offset = normalizeOffset(offset, page.total);
         page = await wishes.listVisibleOf({
             ownerId: owner.id,
-            filter,
+            priceBounds,
             offset
         });
     }
@@ -201,9 +203,7 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
             filter === null
                 ? ''
                 : LL.filters.applied(
-                      escapeHtml(
-                          getFilterTitle(LL, filter, formatters.formatMoney)
-                      )
+                      escapeHtml(getFilterTitle(LL, req.locale, filter))
                   );
 
         await req.send.text(
@@ -320,8 +320,6 @@ export const callbacks: CallbackTable = {
         });
     },
     thirdFilterMenu: async (req, action) => {
-        const formatters = createWishFormatters(req);
-
         requireUser(req);
 
         if (!isSearchedOwner(req, action.ownerId)) {
@@ -332,7 +330,7 @@ export const callbacks: CallbackTable = {
 
         await req.send.text(
             req.LL.filters.description(),
-            buildFilterKeyboard(req.LL, formatters.formatMoney, filter => {
+            buildFilterKeyboard(req.LL, req.locale, filter => {
                 return {
                     type: 'thirdFilter',
                     ownerId: action.ownerId,

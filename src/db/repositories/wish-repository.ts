@@ -8,12 +8,13 @@ import {
     inArray,
     isNotNull,
     isNull,
-    lte,
+    lt,
     or,
     sql,
     type SQL
 } from 'drizzle-orm';
 
+import type { PriceBounds } from '../../shared/money';
 import type { AppDb } from '../client';
 import {
     gives,
@@ -45,7 +46,7 @@ export interface WishFlags {
 }
 
 export interface WishListOptions {
-    filter: number | null;
+    filter: PriceBounds | null;
     offset: number;
     limit: number;
 }
@@ -54,19 +55,6 @@ export interface WishPage {
     items: WishRecord[];
     total: number;
 }
-
-interface PriceRange {
-    from: number | null;
-    to: number | null;
-}
-
-export const priceFilterRanges: readonly PriceRange[] = [
-    { from: null, to: 999 },
-    { from: 1000, to: 1999 },
-    { from: 2000, to: 4999 },
-    { from: 5000, to: 9999 },
-    { from: 10000, to: null }
-];
 
 export const SHAREABLE_WISHES_LIMIT = 100;
 
@@ -79,21 +67,19 @@ const findableOwner = () => {
     );
 };
 
-const buildPriceCondition = (filter: number | null) => {
-    const range = filter === null ? undefined : priceFilterRanges[filter];
-
-    if (!range) {
+const buildPriceCondition = (bounds: PriceBounds | null) => {
+    if (bounds === null) {
         return undefined;
     }
 
     const conditions: SQL[] = [];
 
-    if (range.from !== null) {
-        conditions.push(gte(wishes.price, range.from));
+    if (bounds.min !== null) {
+        conditions.push(gte(wishes.price, bounds.min));
     }
 
-    if (range.to !== null) {
-        conditions.push(lte(wishes.price, range.to));
+    if (bounds.maxExclusive !== null) {
+        conditions.push(lt(wishes.price, bounds.maxExclusive));
     }
 
     return and(...conditions);

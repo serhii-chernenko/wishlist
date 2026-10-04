@@ -23,7 +23,7 @@ The bot answers only in private chats.
 
 ### Main menu
 
-- **Wishlist.** Add wishes with a title, description, up to 9 photos, a link and a price. Edit or remove them, mark a wish as a priority, hide it, filter the list by price, and clean the whole list after a confirmation. Long lists are paginated.
+- **Wishlist.** Add wishes with a title, description, up to 9 photos, a link and a price. Edit or remove them, mark a wish as a priority, hide it, filter the list by price, and clean the whole list after a confirmation. Long lists are paginated. Prices show in the currency of the chosen language (hryvnia in Ukrainian, euro in English, złoty in Polish), converted approximately at the daily National Bank of Ukraine rate.
 - **Give list.** The wishes of other people that you plan to give. Add and remove entries and clean the list.
 - **Find a wish list.** Search by `@username` or by phone number. Third-party lists can be filtered by price, and you can mark a wish as "I want to give".
 - **Visibility.** Choose whether others can find you by username, by phone number, or both.
@@ -49,7 +49,7 @@ Everything the chat does is also available in a Telegram Mini App with the same 
 - Telegram Mini App client in `hono/jsx/dom`, bundled with esbuild, styled with Tailwind CSS 4 and daisyUI 5
 - Telegraf as the update parser and Telegram API client, with a hand-written stateless router
 - Cloudflare D1 with Drizzle ORM (sessions, users, wishes, gives, shares, update ledger, announcements)
-- Cloudflare Queues for release announcements, Cron Triggers for maintenance
+- Cloudflare Queues for release announcements, Cron Triggers for maintenance and the daily exchange rates refresh
 - Cloudflare R2 as a durable image cache and Cloudflare rate-limit bindings for the Mini App API
 - Effect for repositories, typesafe-i18n for the `uk`, `en` and `pl` locales
 - evlog telemetry sent to New Relic in production

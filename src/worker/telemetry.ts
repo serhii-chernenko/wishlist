@@ -32,9 +32,7 @@ initWorkersLogger({
 });
 
 export type TelemetryContext =
-    | {
-          waitUntil(promise: Promise<unknown>): void;
-      }
+    | { waitUntil(promise: Promise<unknown>): void }
     | undefined;
 
 export const TELEGRAM_UPDATE_TYPES = [
@@ -162,6 +160,7 @@ export type TelemetryFields = {
     delaySeconds?: number;
     attempts?: number;
     reason?: string;
+    trigger?: string;
     action?: TelemetryAction;
     result?: string;
     field?: string;
@@ -225,6 +224,7 @@ const labelFieldNames = [
     'callbackCategory',
     'rejectionReason',
     'reason',
+    'trigger',
     'action',
     'result',
     'field',

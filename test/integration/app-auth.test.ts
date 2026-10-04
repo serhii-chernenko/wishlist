@@ -377,12 +377,25 @@ describe('Mini App API auth and bootstrap', () => {
         assert.equal(body.messages.common.retry, 'Try again');
         assert.equal(body.config.limits.title, 200);
         assert.equal(body.config.limits.pageSize, 20);
-        assert.equal(body.config.priceFilters.length, 5);
-        assert.deepEqual(body.config.priceFilters[0], {
+        assert.equal(body.config.priceFilters.UAH.length, 5);
+        assert.deepEqual(body.config.priceFilters.UAH[0], {
             filter: 0,
             from: null,
             to: 999
         });
+        assert.deepEqual(body.config.priceFilters.EUR[0], {
+            filter: 0,
+            from: null,
+            to: 19
+        });
+        assert.deepEqual(body.config.priceFilters.PLN[4], {
+            filter: 4,
+            from: 1000,
+            to: null
+        });
+        assert.equal(body.config.rates.perUnit.UAH, 1);
+        assert.ok(body.config.rates.perUnit.EUR > 0);
+        assert.match(body.config.rates.date, /^\d{4}-\d{2}-\d{2}$/);
         assert.equal(body.config.botUrl, harness.env.WISHLIST_TG_URL);
         assert.equal(body.config.supportLinks.length > 0, true);
         assert.equal(body.config.links.github, harness.env.GITHUB_REPO_URL);

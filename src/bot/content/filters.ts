@@ -1,24 +1,18 @@
 import type { InlineKeyboardMarkup } from 'telegraf/types';
 
 import type { TranslationFunctions } from '../../i18n/i18n-types';
+import {
+    formatMoney,
+    getDisplayCurrency,
+    getPriceFilterRange,
+    WISH_FILTER_VALUES
+} from '../../shared/money';
 import type { EncodableCallbackAction } from '../callback-data';
+import type { AppLocale } from '../i18n';
 import type { WishFilter } from '../runtime/types';
 import { callbackButton, singleColumnKeyboard } from './keyboards';
 
-export interface PriceRange {
-    from: number | null;
-    to: number | null;
-}
-
-export const WISH_FILTERS = [0, 1, 2, 3, 4] as const satisfies WishFilter[];
-
-const PRICE_RANGES: Readonly<Record<WishFilter, PriceRange>> = {
-    0: { from: null, to: 999 },
-    1: { from: 1000, to: 1999 },
-    2: { from: 2000, to: 4999 },
-    3: { from: 5000, to: 9999 },
-    4: { from: 10000, to: null }
-};
+export const WISH_FILTERS: readonly WishFilter[] = WISH_FILTER_VALUES;
 
 export const isWishFilter = (value: unknown): value is WishFilter => {
     return (
@@ -33,28 +27,26 @@ export const toWishFilter = (value: number | null | undefined) => {
     return isWishFilter(value) ? value : null;
 };
 
-export const getPriceRange = (filter: WishFilter): PriceRange => {
-    return PRICE_RANGES[filter];
-};
-
-export type MoneyFormatter = (value: number) => string;
-
 export const getFilterTitle = (
     LL: TranslationFunctions,
-    filter: WishFilter,
-    formatMoney: MoneyFormatter
+    locale: AppLocale,
+    filter: WishFilter
 ) => {
-    const { from, to } = getPriceRange(filter);
+    const currency = getDisplayCurrency(locale);
+    const { from, to } = getPriceFilterRange(currency, filter);
+    const formatAmount = (value: number) => {
+        return formatMoney(value, locale, currency);
+    };
 
     if (from !== null && to !== null) {
-        return LL.filters.fromTo(formatMoney(from), formatMoney(to));
+        return LL.filters.fromTo(formatAmount(from), formatAmount(to));
     }
 
     if (from !== null) {
-        return LL.filters.from(formatMoney(from));
+        return LL.filters.from(formatAmount(from));
     }
 
-    return LL.filters.to(formatMoney(to ?? 0));
+    return LL.filters.to(formatAmount(to ?? 0));
 };
 
 export const getFilterMarker = (filter: WishFilter | null) => {
@@ -63,13 +55,13 @@ export const getFilterMarker = (filter: WishFilter | null) => {
 
 export const buildFilterKeyboard = (
     LL: TranslationFunctions,
-    formatMoney: MoneyFormatter,
+    locale: AppLocale,
     toAction: (filter: WishFilter | null) => EncodableCallbackAction
 ): InlineKeyboardMarkup => {
     return singleColumnKeyboard([
         ...WISH_FILTERS.map(filter => {
             return callbackButton(
-                getFilterTitle(LL, filter, formatMoney),
+                getFilterTitle(LL, locale, filter),
                 toAction(filter)
             );
         }),

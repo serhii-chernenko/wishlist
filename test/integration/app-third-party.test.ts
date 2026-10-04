@@ -428,6 +428,35 @@ describe('Mini App API third-party lists, search and gives', () => {
             assert.equal(invalid.status, 422);
         });
 
+        it('filters by the viewer euro ranges converted into the owner hryvnias', async () => {
+            await registerUser(VIEWER, { language: 'en' });
+            const owner = await registerUser(OWNER_A);
+
+            await addWish(owner.id, 'Below', { price: 980 });
+            await addWish(owner.id, 'Edge', { price: 1010 });
+            await addWish(owner.id, 'Above', { price: 1011 });
+
+            const token = await tokenFor(VIEWER, '@alice_a');
+            const titlesFor = async (filter: number) => {
+                const page = (await (
+                    await call(
+                        VIEWER,
+                        'GET',
+                        `/lists/${token}/wishes?filter=${filter}`
+                    )
+                ).json()) as OwnerWishListDto;
+
+                return page.items
+                    .map(item => {
+                        return item.title;
+                    })
+                    .sort();
+            };
+
+            assert.deepEqual(await titlesFor(0), ['Below', 'Edge']);
+            assert.deepEqual(await titlesFor(1), ['Above']);
+        });
+
         it('rejects a token minted for another viewer with 403', async () => {
             await registerUser(VIEWER);
             await registerUser(STRANGER);

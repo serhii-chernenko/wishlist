@@ -28,7 +28,6 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
     const { LL } = req;
     const user = requireUser(req);
     const { gives } = createWishScreenServices(req);
-    const formatters = createWishFormatters(req);
     let offset = params?.offset ?? 0;
     let page = await gives.listForGiver(user.id, offset);
 
@@ -67,11 +66,16 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
         const otherGivers = (giversByWish.get(wish.id) ?? []).length - 1;
         const reference = owner === null ? null : getOwnerPublicUsername(owner);
         const html =
-            renderWishHtml(LL, wish, formatters, {
-                audience: 'watcher',
-                detail: 'full',
-                showHidden: false
-            }) +
+            renderWishHtml(
+                LL,
+                wish,
+                createWishFormatters(req, owner?.currency),
+                {
+                    audience: 'watcher',
+                    detail: 'full',
+                    showHidden: false
+                }
+            ) +
             (otherGivers > 0 ? LL.giveList.givers(String(otherGivers)) : '') +
             (reference ? LL.giveList.owner(escapeHtml(reference)) : '');
 

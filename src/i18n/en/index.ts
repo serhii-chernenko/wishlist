@@ -171,7 +171,8 @@ const en: Translation = {
                 addLink: '🔗 Add a link',
                 updateLink: '🔗 Change the link or ❌ remove it',
                 addPrice: '💸 Set the price',
-                updatePrice: '💸 Update the price or ❌ remove it'
+                updatePrice: '💸 Update the price or ❌ remove it',
+                priceCurrency: 'Just a number, in {0}.'
             },
             errors: {
                 title: {
@@ -333,6 +334,7 @@ const en: Translation = {
         },
         hidden: '\n\n🫣 <i>This wish is hidden from others!</i>',
         price: '\n\n💸 Estimated price: <b>{0}</b>',
+        approx: '≈ {0} ({1})',
         date: {
             created: '\n\n🗓 <i>Created: {0}</i>',
             updated: '\n🗓 <i>Updated: {0}</i>'
@@ -402,6 +404,8 @@ const en: Translation = {
         wish: {
             priority: 'Really wants this',
             price: 'Approximate price:',
+            approx: '≈ {amount}',
+            original: '(original price {amount})',
             link: 'Open on {host}',
             photo: 'Photo {index} of {total}',
             details: 'More details',
@@ -410,6 +414,8 @@ const en: Translation = {
         },
         empty: 'Nothing here yet. Wishes will appear as soon as they are added to the list.',
         truncated: 'Showing the first {limit} wishes of the list.',
+        ratesNote:
+            'Prices are approximate, in {currency} at the National Bank of Ukraine rate for {date}',
         footer: {
             cta: 'Create your own wish list',
             support: 'Support the author',
@@ -472,7 +478,7 @@ const en: Translation = {
                 },
                 prices: {
                     title: 'Prices and filters',
-                    text: 'Set a price in your currency, and friends can filter your wishes by their budget.'
+                    text: 'Set a price, and friends see it in their own currency and can filter your wishes by their budget.'
                 },
                 priority: {
                     title: 'Priorities',
@@ -757,6 +763,10 @@ const en: Translation = {
                 hidden: 'Now only you can see this wish',
                 shown: 'Now others can see this wish'
             }
+        },
+        money: {
+            approx: '≈ {amount}',
+            original: '(original price {amount})'
         },
         filters: {
             title: 'Filter by price',

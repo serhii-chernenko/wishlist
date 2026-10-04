@@ -175,7 +175,8 @@ const uk: BaseTranslation = {
                 addLink: '🔗 Додай посилання',
                 updateLink: '🔗 Зміни посилання чи ❌ видали його',
                 addPrice: '💸 Вказати вартість',
-                updatePrice: '💸 Оновити вартість чи ❌ видалити її'
+                updatePrice: '💸 Оновити вартість чи ❌ видалити її',
+                priceCurrency: 'Лише число, у {0:string}.'
             },
             errors: {
                 title: {
@@ -341,6 +342,7 @@ const uk: BaseTranslation = {
         },
         hidden: '\n\n🫣 <i>Це бажання приховане від інших!</i>',
         price: '\n\n💸 Орієнтовна вартість: <b>{0:string}</b>',
+        approx: '≈ {0:string} ({1:string})',
         date: {
             created: '\n\n🗓 <i>Створено: {0:string}</i>',
             updated: '\n🗓 <i>Оновлено: {0:string}</i>'
@@ -412,6 +414,8 @@ const uk: BaseTranslation = {
         wish: {
             priority: 'Дуже хоче',
             price: 'Орієнтовна вартість:',
+            approx: '≈ {amount:string}',
+            original: '(початкова ціна {amount:string})',
             link: 'Відкрити на {host:string}',
             photo: 'Фото {index:number} з {total:number}',
             details: 'Детальніше',
@@ -420,6 +424,8 @@ const uk: BaseTranslation = {
         },
         empty: 'Тут поки що порожньо. Бажання зʼявляться, щойно їх додадуть до списку.',
         truncated: 'Показано перші {limit:number} бажань зі списку.',
+        ratesNote:
+            'Ціни орієнтовні, в {currency:string} за курсом НБУ на {date:string}',
         footer: {
             cta: 'Створити свій лист бажань',
             support: 'Підтримати автора',
@@ -481,7 +487,7 @@ const uk: BaseTranslation = {
                 },
                 prices: {
                     title: 'Ціни й фільтри',
-                    text: 'Вкажи вартість у своїй валюті, а друзі відфільтрують бажання під свій бюджет.'
+                    text: 'Вкажи вартість, а друзі побачать її у своїй валюті й відфільтрують бажання під свій бюджет.'
                 },
                 priority: {
                     title: 'Пріоритети',
@@ -768,6 +774,10 @@ const uk: BaseTranslation = {
                 shown: 'Тепер це бажання бачать інші'
             }
         },
+        money: {
+            approx: '≈ {amount:string}',
+            original: '(початкова ціна {amount:string})'
+        },
         filters: {
             title: 'Фільтр за вартістю',
             all: 'Усі',
@@ -795,7 +805,7 @@ const uk: BaseTranslation = {
             },
             price: {
                 label: 'Орієнтовна вартість',
-                hint: 'Лише число у валюті {currency:string}.',
+                hint: 'Лише число, у {currency:string}.',
                 placeholder: '1500'
             },
             link: {

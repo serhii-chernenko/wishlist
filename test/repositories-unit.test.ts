@@ -10,7 +10,7 @@ import {
     DELETE_CHUNK_SIZE
 } from '../src/db/repositories/chunk';
 import { GIVERS_LOOKUP_CHUNK_SIZE } from '../src/db/repositories/give-repository';
-import { createRepositories, priceFilterRanges } from '../src/db/repositories';
+import { createRepositories } from '../src/db/repositories';
 import { RELEASE_ANNOUNCEMENT_INSERT_CHUNK_SIZE } from '../src/db/repositories/release-announcement-repository';
 import { createTryDb } from '../src/db/repositories/try-db';
 
@@ -97,7 +97,8 @@ const expectedMethods: Record<string, string[]> = {
         'rotate',
         'setShowUsername',
         'findPublicFingerprint'
-    ]
+    ],
+    exchangeRates: ['listAll', 'upsertMany']
 };
 
 test('createRepositories exposes exactly the contracted repositories and methods', () => {
@@ -150,21 +151,4 @@ test('chunk sizes keep every bound-parameter list under the D1 ceiling', () => {
         ).length,
         3
     );
-});
-
-test('price filters cover the five legacy ranges without gaps', () => {
-    assert.deepEqual(priceFilterRanges, [
-        { from: null, to: 999 },
-        { from: 1000, to: 1999 },
-        { from: 2000, to: 4999 },
-        { from: 5000, to: 9999 },
-        { from: 10000, to: null }
-    ]);
-
-    for (let index = 1; index < priceFilterRanges.length; index += 1) {
-        assert.equal(
-            (priceFilterRanges[index - 1]?.to ?? 0) + 1,
-            priceFilterRanges[index]?.from
-        );
-    }
 });

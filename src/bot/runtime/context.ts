@@ -1,6 +1,7 @@
 import type { Context } from 'telegraf';
 import type { User } from 'telegraf/types';
 
+import { FALLBACK_RATES, type ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import { getMessages } from '../content/messages';
 import type { AppLocale } from '../i18n';
@@ -32,6 +33,7 @@ export interface RequestSeed {
     sessionLanguage: AppLocale | null;
     publicOrigin?: string | undefined;
     repos: Repositories;
+    rates?: ExchangeRates | undefined;
     services: BotServices;
     telemetry: WishlistBotTelemetry;
     send: Sender;
@@ -64,6 +66,7 @@ export const createBotRequest = (
         },
         isAdmin: isAdminActor(seed.env, seed.actor),
         repos: seed.repos,
+        rates: seed.rates ?? FALLBACK_RATES,
         services: seed.services,
         telemetry: seed.telemetry,
         send: seed.send,

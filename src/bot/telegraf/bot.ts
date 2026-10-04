@@ -5,6 +5,7 @@ import type { User } from 'telegraf/types';
 
 import { createDb } from '../../db/client';
 import { createRepositories } from '../../db/repositories';
+import type { ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import { decodeCallbackData } from '../callback-data';
 import {
@@ -71,6 +72,7 @@ import * as wishAddScreen from '../screens/wish-add';
 import * as wishEditScreen from '../screens/wish-edit';
 import * as wishRemoveScreen from '../screens/wish-remove';
 import * as wishlistScreen from '../screens/wishlist';
+import { readExchangeRates } from '../services/exchange-rate-service';
 import { createStatsService } from '../services/stats-service';
 import { createUserService } from '../services/user-service';
 import { escapeHtml } from '../utils/strings';
@@ -79,8 +81,13 @@ import { parseCommand, type ParsedCommand } from '../utils/telegram';
 
 export type { WishlistBotTelemetry } from '../runtime/types';
 
+export type BotExchangeRatesReader = (
+    repository: Repositories['exchangeRates']
+) => Promise<ExchangeRates>;
+
 export interface WishlistBotDependencies {
     telemetry?: WishlistBotTelemetry | undefined;
+    readExchangeRates?: BotExchangeRatesReader | undefined;
     waitUntil?: WaitUntil | undefined;
     sleep?: Sleep | undefined;
     repositories?: Repositories | undefined;
@@ -150,6 +157,10 @@ const createServices = (repos: Repositories): BotServices => {
         users: createUserService({ repos }),
         stats: createStatsService({ repos })
     };
+};
+
+const readStoredExchangeRates: BotExchangeRatesReader = repository => {
+    return readExchangeRates({ repository });
 };
 
 const getCallbackData = (ctx: Context) => {
@@ -265,7 +276,11 @@ const dispatchUpdate = async (scope: UpdateScope, runtime: UpdateRuntime) => {
         await prepareCallback(sender, action);
     }
 
-    const { user, session } = await loadActor(repos, services, actor);
+    const readRates = runtime.deps.readExchangeRates ?? readStoredExchangeRates;
+    const [{ user, session }, rates] = await Promise.all([
+        loadActor(repos, services, actor),
+        readRates(repos.exchangeRates)
+    ]);
     const locale = resolveAppLocale(
         user ? user.language : session.language,
         actor.language_code ?? user?.telegramLanguageCode ?? null
@@ -288,6 +303,7 @@ const dispatchUpdate = async (scope: UpdateScope, runtime: UpdateRuntime) => {
             sessionLanguage: session.language,
             publicOrigin: runtime.deps.publicOrigin,
             repos,
+            rates,
             services,
             telemetry: runtime.telemetry,
             send: sender,

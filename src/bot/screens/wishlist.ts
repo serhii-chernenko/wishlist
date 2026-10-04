@@ -29,6 +29,7 @@ import type {
 import {
     createWishFormatters,
     createWishScreenServices,
+    getOwnerPriceBounds,
     releaseRemovedImages,
     requireUser,
     updateSession
@@ -88,13 +89,22 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
     const user = requireUser(req);
     const { wishes, share } = createWishScreenServices(req);
     const filter = wishes.getOwnerFilter(user);
-    const formatters = createWishFormatters(req);
+    const priceBounds = getOwnerPriceBounds(req, filter, user.currency);
+    const formatters = createWishFormatters(req, user.currency);
     let offset = params?.offset ?? 0;
-    let page = await wishes.listOwned({ ownerId: user.id, filter, offset });
+    let page = await wishes.listOwned({
+        ownerId: user.id,
+        priceBounds,
+        offset
+    });
 
     if (offset > 0 && page.items.length === 0 && page.total > 0) {
         offset = normalizeOffset(offset, page.total);
-        page = await wishes.listOwned({ ownerId: user.id, filter, offset });
+        page = await wishes.listOwned({
+            ownerId: user.id,
+            priceBounds,
+            offset
+        });
     }
 
     updateSession(req, { pendingInput: null });
@@ -120,9 +130,7 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
             filter === null
                 ? ''
                 : LL.filters.applied(
-                      escapeHtml(
-                          getFilterTitle(LL, filter, formatters.formatMoney)
-                      )
+                      escapeHtml(getFilterTitle(LL, req.locale, filter))
                   );
 
         await req.send.text(
@@ -192,11 +200,9 @@ const renderConfirmation = async (req: BotRequest) => {
 };
 
 const renderFilterMenu = async (req: BotRequest) => {
-    const formatters = createWishFormatters(req);
-
     await req.send.text(
         req.LL.filters.description(),
-        buildFilterKeyboard(req.LL, formatters.formatMoney, filter => {
+        buildFilterKeyboard(req.LL, req.locale, filter => {
             return { type: 'wishlistFilter', filter };
         })
     );

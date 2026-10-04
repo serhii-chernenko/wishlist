@@ -30,7 +30,8 @@ export const excludedTableNames = [
     'sessions',
     'telegram_updates',
     'release_announcements',
-    'wishlist_shares'
+    'wishlist_shares',
+    'exchange_rates'
 ];
 export const previewOnlyWipeTables = ['wishlist_shares'];
 export const copiedTablesInInsertOrder = ['users', 'wishes', 'gives'];

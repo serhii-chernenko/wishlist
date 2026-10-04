@@ -13,6 +13,7 @@ import type {
     UserRecord as DbUserRecord
 } from '../../db/repositories';
 import type { TranslationFunctions } from '../../i18n/i18n-types';
+import type { ExchangeRates } from '../../shared/money';
 import type { WorkerBindings } from '../../worker/env';
 import type { AppLocale, LanguageChoice as I18nLanguageChoice } from '../i18n';
 import type { StatsService } from '../services/stats-service';
@@ -230,6 +231,7 @@ export interface BotRequest {
     session: SessionState;
     isAdmin: boolean;
     repos: Repositories;
+    rates: ExchangeRates;
     services: BotServices;
     telemetry: WishlistBotTelemetry;
     send: Sender;

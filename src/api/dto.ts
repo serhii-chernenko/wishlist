@@ -1,10 +1,6 @@
 import type { User } from 'telegraf/types';
 
-import {
-    getPriceRange,
-    toWishFilter,
-    WISH_FILTERS
-} from '../bot/content/filters';
+import { toWishFilter } from '../bot/content/filters';
 import { DEFAULT_CURRENCY } from '../bot/content/intl';
 import { getSupportLinks } from '../bot/content/support-links';
 import { getTranslator, resolveAppLocale, type AppLocale } from '../bot/i18n';
@@ -37,10 +33,10 @@ import {
     type OwnerDto,
     type OwnWishDto,
     type PageDto,
-    type PriceFilterDto,
     type ShareDto,
     type ThirdWishDto
 } from '../shared/app-api';
+import { getPriceFiltersByCurrency, type ExchangeRates } from '../shared/money';
 import type { WorkerBindings } from '../worker/env';
 import { sha256Hex, type ApiCrypto } from './auth/crypto';
 import type { Signer } from './auth/signing';
@@ -72,6 +68,13 @@ export const resolveRequestLocale = (
         user ? user.language : sessionLanguage,
         actor.language_code ?? user?.telegramLanguageCode ?? null
     );
+};
+
+export const resolveViewerLocale = (
+    actor: Pick<User, 'language_code'>,
+    viewer: UserRecord
+): AppLocale => {
+    return resolveRequestLocale(actor, viewer, null);
 };
 
 export const maskPhone = (phone: string | null) => {
@@ -269,12 +272,6 @@ export const toPageDto = <Item>(
     };
 };
 
-export const getPriceFilters = (): PriceFilterDto[] => {
-    return WISH_FILTERS.map(filter => {
-        return { filter, ...getPriceRange(filter) };
-    });
-};
-
 const trimToNull = (value: string | undefined) => {
     const trimmed = value?.trim() ?? '';
 
@@ -295,12 +292,14 @@ export const getAppLinks = (
 
 export const buildAppConfig = (
     env: WorkerBindings,
-    locale: AppLocale
+    locale: AppLocale,
+    rates: ExchangeRates
 ): BootstrapDto['config'] => {
     return {
         botUrl: env.WISHLIST_TG_URL,
         limits: APP_LIMITS,
-        priceFilters: getPriceFilters(),
+        rates,
+        priceFilters: getPriceFiltersByCurrency(),
         supportLinks: getSupportLinks(env, getTranslator(locale)),
         links: getAppLinks(env)
     };

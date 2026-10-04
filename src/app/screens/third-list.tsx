@@ -9,7 +9,11 @@ import type {
 import type { AppTranslator } from '../i18n/i18n';
 import { failureMessage } from '../i18n/messages';
 import { hasErrorCode, type AppFailure } from '../logic/errors';
-import { describePriceFilter, type PriceFilterLabel } from '../logic/format';
+import {
+    describePriceFilter,
+    selectPriceFilters,
+    type PriceFilterLabel
+} from '../logic/format';
 import {
     describeGivers,
     nextGiveAction,
@@ -330,16 +334,12 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
 
     const filterOptions: ChipOption<WishFilterValue | null>[] = [
         { value: null, label: LL.filters.all() },
-        ...config.priceFilters.map(priceFilter => {
+        ...selectPriceFilters(config.priceFilters, locale).map(priceFilter => {
             return {
                 value: priceFilter.filter as WishFilterValue,
                 label: describeFilterLabel(
                     LL,
-                    describePriceFilter(
-                        priceFilter,
-                        locale,
-                        owner?.currency ?? null
-                    )
+                    describePriceFilter(priceFilter, locale)
                 )
             };
         })

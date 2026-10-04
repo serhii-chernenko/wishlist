@@ -17,6 +17,10 @@
       🇺🇸 The bot now speaks English, Ukrainian and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
       🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
 
+- [added] Ціни тепер показуються у валюті твоєї мови: у гривнях українською, в євро англійською та в злотих польською. Перераховані суми орієнтовні, за щоденним курсом НБУ.
+    - en: Prices now show in the currency of your language: hryvnias in Ukrainian, euros in English and złoty in Polish. Converted amounts are approximate, at the daily National Bank of Ukraine rate.
+    - pl: Ceny wyświetlają się teraz w walucie twojego języka: w hrywnach po ukraińsku, w euro po angielsku i w złotych po polsku. Przeliczone kwoty są orientacyjne, według dziennego kursu Narodowego Banku Ukrainy.
+
 - [added] Довгі списки бажань тепер розбиті на сторінки: кнопка «Показати ще» підвантажує наступні бажання.
     - en: Long wish lists are now split into pages: the "Show more" button loads the next wishes.
     - pl: Długie listy życzeń są teraz podzielone na strony: przycisk „Pokaż więcej” wczytuje kolejne życzenia.

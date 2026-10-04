@@ -605,6 +605,11 @@ type RootTranslation = {
 				 * �​�​ ​О​н​о​в​и​т​и​ ​в​а​р​т​і​с​т​ь​ ​ч​и​ ​❌​ ​в​и​д​а​л​и​т​и​ ​ї​ї
 				 */
 				updatePrice: string
+				/**
+				 * Л​и​ш​е​ ​ч​и​с​л​о​,​ ​у​ ​{​0​}​.
+				 * @param {string} 0
+				 */
+				priceCurrency: RequiredParams<'0'>
 			}
 			errors: {
 				title: {
@@ -1130,6 +1135,12 @@ type RootTranslation = {
 		 * @param {string} 0
 		 */
 		price: RequiredParams<'0'>
+		/**
+		 * ≈​ ​{​0​}​ ​(​{​1​}​)
+		 * @param {string} 0
+		 * @param {string} 1
+		 */
+		approx: RequiredParams<'0' | '1'>
 		date: {
 			/**
 			 * 
@@ -1341,6 +1352,16 @@ type RootTranslation = {
 			 */
 			price: string
 			/**
+			 * ≈​ ​{​a​m​o​u​n​t​}
+			 * @param {string} amount
+			 */
+			approx: RequiredParams<'amount'>
+			/**
+			 * (​п​о​ч​а​т​к​о​в​а​ ​ц​і​н​а​ ​{​a​m​o​u​n​t​}​)
+			 * @param {string} amount
+			 */
+			original: RequiredParams<'amount'>
+			/**
 			 * В​і​д​к​р​и​т​и​ ​н​а​ ​{​h​o​s​t​}
 			 * @param {string} host
 			 */
@@ -1376,6 +1397,12 @@ type RootTranslation = {
 		 * @param {number} limit
 		 */
 		truncated: RequiredParams<'limit'>
+		/**
+		 * Ц​і​н​и​ ​о​р​і​є​н​т​о​в​н​і​,​ ​в​ ​{​c​u​r​r​e​n​c​y​}​ ​з​а​ ​к​у​р​с​о​м​ ​Н​Б​У​ ​н​а​ ​{​d​a​t​e​}
+		 * @param {string} currency
+		 * @param {string} date
+		 */
+		ratesNote: RequiredParams<'currency' | 'date'>
 		footer: {
 			/**
 			 * С​т​в​о​р​и​т​и​ ​с​в​і​й​ ​л​и​с​т​ ​б​а​ж​а​н​ь
@@ -1533,7 +1560,7 @@ type RootTranslation = {
 					 */
 					title: string
 					/**
-					 * В​к​а​ж​и​ ​в​а​р​т​і​с​т​ь​ ​у​ ​с​в​о​ї​й​ ​в​а​л​ю​т​і​,​ ​а​ ​д​р​у​з​і​ ​в​і​д​ф​і​л​ь​т​р​у​ю​т​ь​ ​б​а​ж​а​н​н​я​ ​п​і​д​ ​с​в​і​й​ ​б​ю​д​ж​е​т​.
+					 * В​к​а​ж​и​ ​в​а​р​т​і​с​т​ь​,​ ​а​ ​д​р​у​з​і​ ​п​о​б​а​ч​а​т​ь​ ​ї​ї​ ​у​ ​с​в​о​ї​й​ ​в​а​л​ю​т​і​ ​й​ ​в​і​д​ф​і​л​ь​т​р​у​ю​т​ь​ ​б​а​ж​а​н​н​я​ ​п​і​д​ ​с​в​і​й​ ​б​ю​д​ж​е​т​.
 					 */
 					text: string
 				}
@@ -2374,6 +2401,18 @@ type RootTranslation = {
 				shown: string
 			}
 		}
+		money: {
+			/**
+			 * ≈​ ​{​a​m​o​u​n​t​}
+			 * @param {string} amount
+			 */
+			approx: RequiredParams<'amount'>
+			/**
+			 * (​п​о​ч​а​т​к​о​в​а​ ​ц​і​н​а​ ​{​a​m​o​u​n​t​}​)
+			 * @param {string} amount
+			 */
+			original: RequiredParams<'amount'>
+		}
 		filters: {
 			/**
 			 * Ф​і​л​ь​т​р​ ​з​а​ ​в​а​р​т​і​с​т​ю
@@ -2465,7 +2504,7 @@ type RootTranslation = {
 				 */
 				label: string
 				/**
-				 * Л​и​ш​е​ ​ч​и​с​л​о​ ​у​ ​в​а​л​ю​т​і​ ​{​c​u​r​r​e​n​c​y​}​.
+				 * Л​и​ш​е​ ​ч​и​с​л​о​,​ ​у​ ​{​c​u​r​r​e​n​c​y​}​.
 				 * @param {string} currency
 				 */
 				hint: RequiredParams<'currency'>
@@ -4211,6 +4250,10 @@ export type TranslationFunctions = {
 				 * 💸 Оновити вартість чи ❌ видалити її
 				 */
 				updatePrice: () => LocalizedString
+				/**
+				 * Лише число, у {0}.
+				 */
+				priceCurrency: (arg0: string) => LocalizedString
 			}
 			errors: {
 				title: {
@@ -4713,6 +4756,10 @@ export type TranslationFunctions = {
 	💸 Орієнтовна вартість: <b>{0}</b>
 		 */
 		price: (arg0: string) => LocalizedString
+		/**
+		 * ≈ {0} ({1})
+		 */
+		approx: (arg0: string, arg1: string) => LocalizedString
 		date: {
 			/**
 			 * 
@@ -4906,6 +4953,14 @@ export type TranslationFunctions = {
 			 */
 			price: () => LocalizedString
 			/**
+			 * ≈ {amount}
+			 */
+			approx: (arg: { amount: string }) => LocalizedString
+			/**
+			 * (початкова ціна {amount})
+			 */
+			original: (arg: { amount: string }) => LocalizedString
+			/**
 			 * Відкрити на {host}
 			 */
 			link: (arg: { host: string }) => LocalizedString
@@ -4934,6 +4989,10 @@ export type TranslationFunctions = {
 		 * Показано перші {limit} бажань зі списку.
 		 */
 		truncated: (arg: { limit: number }) => LocalizedString
+		/**
+		 * Ціни орієнтовні, в {currency} за курсом НБУ на {date}
+		 */
+		ratesNote: (arg: { currency: string, date: string }) => LocalizedString
 		footer: {
 			/**
 			 * Створити свій лист бажань
@@ -5088,7 +5147,7 @@ export type TranslationFunctions = {
 					 */
 					title: () => LocalizedString
 					/**
-					 * Вкажи вартість у своїй валюті, а друзі відфільтрують бажання під свій бюджет.
+					 * Вкажи вартість, а друзі побачать її у своїй валюті й відфільтрують бажання під свій бюджет.
 					 */
 					text: () => LocalizedString
 				}
@@ -5916,6 +5975,16 @@ export type TranslationFunctions = {
 				shown: () => LocalizedString
 			}
 		}
+		money: {
+			/**
+			 * ≈ {amount}
+			 */
+			approx: (arg: { amount: string }) => LocalizedString
+			/**
+			 * (початкова ціна {amount})
+			 */
+			original: (arg: { amount: string }) => LocalizedString
+		}
 		filters: {
 			/**
 			 * Фільтр за вартістю
@@ -6001,7 +6070,7 @@ export type TranslationFunctions = {
 				 */
 				label: () => LocalizedString
 				/**
-				 * Лише число у валюті {currency}.
+				 * Лише число, у {currency}.
 				 */
 				hint: (arg: { currency: string }) => LocalizedString
 				/**

@@ -10,6 +10,7 @@ export {
     withDatabase
 } from './service';
 export {
+    exchangeRates,
     gives,
     releaseAnnouncements,
     releaseAnnouncementStatuses,

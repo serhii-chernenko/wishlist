@@ -1,6 +1,7 @@
 import type { Message } from 'telegraf/types';
 
 import type { WishRecord } from '../../db/repositories';
+import { getCurrencySymbol } from '../../shared/money';
 import {
     appEntryButton,
     callbackButton,
@@ -10,6 +11,7 @@ import {
     removeValueKeyboard,
     singleColumnKeyboard
 } from '../content/keyboards';
+import { DEFAULT_CURRENCY } from '../content/intl';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
 import { getErrorType } from '../errors';
 import { parseDescription } from '../input/description';
@@ -118,11 +120,16 @@ const renderEdit = async (req: BotRequest, params: WishEditParams) => {
 
     updateSession(req, { pendingInput: null });
 
-    const html = renderWishHtml(LL, wish, createWishFormatters(req), {
-        audience: 'owner',
-        detail: 'full',
-        showHidden: true
-    });
+    const html = renderWishHtml(
+        LL,
+        wish,
+        createWishFormatters(req, user.currency),
+        {
+            audience: 'owner',
+            detail: 'full',
+            showHidden: true
+        }
+    );
     const linkRow = openLinkButton(req, wish.link);
 
     await req.send.wish(
@@ -150,6 +157,14 @@ const hasFieldValue = (wish: WishRecord, field: WishField) => {
     }
 };
 
+const getPricePromptText = (req: BotRequest, hasValue: boolean) => {
+    const scenes = req.LL.wishlist.edit.scenes;
+    const prompt = hasValue ? scenes.updatePrice() : scenes.addPrice();
+    const currency = req.user?.currency || DEFAULT_CURRENCY;
+
+    return `${prompt}\n${scenes.priceCurrency(getCurrencySymbol(req.locale, currency))}`;
+};
+
 const getFieldPromptText = (
     req: BotRequest,
     field: WishField,
@@ -169,7 +184,7 @@ const getFieldPromptText = (
         case 'link':
             return hasValue ? scenes.updateLink() : scenes.addLink();
         case 'price':
-            return hasValue ? scenes.updatePrice() : scenes.addPrice();
+            return getPricePromptText(req, hasValue);
     }
 };
 

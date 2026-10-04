@@ -4,6 +4,12 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { Effect } from 'effect';
 
 import type { UserRecord } from '../../src/db/repositories';
+import type { WishFilterValue } from '../../src/shared/app-api';
+import {
+    FALLBACK_RATES,
+    toOwnerPriceBounds,
+    type DisplayCurrency
+} from '../../src/shared/money';
 import {
     countRows,
     createD1Harness,
@@ -459,6 +465,26 @@ describe('D1 repositories', () => {
             });
         });
 
+        const titlesForFilter = async (
+            filter: WishFilterValue,
+            viewerCurrency: DisplayCurrency = 'UAH'
+        ) => {
+            const page = await run(
+                repositories.wishes.listOwned(owner.id, {
+                    filter: toOwnerPriceBounds(
+                        filter,
+                        viewerCurrency,
+                        owner.currency,
+                        FALLBACK_RATES
+                    ),
+                    offset: 0,
+                    limit: 10
+                })
+            );
+
+            return page.items.map(item => item.title).sort();
+        };
+
         it('lists owned wishes by priority, recency and id with pagination and price filters', async () => {
             const cheap = await createWish(owner.id, 'cheap');
             const middle = await createWish(owner.id, 'middle');
@@ -522,23 +548,39 @@ describe('D1 repositories', () => {
             );
             assert.equal(secondPage.total, 4);
 
-            const titlesForFilter = async (filter: number) => {
-                const page = await run(
-                    repositories.wishes.listOwned(owner.id, {
-                        filter,
-                        offset: 0,
-                        limit: 10
-                    })
-                );
-
-                return page.items.map(item => item.title).sort();
-            };
-
             assert.deepEqual(await titlesForFilter(0), ['cheap', 'urgent']);
             assert.deepEqual(await titlesForFilter(1), []);
             assert.deepEqual(await titlesForFilter(2), ['middle']);
             assert.deepEqual(await titlesForFilter(3), []);
             assert.deepEqual(await titlesForFilter(4), ['expensive']);
+        });
+
+        it('converts euro filter bounds into the hryvnia prices with a half-open upper edge', async () => {
+            const prices = { below: 980, edge: 1010, above: 1011 } as const;
+
+            for (const [title, price] of Object.entries(prices)) {
+                const wish = await createWish(owner.id, title);
+
+                await run(
+                    repositories.wishes.updateFields(
+                        wish.id,
+                        owner.id,
+                        { price },
+                        now
+                    )
+                );
+            }
+
+            assert.deepEqual(await titlesForFilter(0, 'EUR'), [
+                'below',
+                'edge'
+            ]);
+            assert.deepEqual(await titlesForFilter(1, 'EUR'), ['above']);
+            assert.deepEqual(await titlesForFilter(0, 'UAH'), ['below']);
+            assert.deepEqual(await titlesForFilter(1, 'UAH'), [
+                'above',
+                'edge'
+            ]);
         });
 
         it('hides hidden, removed and blocked-owner wishes from visible lookups', async () => {

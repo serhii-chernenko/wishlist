@@ -1,4 +1,5 @@
 import type { AppDb } from '../client';
+import { createExchangeRateRepository } from './exchange-rate-repository';
 import { createGiveRepository } from './give-repository';
 import { createReleaseAnnouncementRepository } from './release-announcement-repository';
 import { createSessionRepository } from './session-repository';
@@ -17,7 +18,8 @@ export const createRepositories = (db: AppDb) => {
         telegramUpdates: createTelegramUpdateRepository(db),
         releaseAnnouncements: createReleaseAnnouncementRepository(db),
         stats: createStatsRepository(db),
-        shares: createShareRepository(db)
+        shares: createShareRepository(db),
+        exchangeRates: createExchangeRateRepository(db)
     };
 };
 
@@ -28,6 +30,11 @@ export type {
     GiveListPage,
     GiveRecord
 } from './give-repository';
+export type {
+    ExchangeRateInput,
+    ExchangeRateRecord,
+    ExchangeRateRepository
+} from './exchange-rate-repository';
 export type { SessionRecord, SessionLanguage } from './session-repository';
 export type { PublicShareFingerprint, ShareRecord } from './share-repository';
 export { SHARE_DISPLAY_NAME_MAX_LENGTH } from './share-repository';
@@ -47,4 +54,3 @@ export type {
     WishPage,
     WishRecord
 } from './wish-repository';
-export { priceFilterRanges } from './wish-repository';

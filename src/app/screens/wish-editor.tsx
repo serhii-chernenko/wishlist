@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'hono/jsx/dom';
 
-import { getLocaleTag } from '../../bot/content/intl';
 import type {
     ApiImage,
-    AppLocale,
     FieldErrorCode,
     OwnWishDto
 } from '../../shared/app-api';
+import { getCurrencySymbol } from '../../shared/money';
 import type { AppTranslator } from '../i18n/i18n';
 import { fieldErrorMessage } from '../i18n/messages';
 import { getFieldErrors, hasErrorCode } from '../logic/errors';
-import { formatIsoDate, getLinkHost } from '../logic/format';
+import {
+    formatIsoDate,
+    getApproximateDraftPrice,
+    getLinkHost
+} from '../logic/format';
 import { runOptimistic } from '../logic/optimistic';
 import {
     checkDraftForSubmit,
@@ -100,22 +103,6 @@ const revealField = (field: DraftTextField) => {
     if (element !== null) {
         element.focus({ preventScroll: true });
         element.scrollIntoView({ block: 'center' });
-    }
-};
-
-const currencySymbol = (locale: AppLocale, currency: string) => {
-    try {
-        return (
-            new Intl.NumberFormat(getLocaleTag(locale), {
-                style: 'currency',
-                currency,
-                currencyDisplay: 'narrowSymbol'
-            })
-                .formatToParts(0)
-                .find(part => part.type === 'currency')?.value ?? currency
-        );
-    } catch {
-        return currency;
     }
 };
 
@@ -775,6 +762,12 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
 
     const linkHost =
         clientErrors.link === undefined ? getLinkHost(draft.link.trim()) : null;
+    const approximatePrice = getApproximateDraftPrice(
+        draft.price,
+        me.currency,
+        locale,
+        config.rates
+    );
     const pendingTiles = photos.queue.items.map(item => {
         return {
             key: item.key,
@@ -826,16 +819,25 @@ const WishForm = ({ wish, onCreated, onReload }: WishFormProps) => {
                 <Field
                     id={fieldId('price')}
                     label={LL.editor.price.label()}
-                    hint={LL.editor.price.hint({ currency: me.currency })}
+                    hint={LL.editor.price.hint({
+                        currency: getCurrencySymbol(locale, me.currency)
+                    })}
                     placeholder={LL.editor.price.placeholder()}
                     value={draft.price}
                     onValue={setText('price')}
                     onBlur={touch('price')}
                     error={errorFor('price')}
                     inputMode='decimal'
-                    suffix={currencySymbol(locale, me.currency)}
+                    suffix={getCurrencySymbol(locale, me.currency)}
                     optionalMark={LL.common.optional()}
                     showCounter={false}
+                    after={
+                        approximatePrice === null ? undefined : (
+                            <p class='field-host' aria-live='polite'>
+                                {LL.money.approx({ amount: approximatePrice })}
+                            </p>
+                        )
+                    }
                 />
                 <Field
                     id={fieldId('link')}

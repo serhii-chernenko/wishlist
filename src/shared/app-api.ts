@@ -9,6 +9,7 @@ import {
 } from '../bot/input/limits';
 import { PAYMENTS_MIN_MEANINGFUL_CHARACTERS } from '../bot/input/payments';
 import type { Translation } from '../i18n/i18n-types';
+import type { DisplayCurrency, ExchangeRates } from './money';
 
 export type AppDictionary = Translation['app'];
 
@@ -305,7 +306,8 @@ export type BootstrapDto = {
     config: {
         botUrl: string;
         limits: AppLimits;
-        priceFilters: PriceFilterDto[];
+        rates: ExchangeRates;
+        priceFilters: Record<DisplayCurrency, PriceFilterDto[]>;
         supportLinks: SupportLinkDto[];
         links: Record<AppLinkId, string | null>;
     };

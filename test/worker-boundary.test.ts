@@ -690,10 +690,15 @@ test('daily maintenance prunes the update ledger and stale sessions in productio
         abandoned: 0,
         sessions: 0,
         broadcast: 0,
-        snapshot: 0
+        snapshot: 0,
+        rates: 0
     };
     const sessionCutoffs: Date[] = [];
     const dependencies = {
+        async refreshExchangeRates() {
+            calls.rates += 1;
+            return { outcome: 'failed', reason: 'network' } as const;
+        },
         async pruneProcessedTelegramUpdates() {
             calls.processed += 1;
             return 3;
@@ -736,10 +741,11 @@ test('daily maintenance prunes the update ledger and stale sessions in productio
         abandoned: 1,
         sessions: 1,
         broadcast: 0,
-        snapshot: 0
+        snapshot: 0,
+        rates: 1
     });
     assert.deepEqual(production, {
-        taskNames: ['maintenance:prune'],
+        taskNames: ['rates:refresh', 'maintenance:prune'],
         prunedProcessedTelegramUpdates: 3,
         prunedAbandonedTelegramUpdates: 2,
         prunedSessions: 4
@@ -754,6 +760,10 @@ test('daily maintenance prunes the update ledger and stale sessions in productio
     );
 });
 
+const refreshRatesOffline = async () => {
+    return { outcome: 'failed', reason: 'network' } as const;
+};
+
 test('a failing session prune is logged and does not skip the ledger prune', async () => {
     const { database } = createReadinessDatabase(1);
     const errorLog = mock.method(console, 'error', () => undefined);
@@ -765,6 +775,7 @@ test('a failing session prune is logged and does not skip the ledger prune', asy
             createBindings(database, 'production'),
             {} as ExecutionContext,
             {
+                refreshExchangeRates: refreshRatesOffline,
                 async pruneProcessedTelegramUpdates() {
                     processedLedgerPruneCalls += 1;
                     return 1;
@@ -809,6 +820,7 @@ test('a failing ledger prune is logged and fails the scheduled run', async () =>
                 createBindings(database, 'production'),
                 {} as ExecutionContext,
                 {
+                    refreshExchangeRates: refreshRatesOffline,
                     async pruneSessions() {
                         return 0;
                     },
@@ -893,6 +905,10 @@ test('preview and local environments never snapshot, prune or run production-onl
                     pruneProcessedTelegramUpdates: countScheduledCall,
                     pruneAbandonedTelegramUpdates: countScheduledCall,
                     pruneSessions: countScheduledCall,
+                    async refreshExchangeRates() {
+                        scheduledCalls += 1;
+                        return { outcome: 'unchanged' } as never;
+                    },
                     async readBotStateSnapshot() {
                         scheduledCalls += 1;
                         return createEmptySnapshot();

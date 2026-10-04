@@ -11,6 +11,7 @@ import {
     resolvePublicUsername
 } from '../src/web/share/fingerprint';
 import type { PublicShareFingerprint } from '../src/db/repositories';
+import { FALLBACK_RATES } from '../src/shared/money';
 import type {
     SharePageModel,
     ShareWishView
@@ -44,6 +45,7 @@ const buildModel = (
         username: null,
         payments: null,
         currency: 'UAH',
+        rates: FALLBACK_RATES,
         visibleCount: 1,
         lastUpdatedAt: new Date('2026-02-03T10:00:00Z'),
         wishes: [buildWish()],
@@ -173,6 +175,55 @@ test('priority sticker, price chip and dates follow the page language', () => {
         /<p class="price"><span class="sr-only">Орієнтовна вартість: <\/span>2\s?500\s?₴<\/p>/u
     );
     assert.match(html, /Додано 2 січня 2026 р\., оновлено 3 лютого 2026 р\./);
+});
+
+test('an English page converts hryvnia prices to approximate euros', () => {
+    const html = renderSharePage(
+        buildModel({ wishes: [buildWish({ price: 1000 })] })
+    );
+
+    assert.match(
+        html,
+        /<p class="price" title="₴1,000"><span class="sr-only">Approximate price: <\/span>≈ €20<span class="sr-only"> \(original price ₴1,000\)<\/span><\/p>/u
+    );
+    assert.doesNotMatch(html, /€1,000/);
+    assert.match(
+        html,
+        /<p class="notice">Prices are approximate, in EUR at the National Bank of Ukraine rate for 5 October 2026<\/p>/
+    );
+});
+
+test('a Polish page converts to złoty and dates the note the Polish way', () => {
+    const html = renderSharePage(
+        buildModel({
+            language: 'pl',
+            wishes: [buildWish({ price: 1000 })]
+        })
+    );
+
+    assert.match(html, />≈ 87\s?zł</u);
+    assert.match(
+        html,
+        /według kursu Narodowego Banku Ukrainy z 5 października 2026/
+    );
+});
+
+test('a Ukrainian page keeps exact hryvnia prices without the rates note', () => {
+    const html = renderSharePage(
+        buildModel({
+            language: 'uk',
+            wishes: [buildWish({ price: 1000 })]
+        })
+    );
+
+    assert.doesNotMatch(html, /≈/);
+    assert.doesNotMatch(html, /class="notice"/);
+});
+
+test('free wishes never show the rates note', () => {
+    const html = renderSharePage(buildModel());
+
+    assert.doesNotMatch(html, /class="notice"/);
 });
 
 test('regular wishes carry no priority sticker and free wishes no price chip', () => {
@@ -565,7 +616,8 @@ test('the fingerprint changes for every input that affects the page', async () =
     const baseline = await computeShareFingerprint(
         'deploy',
         'uk',
-        baseFingerprintInput
+        baseFingerprintInput,
+        FALLBACK_RATES
     );
     const variations: [string, () => Promise<string>][] = [
         [
@@ -574,7 +626,8 @@ test('the fingerprint changes for every input that affects the page', async () =
                 return computeShareFingerprint(
                     'other',
                     'uk',
-                    baseFingerprintInput
+                    baseFingerprintInput,
+                    FALLBACK_RATES
                 );
             }
         ],
@@ -584,7 +637,8 @@ test('the fingerprint changes for every input that affects the page', async () =
                 return computeShareFingerprint(
                     'deploy',
                     'en',
-                    baseFingerprintInput
+                    baseFingerprintInput,
+                    FALLBACK_RATES
                 );
             }
         ],
@@ -603,13 +657,46 @@ test('the fingerprint changes for every input that affects the page', async () =
             return [
                 name,
                 () => {
-                    return computeShareFingerprint('deploy', 'uk', {
-                        ...baseFingerprintInput,
-                        ...patch
-                    });
+                    return computeShareFingerprint(
+                        'deploy',
+                        'uk',
+                        {
+                            ...baseFingerprintInput,
+                            ...patch
+                        },
+                        FALLBACK_RATES
+                    );
                 }
             ];
-        })
+        }),
+        [
+            'rates date',
+            () => {
+                return computeShareFingerprint(
+                    'deploy',
+                    'uk',
+                    baseFingerprintInput,
+                    {
+                        ...FALLBACK_RATES,
+                        date: '2026-10-06'
+                    }
+                );
+            }
+        ],
+        [
+            'rate value',
+            () => {
+                return computeShareFingerprint(
+                    'deploy',
+                    'uk',
+                    baseFingerprintInput,
+                    {
+                        ...FALLBACK_RATES,
+                        perUnit: { ...FALLBACK_RATES.perUnit, EUR: 51 }
+                    }
+                );
+            }
+        ]
     ];
 
     assert.match(baseline, /^[0-9a-f]{32}$/);
@@ -624,25 +711,45 @@ test('the fingerprint ignores a hidden username and unrelated fields', async () 
         ...baseFingerprintInput,
         usernameSearchable: false
     };
-    const first = await computeShareFingerprint('d', 'uk', hiddenUsername);
-    const second = await computeShareFingerprint('d', 'uk', {
-        ...hiddenUsername,
-        username: 'renamed',
-        displayName: 'Other',
-        language: 'pl',
-        userId: 99
-    });
+    const first = await computeShareFingerprint(
+        'd',
+        'uk',
+        hiddenUsername,
+        FALLBACK_RATES
+    );
+    const second = await computeShareFingerprint(
+        'd',
+        'uk',
+        {
+            ...hiddenUsername,
+            username: 'renamed',
+            displayName: 'Other',
+            language: 'pl',
+            userId: 99
+        },
+        FALLBACK_RATES
+    );
 
     assert.equal(first, second);
 });
 
 test('the fingerprint ignores the username while the owner has not enabled it', async () => {
     const notEnabled = { ...baseFingerprintInput, showUsername: false };
-    const first = await computeShareFingerprint('d', 'uk', notEnabled);
-    const second = await computeShareFingerprint('d', 'uk', {
-        ...notEnabled,
-        username: 'renamed'
-    });
+    const first = await computeShareFingerprint(
+        'd',
+        'uk',
+        notEnabled,
+        FALLBACK_RATES
+    );
+    const second = await computeShareFingerprint(
+        'd',
+        'uk',
+        {
+            ...notEnabled,
+            username: 'renamed'
+        },
+        FALLBACK_RATES
+    );
 
     assert.equal(first, second);
 });

@@ -9,7 +9,12 @@ import type {
     ApiRouteSpec,
     RateLimitBucket
 } from '../shared/app-api';
+import type { ExchangeRates } from '../shared/money';
 import type { WorkerBindings } from '../worker/env';
+import {
+    readWorkerExchangeRates,
+    type ExchangeRatesSource
+} from '../worker/exchange-rates';
 import { emitTelemetryEvent, type TelemetryContext } from '../worker/telemetry';
 import { getRuntimeCrypto, type ApiCrypto } from './auth/crypto';
 import type { ValidatedInitData } from './auth/init-data';
@@ -34,6 +39,7 @@ export interface ApiDeps {
         bucket: RateLimitBucket
     ) => RateLimiterLike | null;
     emitTelemetry: TelemetryEmitter;
+    readExchangeRates: ExchangeRatesSource;
 }
 
 export type AppApiDependencies = Partial<ApiDeps>;
@@ -51,7 +57,9 @@ export const resolveApiDeps = (dependencies: AppApiDependencies): ApiDeps => {
         ...(dependencies.selectLimiter === undefined
             ? {}
             : { selectLimiter: dependencies.selectLimiter }),
-        emitTelemetry: dependencies.emitTelemetry ?? emitTelemetryEvent
+        emitTelemetry: dependencies.emitTelemetry ?? emitTelemetryEvent,
+        readExchangeRates:
+            dependencies.readExchangeRates ?? readWorkerExchangeRates
     };
 };
 
@@ -102,6 +110,14 @@ export const emitApiTelemetry = (
     fields: Parameters<TelemetryEmitter>[2]
 ) => {
     c.var.deps.emitTelemetry(c.env, getTelemetryContext(c), fields);
+};
+
+export const readExchangeRates = (c: ApiContext): Promise<ExchangeRates> => {
+    return c.var.deps.readExchangeRates(
+        c.env,
+        getTelemetryContext(c),
+        c.var.repos.exchangeRates
+    );
 };
 
 export const getSigner = (c: ApiContext): Signer => {

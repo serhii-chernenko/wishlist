@@ -1,11 +1,8 @@
 import { getTranslator, type AppLocale } from '../../../bot/i18n';
-import {
-    DEFAULT_CURRENCY,
-    formatDate,
-    getLocaleTag
-} from '../../../bot/content/intl';
+import { formatDate } from '../../../bot/content/intl';
 import { cutDescription, cutTitle } from '../../../bot/input/limits';
 import { isRenderableLink } from '../../../bot/input/link';
+import { describePrice, type ExchangeRates } from '../../../shared/money';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
 import { HERO_LOGO_ID_PREFIX } from './hero';
@@ -25,13 +22,39 @@ export const getLinkHostname = (link: string) => {
     }
 };
 
-const formatPrice = (price: number, language: AppLocale, currency: string) => {
-    return new Intl.NumberFormat(getLocaleTag(language), {
-        style: 'currency',
-        currency: currency || DEFAULT_CURRENCY,
-        currencyDisplay: 'narrowSymbol',
-        ...(Number.isInteger(price) && { maximumFractionDigits: 0 })
-    }).format(price);
+const WishPrice = ({
+    price,
+    language,
+    currency,
+    rates
+}: {
+    price: number;
+    language: AppLocale;
+    currency: string;
+    rates: ExchangeRates;
+}) => {
+    const LL = getTranslator(language);
+    const display = describePrice(price, currency, language, rates);
+
+    if (display.kind === 'exact') {
+        return (
+            <p class='price'>
+                <span class='sr-only'>{LL.web.wish.price()} </span>
+                {display.amount}
+            </p>
+        );
+    }
+
+    return (
+        <p class='price' title={display.original}>
+            <span class='sr-only'>{LL.web.wish.price()} </span>
+            {LL.web.wish.approx({ amount: display.amount })}
+            <span class='sr-only'>
+                {' '}
+                {LL.web.wish.original({ amount: display.original })}
+            </span>
+        </p>
+    );
 };
 
 const HeartSticker = () => {
@@ -67,11 +90,13 @@ const WishCover = ({ photos }: { photos: readonly ShareWishPhoto[] }) => {
 export const WishCard = ({
     wish,
     language,
-    currency
+    currency,
+    rates
 }: {
     wish: ShareWishView;
     language: AppLocale;
     currency: string;
+    rates: ExchangeRates;
 }) => {
     const LL = getTranslator(language);
     const created = formatDate(wish.createdAt, language);
@@ -90,10 +115,12 @@ export const WishCard = ({
                     <p class='sr-only'>{LL.web.wish.priority()}</p>
                 ) : null}
                 {wish.price > 0 ? (
-                    <p class='price'>
-                        <span class='sr-only'>{LL.web.wish.price()} </span>
-                        {formatPrice(wish.price, language, currency)}
-                    </p>
+                    <WishPrice
+                        price={wish.price}
+                        language={language}
+                        currency={currency}
+                        rates={rates}
+                    />
                 ) : null}
                 {hostname !== null && wish.link !== null ? (
                     <a

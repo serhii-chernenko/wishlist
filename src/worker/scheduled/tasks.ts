@@ -6,7 +6,15 @@ import {
     telegramAbandonedUpdateRetentionMilliseconds,
     telegramUpdateRetentionMilliseconds
 } from '../../db/repositories/telegram-update-repository';
+import type {
+    RatesRefreshFailureReason,
+    RatesRefreshResult
+} from '../../bot/services/exchange-rate-service';
 import type { WorkerBindings } from '../env';
+import {
+    emitRatesRefreshTelemetry,
+    refreshStoredExchangeRates
+} from '../exchange-rates';
 import { emitTelemetryEvent } from '../telemetry';
 import {
     readBotStateSnapshot,
@@ -17,6 +25,7 @@ import { runReleaseBroadcast } from './release-broadcast';
 
 const TASKS = {
     prune: 'maintenance:prune',
+    exchangeRates: 'rates:refresh',
     releaseBroadcast: 'release:broadcast',
     stateSnapshot: 'bot:state-snapshot'
 } as const;
@@ -29,7 +38,7 @@ const getScheduledTaskNames = (cron: string): string[] => {
         return [TASKS.releaseBroadcast, TASKS.stateSnapshot];
     }
 
-    return [TASKS.prune];
+    return [TASKS.exchangeRates, TASKS.prune];
 };
 
 interface ScheduledTaskDependencies {
@@ -50,6 +59,7 @@ interface ScheduledTaskDependencies {
         env: WorkerBindings,
         asOf: Date
     ) => Promise<BotStateSnapshot>;
+    refreshExchangeRates?: (env: WorkerBindings) => Promise<RatesRefreshResult>;
 }
 
 export interface ScheduledTasksSummary {
@@ -187,6 +197,31 @@ export const runScheduledTasks = async (
                 })
             );
             throw error;
+        }
+    }
+
+    if (
+        env.BOT_ENVIRONMENT === 'production' &&
+        taskNames.includes(TASKS.exchangeRates)
+    ) {
+        const refreshRates =
+            dependencies.refreshExchangeRates ?? refreshStoredExchangeRates;
+
+        try {
+            emitRatesRefreshTelemetry(
+                env,
+                ctx,
+                'cron',
+                await refreshRates(env)
+            );
+        } catch (error) {
+            emitTelemetryEvent(env, ctx, {
+                event: 'exchange_rates_refresh',
+                trigger: 'cron',
+                outcome: 'failed',
+                reason: 'unexpected' satisfies RatesRefreshFailureReason,
+                errorType: getErrorType(error)
+            });
         }
     }
 

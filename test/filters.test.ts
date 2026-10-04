@@ -4,24 +4,24 @@ import test from 'node:test';
 import {
     getFilterMarker,
     getFilterTitle,
-    getPriceRange,
     isWishFilter,
     toWishFilter,
     WISH_FILTERS
 } from '../src/bot/content/filters';
 import { i18nObject } from '../src/i18n/i18n-util';
-import { loadLocale } from '../src/i18n/i18n-util.sync';
+import { loadAllLocales } from '../src/i18n/i18n-util.sync';
+import { getPriceFilterRange } from '../src/shared/money';
 
-loadLocale('uk');
+loadAllLocales();
 const LL = i18nObject('uk');
-const formatMoney = (value: number) => {
-    return `₴${value}`;
+const normalizeSpaces = (value: string) => {
+    return value.replace(/[\u00a0\u202f]/g, ' ');
 };
 
-test('five price filters cover the legacy ranges', () => {
+test('five price filters cover the legacy hryvnia ranges', () => {
     assert.deepEqual(
         WISH_FILTERS.map(filter => {
-            return getPriceRange(filter);
+            return getPriceFilterRange('UAH', filter);
         }),
         [
             { from: null, to: 999 },
@@ -34,9 +34,20 @@ test('five price filters cover the legacy ranges', () => {
 });
 
 test('filter titles use the open-ended and bounded translations', () => {
-    assert.equal(getFilterTitle(LL, 0, formatMoney), 'До ₴999');
-    assert.equal(getFilterTitle(LL, 1, formatMoney), 'Від ₴1000 до ₴1999');
-    assert.equal(getFilterTitle(LL, 4, formatMoney), 'Від ₴10000');
+    assert.equal(normalizeSpaces(getFilterTitle(LL, 'uk', 0)), 'До 999 ₴');
+    assert.equal(
+        normalizeSpaces(getFilterTitle(LL, 'uk', 1)),
+        'Від 1 000 ₴ до 1 999 ₴'
+    );
+    assert.equal(normalizeSpaces(getFilterTitle(LL, 'uk', 4)), 'Від 10 000 ₴');
+});
+
+test('filter titles use the display currency of the locale with exact amounts', () => {
+    assert.equal(getFilterTitle(i18nObject('en'), 'en', 0), 'Up to €19');
+    assert.equal(
+        normalizeSpaces(getFilterTitle(i18nObject('pl'), 'pl', 4)),
+        'Od 1000 zł'
+    );
 });
 
 test('isWishFilter and toWishFilter accept only 0 to 4', () => {

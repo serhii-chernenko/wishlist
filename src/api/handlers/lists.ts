@@ -19,14 +19,17 @@ import {
 } from '../../shared/app-api';
 import { buildShareImagePath } from '../../web/image-proxy/share-photos';
 import { normalizeSharePublicId } from '../../web/share/public-id';
+import { resolvePriceBounds } from '../../shared/money';
 import {
     getSigner,
+    readExchangeRates,
     requireUser,
     type ApiContext,
     type ApiHandler
 } from '../context';
 import {
     mintWishImages,
+    resolveViewerLocale,
     toOwnerDto,
     toImageHash,
     toPageDto,
@@ -227,9 +230,18 @@ export const listOwnerWishes: ApiHandler = async c => {
         readOptionalQueryInteger(c, 'filter', MIN_WISH_FILTER, MAX_WISH_FILTER)
     );
     const { repos } = c.var;
+    const priceBounds =
+        filter === null
+            ? null
+            : resolvePriceBounds(
+                  filter,
+                  resolveViewerLocale(c.var.actor, viewer),
+                  owner.currency,
+                  await readExchangeRates(c)
+              );
     const page = await Effect.runPromise(
         repos.wishes.listVisibleOf(owner.id, {
-            filter,
+            filter: priceBounds,
             offset,
             limit: APP_PAGE_SIZE
         })

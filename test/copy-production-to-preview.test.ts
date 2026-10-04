@@ -32,6 +32,7 @@ const databaseIds = {
 const allProductionTables = [
     '__drizzle_migrations',
     '_cf_KV',
+    'exchange_rates',
     'gives',
     'release_announcements',
     'sessions',
@@ -233,6 +234,7 @@ test('export and import commands are hard-wired production to preview', () => {
     assert.equal(exportArguments.includes('release_announcements'), false);
     assert.equal(exportArguments.includes('sessions'), false);
     assert.equal(exportArguments.includes('wishlist_shares'), false);
+    assert.equal(exportArguments.includes('exchange_rates'), false);
     assert.deepEqual(getPreviewImportArguments(configPath, '/tmp/out.sql'), [
         'exec',
         'wrangler',

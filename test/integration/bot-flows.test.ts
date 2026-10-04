@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { getFilterTitle } from '../../src/bot/content/filters';
-import { formatCurrency, formatNumber } from '../../src/bot/content/intl';
+import { formatNumber } from '../../src/bot/content/intl';
 import { getMessages } from '../../src/bot/content/messages';
 import {
     getLatestReleaseVersion,
@@ -681,11 +681,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(
                 listed.includes(
                     LL.wishlist.filled.before() +
-                        LL.filters.applied(
-                            getFilterTitle(LL, 2, value => {
-                                return formatCurrency(value, 'uk');
-                            })
-                        )
+                        LL.filters.applied(getFilterTitle(LL, 'uk', 2))
                 )
             );
 

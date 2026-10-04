@@ -82,7 +82,9 @@ Decisions:
 - [x] Bot entry points: "Open app" buttons, `/app` command, startapp deep links, preview menu button (2026-10-03)
 - [ ] BotFather: Main Mini App for the preview bot and for production
 - [ ] Tests, review, security audit
+- [x] Prices in the viewer's language currency (UAH, EUR, PLN) with approximate NBU conversion, per-currency price filters and a daily rates refresh (2026-10-04)
 - [ ] Preview test on @InevixTestBot, production rollout
+- [ ] Production rollout: apply `20261003214556_many_harry_osborn` and `20261004011719_careless_mulholland_black` (`exchange_rates`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
 - [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
 ### Cutover

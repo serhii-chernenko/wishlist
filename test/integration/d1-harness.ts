@@ -3,10 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { migrate } from 'drizzle-orm/d1/migrator';
+import { Effect } from 'effect';
 import { getPlatformProxy } from 'wrangler';
 
 import { createDb } from '../../src/db/client';
 import { createRepositories } from '../../src/db/repositories';
+import { CONVERTED_CURRENCIES, FALLBACK_RATES } from '../../src/shared/money';
 
 const migrationsFolder = path.resolve(process.cwd(), 'drizzle');
 
@@ -23,14 +25,30 @@ export const createD1Harness = async (options: D1HarnessOptions = {}) => {
         persist: { path: persistDirectory }
     });
     const db = createDb(proxy.env);
+    const repositories = createRepositories(db);
+    const seedFreshExchangeRates = () => {
+        return Effect.runPromise(
+            repositories.exchangeRates.upsertMany(
+                CONVERTED_CURRENCIES.map(currency => {
+                    return {
+                        currency,
+                        uahPerUnit: FALLBACK_RATES.perUnit[currency],
+                        rateDate: FALLBACK_RATES.date
+                    };
+                }),
+                new Date()
+            )
+        );
+    };
 
     return {
         env: proxy.env,
         persistDirectory,
         db,
-        repositories: createRepositories(db),
-        applyMigrations() {
-            return migrate(db, { migrationsFolder });
+        repositories,
+        async applyMigrations() {
+            await migrate(db, { migrationsFolder });
+            await seedFreshExchangeRates();
         },
         async clearApplicationTables() {
             await proxy.env.DB.batch([

@@ -1,5 +1,6 @@
 export {
     defaultSessionState,
+    exchangeRates,
     gives,
     maximumWishImages,
     releaseAnnouncements,

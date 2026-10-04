@@ -8,7 +8,7 @@ import type {
 import type { ApiClient } from '../api/client';
 import type { AppTranslator } from '../i18n/i18n';
 import { hasErrorCode, type AppFailure } from '../logic/errors';
-import { describePriceFilter } from '../logic/format';
+import { describePriceFilter, selectPriceFilters } from '../logic/format';
 import {
     appendPage,
     createLatestGate,
@@ -464,12 +464,12 @@ type FilterChoice = WishFilterValue | null;
 
 const useFilterOptions = (): ChipOption<FilterChoice>[] => {
     const LL = useLL();
-    const { config, locale, me } = useSession();
+    const { config, locale } = useSession();
 
     return [
         { value: null, label: LL.filters.all() },
-        ...config.priceFilters.map(filter => {
-            const label = describePriceFilter(filter, locale, me.currency);
+        ...selectPriceFilters(config.priceFilters, locale).map(filter => {
+            const label = describePriceFilter(filter, locale);
             const text =
                 label.kind === 'upTo'
                     ? LL.filters.upTo({ amount: label.amount })

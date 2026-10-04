@@ -1,4 +1,4 @@
-import { formatPrice } from '../logic/format';
+import { describePrice } from '../../shared/money';
 import { useLL, useSession } from '../state/context';
 
 export const PriceChip = ({
@@ -8,17 +8,32 @@ export const PriceChip = ({
     price: number;
     currency: string | null;
 }) => {
-    const { locale } = useSession();
+    const { locale, config } = useSession();
     const LL = useLL();
 
     if (price <= 0) {
         return null;
     }
 
+    const display = describePrice(price, currency, locale, config.rates);
+
+    if (display.kind === 'exact') {
+        return (
+            <p class='price'>
+                <span class='sr-only'>{LL.editor.price.label()} </span>
+                {display.amount}
+            </p>
+        );
+    }
+
     return (
-        <p class='price'>
+        <p class='price' title={display.original}>
             <span class='sr-only'>{LL.editor.price.label()} </span>
-            {formatPrice(price, locale, currency)}
+            {LL.money.approx({ amount: display.amount })}
+            <span class='sr-only'>
+                {' '}
+                {LL.money.original({ amount: display.original })}
+            </span>
         </p>
     );
 };
