@@ -3,7 +3,7 @@ import {
     homeButton,
     singleColumnKeyboard
 } from '../content/keyboards';
-import { getReleases, renderReleaseNotes } from '../content/releases';
+import { getReleases, renderReleaseNotesPage } from '../content/releases';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 
 export const RELEASE_NOTES_LIMIT = 3;
@@ -23,17 +23,21 @@ const normalizeReleaseOffset = (offset: number, total: number) => {
 const render = async (req: BotRequest, params: ReleasesParams | undefined) => {
     const total = getReleases().length;
     const offset = normalizeReleaseOffset(params?.offset ?? 0, total);
-    const nextOffset = offset + RELEASE_NOTES_LIMIT;
+    const page = renderReleaseNotesPage(
+        req.locale,
+        offset,
+        RELEASE_NOTES_LIMIT
+    );
 
     await req.send.text(
-        renderReleaseNotes(RELEASE_NOTES_LIMIT, req.locale, offset),
+        page.text,
         singleColumnKeyboard([
-            nextOffset < total
-                ? callbackButton(req.LL.releases.previous(), {
+            page.nextOffset === null
+                ? null
+                : callbackButton(req.LL.releases.previous(), {
                       type: 'releasesPage',
-                      offset: nextOffset
-                  })
-                : null,
+                      offset: page.nextOffset
+                  }),
             homeButton(req.LL)
         ])
     );
