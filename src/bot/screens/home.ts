@@ -48,6 +48,12 @@ const userKeyboard = (req: BotRequest, user: UserRecord) => {
                 : LL.payments.title.add(),
             'payments'
         ),
+        navigationButton(
+            user.deliveryAddress
+                ? LL.delivery.title.update()
+                : LL.delivery.title.add(),
+            'delivery'
+        ),
         navigationButton(LL.privacy.title(), 'privacy'),
         navigationButton(LL.feedback.title(), 'feedback'),
         navigationButton(LL.stats.action(), 'stats'),
