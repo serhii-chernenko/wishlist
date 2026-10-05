@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { createTelegramApi } from '../src/api/telegram-api';
@@ -18,7 +17,6 @@ import {
     type ListImportOutcome
 } from '../src/shared/app-api';
 import { getAppMessages } from '../src/api/dto';
-import { isListImportEnabled } from '../src/worker/env';
 import {
     LIST_IMPORT_COUNT_BUCKETS,
     LIST_IMPORT_DRAIN_OUTCOMES,
@@ -28,15 +26,6 @@ import {
     toListImportCountBucket,
     toWishlistAttributes
 } from '../src/worker/telemetry';
-
-interface WranglerBlock {
-    vars?: Record<string, string>;
-    previews?: WranglerBlock;
-}
-
-const wrangler = JSON.parse(
-    readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')
-) as WranglerBlock & { env: { production: WranglerBlock } };
 
 const OUTCOMES: readonly ListImportOutcome[] = ['ok', ...LIST_IMPORT_FAILURES];
 
@@ -89,28 +78,6 @@ test('the list import screen is a registered-only app screen without parameters'
     assert.ok(CLIENT_SCREENS.includes('listImport'));
     assert.ok(SCREEN_IDS.includes('listImport'));
     assert.equal(REGISTERED_ONLY_SCREENS.has('listImport'), true);
-});
-
-test('the kill switch is read as an exact string and is on in every environment', () => {
-    assert.equal(
-        isListImportEnabled({ WISHLIST_IMPORT_ENABLED: 'true' }),
-        true
-    );
-    assert.equal(
-        isListImportEnabled({ WISHLIST_IMPORT_ENABLED: 'false' }),
-        false
-    );
-    assert.equal(wrangler.vars?.WISHLIST_IMPORT_ENABLED, 'true', 'local block');
-    assert.equal(
-        wrangler.env.production.vars?.WISHLIST_IMPORT_ENABLED,
-        'true',
-        'production block'
-    );
-    assert.equal(
-        wrangler.env.production.previews?.vars?.WISHLIST_IMPORT_ENABLED,
-        'true',
-        'previews block'
-    );
 });
 
 test('count buckets are letter-led labels at the documented bounds', () => {

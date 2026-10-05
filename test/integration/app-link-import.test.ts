@@ -251,7 +251,6 @@ describe('Mini App link import endpoints', () => {
     let events: TelemetryFields[];
     let telegram: FakeTelegram;
     let linkImport: FakeLinkImport;
-    let enabled: boolean;
     let limiterAllows: boolean;
     let consoleOutput: string[];
     const originalConsole = {
@@ -275,8 +274,6 @@ describe('Mini App link import endpoints', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
-            LINK_IMPORT_ENABLED: enabled ? 'true' : 'false',
             ADMIN_ID: '1',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
@@ -438,7 +435,6 @@ describe('Mini App link import endpoints', () => {
         events = [];
         telegram = createFakeTelegram();
         linkImport = createFakeLinkImport();
-        enabled = true;
         limiterAllows = true;
         consoleOutput = [];
         await harness.clearApplicationTables();
@@ -665,17 +661,6 @@ describe('Mini App link import endpoints', () => {
             assert.equal(response.status, 200);
             assert.equal(body.outcome, 'rateLimited');
             assert.equal(body.importToken, null);
-        });
-
-        it('answers disabled while the kill switch is off and never calls the service', async () => {
-            enabled = false;
-
-            const response = await importLink();
-
-            restoreConsole();
-            assert.equal(response.status, 503);
-            assert.deepEqual(await readError(response), { code: 'disabled' });
-            assert.deepEqual(linkImport.runCalls, []);
         });
 
         it('rejects links that are missing, not a string or not http(s) with a 422 on url', async () => {
@@ -1055,23 +1040,6 @@ describe('Mini App link import endpoints', () => {
             assert.equal(response.status, 415);
             assert.deepEqual(telegram.sendPhotoCalls, []);
             assert.deepEqual(eventResults(), ['unsupported']);
-        });
-
-        it('answers disabled while the kill switch is off', async () => {
-            const { wish } = await seedWish();
-            const importToken = await importedToken();
-
-            enabled = false;
-
-            const response = await importImage(wish.id, {
-                importToken,
-                index: 0
-            });
-
-            restoreConsole();
-            assert.equal(response.status, 503);
-            assert.deepEqual(await readError(response), { code: 'disabled' });
-            assert.deepEqual(linkImport.loadCalls, []);
         });
     });
 });

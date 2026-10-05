@@ -81,7 +81,6 @@ export const createContactFixtures = (getHarness: () => D1Harness) => {
             ...getHarness().env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             WISHLIST_TG_URL: 'https://t.me/wishlist_ua_bot',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,

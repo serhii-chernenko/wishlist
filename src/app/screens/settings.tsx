@@ -68,7 +68,7 @@ const ThemeSettings = () => {
 export const SettingsScreen = (_props: ScreenProps<'settings'>) => {
     const LL = useLL();
     const nav = useNav();
-    const { me, locale, config } = useSession();
+    const { me, locale } = useSession();
     const languageName = LL.language.native[locale]();
     const open = (route: Parameters<typeof nav.push>[0]) => {
         haptics.selection();
@@ -122,18 +122,14 @@ export const SettingsScreen = (_props: ScreenProps<'settings'>) => {
                           open({ screen: 'delivery' });
                       }
                   },
-                  ...(config.listImportEnabled
-                      ? [
-                            {
-                                id: 'listImport',
-                                icon: Download,
-                                label: LL.settings.listImport(),
-                                onSelect: () => {
-                                    open({ screen: 'listImport' });
-                                }
-                            }
-                        ]
-                      : [])
+                  {
+                      id: 'listImport',
+                      icon: Download,
+                      label: LL.settings.listImport(),
+                      onSelect: () => {
+                          open({ screen: 'listImport' });
+                      }
+                  }
               ]
             : [])
     ];

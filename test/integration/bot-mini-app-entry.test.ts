@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
+import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { getMessages } from '../../src/bot/content/messages';
 import { decodeSessionState } from '../../src/bot/runtime/session-store';
@@ -56,11 +56,7 @@ describe('Mini App entry points in the bot', () => {
         first_name: 'Dana'
     });
     let webhook: WebhookHarness;
-    let miniAppEnabledAtStart: string | undefined;
 
-    const setMiniAppEnabled = (value: 'true' | 'false') => {
-        Object.assign(webhook.d1.env, { MINI_APP_ENABLED: value });
-    };
     const tap = (user: typeof alice, data: string) => {
         return webhook.send(webhook.builders.callback(user, data));
     };
@@ -96,9 +92,6 @@ describe('Mini App entry points in the bot', () => {
 
     before(async () => {
         webhook = await createWebhookHarness({ botEnvironment: 'preview' });
-        miniAppEnabledAtStart = (
-            webhook.d1.env as unknown as Record<string, string | undefined>
-        ).MINI_APP_ENABLED;
     });
 
     after(async () => {
@@ -107,15 +100,6 @@ describe('Mini App entry points in the bot', () => {
 
     beforeEach(async () => {
         await webhook.reset();
-        setMiniAppEnabled('true');
-    });
-
-    afterEach(() => {
-        if (miniAppEnabledAtStart !== undefined) {
-            Object.assign(webhook.d1.env, {
-                MINI_APP_ENABLED: miniAppEnabledAtStart
-            });
-        }
     });
 
     describe('web_app buttons', () => {
@@ -139,22 +123,6 @@ describe('Mini App entry points in the bot', () => {
 
             assert.equal(firstButton?.text, LL.actions.openApp());
             assert.deepEqual(firstButton?.web_app, { url: PREVIEW_APP_URL });
-        });
-
-        it('hides every button when the Mini App is disabled', async () => {
-            setMiniAppEnabled('false');
-            await webhook.registerUser(alice);
-            await command(alice, '/start');
-
-            assert.deepEqual(webAppUrlsOf(webhook.lastMessage()), []);
-
-            await command(dana, '/start');
-
-            assert.deepEqual(webAppUrlsOf(webhook.lastMessage()), []);
-
-            await tap(alice, 'n:wl');
-
-            assert.deepEqual(webAppUrlsOf(webhook.lastMessage()), []);
         });
 
         it('opens the wishlist section from the wishlist menu', async () => {
@@ -243,17 +211,6 @@ describe('Mini App entry points in the bot', () => {
 
             assert.equal(webhook.lastMessage().text, LL.appEntry.text());
             assert.equal(await readPendingInput(alice.id), null);
-        });
-
-        it('falls back to the home menu when the Mini App is disabled', async () => {
-            setMiniAppEnabled('false');
-            await webhook.registerUser(alice);
-            await command(alice, '/app');
-
-            const message = webhook.lastMessage();
-
-            assert.equal(message.text, LL.greeting.user());
-            assert.deepEqual(webAppUrlsOf(message), []);
         });
     });
 

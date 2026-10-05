@@ -168,8 +168,7 @@ describe('list import repository and service on D1', () => {
     const workerEnv = () => {
         return {
             ...harness.env,
-            LINK_HOST_LIMITER: undefined,
-            WISHLIST_IMPORT_ENABLED: 'true'
+            LINK_HOST_LIMITER: undefined
         } as unknown as typeof harness.env;
     };
 

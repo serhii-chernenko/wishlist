@@ -206,7 +206,6 @@ describe('Mini App list import endpoints', () => {
     let harness: D1Harness;
     let events: TelemetryFields[];
     let listImport: FakeListImport;
-    let enabled: boolean;
     let limiterAllows: boolean;
     let serviceWired: boolean;
     let ownerId: number;
@@ -221,8 +220,6 @@ describe('Mini App list import endpoints', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
-            WISHLIST_IMPORT_ENABLED: enabled ? 'true' : 'false',
             ADMIN_ID: '1',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
@@ -346,7 +343,6 @@ describe('Mini App list import endpoints', () => {
     beforeEach(async () => {
         events = [];
         listImport = createFakeListImport();
-        enabled = true;
         limiterAllows = true;
         serviceWired = true;
         await harness.clearApplicationTables();
@@ -445,16 +441,6 @@ describe('Mini App list import endpoints', () => {
             assert.deepEqual((await readError(response)).fields, {
                 url: 'required'
             });
-        });
-
-        it('answers disabled while the kill switch is off and never calls the service', async () => {
-            enabled = false;
-
-            const response = await previewImport();
-
-            assert.equal(response.status, 503);
-            assert.deepEqual(await readError(response), { code: 'disabled' });
-            assert.deepEqual(listImport.previewCalls, []);
         });
 
         it('rejects with 429 on the user import limiter before the service runs', async () => {
@@ -576,16 +562,6 @@ describe('Mini App list import endpoints', () => {
             assert.equal(body.failure, 'expired');
             assert.deepEqual(listImport.runCalls, []);
         });
-
-        it('answers disabled while the kill switch is off', async () => {
-            seedJob();
-            enabled = false;
-
-            const response = await commitImport();
-
-            assert.equal(response.status, 503);
-            assert.deepEqual(listImport.startCalls, []);
-        });
     });
 
     describe('GET /list-import/:id', () => {
@@ -634,16 +610,6 @@ describe('Mini App list import endpoints', () => {
 
         it('answers 404 for an unknown job', async () => {
             assert.equal((await readStatus(999)).status, 404);
-        });
-
-        it('answers disabled while the kill switch is off', async () => {
-            seedJob();
-            enabled = false;
-
-            const response = await readStatus();
-
-            assert.equal(response.status, 503);
-            assert.deepEqual(listImport.statusCalls, []);
         });
     });
 });

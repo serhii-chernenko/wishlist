@@ -48,7 +48,7 @@ import {
 import { IMAGE_THEME_PARAM, parseImageTheme } from '../../shared/image-theme';
 import { buildPhotoPlaceholderSvg } from '../../shared/photo-placeholder';
 import type { WorkerApp } from '../../worker/app';
-import { isLinkImportEnabled, type WorkerBindings } from '../../worker/env';
+import type { WorkerBindings } from '../../worker/env';
 import {
     appRateLimitedEvent,
     appRateLimiterMissingEvent,
@@ -515,10 +515,6 @@ const toLinkImportDeps = (c: ProxyContext, deps: ProxyDeps): LinkImportDeps => {
 };
 
 const serveImportImage: ImageResponder = async (c, deps) => {
-    if (!isLinkImportEnabled(c.env)) {
-        return rejectionResponse(NOT_FOUND);
-    }
-
     const authorization = await authorizeImportImage(c, deps);
 
     if ('status' in authorization) {

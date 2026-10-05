@@ -63,14 +63,8 @@ test('every startapp screen resolves to a stack above the root', () => {
         assert.ok(routes.length >= 2, start);
     }
 
-    assert.deepEqual(screensOf(resolveStartRoutes('add', true)), [
-        'home',
-        'wishes',
-        'wishEditor'
-    ]);
     assert.deepEqual(resolveStartRoutes('add', true)[2], {
-        screen: 'wishEditor',
-        wishId: null
+        screen: 'linkImport'
     });
     assert.deepEqual(screensOf(resolveStartRoutes('payments', true)), [
         'home',
@@ -235,31 +229,25 @@ test('the link import screen is a registered-only screen without parameters', ()
     assert.equal(requiresRegistration({ screen: 'linkImport' }), true);
 });
 
-test('the add deep link opens the link step while link import is on', () => {
-    const enabled = { linkImportEnabled: true };
-
-    assert.deepEqual(screensOf(resolveStartRoutes('add', true, enabled)), [
+test('the add deep link opens the link step', () => {
+    assert.deepEqual(screensOf(resolveStartRoutes('add', true)), [
         'home',
         'wishes',
         'linkImport'
     ]);
-    assert.deepEqual(screensOf(routesAfterRegistration('add', enabled)), [
+    assert.deepEqual(screensOf(routesAfterRegistration('add')), [
         'home',
         'wishes',
         'linkImport'
     ]);
-    assert.deepEqual(screensOf(resolveStartRoutes('add', false, enabled)), [
+    assert.deepEqual(screensOf(resolveStartRoutes('add', false)), [
         'onboarding',
         'visibility'
     ]);
 });
 
-test('adding a wish skips the link step while link import is off', () => {
-    assert.deepEqual(newWishRoute(true), { screen: 'linkImport' });
-    assert.deepEqual(newWishRoute(false), {
-        screen: 'wishEditor',
-        wishId: null
-    });
+test('adding a wish opens the link step', () => {
+    assert.deepEqual(newWishRoute(), { screen: 'linkImport' });
 });
 
 test('the list import screen is a registered-only screen without parameters', () => {

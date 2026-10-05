@@ -15,7 +15,7 @@ import type {
     ListImportDeps,
     ListImportService
 } from '../../bot/services/list-import/types';
-import { isListImportEnabled, type WorkerBindings } from '../env';
+import type { WorkerBindings } from '../env';
 import {
     emitRatesRefreshTelemetry,
     refreshStoredExchangeRates
@@ -255,7 +255,7 @@ export const runScheduledTasks = async (
     dependencies: ScheduledTaskDependencies = {}
 ) => {
     const listImport =
-        env.BOT_ENVIRONMENT === 'production' && isListImportEnabled(env)
+        env.BOT_ENVIRONMENT === 'production'
             ? dependencies.listImport
             : undefined;
     const taskNames = getScheduledTaskNames(

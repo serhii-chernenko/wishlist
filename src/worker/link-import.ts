@@ -12,7 +12,6 @@ import {
     normalizeImportUrl
 } from '../bot/services/link-import/normalize-url';
 import { createSafeFetcher } from '../bot/services/link-import/safe-fetch';
-import { isLinkImportEnabled, type WorkerBindings } from './env';
 
 const DEFAULT_IMPLEMENTATIONS: LinkImportImplementations = {
     createSafeFetcher,
@@ -36,12 +35,11 @@ export const createWorkerLinkImport = (
     });
 };
 
-/** The bot's view of the services, or nothing while `LINK_IMPORT_ENABLED` is off. */
+/** The bot's view of the link import services. */
 export const toBotLinkImport = (
-    env: Pick<WorkerBindings, 'LINK_IMPORT_ENABLED'>,
     services: LinkImportServiceSet | undefined
 ): BotLinkImport | undefined => {
-    if (services === undefined || !isLinkImportEnabled(env)) {
+    if (services === undefined) {
         return undefined;
     }
 

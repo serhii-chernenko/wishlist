@@ -22,8 +22,7 @@ export type AppFailure = ApiFailure | NetworkFailure;
 export type SystemScreenId =
     | 'outsideTelegram'
     | 'sessionExpired'
-    | 'previewOnly'
-    | 'unavailable';
+    | 'previewOnly';
 
 export type ErrorMessageKey = ApiErrorCode | 'generic' | 'network';
 
@@ -42,8 +41,7 @@ const STATUS_FALLBACK_CODES: ReadonlyArray<readonly [number, ApiErrorCode]> = [
     [422, 'validation'],
     [429, 'rateLimited'],
     [501, 'notImplemented'],
-    [502, 'upstream'],
-    [503, 'disabled']
+    [502, 'upstream']
 ];
 
 const RETRYABLE_STATUSES = new Set([500, 502, 504]);
@@ -137,7 +135,7 @@ export const toSystemScreen = (failure: AppFailure): SystemScreenId | null => {
         return 'previewOnly';
     }
 
-    return failure.code === 'disabled' ? 'unavailable' : null;
+    return null;
 };
 
 export const toErrorMessageKey = (failure: AppFailure): ErrorMessageKey => {

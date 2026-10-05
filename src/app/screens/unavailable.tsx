@@ -4,17 +4,17 @@ import { openTelegramLink } from '../telegram/links';
 import { isNativeShell } from '../telegram/sdk';
 import { SystemNotice } from '../ui/system-notice';
 
-export type UnavailableKind = 'unavailable' | 'previewOnly' | 'unsupported';
+export type UnavailableKind = 'previewOnly' | 'unsupported';
 
-/** 503 kill switch, 403 preview gate and clients older than Bot API 6.9 all point the user back to the chat bot. */
+/** The 403 preview gate and clients older than Bot API 6.9 point the user back to the chat bot. */
 export const UnavailableScreen = ({
     locale,
     botUrl,
-    kind = 'unavailable'
+    kind
 }: {
     locale: AppLocale;
     botUrl: string;
-    kind?: UnavailableKind;
+    kind: UnavailableKind;
 }) => {
     return (
         <SystemNotice

@@ -1,4 +1,3 @@
-import type { ListImportService } from '../../bot/services/list-import/types';
 import {
     LIST_IMPORT_URL_MAX_LENGTH,
     parseListImportUrl
@@ -9,7 +8,6 @@ import {
     type ListImportPreviewDto,
     type ListImportStatusDto
 } from '../../shared/app-api';
-import { isListImportEnabled } from '../../worker/env';
 import { kickListImport } from '../../worker/list-import';
 import { listImportPreviewedEvent } from '../../worker/telemetry';
 import {
@@ -28,14 +26,6 @@ import {
     readJsonBody,
     validationError
 } from '../validate';
-
-const requireEnabledService = (c: ApiContext): ListImportService => {
-    if (!isListImportEnabled(c.env)) {
-        throw new ApiError('disabled');
-    }
-
-    return requireListImportService(c);
-};
 
 const readPreviewUrl = async (c: ApiContext) => {
     const reader = createBodyReader(await readJsonBody(c));
@@ -97,7 +87,7 @@ const emitPreviewed = (
 };
 
 export const previewListImport: ApiHandler = async c => {
-    const service = requireEnabledService(c);
+    const service = requireListImportService(c);
     const user = requireUser(c);
     const url = await readPreviewUrl(c);
     const startedAt = c.var.deps.now().getTime();
@@ -113,7 +103,7 @@ export const previewListImport: ApiHandler = async c => {
 };
 
 export const commitListImport: ApiHandler = async c => {
-    const service = requireEnabledService(c);
+    const service = requireListImportService(c);
     const user = requireUser(c);
     const jobId = readIdParam(c, 'id');
     const visibility = await readCommitVisibility(c);
@@ -146,7 +136,7 @@ export const commitListImport: ApiHandler = async c => {
 };
 
 export const getListImport: ApiHandler = async c => {
-    const service = requireEnabledService(c);
+    const service = requireListImportService(c);
     const user = requireUser(c);
     const jobId = readIdParam(c, 'id');
     const deps = getListImportDeps(c);

@@ -366,8 +366,7 @@ export const API_ERROR_STATUS = {
     internal: 500,
     notImplemented: 501,
     upstream: 502,
-    notDelivered: 502,
-    disabled: 503
+    notDelivered: 502
 } as const satisfies Record<string, number>;
 
 export type ApiErrorCode = keyof typeof API_ERROR_STATUS;
@@ -560,8 +559,6 @@ export type BootstrapDto = {
         priceFilters: Record<Currency, PriceFilterDto[]>;
         supportLinks: SupportLinkDto[];
         links: Record<AppLinkId, string | null>;
-        linkImportEnabled: boolean;
-        listImportEnabled: boolean;
     };
 };
 

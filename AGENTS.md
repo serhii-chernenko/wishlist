@@ -93,7 +93,6 @@ This rule is enforced in linting with the custom `arrow-body/explicit-return-for
 - Link import never logs or emits URLs, query strings, hosts, page titles or prices: not in telemetry, `console` output, R2 keys or `/img/i` paths. Telemetry uses the closed labels in `linkImportCompletedEvent` only.
 - Shop fetches go through `src/bot/services/link-import/safe-fetch.ts`; never call `fetch` on a user-supplied URL directly.
 - Images are never transcoded: only JPEG, PNG and WebP up to 10 MiB are staged, everything else is reported as unsupported.
-- Respect `LINK_IMPORT_ENABLED` in every entry point (app, API, `/img/i`, bot); see `docs/OPERATIONS.md` section 19.
 
 ## List import
 

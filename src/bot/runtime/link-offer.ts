@@ -1,6 +1,5 @@
 import type { Message } from 'telegraf/types';
 
-import { isLinkImportEnabled } from '../../worker/env';
 import {
     callbackButton,
     homeButton,
@@ -24,9 +23,7 @@ export const getBareLink = (text: string | undefined) => {
 export const isLinkImportAvailable = (
     req: Pick<BotRequest, 'env' | 'services'>
 ) => {
-    return (
-        req.services.linkImport !== undefined && isLinkImportEnabled(req.env)
-    );
+    return req.services.linkImport !== undefined;
 };
 
 export const setLinkOffer = (req: BotRequest, offer: LinkOffer | null) => {

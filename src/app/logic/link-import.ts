@@ -21,8 +21,7 @@ export type ImportFailureReason =
     | 'blocked'
     | 'notProduct'
     | 'timeout'
-    | 'rateLimited'
-    | 'disabled';
+    | 'rateLimited';
 
 export type ImportNote =
     | { kind: 'filled'; host: string }
@@ -47,11 +46,7 @@ export interface ImportStart {
     images: readonly ImportImageSource[];
 }
 
-export type ImportFailureKind =
-    | 'invalidUrl'
-    | 'disabled'
-    | 'rateLimited'
-    | 'other';
+export type ImportFailureKind = 'invalidUrl' | 'rateLimited' | 'other';
 
 const SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/i;
 const WHITESPACE_PATTERN = /\s/;
@@ -203,7 +198,7 @@ export const classifyImportFailure = (
 
     const code = failureCode(failure);
 
-    if (code === 'disabled' || code === 'rateLimited') {
+    if (code === 'rateLimited') {
         return code;
     }
 

@@ -18,13 +18,9 @@ const createController = (cron: string): ScheduledController => {
 };
 
 const createEnv = (
-    enabled: string,
     environment: WorkerBindings['BOT_ENVIRONMENT'] = 'production'
 ) => {
-    return {
-        BOT_ENVIRONMENT: environment,
-        WISHLIST_IMPORT_ENABLED: enabled
-    } as unknown as WorkerBindings;
+    return { BOT_ENVIRONMENT: environment } as unknown as WorkerBindings;
 };
 
 const createFakeService = (failDrain = false) => {
@@ -101,24 +97,6 @@ const quietly = async <Result>(run: () => Promise<Result>) => {
 };
 
 describe('list import scheduled tasks', () => {
-    it('adds nothing while the import is switched off', async () => {
-        const { service, calls } = createFakeService();
-        const { result } = await quietly(() => {
-            return runScheduledTasks(
-                createController('*/10 * * * *'),
-                createEnv('false'),
-                {} as ExecutionContext,
-                { ...productionTaskStubs, listImport: service }
-            );
-        });
-
-        assert.deepEqual(result.taskNames, [
-            'release:broadcast',
-            'bot:state-snapshot'
-        ]);
-        assert.deepEqual(calls, []);
-    });
-
     it('adds nothing outside production, where kicks move imports along', async () => {
         const { service, calls } = createFakeService();
 
@@ -126,7 +104,7 @@ describe('list import scheduled tasks', () => {
             const { result } = await quietly(() => {
                 return runScheduledTasks(
                     createController(cron),
-                    createEnv('true', 'preview'),
+                    createEnv('preview'),
                     {} as ExecutionContext,
                     { ...productionTaskStubs, listImport: service }
                 );
@@ -148,7 +126,7 @@ describe('list import scheduled tasks', () => {
         const { result } = await quietly(() => {
             return runScheduledTasks(
                 createController('*/10 * * * *'),
-                createEnv('true'),
+                createEnv(),
                 {} as ExecutionContext,
                 { ...productionTaskStubs, listImport: service }
             );
@@ -168,7 +146,7 @@ describe('list import scheduled tasks', () => {
         const { result } = await quietly(() => {
             return runScheduledTasks(
                 createController('0 0 * * *'),
-                createEnv('true'),
+                createEnv(),
                 {} as ExecutionContext,
                 { ...productionTaskStubs, listImport: service }
             );
@@ -187,7 +165,7 @@ describe('list import scheduled tasks', () => {
         const { result, errors } = await quietly(() => {
             return runScheduledTasks(
                 createController('*/10 * * * *'),
-                createEnv('true'),
+                createEnv(),
                 {} as ExecutionContext,
                 { ...productionTaskStubs, listImport: service }
             );
@@ -199,16 +177,15 @@ describe('list import scheduled tasks', () => {
 });
 
 describe('list import kick', () => {
-    it('kicks one user in the background only while the import is on', async () => {
+    it('kicks one user in the background only when there is a service', async () => {
         const { service, calls } = createFakeService();
         const scheduled: Promise<unknown>[] = [];
         const waitUntil = (promise: Promise<unknown>) => {
             scheduled.push(promise);
         };
 
-        kickListImport(service, { env: createEnv('false'), waitUntil }, 3);
-        kickListImport(undefined, { env: createEnv('true'), waitUntil }, 3);
-        kickListImport(service, { env: createEnv('true'), waitUntil }, 3);
+        kickListImport(undefined, { env: createEnv(), waitUntil }, 3);
+        kickListImport(service, { env: createEnv(), waitUntil }, 3);
         await Promise.all(scheduled);
 
         assert.equal(scheduled.length, 1);
@@ -226,7 +203,7 @@ describe('list import kick', () => {
         };
         const scheduled: Promise<unknown>[] = [];
         const deps = {
-            env: createEnv('true'),
+            env: createEnv(),
             waitUntil: (promise: Promise<unknown>) => {
                 scheduled.push(promise);
             }
@@ -255,7 +232,7 @@ describe('list import kick', () => {
 
         await quietly(async () => {
             kickListImport(failing, {
-                env: createEnv('true'),
+                env: createEnv(),
                 waitUntil: promise => {
                     scheduled.push(promise);
                 }

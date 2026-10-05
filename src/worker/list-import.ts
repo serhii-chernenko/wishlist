@@ -10,7 +10,7 @@ import {
     LIST_IMPORT_CRON_BUDGET_MS,
     LIST_IMPORT_LOAD_KICK_INTERVAL_MS
 } from '../shared/app-api';
-import { isListImportEnabled, type WorkerBindings } from './env';
+import type { WorkerBindings } from './env';
 
 /**
  * Builds the list import service from the production adapters, safe fetcher
@@ -42,8 +42,7 @@ const logFailure = (env: WorkerBindings, event: string, error: unknown) => {
  * the short kick budget, in the background. Callers kick after a commit, on
  * each app status poll and on the bot's Refresh button. With `throttled` the
  * drain keeps the user's lease for `LIST_IMPORT_LOAD_KICK_INTERVAL_MS`, which
- * is how list loads avoid draining more than once a minute per user. Nothing
- * runs while `WISHLIST_IMPORT_ENABLED` is off.
+ * is how list loads avoid draining more than once a minute per user.
  */
 export const kickListImport = (
     service: ListImportService | undefined,
@@ -51,7 +50,7 @@ export const kickListImport = (
     userId?: number,
     options: { throttled?: boolean } = {}
 ) => {
-    if (service === undefined || !isListImportEnabled(deps.env)) {
+    if (service === undefined) {
         return;
     }
 

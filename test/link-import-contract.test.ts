@@ -18,7 +18,6 @@ import {
     type LinkImportOutcome
 } from '../src/shared/app-api';
 import type { WorkerBindings } from '../src/worker/env';
-import { isLinkImportAiEnabled, isLinkImportEnabled } from '../src/worker/env';
 import {
     LINK_IMPORT_ELAPSED_BUCKETS,
     LINK_IMPORT_IMAGE_BUCKETS,
@@ -81,19 +80,15 @@ test('the import bucket and the host limiter resolve to their bindings', () => {
     assert.equal(linkHostRateLimitKey('rozetka.com.ua'), 'host:rozetka.com.ua');
 });
 
-test('the kill switch and the AI flag are read as exact strings', () => {
-    assert.equal(isLinkImportEnabled({ LINK_IMPORT_ENABLED: 'true' }), true);
-    assert.equal(isLinkImportEnabled({ LINK_IMPORT_ENABLED: 'false' }), false);
-    assert.equal(isLinkImportAiEnabled({}), false);
-    assert.equal(isLinkImportAiEnabled({ LINK_IMPORT_AI: 'true' }), true);
-});
-
-test('every wrangler block declares the link import limiters and flags and no image transforms', () => {
+test('every wrangler block declares the link import limiters and no feature flags or image transforms', () => {
     const namespaces = new Set<string>();
 
     for (const [name, block] of Object.entries(wranglerBlocks)) {
         assert.equal(block.images, undefined, name);
-        assert.equal(block.vars?.LINK_IMPORT_AI, 'false', name);
+        assert.equal(block.vars?.LINK_IMPORT_ENABLED, undefined, name);
+        assert.equal(block.vars?.LINK_IMPORT_AI, undefined, name);
+        assert.equal(block.vars?.WISHLIST_IMPORT_ENABLED, undefined, name);
+        assert.equal(block.vars?.MINI_APP_ENABLED, undefined, name);
 
         for (const limiter of ['APP_IMPORT_LIMITER', 'LINK_HOST_LIMITER']) {
             const entry = block.ratelimits?.find(candidate => {
@@ -105,10 +100,6 @@ test('every wrangler block declares the link import limiters and flags and no im
             namespaces.add(entry.namespace_id);
         }
     }
-
-    assert.equal(wranglerBlocks.local.vars?.LINK_IMPORT_ENABLED, 'true');
-    assert.equal(wranglerBlocks.previews.vars?.LINK_IMPORT_ENABLED, 'true');
-    assert.equal(wranglerBlocks.production.vars?.LINK_IMPORT_ENABLED, 'true');
 });
 
 test('shops resolve by registrable name and everything else is other', () => {

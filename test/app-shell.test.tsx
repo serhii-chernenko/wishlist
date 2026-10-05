@@ -18,7 +18,6 @@ const buildEnv = (
 ) => {
     return {
         BOT_ENVIRONMENT: 'preview',
-        MINI_APP_ENABLED: 'true',
         WISHLIST_TG_URL: BOT_URL,
         CF_VERSION_METADATA: { id: 'deploy 1/a' },
         ...overrides
@@ -74,7 +73,7 @@ test('a matching If-None-Match gets 304 without a body', async () => {
     assert.equal(second.headers.get('Content-Security-Policy'), EXACT_CSP);
 });
 
-test('the ETag follows the deploy id and the kill switch', async () => {
+test('the ETag follows the deploy id', async () => {
     const base = (await request('/app')).headers.get('ETag');
     const nextDeploy = (
         await request(
@@ -82,14 +81,10 @@ test('the ETag follows the deploy id and the kill switch', async () => {
             buildEnv({ CF_VERSION_METADATA: { id: 'deploy-2' } })
         )
     ).headers.get('ETag');
-    const disabled = (
-        await request('/app', buildEnv({ MINI_APP_ENABLED: 'false' }))
-    ).headers.get('ETag');
     const again = (await request('/app')).headers.get('ETag');
 
     assert.equal(base, again);
     assert.notEqual(base, nextDeploy);
-    assert.notEqual(base, disabled);
 });
 
 test('the shell links versioned assets, the SDK first and no inline code', async () => {
@@ -188,59 +183,4 @@ test('/app/ redirects to /app and keeps the query', async () => {
         /frame-ancestors 'none'/
     );
     assert.equal((await request('/app/')).headers.get('Location'), '/app');
-});
-
-test('the kill switch renders the unavailable page in the requested language', async () => {
-    const env = buildEnv({ MINI_APP_ENABLED: 'false' });
-    const polish = await request('/app', env, {
-        'Accept-Language': 'pl-PL,pl;q=0.9,en;q=0.5'
-    });
-    const html = await polish.text();
-
-    assert.equal(polish.status, 200);
-    assert.equal(polish.headers.get('Content-Language'), 'pl');
-    assert.equal(polish.headers.get('Vary'), 'Accept-Language');
-    assert.equal(polish.headers.get('Content-Security-Policy'), EXACT_CSP);
-    assert.equal(polish.headers.get('X-Robots-Tag'), 'noindex');
-    assert.match(html, /<html lang="pl"/);
-    assert.match(html, /Aplikacja jest chwilowo niedostępna/);
-    assert.match(html, new RegExp(`href="${BOT_URL}"`));
-    assert.doesNotMatch(html, /<script/);
-    assert.doesNotMatch(html, /id="root"/);
-
-    const english = await (
-        await request('/app', env, { 'Accept-Language': 'en-GB' })
-    ).text();
-    const fallback = await (
-        await request('/app', env, { 'Accept-Language': 'de' })
-    ).text();
-
-    assert.match(english, /The app is temporarily unavailable/);
-    assert.match(fallback, /Застосунок тимчасово недоступний/);
-});
-
-test('the unavailable page has a language specific ETag', async () => {
-    const env = buildEnv({ MINI_APP_ENABLED: 'false' });
-    const english = await request('/app', env, { 'Accept-Language': 'en' });
-    const polish = await request('/app', env, { 'Accept-Language': 'pl' });
-    const cached = await request('/app', env, {
-        'Accept-Language': 'en',
-        'If-None-Match': english.headers.get('ETag') ?? ''
-    });
-    const crossLanguage = await request('/app', env, {
-        'Accept-Language': 'pl',
-        'If-None-Match': english.headers.get('ETag') ?? ''
-    });
-
-    assert.notEqual(english.headers.get('ETag'), polish.headers.get('ETag'));
-    assert.equal(cached.status, 304);
-    assert.equal(crossLanguage.status, 200);
-});
-
-test('anything other than the string true disables the app', async () => {
-    const html = await (
-        await request('/app', buildEnv({ MINI_APP_ENABLED: undefined }))
-    ).text();
-
-    assert.match(html, /Застосунок тимчасово недоступний/);
 });
