@@ -46,7 +46,7 @@ export const PopupHost = () => {
         <div class='popup-backdrop'>
             <div
                 ref={dialogRef}
-                class='popup'
+                class='card card-border popup'
                 role='alertdialog'
                 aria-modal='true'
                 aria-labelledby={

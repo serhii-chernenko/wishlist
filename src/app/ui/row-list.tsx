@@ -49,7 +49,7 @@ export const RowList = ({
     label?: string;
 }) => {
     return (
-        <ul class='menu-list row-list' aria-label={label}>
+        <ul class='card card-border menu-list row-list' aria-label={label}>
             {items.map(item => {
                 return (
                     <li key={item.id}>

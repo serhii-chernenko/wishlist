@@ -45,7 +45,7 @@ export const ChoiceCards = <Value extends string>({
         <fieldset
             class={
                 variant === 'list'
-                    ? 'choice-group choice-group-list'
+                    ? 'card card-border choice-group choice-group-list'
                     : 'choice-group'
             }
             disabled={disabled}
@@ -88,7 +88,7 @@ export const ChoiceCards = <Value extends string>({
                         </span>
                         <input
                             type='radio'
-                            class='radio choice-radio'
+                            class='radio radio-neutral choice-radio'
                             name={name}
                             value={option.value}
                             checked={value === option.value}
