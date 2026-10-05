@@ -17,6 +17,7 @@
 !.changeset/*
 !CHANGELOG.md
 !releases.generated.json
+!releases.media.json
 !drizzle.config.ts
 !drizzle.production.config.ts
 !drizzle.preview.config.ts

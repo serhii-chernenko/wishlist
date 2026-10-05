@@ -203,6 +203,14 @@ export const createReleaseAnnouncementRepository = (db: AppDb) => {
                 ]);
             });
         },
+        markMediaSent(announcementId: number, now: Date) {
+            return tryDb(async () => {
+                await db
+                    .update(releaseAnnouncements)
+                    .set({ mediaSentAt: now, updatedAt: now })
+                    .where(eq(releaseAnnouncements.id, announcementId));
+            });
+        },
         releaseToQueue(
             announcementId: number,
             errorCode: number | null,

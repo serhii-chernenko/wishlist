@@ -47,6 +47,8 @@ interface Scenario {
     enabled?: boolean;
     claimed?: boolean;
     currentVersion?: string;
+    media?: readonly string[];
+    mediaErrors?: unknown[];
 }
 
 const createUser = (overrides: Partial<AnnouncementUser> = {}) => {
@@ -64,12 +66,16 @@ const createUser = (overrides: Partial<AnnouncementUser> = {}) => {
 const createHarness = (scenario: Scenario = {}) => {
     const announcement =
         scenario.announcement === undefined
-            ? { id: 10, status: 'queued' as const }
+            ? { id: 10, status: 'queued' as const, mediaSentAt: null }
             : scenario.announcement;
     const user = scenario.user === undefined ? createUser() : scenario.user;
     const pendingErrors = [...(scenario.sendErrors ?? [])];
+    const pendingMediaErrors = [...(scenario.mediaErrors ?? [])];
     const state = {
         sent: [] as { telegramId: number; html: string }[],
+        albums: [] as { telegramId: number; fileIds: readonly string[] }[],
+        calls: [] as string[],
+        mediaMarks: [] as number[],
         blocked: [] as number[],
         marks: [] as unknown[][],
         sleeps: [] as number[],
@@ -96,11 +102,25 @@ const createHarness = (scenario: Scenario = {}) => {
                 ? `announcement ${locale}`
                 : scenario.rendered;
         },
+        getReleaseMedia: () => scenario.media ?? [],
         async claimForSending() {
             state.claims += 1;
             return scenario.claimed ?? true;
         },
+        async sendMediaGroup(telegramId, fileIds) {
+            state.calls.push('album');
+
+            const queuedError = pendingMediaErrors.shift();
+
+            if (queuedError) {
+                throw queuedError;
+            }
+
+            state.albums.push({ telegramId, fileIds });
+        },
         async sendMessage(telegramId, html) {
+            state.calls.push('text');
+
             const queuedError = pendingErrors.shift();
 
             if (queuedError) {
@@ -112,6 +132,9 @@ const createHarness = (scenario: Scenario = {}) => {
             }
 
             state.sent.push({ telegramId, html });
+        },
+        async markMediaSent(announcementId) {
+            state.mediaMarks.push(announcementId);
         },
         async markBlocked(telegramId) {
             state.blocked.push(telegramId);
@@ -377,7 +400,7 @@ test('queue delivery limits match the committed wrangler consumers', () => {
 test('duplicate delivery of a settled row acknowledges without sending', async () => {
     for (const status of ['sent', 'skipped', 'failed'] as const) {
         const { outcome, state } = await runOne({
-            announcement: { id: 10, status }
+            announcement: { id: 10, status, mediaSentAt: null }
         });
 
         assert.equal(outcome.acked, true);
@@ -388,7 +411,7 @@ test('duplicate delivery of a settled row acknowledges without sending', async (
 
 test('a row already in sending is ambiguous: skipped, logged and never resent', async () => {
     const { outcome, state } = await runOne({
-        announcement: { id: 10, status: 'sending' }
+        announcement: { id: 10, status: 'sending', mediaSentAt: null }
     });
 
     assert.equal(outcome.acked, true);
@@ -597,4 +620,183 @@ test('one blocked user does not stop the rest of the batch', async () => {
     assert.equal(first.outcome.acked, true);
     assert.equal(second.outcome.acked, true);
     assert.equal(state.sent.length, 1);
+});
+
+const albumFileIds = ['photo-a', 'photo-b', 'photo-c'];
+
+const mediaEvents = (logs: readonly Record<string, unknown>[]) => {
+    return logs.filter(entry => {
+        return entry.event === 'release_announcement_media';
+    });
+};
+
+test('a release with media sends the album first and then the announcement text', async () => {
+    const { outcome, state } = await runOne({ media: albumFileIds });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album', 'text']);
+    assert.deepEqual(state.albums, [
+        { telegramId: 5001, fileIds: albumFileIds }
+    ]);
+    assert.deepEqual(state.sent, [
+        { telegramId: 5001, html: 'announcement uk' }
+    ]);
+    assert.deepEqual(state.mediaMarks, [10]);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+    assert.deepEqual(mediaEvents(state.logs), [
+        { event: 'release_announcement_media', outcome: 'sent', releaseVersion }
+    ]);
+});
+
+test('the text after an album waits one send interval per photo', async () => {
+    const { state } = await runOne({ media: albumFileIds });
+
+    assert.deepEqual(state.sleeps, [150]);
+});
+
+test('a retry after a delivered album sends only the text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        announcement: { id: 10, status: 'queued', mediaSentAt: new Date(500) }
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['text']);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+    assert.deepEqual(mediaEvents(state.logs), []);
+});
+
+test('a 429 on the text after a delivered album keeps the album mark for the retry', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        sendErrors: [telegramError(429, { retryAfter: 4 })]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album', 'text']);
+    assert.deepEqual(state.mediaMarks, [10]);
+    assert.deepEqual(state.marks, [['queued', 10, 429, false]]);
+    assert.deepEqual(state.requeued, [
+        { job: { releaseVersion, userId: 1 }, delaySeconds: 5 }
+    ]);
+});
+
+test('a 403 on the album blocks the user and skips the text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        mediaErrors: [telegramError(403)]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album']);
+    assert.deepEqual(state.blocked, [5001]);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['skipped', 10, 1, releaseVersion, 403]]);
+    assert.deepEqual(mediaEvents(state.logs), [
+        {
+            event: 'release_announcement_media',
+            outcome: 'skipped',
+            errorCode: 403,
+            releaseVersion
+        }
+    ]);
+});
+
+test('a chat-level 400 on the album skips the user without the text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        mediaErrors: [
+            telegramError(400, { description: 'Bad Request: chat not found' })
+        ]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album']);
+    assert.deepEqual(state.blocked, []);
+    assert.deepEqual(state.marks, [['skipped', 10, 1, releaseVersion, 400]]);
+});
+
+test('a 429 on the album re-enqueues the job without counting an attempt or sending the text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        mediaErrors: [telegramError(429, { retryAfter: 20 })]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.equal(outcome.retried, false);
+    assert.deepEqual(state.calls, ['album']);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['queued', 10, 429, false]]);
+    assert.deepEqual(state.requeued, [
+        { job: { releaseVersion, userId: 1 }, delaySeconds: 21 }
+    ]);
+    assert.equal(mediaEvents(state.logs)[0]?.outcome, 'rate_limited');
+});
+
+test('a bad file id on the album logs a failed album and still sends the text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        mediaErrors: [
+            telegramError(400, {
+                description: 'Bad Request: wrong remote file identifier'
+            })
+        ]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album', 'text']);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+    assert.deepEqual(mediaEvents(state.logs), [
+        {
+            event: 'release_announcement_media',
+            outcome: 'failed',
+            errorCode: 400,
+            releaseVersion
+        }
+    ]);
+    assert.ok(
+        !state.logs.some(entry => {
+            return JSON.stringify(entry).includes('wrong remote file');
+        })
+    );
+});
+
+test('an ambiguous album failure is never resent and the text still goes out', async () => {
+    for (const mediaError of [telegramError(502), new TypeError('fetch')]) {
+        const { outcome, state } = await runOne({
+            media: albumFileIds,
+            mediaErrors: [mediaError]
+        });
+
+        assert.equal(outcome.acked, true);
+        assert.deepEqual(state.calls, ['album', 'text']);
+        assert.deepEqual(state.mediaMarks, [10]);
+        assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+        assert.equal(mediaEvents(state.logs)[0]?.outcome, 'ambiguous');
+    }
+});
+
+test('without configured media the delivery is unchanged', async () => {
+    const { outcome, state } = await runOne({ media: [] });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['text']);
+    assert.deepEqual(state.albums, []);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.sleeps, []);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+});
+
+test('albums inside a batch keep the next user one interval per photo away', async () => {
+    const { dependencies, state } = createHarness({ media: albumFileIds });
+
+    await processReleaseAnnouncementBatch(
+        [createMessage().message, createMessage().message],
+        dependencies
+    );
+
+    assert.deepEqual(state.calls, ['album', 'text', 'album', 'text']);
+    assert.deepEqual(state.sleeps, [150, 50, 150]);
 });

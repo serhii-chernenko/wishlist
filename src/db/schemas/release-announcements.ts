@@ -29,6 +29,7 @@ export const releaseAnnouncements = snakeCase.table(
         status: text({ enum: releaseAnnouncementStatuses }).notNull(),
         attempts: integer().notNull().default(0),
         lastErrorCode: integer(),
+        mediaSentAt: integer({ mode: 'timestamp_ms' }),
         createdAt: integer({ mode: 'timestamp_ms' })
             .notNull()
             .$defaultFn(() => new Date()),

@@ -20,6 +20,7 @@ const permanentBadRequestPattern =
 export interface AnnouncementRecord {
     id: number;
     status: 'queued' | 'sending' | 'sent' | 'skipped' | 'failed';
+    mediaSentAt: Date | null;
 }
 
 export interface AnnouncementUser {
@@ -50,8 +51,14 @@ export interface ReleaseAnnouncementConsumerDependencies {
         releaseVersion: string,
         locale: AppLocale
     ) => string | null;
+    getReleaseMedia: (releaseVersion: string) => readonly string[];
     claimForSending: (announcementId: number, now: Date) => Promise<boolean>;
+    sendMediaGroup: (
+        telegramId: number,
+        fileIds: readonly string[]
+    ) => Promise<void>;
     sendMessage: (telegramId: number, html: string) => Promise<void>;
+    markMediaSent: (announcementId: number, now: Date) => Promise<void>;
     markBlocked: (telegramId: number, now: Date) => Promise<void>;
     markSent: (
         announcementId: number,
@@ -98,7 +105,10 @@ type SendOutcome =
 
 interface Pacing {
     lastSendAt: number | null;
+    lastSendWeight: number;
 }
+
+const TEXT_SEND_WEIGHT = 1;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null;
@@ -140,15 +150,16 @@ const isValidJob = (body: unknown): body is ReleaseAnnouncementJob => {
     );
 };
 
-const sendOnce = async (
+/** Spaces Telegram calls so that a call counted as `weight` messages delays the next call by `weight` send intervals; an album of N photos weighs N. */
+const sendPaced = async (
     dependencies: ReleaseAnnouncementConsumerDependencies,
     pacing: Pacing,
-    telegramId: number,
-    text: string
+    weight: number,
+    send: () => Promise<void>
 ): Promise<SendOutcome> => {
     if (pacing.lastSendAt !== null) {
         const waitMilliseconds =
-            MINIMUM_SEND_INTERVAL_MILLISECONDS -
+            MINIMUM_SEND_INTERVAL_MILLISECONDS * pacing.lastSendWeight -
             (dependencies.now() - pacing.lastSendAt);
 
         if (waitMilliseconds > 0) {
@@ -157,15 +168,20 @@ const sendOnce = async (
     }
 
     pacing.lastSendAt = dependencies.now();
+    pacing.lastSendWeight = weight;
 
     try {
-        await dependencies.sendMessage(telegramId, text);
+        await send();
         pacing.lastSendAt = dependencies.now();
         return { delivered: true };
     } catch (error) {
         pacing.lastSendAt = dependencies.now();
         return { delivered: false, failure: classifyTelegramFailure(error) };
     }
+};
+
+const isAmbiguousFailure = (failure: TelegramFailure) => {
+    return failure.errorCode === null || failure.errorCode >= 500;
 };
 
 const isPermanentFailure = (failure: TelegramFailure) => {
@@ -312,7 +328,122 @@ const handleMessage = async (
         return;
     }
 
-    const outcome = await sendOnce(dependencies, pacing, user.telegramId, text);
+    const skipUnreachableUser = async (failure: TelegramFailure) => {
+        if (failure.errorCode === 403) {
+            await writeState('blocked', () => {
+                return dependencies.markBlocked(user.telegramId, timestamp());
+            });
+        }
+
+        await writeState('skipped', () => {
+            return dependencies.markSkipped(
+                announcement.id,
+                user.id,
+                releaseVersion,
+                failure.errorCode,
+                timestamp()
+            );
+        });
+        dependencies.log({
+            event: 'release_announcement_skipped',
+            errorCode: failure.errorCode,
+            ...logContext
+        });
+        message.ack();
+    };
+
+    const requeueRateLimited = async (failure: TelegramFailure) => {
+        const delaySeconds = Math.min(
+            Math.ceil(failure.retryAfterSeconds ?? BACKOFF_BASE_SECONDS) + 1,
+            QUEUE_MAX_DELAY_SECONDS
+        );
+
+        await dependencies.releaseToQueue(
+            announcement.id,
+            429,
+            false,
+            timestamp()
+        );
+        await dependencies.requeueJob(job, delaySeconds);
+        dependencies.log({
+            event: 'release_announcement_rate_limited',
+            delaySeconds,
+            ...logContext
+        });
+        message.ack();
+    };
+
+    const logMediaOutcome = (outcome: string, errorCode?: number | null) => {
+        dependencies.log({
+            event: 'release_announcement_media',
+            outcome,
+            ...(errorCode === undefined ? {} : { errorCode }),
+            ...logContext
+        });
+    };
+
+    const sendAlbumBeforeText = async (fileIds: readonly string[]) => {
+        const albumOutcome = await sendPaced(
+            dependencies,
+            pacing,
+            fileIds.length,
+            () => {
+                return dependencies.sendMediaGroup(user.telegramId, fileIds);
+            }
+        );
+
+        if (albumOutcome.delivered) {
+            await writeState('media_sent', () => {
+                return dependencies.markMediaSent(announcement.id, timestamp());
+            });
+            logMediaOutcome('sent');
+            return true;
+        }
+
+        const { failure } = albumOutcome;
+
+        if (isAmbiguousFailure(failure)) {
+            await writeState('media_ambiguous', () => {
+                return dependencies.markMediaSent(announcement.id, timestamp());
+            });
+            logMediaOutcome('ambiguous', failure.errorCode);
+            return true;
+        }
+
+        if (isPermanentFailure(failure)) {
+            logMediaOutcome('skipped', failure.errorCode);
+            await skipUnreachableUser(failure);
+            return false;
+        }
+
+        if (failure.errorCode === 429) {
+            logMediaOutcome('rate_limited', failure.errorCode);
+            await requeueRateLimited(failure);
+            return false;
+        }
+
+        logMediaOutcome('failed', failure.errorCode);
+        return true;
+    };
+
+    const mediaFileIds = dependencies.getReleaseMedia(releaseVersion);
+
+    if (mediaFileIds.length > 0 && announcement.mediaSentAt === null) {
+        const shouldSendText = await sendAlbumBeforeText(mediaFileIds);
+
+        if (!shouldSendText) {
+            return;
+        }
+    }
+
+    const outcome = await sendPaced(
+        dependencies,
+        pacing,
+        TEXT_SEND_WEIGHT,
+        () => {
+            return dependencies.sendMessage(user.telegramId, text);
+        }
+    );
 
     if (outcome.delivered) {
         await writeState('sent', () => {
@@ -333,7 +464,7 @@ const handleMessage = async (
 
     const { failure } = outcome;
 
-    if (failure.errorCode === null || failure.errorCode >= 500) {
+    if (isAmbiguousFailure(failure)) {
         await writeState('ambiguous', () => {
             return dependencies.markSkipped(
                 announcement.id,
@@ -357,49 +488,12 @@ const handleMessage = async (
     }
 
     if (isPermanentFailure(failure)) {
-        if (failure.errorCode === 403) {
-            await writeState('blocked', () => {
-                return dependencies.markBlocked(user.telegramId, timestamp());
-            });
-        }
-
-        await writeState('skipped', () => {
-            return dependencies.markSkipped(
-                announcement.id,
-                user.id,
-                releaseVersion,
-                failure.errorCode,
-                timestamp()
-            );
-        });
-        dependencies.log({
-            event: 'release_announcement_skipped',
-            errorCode: failure.errorCode,
-            ...logContext
-        });
-        message.ack();
+        await skipUnreachableUser(failure);
         return;
     }
 
     if (failure.errorCode === 429) {
-        const delaySeconds = Math.min(
-            Math.ceil(failure.retryAfterSeconds ?? BACKOFF_BASE_SECONDS) + 1,
-            QUEUE_MAX_DELAY_SECONDS
-        );
-
-        await dependencies.releaseToQueue(
-            announcement.id,
-            429,
-            false,
-            timestamp()
-        );
-        await dependencies.requeueJob(job, delaySeconds);
-        dependencies.log({
-            event: 'release_announcement_rate_limited',
-            delaySeconds,
-            ...logContext
-        });
-        message.ack();
+        await requeueRateLimited(failure);
         return;
     }
 
@@ -428,7 +522,10 @@ export const processReleaseAnnouncementBatch = async (
     messages: readonly ReleaseAnnouncementMessage[],
     dependencies: ReleaseAnnouncementConsumerDependencies
 ) => {
-    const pacing: Pacing = { lastSendAt: null };
+    const pacing: Pacing = {
+        lastSendAt: null,
+        lastSendWeight: TEXT_SEND_WEIGHT
+    };
 
     for (const message of messages) {
         try {
