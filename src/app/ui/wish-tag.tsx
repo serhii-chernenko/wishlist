@@ -1,4 +1,5 @@
 import type { Child } from 'hono/jsx';
+import { useState } from 'hono/jsx/dom';
 
 import type { ApiImage, WishPriority } from '../../shared/app-api';
 import type { Currency } from '../../shared/money';
@@ -10,6 +11,7 @@ import { openLink } from '../telegram/links';
 import { PhotoCarousel } from './photo-carousel';
 import { PhotoFrame } from './photo-frame';
 import { PhotoPlaceholder } from './photo-placeholder';
+import { PhotoViewer } from './photo-viewer';
 import { PriceChip } from './price-chip';
 import { PriorityBadge } from './priority-badge';
 
@@ -46,17 +48,16 @@ export const WishCover = ({
     title,
     band,
     index,
-    pending,
-    onOpen
+    pending
 }: {
     images: readonly ApiImage[];
     title: string;
     band: string | undefined;
     index: number;
     pending: boolean;
-    onOpen: (() => void) | undefined;
 }) => {
     const LL = useLL();
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
     const [cover] = images;
 
     if (cover === undefined) {
@@ -82,25 +83,48 @@ export const WishCover = ({
             title
         });
     };
+    const label = LL.a11y.photos({ count: images.length });
 
     return (
-        <div class='wish-photo' data-band={band}>
-            {images.length > 1 ? (
-                <PhotoCarousel
+        <>
+            <div class='wish-photo' data-band={band}>
+                {images.length > 1 ? (
+                    <PhotoCarousel
+                        images={images}
+                        label={label}
+                        describeSlide={describeSlide}
+                        cardIndex={index}
+                        onOpen={setViewerIndex}
+                    />
+                ) : (
+                    <button
+                        type='button'
+                        class='wish-zoom'
+                        onClick={() => {
+                            setViewerIndex(0);
+                        }}
+                    >
+                        <PhotoFrame
+                            src={cover.url}
+                            alt={describeSlide(0)}
+                            loading={getPhotoLoading(index, 0)}
+                        />
+                    </button>
+                )}
+            </div>
+            {viewerIndex === null ? null : (
+                <PhotoViewer
                     images={images}
-                    label={LL.a11y.photos({ count: images.length })}
+                    startIndex={viewerIndex}
+                    label={label}
+                    closeLabel={LL.common.close()}
                     describeSlide={describeSlide}
-                    cardIndex={index}
-                    {...(onOpen !== undefined && { onOpen })}
-                />
-            ) : (
-                <PhotoFrame
-                    src={cover.url}
-                    alt={describeSlide(0)}
-                    loading={getPhotoLoading(index, 0)}
+                    onClose={() => {
+                        setViewerIndex(null);
+                    }}
                 />
             )}
-        </div>
+        </>
     );
 };
 
@@ -170,7 +194,6 @@ export const WishTag = ({
                     band={gifted ? LL.gifted.band() : undefined}
                     index={index}
                     pending={wish.photoPending === true}
-                    onOpen={onOpen}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge priority={wish.priority} />

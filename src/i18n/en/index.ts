@@ -641,7 +641,7 @@ const en: Translation = {
             link: 'Open on {host}',
             photo: 'Photo {index} of {total}',
             photos: 'Photos, {count}',
-            photoCount: '{count} {{count:photo|photos}}',
+            close: 'Close',
             details: 'More details',
             created: 'Added {date}',
             updated: 'Added {created}, updated {updated}',

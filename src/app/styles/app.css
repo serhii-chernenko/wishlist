@@ -2093,6 +2093,7 @@
 @import './contact.css';
 @import './photo-reorder.css';
 @import '../../web/styles/carousel.css';
+@import '../../web/styles/photo-viewer.css';
 @import '../../web/styles/gifted.css';
 @import './gifted.css';
 @import './wish-sheet.css';

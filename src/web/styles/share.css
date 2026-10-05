@@ -9,6 +9,7 @@
 }
 @import './gift-tag.css';
 @import './carousel.css';
+@import './photo-viewer.css';
 
 :root {
     color-scheme: light;

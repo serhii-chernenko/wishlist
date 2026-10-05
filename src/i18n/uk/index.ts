@@ -648,7 +648,7 @@ const uk: BaseTranslation = {
             link: 'Відкрити на {host:string}',
             photo: 'Фото {index:number} з {total:number}',
             photos: 'Фото, {count:number}',
-            photoCount: '{count:number} {{count:|фото||фото|фото|фото}}',
+            close: 'Закрити',
             details: 'Детальніше',
             created: 'Додано {date:string}',
             updated: 'Додано {created:string}, оновлено {updated:string}',

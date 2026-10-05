@@ -7,6 +7,8 @@ export const SITE_NAME = 'Wishlist';
 
 export const STYLESHEET_PATH = '/styles/share.css';
 
+export const CAROUSEL_SCRIPT_PATH = '/share/carousel.js';
+
 export const FONT_PRELOAD_PATH =
     '/fonts/unbounded-cyrillic-wght-normal.woff2?v=5.3.0';
 
@@ -34,6 +36,7 @@ export interface PageLayoutProps {
     alternates?: PageAlternates;
     structuredData?: Readonly<Record<string, unknown>>;
     assetVersion: string;
+    carouselScript?: boolean;
     theme?: WebTheme;
     children?: Child;
 }
@@ -69,7 +72,8 @@ const PageHead = ({
     indexable,
     alternates,
     structuredData,
-    assetVersion
+    assetVersion,
+    carouselScript
 }: Omit<PageLayoutProps, 'children'>) => {
     return (
         <head>
@@ -124,6 +128,12 @@ const PageHead = ({
                 rel='stylesheet'
                 href={`${STYLESHEET_PATH}?v=${encodeURIComponent(assetVersion)}`}
             />
+            {carouselScript ? (
+                <script
+                    src={`${CAROUSEL_SCRIPT_PATH}?v=${encodeURIComponent(assetVersion)}`}
+                    defer
+                />
+            ) : null}
         </head>
     );
 };
@@ -193,6 +203,7 @@ export const PageLayout = (props: PageLayoutProps) => {
                 description={props.description}
                 indexable={props.indexable}
                 assetVersion={props.assetVersion}
+                carouselScript={props.carouselScript === true}
                 {...(props.alternates && { alternates: props.alternates })}
                 {...(props.structuredData && {
                     structuredData: props.structuredData

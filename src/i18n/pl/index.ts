@@ -649,7 +649,7 @@ const pl: Translation = {
             link: 'Otwórz na {host}',
             photo: 'Zdjęcie {index} z {total}',
             photos: 'Zdjęcia, {count}',
-            photoCount: '{count} {{count:|zdjęcie||zdjęcia|zdjęć|zdjęcia}}',
+            close: 'Zamknij',
             details: 'Szczegóły',
             created: 'Dodano {date}',
             updated: 'Dodano {created}, zaktualizowano {updated}',

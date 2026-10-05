@@ -471,7 +471,7 @@ const readImages = (html: string) => {
     });
 };
 
-test('a wish with several photos renders a scroll-snap carousel without scripts or anchors', () => {
+test('a wish with several photos renders a carousel with static dots and no count chip', () => {
     const html = renderSharePage(
         buildModel({
             wishes: [
@@ -487,21 +487,76 @@ test('a wish with several photos renders a scroll-snap carousel without scripts 
         )?.length,
         1
     );
+    assert.equal(html.match(/<button popovertarget="v0">/g)?.length, 3);
     assert.match(
         html,
-        /<div class="wish-photo" data-count="3 photos"><div class="carousel wish-carousel"/
+        /<img src="\/img\/s\/p0" alt="Photo 1 of 3: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><\/button><button popovertarget="v0"><img src="\/img\/s\/p1"/
     );
-    assert.match(
-        html,
-        /<img src="\/img\/s\/p0" alt="Photo 1 of 3: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><img src="\/img\/s\/p1"/
-    );
-    assert.equal(html.match(/data-count=/g)?.length, 1);
     assert.equal(html.match(/<img\b/g)?.length, 4);
-    assert.doesNotMatch(html, /<a\b[^>]*href="#|<script|\sonscroll=/);
-    assert.doesNotMatch(html, /wish-photo-empty/);
+    assert.equal(
+        html.match(
+            /<div class="photo-dots" aria-hidden="true"><i class="photo-dot-active"><\/i><i><\/i><i><\/i><\/div>/g
+        )?.length,
+        1
+    );
+    assert.doesNotMatch(html, /data-count|\d+ photos<|<a\b[^>]*href="#/);
+    assert.doesNotMatch(html, /\sonscroll=|wish-photo-empty/);
 });
 
-test('a single photo stays a plain cover without carousel markup', () => {
+test('every photo opens the card viewer through a native popover that works without scripts', () => {
+    const html = renderSharePage(
+        buildModel({
+            wishes: [
+                buildWish({ photos: buildPhotos(2) }),
+                buildWish({ title: 'Single', photos: buildPhotos(1, 's') }),
+                buildWish({ title: 'No photo' })
+            ]
+        })
+    );
+    const stages = html.match(
+        /<div id="v\d+" class="wish-stage" popover="auto">/g
+    );
+
+    assert.deepEqual(stages, [
+        '<div id="v0" class="wish-stage" popover="auto">',
+        '<div id="v1" class="wish-stage" popover="auto">'
+    ]);
+    assert.equal(
+        html.match(
+            /<button class="photo-viewer-close" popovertarget="v\d" popovertargetaction="hide" aria-label="Close">×<\/button>/g
+        )?.length,
+        2
+    );
+    assert.match(
+        html,
+        /<div class="wish-photo"><div id="v1" class="wish-stage" popover="auto"><button class="photo-viewer-close"[^>]*>.*?<\/button><button class="wish-zoom" popovertarget="v1"><img src="\/img\/s\/s0"/
+    );
+    assert.equal(html.match(/popovertarget="v2"/g), null);
+});
+
+test('the close button label is localized', () => {
+    const labels = {
+        uk: 'aria-label="Закрити"',
+        en: 'aria-label="Close"',
+        pl: 'aria-label="Zamknij"'
+    };
+
+    for (const [language, label] of Object.entries(labels)) {
+        const html = renderSharePage(
+            buildModel({
+                language: language as SharePageModel['language'],
+                wishes: [buildWish({ photos: buildPhotos(1) })]
+            })
+        );
+
+        assert.ok(
+            html.includes(`popovertargetaction="hide" ${label}`),
+            language
+        );
+    }
+});
+
+test('a single photo has no dots, strip or count chip', () => {
     const html = renderSharePage(
         buildModel({
             wishes: [buildWish({ photos: buildPhotos(1) })]
@@ -510,9 +565,38 @@ test('a single photo stays a plain cover without carousel markup', () => {
 
     assert.match(
         html,
-        /<div class="wish-photo"><img src="\/img\/s\/p0" alt="Photo 1 of 1: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><\/div>/
+        /<button class="wish-zoom" popovertarget="v0"><img src="\/img\/s\/p0" alt="Photo 1 of 1: &quot;Coffee&quot; &lt;machine&gt;" loading="eager" decoding="async" fetchpriority="high"\/><\/button>/
     );
-    assert.doesNotMatch(html, /carousel|data-count|tabindex/);
+    assert.doesNotMatch(
+        html,
+        /class="[^"]*carousel|data-count|tabindex|photo-dots/
+    );
+});
+
+test('the carousel script and its CSP allowance appear only when a wish has photos', () => {
+    const withPhotos = renderSharePage(
+        buildModel({ wishes: [buildWish({ photos: buildPhotos(2) })] })
+    );
+    const withoutPhotos = renderSharePage(
+        buildModel({ wishes: [buildWish()] })
+    );
+    const gifted = renderSharePage(
+        buildModel({
+            wishes: [],
+            gifted: [buildWish({ gifted: true, photos: buildPhotos(2) })]
+        })
+    );
+
+    assert.deepEqual(withPhotos.match(/<script\b[^>]*>/g), [
+        '<script src="/share/carousel.js?v=deploy-1" defer="">'
+    ]);
+    assert.equal(
+        gifted.match(/<script src="\/share\/carousel\.js/g)?.length,
+        1
+    );
+    assert.doesNotMatch(withoutPhotos, /<script/i);
+    assert.doesNotMatch(withPhotos, /<script(?![^>]*\ssrc=)/i);
+    assert.doesNotMatch(withPhotos, /\son[a-z]+=/i);
 });
 
 test('the carousel label is localized', () => {

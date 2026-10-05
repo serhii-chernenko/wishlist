@@ -1,3 +1,5 @@
+import type { Child } from 'hono/jsx';
+
 import { getTranslator, type AppLocale } from '../../../bot/i18n';
 import { formatDate } from '../../../bot/content/intl';
 import { cutDescription, cutTitle } from '../../../bot/input/limits';
@@ -7,7 +9,10 @@ import {
     type Currency,
     type ExchangeRates
 } from '../../../shared/money';
-import { getPhotoLoading } from '../../../shared/photo-loading';
+import {
+    getPhotoLoading,
+    type PhotoLoadingAttributes
+} from '../../../shared/photo-loading';
 import { isBadgePriority } from '../../../shared/priority-badge';
 import { inlineMarkup } from '../inline-markup';
 import type { ShareWishPhoto, ShareWishView } from '../view-model';
@@ -69,18 +74,78 @@ const WishPrice = ({
     );
 };
 
+const getStageId = (index: number) => {
+    return `v${index}`;
+};
+
+const PhotoDots = ({ count }: { count: number }) => {
+    return (
+        <div class='photo-dots' aria-hidden='true'>
+            {Array.from({ length: count }, (_, dotIndex) => {
+                return (
+                    <i
+                        class={dotIndex === 0 ? 'photo-dot-active' : undefined}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+const WishZoom = ({
+    photo,
+    stageId,
+    loading,
+    className
+}: {
+    photo: ShareWishPhoto;
+    stageId: string;
+    loading: PhotoLoadingAttributes;
+    className?: string;
+}) => {
+    return (
+        <button class={className} popovertarget={stageId}>
+            <img src={photo.url} alt={photo.alt} {...loading} />
+        </button>
+    );
+};
+
+const WishStage = ({
+    stageId,
+    closeLabel,
+    children
+}: {
+    stageId: string;
+    closeLabel: string;
+    children?: Child;
+}) => {
+    return (
+        <div id={stageId} class='wish-stage' popover='auto'>
+            <button
+                class='photo-viewer-close'
+                popovertarget={stageId}
+                popovertargetaction='hide'
+                aria-label={closeLabel}
+            >
+                ×
+            </button>
+            {children}
+        </div>
+    );
+};
+
 const WishCover = ({
     photos,
     band,
     label,
-    countLabel,
+    closeLabel,
     pendingLabel,
     index
 }: {
     photos: readonly ShareWishPhoto[];
     band: string | undefined;
     label: string;
-    countLabel: string;
+    closeLabel: string;
     pendingLabel: string | null;
     index: number;
 }) => {
@@ -104,36 +169,44 @@ const WishCover = ({
         );
     }
 
+    const stageId = getStageId(index);
+
     if (photos.length === 1) {
         return (
             <div class='wish-photo' data-band={band}>
-                <img
-                    src={cover.url}
-                    alt={cover.alt}
-                    {...getPhotoLoading(index, 0)}
-                />
+                <WishStage stageId={stageId} closeLabel={closeLabel}>
+                    <WishZoom
+                        className='wish-zoom'
+                        photo={cover}
+                        stageId={stageId}
+                        loading={getPhotoLoading(index, 0)}
+                    />
+                </WishStage>
             </div>
         );
     }
 
     return (
-        <div class='wish-photo' data-band={band} data-count={countLabel}>
-            <div
-                class='carousel wish-carousel'
-                role='group'
-                tabindex={0}
-                aria-label={label}
-            >
-                {photos.map((photo, slideIndex) => {
-                    return (
-                        <img
-                            src={photo.url}
-                            alt={photo.alt}
-                            {...getPhotoLoading(index, slideIndex)}
-                        />
-                    );
-                })}
-            </div>
+        <div class='wish-photo' data-band={band}>
+            <WishStage stageId={stageId} closeLabel={closeLabel}>
+                <div
+                    class='carousel wish-carousel'
+                    role='group'
+                    tabindex={0}
+                    aria-label={label}
+                >
+                    {photos.map((photo, slideIndex) => {
+                        return (
+                            <WishZoom
+                                photo={photo}
+                                stageId={stageId}
+                                loading={getPhotoLoading(index, slideIndex)}
+                            />
+                        );
+                    })}
+                </div>
+                <PhotoDots count={photos.length} />
+            </WishStage>
         </div>
     );
 };
@@ -155,6 +228,8 @@ export const WishCard = ({
     const created = formatDate(wish.createdAt, language);
     const updated = formatDate(wish.updatedAt, language);
     const gifted = wish.gifted === true;
+    const photos = wish.photos ?? NO_PHOTOS;
+    const photosLabel = LL.web.wish.photos({ count: photos.length });
     const hostname =
         !gifted && isRenderableLink(wish.link)
             ? getLinkHostname(wish.link)
@@ -165,14 +240,10 @@ export const WishCard = ({
             <article class='wish-tag'>
                 <h2 class='wish-title'>{cutTitle(wish.title)}</h2>
                 <WishCover
-                    photos={wish.photos ?? NO_PHOTOS}
+                    photos={photos}
                     band={gifted ? LL.web.wish.gifted() : undefined}
-                    label={LL.web.wish.photos({
-                        count: wish.photos?.length ?? 0
-                    })}
-                    countLabel={LL.web.wish.photoCount({
-                        count: wish.photos?.length ?? 0
-                    })}
+                    label={photosLabel}
+                    closeLabel={LL.web.wish.close()}
                     pendingLabel={
                         wish.photoPending === true
                             ? LL.web.wish.photoLoading()

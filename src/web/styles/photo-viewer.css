@@ -1,0 +1,179 @@
+@layer components {
+    .photo-viewer-close {
+        position: absolute;
+        inset-block-start: calc(
+            var(--safe-top, env(safe-area-inset-top, 0px)) + 0.5rem
+        );
+        inset-inline-end: calc(
+            var(--safe-right, env(safe-area-inset-right, 0px)) + 0.5rem
+        );
+        z-index: calc(var(--z-raised) + 2);
+        display: none;
+        place-items: center;
+        width: var(--tap-size);
+        height: var(--tap-size);
+        padding: 0;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: var(--viewer-scrim);
+        cursor: pointer;
+        background: var(--viewer-ink);
+        border: 0;
+        border-radius: var(--radius-round);
+    }
+
+    .photo-viewer-close:focus-visible {
+        outline: 3px solid var(--viewer-ink);
+        outline-offset: 2px;
+    }
+
+    .photo-viewer {
+        position: fixed;
+        inset: 0;
+        grid-template-rows: minmax(0, 1fr) auto;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        overscroll-behavior: contain;
+        color: var(--viewer-ink);
+        background: var(--viewer-scrim);
+        border: 0;
+    }
+
+    .photo-viewer[open] {
+        display: grid;
+    }
+
+    .photo-viewer .photo-viewer-close {
+        display: grid;
+    }
+
+    .wish-tag > .photo-viewer,
+    .wish-sheet > .photo-viewer {
+        margin: 0;
+        max-width: none;
+    }
+
+    :root:has(.photo-viewer[open]) {
+        overflow: hidden;
+    }
+
+    .photo-viewer-track {
+        width: 100%;
+        height: 100%;
+        overscroll-behavior-x: contain;
+        scroll-behavior: auto;
+    }
+
+    .photo-viewer-track:focus-visible {
+        outline: 3px solid var(--viewer-ink);
+        outline-offset: var(--focus-offset-inset);
+    }
+
+    .photo-viewer-track > * {
+        flex: none;
+        width: 100%;
+        height: 100%;
+        scroll-snap-align: center;
+    }
+
+    .photo-viewer-track img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        font-size: 0;
+        color: transparent;
+        object-fit: contain;
+    }
+
+    .photo-viewer .photo-dots {
+        position: static;
+        padding-block: 0.75rem
+            calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.75rem);
+    }
+
+    .photo-viewer .photo-dots > * {
+        background: transparent;
+        border-color: var(--viewer-ink);
+    }
+
+    .photo-viewer .photo-dots > .photo-dot-active {
+        background: var(--heart);
+        border-color: var(--heart);
+    }
+
+    .wish-stage {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+        color: inherit;
+        background: none;
+        border: 0;
+    }
+
+    .wish-stage:popover-open {
+        position: fixed;
+        z-index: calc(var(--z-raised) + 2);
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: contain;
+        color: var(--viewer-ink);
+        background: var(--viewer-scrim);
+    }
+
+    .wish-stage:popover-open .photo-viewer-close {
+        display: grid;
+    }
+
+    .wish-stage:popover-open .wish-carousel {
+        scroll-behavior: auto;
+    }
+
+    .wish-stage:popover-open .wish-carousel:focus-visible,
+    .wish-stage:popover-open .wish-zoom:focus-visible,
+    .wish-stage:popover-open .wish-carousel > button:focus-visible {
+        outline-color: var(--viewer-ink);
+    }
+
+    .wish-stage:popover-open .wish-zoom,
+    .wish-stage:popover-open .wish-carousel > button {
+        cursor: default;
+    }
+
+    .wish-photo .wish-stage:popover-open img {
+        background: transparent;
+        object-fit: contain;
+        opacity: 1;
+        filter: none;
+    }
+
+    .wish-stage:popover-open .photo-dots {
+        bottom: calc(
+            var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.75rem
+        );
+    }
+
+    .wish-stage:popover-open .photo-dots > * {
+        background: transparent;
+        border-color: var(--viewer-ink);
+    }
+
+    .wish-stage:popover-open .photo-dots > .photo-dot-active {
+        background: var(--heart);
+        border-color: var(--heart);
+    }
+
+    :root:has(.wish-stage:popover-open) {
+        overflow: hidden;
+    }
+}
