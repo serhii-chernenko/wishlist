@@ -28,7 +28,7 @@ const CopyButton = ({ value, label }: { value: string; label: string }) => {
     return (
         <button
             type='button'
-            class='text-button contact-action'
+            class='btn btn-link btn-accent text-button contact-action'
             aria-label={`${LL.contact.copy()}: ${label}`}
             onClick={() => {
                 void copyToClipboard(value).then(copied => {
@@ -57,7 +57,7 @@ export const ContactRows = ({ contact }: { contact: OwnerContactDto }) => {
                     <dd class='contact-actions'>
                         {contact.phoneHref === null ? null : (
                             <a
-                                class='text-button contact-action'
+                                class='btn btn-link btn-accent text-button contact-action'
                                 href={contact.phoneHref}
                                 aria-label={`${LL.contact.call()}: ${contact.phone}`}
                             >

@@ -229,7 +229,7 @@ export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
                 <div class='link-import-actions'>
                     <button
                         type='button'
-                        class='text-button'
+                        class='btn btn-link btn-accent text-button'
                         onClick={() => {
                             onOpenEditor(null);
                         }}

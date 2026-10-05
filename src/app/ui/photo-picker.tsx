@@ -427,7 +427,7 @@ export const PhotoPicker = ({
                         <div class='photos-fallback'>
                             <button
                                 type='button'
-                                class='text-button'
+                                class='btn btn-link btn-accent text-button'
                                 aria-describedby='wish-photos-fallback-hint'
                                 onClick={onChatFallback}
                             >

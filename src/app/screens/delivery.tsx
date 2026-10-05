@@ -184,7 +184,7 @@ export const DeliveryScreen = (_props: ScreenProps<'delivery'>) => {
                     <p>{LL.delivery.phoneWarning()}</p>
                     <button
                         type='button'
-                        class='text-button'
+                        class='btn btn-link btn-accent text-button'
                         onClick={() => {
                             haptics.selection();
                             void nav.navigateTo('share');

@@ -51,6 +51,50 @@
         box-shadow: var(--shadow-focus);
     }
 
+    .btn-link {
+        --btn-p: 0.25rem;
+        justify-content: flex-start;
+        flex-shrink: 1;
+        height: auto;
+        min-height: var(--tap-size);
+        font-size: inherit;
+        vertical-align: baseline;
+        border-width: 0;
+        border-radius: 0;
+        translate: none;
+        text-decoration-thickness: var(--underline-thickness);
+        text-underline-offset: var(--underline-offset);
+    }
+
+    .btn-link:focus-visible {
+        box-shadow: var(--shadow-focus);
+    }
+
+    .btn-link:disabled {
+        color: var(--btn-color);
+        cursor: not-allowed;
+        opacity: var(--opacity-muted);
+        pointer-events: auto;
+    }
+
+    .btn-link.contact-action {
+        color: inherit;
+    }
+
+    .link-import-actions .text-button {
+        --btn-p: 0;
+    }
+
+    .back-link {
+        justify-self: start;
+        padding-inline-end: 0.75rem;
+        text-decoration-line: none;
+    }
+
+    .screen-header-sticky[data-stuck] .back-link {
+        display: none;
+    }
+
     .field-control {
         --font-size-min: 1rem;
         width: 100%;
