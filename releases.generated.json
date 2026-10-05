@@ -30,9 +30,9 @@
                     "pl": "Możesz zapisać adres dostawy, na przykład oddział lub paczkomat, i w menu „Udostępnij” wybrać, co widzą inni: dane płatnicze, telefon i adres. Telefon i adres widzą tylko osoby, które otwierają twoją listę w Telegramie; na stronie internetowej nie pojawiają się nigdy. Tam też możesz zablokować wyświetlanie twojej strony w wyszukiwarkach."
                 },
                 {
-                    "uk": "Подаровані бажання тепер не зникають: у застосунку вони стоять у кінці списку з позначкою «Подароване», а друзі бачать їх на сторінці листа, якщо ти не вимкнеш це в «Поділитися».",
-                    "en": "Gifted wishes no longer disappear: in the app they sit at the end of your list with a \"Gifted\" band, and friends see them on your list page unless you turn that off in Share.",
-                    "pl": "Podarowane życzenia już nie znikają: w aplikacji są na końcu listy z oznaczeniem „Podarowane”, a znajomi widzą je na stronie twojej listy, chyba że wyłączysz to w „Udostępnij”."
+                    "uk": "Подаровані бажання тепер не зникають: у застосунку вони стоять у кінці списку з позначкою «Подароване», у чаті — за кнопкою «🎁 Подароване», а друзі бачать їх, якщо ти не вимкнеш це в «Поділитися».",
+                    "en": "Gifted wishes no longer disappear: in the app they sit at the end of your list with a \"Gifted\" band, in the chat they're behind the \"🎁 Gifted\" button, and friends see them unless you turn that off in Share.",
+                    "pl": "Podarowane życzenia już nie znikają: w aplikacji są na końcu listy z oznaczeniem „Podarowane”, w czacie pod przyciskiem „🎁 Podarowane”, a znajomi widzą je, chyba że wyłączysz to w „Udostępnij”."
                 },
                 {
                     "uk": "Фото бажання тепер можна впорядкувати: перетягни їх у застосунку або зроби будь-яке фото першим у чаті. Перше фото стає головним.",
