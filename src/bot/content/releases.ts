@@ -187,3 +187,68 @@ export const renderReleaseAnnouncement = (
 
     return `${result}${footer}`;
 };
+
+export interface ReleaseNotesPage {
+    text: string;
+    nextOffset: number | null;
+}
+
+const fitLines = (value: string, maxLength: number) => {
+    const kept: string[] = [];
+    let length = 0;
+
+    for (const line of value.split('\n')) {
+        const next = length + line.length + 1;
+
+        if (next + TRUNCATION_MARK.length > maxLength) {
+            break;
+        }
+
+        kept.push(line);
+        length = next;
+    }
+
+    return `${kept.join('\n').trimEnd()}\n${TRUNCATION_MARK}`;
+};
+
+/** Packs as many whole releases as fit in one Telegram message, up to `maxReleases`; a single release longer than the limit is cut at a line boundary. */
+export const renderReleaseNotesPage = (
+    locale: AppLocale,
+    offset: number,
+    maxReleases: number,
+    maxLength = TELEGRAM_MESSAGE_LIMIT
+): ReleaseNotesPage => {
+    const total = releases.length;
+
+    if (offset >= total) {
+        return {
+            text: renderReleaseNotes(1, locale, offset),
+            nextOffset: null
+        };
+    }
+
+    const parts: string[] = [];
+    let index = offset;
+
+    while (index < total && parts.length < maxReleases) {
+        const part = renderReleaseNotes(1, locale, index);
+        const candidate = [...parts, part].join('\n');
+
+        if (candidate.length > maxLength) {
+            break;
+        }
+
+        parts.push(part);
+        index += 1;
+    }
+
+    if (parts.length === 0) {
+        parts.push(fitLines(renderReleaseNotes(1, locale, index), maxLength));
+        index += 1;
+    }
+
+    return {
+        text: parts.join('\n'),
+        nextOffset: index < total ? index : null
+    };
+};

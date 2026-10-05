@@ -5,7 +5,7 @@ import { getRuntimeCrypto, sha256Hex } from '../../src/api/auth/crypto';
 import { getMessages } from '../../src/bot/content/messages';
 import {
     getReleases,
-    renderReleaseNotes
+    renderReleaseNotesPage
 } from '../../src/bot/content/releases';
 import { RELEASE_NOTES_LIMIT } from '../../src/bot/screens/releases';
 import type { UserRecord, WishRecord } from '../../src/db/repositories';
@@ -586,44 +586,42 @@ describe('Bot parity with the Mini App', () => {
 
         it('pages through older releases, also for guests', async () => {
             const total = getReleases().length;
+            const firstPage = renderReleaseNotesPage(
+                'uk',
+                0,
+                RELEASE_NOTES_LIMIT
+            );
+            const firstNext = firstPage.nextOffset ?? 0;
 
-            assert.ok(total > RELEASE_NOTES_LIMIT);
+            assert.ok(firstNext > 0 && firstNext < total);
 
             await tap(guest, 'n:rel');
 
-            assert.equal(
-                webhook.lastMessage().text,
-                renderReleaseNotes(RELEASE_NOTES_LIMIT, 'uk')
-            );
+            assert.equal(webhook.lastMessage().text, firstPage.text);
             assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
-                `rel:p:${RELEASE_NOTES_LIMIT}`,
+                `rel:p:${firstNext}`,
                 'n:home'
             ]);
 
             webhook.clearApiCalls();
-            await tap(guest, `rel:p:${RELEASE_NOTES_LIMIT}`);
+            await tap(guest, `rel:p:${firstNext}`);
 
             const olderPage = webhook.lastMessage();
-            const nextOffset = RELEASE_NOTES_LIMIT * 2;
-
-            assert.equal(
-                olderPage.text,
-                renderReleaseNotes(
-                    RELEASE_NOTES_LIMIT,
-                    'uk',
-                    RELEASE_NOTES_LIMIT
-                )
+            const secondPage = renderReleaseNotesPage(
+                'uk',
+                firstNext,
+                RELEASE_NOTES_LIMIT
             );
+
+            assert.equal(olderPage.text, secondPage.text);
             assert.deepEqual(
                 callbackDataOf(olderPage),
-                nextOffset < total
-                    ? [`rel:p:${nextOffset}`, 'n:home']
-                    : ['n:home']
+                secondPage.nextOffset === null
+                    ? ['n:home']
+                    : [`rel:p:${secondPage.nextOffset}`, 'n:home']
             );
             assert.ok(
-                olderPage.text.includes(
-                    getReleases()[RELEASE_NOTES_LIMIT]?.version ?? ''
-                )
+                olderPage.text.includes(getReleases()[firstNext]?.version ?? '')
             );
         });
     });

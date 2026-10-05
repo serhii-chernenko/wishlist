@@ -6,7 +6,7 @@ import { formatNumber } from '../../src/bot/content/intl';
 import { getMessages } from '../../src/bot/content/messages';
 import {
     getLatestReleaseVersion,
-    renderReleaseNotes
+    renderReleaseNotesPage
 } from '../../src/bot/content/releases';
 import {
     buildShareUrl,
@@ -1533,8 +1533,13 @@ describe('Bot flows through the Worker on D1', () => {
 
             const message: SentMessage = webhook.lastMessage();
 
-            assert.equal(message.text, renderReleaseNotes(3, 'uk'));
-            assert.deepEqual(callbackDataOf(message), ['rel:p:3', 'n:home']);
+            const page = renderReleaseNotesPage('uk', 0, 3);
+
+            assert.equal(message.text, page.text);
+            assert.deepEqual(callbackDataOf(message), [
+                `rel:p:${page.nextOffset ?? 0}`,
+                'n:home'
+            ]);
         });
     });
 

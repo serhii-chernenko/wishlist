@@ -5,14 +5,17 @@ import test from 'node:test';
 import { parseChangelog } from '../scripts/releases/changelog-parser';
 import {
     getLatestRelease,
+    getReleases,
     getLatestReleaseVersion,
     getReleaseItemText,
     normalizeReleaseRecords,
     renderReleaseAnnouncement,
     renderReleaseNotes,
+    renderReleaseNotesPage,
     TELEGRAM_MESSAGE_LIMIT,
     type ReleaseRecord
 } from '../src/bot/content/releases';
+import { RELEASE_NOTES_LIMIT } from '../src/bot/screens/releases';
 
 const trilingualRelease: ReleaseRecord = {
     version: '2.0.0',
@@ -167,4 +170,38 @@ test('short announcements are not truncated', () => {
     const rendered = renderReleaseAnnouncement(trilingualRelease, 'uk');
 
     assert.doesNotMatch(rendered, /…/);
+});
+
+test('release note pages fit one Telegram message and cover every release', () => {
+    for (const locale of ['uk', 'en', 'pl'] as const) {
+        const versions: string[] = [];
+        let offset: number | null = 0;
+
+        while (offset !== null) {
+            const page = renderReleaseNotesPage(
+                locale,
+                offset,
+                RELEASE_NOTES_LIMIT
+            );
+
+            assert.ok(page.text.length <= TELEGRAM_MESSAGE_LIMIT, locale);
+            versions.push(
+                ...Array.from(
+                    page.text.matchAll(/🎉 <b>([^ ]+) - /g),
+                    match => {
+                        return match[1] ?? '';
+                    }
+                )
+            );
+            offset = page.nextOffset;
+        }
+
+        assert.deepEqual(
+            versions,
+            getReleases().map(release => {
+                return release.version;
+            }),
+            locale
+        );
+    }
 });
