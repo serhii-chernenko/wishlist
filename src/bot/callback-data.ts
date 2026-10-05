@@ -200,14 +200,6 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'wl:f';
         case 'wishlistFilter':
             return `wl:f:${encodeFilter(action.filter)}`;
-        case 'giftedPage':
-            return `wl:g:${action.offset}`;
-        case 'giftedRestore':
-            return `w:gr:${action.wishId}`;
-        case 'giftedHide':
-            return `w:gh:${action.wishId}`;
-        case 'giftedHideConfirm':
-            return `w:gh:${CONFIRM_SUFFIX}:${action.wishId}`;
         case 'wishEdit':
             return `w:e:${action.wishId}`;
         case 'wishRemove':
@@ -250,8 +242,6 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `t:f:${action.ownerId}`;
         case 'thirdFilter':
             return `t:f:${action.ownerId}:${encodeFilter(action.filter)}`;
-        case 'thirdGifted':
-            return `t:gl:${action.ownerId}:${action.offset}`;
         case 'giveListPage':
             return `g:p:${action.offset}`;
         case 'giveRemove':
@@ -371,12 +361,6 @@ const decodeWishlist = (parts: readonly string[]): CallbackAction => {
     if (command === 'p') {
         return withOffset(argument, offset => {
             return { type: 'wishlistPage', offset };
-        });
-    }
-
-    if (command === 'g') {
-        return withOffset(argument, offset => {
-            return { type: 'giftedPage', offset };
         });
     }
 
@@ -511,28 +495,6 @@ const decodeWishImageRemove = (parts: readonly string[]): CallbackAction => {
     });
 };
 
-const decodeGiftedHide = (parts: readonly string[]): CallbackAction => {
-    const [, , first, second, ...rest] = parts;
-
-    if (rest.length > 0) {
-        return OUTDATED;
-    }
-
-    if (second === undefined) {
-        return withWishId(first, wishId => {
-            return { type: 'giftedHide', wishId };
-        });
-    }
-
-    if (first !== CONFIRM_SUFFIX) {
-        return OUTDATED;
-    }
-
-    return withWishId(second, wishId => {
-        return { type: 'giftedHideConfirm', wishId };
-    });
-};
-
 const decodeWishAdd = (
     variant: string | undefined,
     argument: string | undefined,
@@ -562,8 +524,7 @@ const WISH_DECODERS_BY_COMMAND: Readonly<
     pl: decodeWishPrioritySet,
     cu: decodeWishCurrencySet,
     if: decodeWishImageFirst,
-    ir: decodeWishImageRemove,
-    gh: decodeGiftedHide
+    ir: decodeWishImageRemove
 };
 
 const decodeWish = (parts: readonly string[]): CallbackAction => {
@@ -614,10 +575,6 @@ const decodeWish = (parts: readonly string[]): CallbackAction => {
             return withWishId(first, wishId => {
                 return { type: 'wishImagesClearConfirm', wishId };
             });
-        case 'gr':
-            return withWishId(first, wishId => {
-                return { type: 'giftedRestore', wishId };
-            });
         case 'v':
             return withWishId(first, wishId => {
                 return { type: 'wishToggleVisibility', wishId };
@@ -647,18 +604,6 @@ const decodeThird = (parts: readonly string[]): CallbackAction => {
 
         return withOffset(second, offset => {
             return { type: 'thirdPage', ownerId, offset };
-        });
-    }
-
-    if (command === 'gl') {
-        const ownerId = parseEntityId(first);
-
-        if (ownerId === null) {
-            return OUTDATED;
-        }
-
-        return withOffset(second, offset => {
-            return { type: 'thirdGifted', ownerId, offset };
         });
     }
 
@@ -994,10 +939,6 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishlistShareGifted: 'wishlist:shareGifted',
     wishlistFilterMenu: 'wishlist:filterMenu',
     wishlistFilter: 'wishlist:filter',
-    giftedPage: 'gifted:page',
-    giftedRestore: 'gifted:restore',
-    giftedHide: 'gifted:hide',
-    giftedHideConfirm: 'gifted:hideConfirm',
     wishEdit: 'wish:edit',
     wishRemove: 'wish:remove',
     wishRemoveConfirm: 'wish:removeConfirm',
@@ -1019,7 +960,6 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     thirdTake: 'third:take',
     thirdFilterMenu: 'third:filterMenu',
     thirdFilter: 'third:filter',
-    thirdGifted: 'third:gifted',
     giveListPage: 'giveList:page',
     giveRemove: 'giveList:remove',
     giveRemoveConfirm: 'giveList:removeConfirm',

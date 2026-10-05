@@ -66,8 +66,7 @@ export type ScreenId =
     | 'disclosure'
     | 'wishPriority'
     | 'wishImages'
-    | 'listImport'
-    | 'giftedList';
+    | 'listImport';
 
 export type NavigationScreenId = Extract<
     ScreenId,
@@ -165,10 +164,6 @@ export type CallbackAction =
     | { type: 'wishlistShareGifted' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
-    | { type: 'giftedPage'; offset: number }
-    | { type: 'giftedRestore'; wishId: number }
-    | { type: 'giftedHide'; wishId: number }
-    | { type: 'giftedHideConfirm'; wishId: number }
     | { type: 'wishEdit'; wishId: number }
     | { type: 'wishRemove'; wishId: number }
     | { type: 'wishRemoveConfirm'; wishId: number; done: boolean }
@@ -200,7 +195,6 @@ export type CallbackAction =
     | { type: 'thirdTake'; wishId: number }
     | { type: 'thirdFilterMenu'; ownerId: number }
     | { type: 'thirdFilter'; ownerId: number; filter: WishFilter | null }
-    | { type: 'thirdGifted'; ownerId: number; offset: number }
     | { type: 'giveListPage'; offset: number }
     | { type: 'giveRemove'; wishId: number }
     | { type: 'giveRemoveConfirm'; wishId: number }
@@ -302,8 +296,6 @@ export type BotActionName =
     | 'contact_disclosure_changed'
     | 'delivery_address_updated'
     | 'delivery_address_removed'
-    | 'wish_restored'
-    | 'gifted_hidden'
     | 'show_gifted_changed';
 
 export type InternalFailureEvent =

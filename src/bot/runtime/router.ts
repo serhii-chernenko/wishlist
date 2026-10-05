@@ -50,8 +50,7 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'disclosure',
     'wishPriority',
     'wishImages',
-    'listImport',
-    'giftedList'
+    'listImport'
 ]);
 
 const GUEST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([

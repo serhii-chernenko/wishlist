@@ -47,11 +47,6 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishlistFilter', filter: 0 }, 'wl:f:0'],
     [{ type: 'wishlistFilter', filter: 4 }, 'wl:f:4'],
     [{ type: 'wishlistFilter', filter: null }, 'wl:f:x'],
-    [{ type: 'giftedPage', offset: 0 }, 'wl:g:0'],
-    [{ type: 'giftedPage', offset: 10 }, 'wl:g:10'],
-    [{ type: 'giftedRestore', wishId: 12 }, 'w:gr:12'],
-    [{ type: 'giftedHide', wishId: 12 }, 'w:gh:12'],
-    [{ type: 'giftedHideConfirm', wishId: 12 }, 'w:gh:y:12'],
     [{ type: 'wishEdit', wishId: 12 }, 'w:e:12'],
     [{ type: 'wishRemove', wishId: 12 }, 'w:r:12'],
     [{ type: 'wishRemoveConfirm', wishId: 12, done: true }, 'w:r:y:12'],
@@ -89,8 +84,6 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'thirdFilterMenu', ownerId: 5 }, 't:f:5'],
     [{ type: 'thirdFilter', ownerId: 5, filter: 2 }, 't:f:5:2'],
     [{ type: 'thirdFilter', ownerId: 5, filter: null }, 't:f:5:x'],
-    [{ type: 'thirdGifted', ownerId: 5, offset: 0 }, 't:gl:5:0'],
-    [{ type: 'thirdGifted', ownerId: 5, offset: 20 }, 't:gl:5:20'],
     [{ type: 'giveListPage', offset: 30 }, 'g:p:30'],
     [{ type: 'giveRemove', wishId: 9 }, 'g:r:9'],
     [{ type: 'giveRemoveConfirm', wishId: 9 }, 'g:r:y:9'],
@@ -139,9 +132,6 @@ const WORST_CASE_VARIANTS: readonly EncodableCallbackAction[] = [
     { type: 'linkOfferAccept', createdAt: MAX_ID },
     { type: 'wishlistPage', offset: MAX_OFFSET },
     { type: 'giveListPage', offset: MAX_OFFSET },
-    { type: 'giftedPage', offset: MAX_OFFSET },
-    { type: 'giftedHideConfirm', wishId: MAX_ID },
-    { type: 'thirdGifted', ownerId: MAX_ID, offset: MAX_OFFSET },
     { type: 'giveRemoveConfirm', wishId: MAX_ID },
     { type: 'giveRemoveKeep', wishId: MAX_ID },
     { type: 'releasesPage', offset: MAX_OFFSET },
@@ -295,6 +285,11 @@ test('malformed new-style data decodes as outdated', () => {
         'imp:x:abc',
         'imp:r:-1',
         'imp:q:5',
+        'wl:g:0',
+        'w:gr:12',
+        'w:gh:12',
+        'w:gh:y:12',
+        't:gl:5:0',
         'wl:g',
         'wl:g:-1',
         'wl:g:1:2',
@@ -350,9 +345,6 @@ test('callback categories are closed and never contain ids', () => {
         'wish:linkOffer'
     );
     assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
-    assert.equal(getCallbackCategory('wl:g:10'), 'gifted:page');
-    assert.equal(getCallbackCategory('w:gh:y:12345'), 'gifted:hideConfirm');
-    assert.equal(getCallbackCategory('t:gl:12345:0'), 'third:gifted');
     assert.equal(getCallbackCategory('g:r:y:12345'), 'giveList:removeConfirm');
     assert.equal(getCallbackCategory('w:ir:7:0:a1b2c3d4'), 'wish:imageRemove');
     assert.equal(getCallbackCategory('rel:p:3'), 'releases:page');

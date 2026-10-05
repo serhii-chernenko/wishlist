@@ -27,7 +27,6 @@ import {
     callbacks as findListCallbacks,
     screen as findListScreen
 } from '../../src/bot/screens/find-list';
-import { callbacks as giftedListCallbacks } from '../../src/bot/screens/gifted-list';
 import {
     callbacks as giveListCallbacks,
     screen as giveListScreen
@@ -82,7 +81,6 @@ const allCallbacks: CallbackTable[] = [
     findListCallbacks,
     thirdCallbacks,
     giveListCallbacks,
-    giftedListCallbacks,
     wishImagesCallbacks
 ];
 
@@ -1581,21 +1579,6 @@ describe('wishlist screens on D1', () => {
             return wish;
         };
 
-        const giftWish = async (owner: UserRecord) => {
-            const wish = await createWishFor(owner, 'gifted');
-
-            await run(
-                harness.repositories.wishes.softRemove(
-                    wish.id,
-                    owner.id,
-                    true,
-                    new Date()
-                )
-            );
-
-            return wish;
-        };
-
         const setImages = async (wishId: number, fileIds: string[]) => {
             await harness.env.DB.prepare(
                 'UPDATE wishes SET images = ? WHERE id = ?'
@@ -1607,23 +1590,6 @@ describe('wishlist screens on D1', () => {
         const hash8 = async (fileId: string) => {
             return (await sha256Hex(getRuntimeCrypto(), fileId)).slice(0, 8);
         };
-
-        it('records wish_restored and gifted_hidden from the gifted list', async () => {
-            const owner = await createUser();
-            const restored = await giftWish(owner);
-            const hidden = await giftWish(owner);
-            const restore = createRequest(owner);
-
-            await dispatch(restore.request, `w:gr:${restored.id}`);
-            assert.deepEqual(restore.telemetry, [{ action: 'wish_restored' }]);
-
-            const hide = createRequest(owner);
-
-            await dispatch(hide.request, `w:gh:y:${hidden.id}`);
-            assert.deepEqual(hide.telemetry, [
-                { action: 'gifted_hidden', result: 'on' }
-            ]);
-        });
 
         it('records wish_priority_set only when the level changes', async () => {
             const LL = getMessages('uk');

@@ -247,9 +247,9 @@ const en: Translation = {
         },
         remove: {
             confirm:
-                '❓ Did this wish come true?\n\n✅ <b>Yes</b>: it moves to “🎁 Gifted”. You can bring it back from there, and friends will see it if you show gifted wishes.\n❌ <b>No</b>: the wish is simply removed.',
+                '❓ Did this wish come true?\n\n✅ <b>Yes</b>: it moves to “Gifted” in the app. You can bring it back from there, and friends will see it if you show gifted wishes.\n❌ <b>No</b>: the wish is deleted.\n↩️ <b>Cancel</b>: nothing changes.',
             success: '✅ Wish removed!',
-            gifted: '🎁 Wish moved to “Gifted”!',
+            gifted: '🎁 Wish moved to “Gifted” in the app!',
             cancel: '↩️ Cancel'
         },
         clean: {
@@ -292,18 +292,6 @@ const en: Translation = {
                 shown: '🎁 Friends will now see the gifts you’ve already received at the end of your list.',
                 hidden: '🙈 Friends no longer see your gifted wishes.'
             }
-        },
-        gifted: {
-            entry: '🎁 Gifted ({count})',
-            title: '🎁 <b>Gifted</b>\n\nWishes you’ve already received. Friends see them at the end of your list if you show gifted wishes.',
-            after: '❓<b>What would you like to do?</b>\n\n↩️ Put a wish back on your list.\n🙈 Hide it forever for everyone.',
-            empty: 'Nothing in “Gifted” yet.',
-            restore: '↩️ Back to my wishes',
-            hide: '🙈 Hide forever for everyone',
-            hideConfirm:
-                '❓ Hide “{title}” forever for everyone?\n\nNeither you nor your friends will see it. It stays in the stats.',
-            restored: '✅ The wish is back on your list!',
-            hidden: '🙈 The wish is hidden forever.'
         }
     },
     giveList: {
@@ -372,14 +360,8 @@ const en: Translation = {
             give: '✅ Reserved! The wish was added to your <b>Gifts to give</b> list.',
             take: '✅ Reservation canceled. The wish was removed from your <b>Gifts to give</b> list.'
         },
-        gifted: {
-            counts: 'Active: {active}, gifted: {gifted}',
-            noActive:
-                'No active wishes right now. To see what’s already been gifted, open “🎁 Gifted.”',
-            entry: '🎁 Gifted ({count})',
-            title: '🎁 Already gifted from the list of <b>{0}</b>:',
-            after: 'These wishes have already been gifted, so there’s no need to reserve them.'
-        }
+        noActive:
+            'No active wishes right now. You can see the gifted ones in the app.'
     },
     donate: {
         title: '💸 Support the author with a donation 🥹👉👈',
@@ -471,7 +453,7 @@ const en: Translation = {
         preview: {
             title: '📥 <b>Found in the wish list</b>',
             active: '🎁 New wishes: {count}',
-            gifted: '🎉 Gifted, going to “Gifted”: {count}',
+            gifted: '🎉 Gifted, going to “Gifted” in the app: {count}',
             duplicates: '♻️ Already in your list, skipped: {count}',
             withoutPrice: '💸 No price (other currency): {count}',
             overLimit: '🚫 Over the 500-wish limit: {count}',
@@ -493,7 +475,7 @@ const en: Translation = {
         progress: '⏳ Added {created} of {planned}…',
         done: {
             summary: '✅ Import finished! Wishes added: {created}.',
-            gifted: 'Of them gifted: {gifted}.',
+            gifted: 'Of them gifted (find them under “Gifted” in the app): {gifted}.',
             photos: '🖼 Photos will load gradually.',
             photosLeft: '🖼 Photos still loading: {count}.'
         },

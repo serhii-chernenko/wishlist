@@ -249,9 +249,9 @@ const pl: Translation = {
         },
         remove: {
             confirm:
-                '❓ Czy to życzenie się spełniło?\n\n✅ <b>Tak</b>: trafi do „🎁 Podarowane”. Można je stamtąd przywrócić, a znajomi zobaczą je, jeśli pokazujesz podarowane.\n❌ <b>Nie</b>: życzenie zostanie po prostu usunięte.',
+                '❓ Czy to życzenie się spełniło?\n\n✅ <b>Tak</b>: trafi do „Podarowane” w aplikacji. Można je stamtąd przywrócić, a znajomi zobaczą je, jeśli pokazujesz podarowane.\n❌ <b>Nie</b>: życzenie zostanie usunięte.\n↩️ <b>Anuluj</b>: nic się nie zmieni.',
             success: '✅ Życzenie zostało usunięte!',
-            gifted: '🎁 Życzenie trafiło do „Podarowane”!',
+            gifted: '🎁 Życzenie trafiło do „Podarowane” w aplikacji!',
             cancel: '↩️ Anuluj'
         },
         clean: {
@@ -294,18 +294,6 @@ const pl: Translation = {
                 shown: '🎁 Na końcu listy znajomi zobaczą, co już zostało ci podarowane.',
                 hidden: '🙈 Znajomi nie widzą już podarowanych życzeń.'
             }
-        },
-        gifted: {
-            entry: '🎁 Podarowane ({count})',
-            title: '🎁 <b>Podarowane</b>\n\nŻyczenia, które już ci podarowano. Znajomi widzą je na końcu twojej listy, jeśli pokazujesz podarowane.',
-            after: '❓<b>Co chcesz zrobić?</b>\n\n↩️ Przywrócić życzenie na listę.\n🙈 Ukryć je na zawsze dla wszystkich.',
-            empty: 'W „Podarowanych” na razie nic nie ma.',
-            restore: '↩️ Przywróć do moich życzeń',
-            hide: '🙈 Ukryj na zawsze dla wszystkich',
-            hideConfirm:
-                '❓ Ukryć „{title}” na zawsze dla wszystkich?\n\nNie zobaczysz go ani ty, ani znajomi. W statystykach zostanie.',
-            restored: '✅ Życzenie wróciło na listę!',
-            hidden: '🙈 Życzenie zostało ukryte na zawsze.'
         }
     },
     giveList: {
@@ -375,14 +363,8 @@ const pl: Translation = {
             give: '✅ Zarezerwowano! Życzenie trafiło na listę <b>Chcę podarować</b>.',
             take: '✅ Rezerwacja anulowana, życzenie usunięto z listy <b>Chcę podarować</b>.'
         },
-        gifted: {
-            counts: 'Aktywne: {active}, podarowane: {gifted}',
-            noActive:
-                'Obecnie nie ma aktywnych życzeń. To, co już podarowano, znajdziesz w „🎁 Podarowane”.',
-            entry: '🎁 Podarowane ({count})',
-            title: '🎁 Podarowane z listy <b>{0}</b>:',
-            after: 'Te życzenia zostały już podarowane, więc nie trzeba ich rezerwować.'
-        }
+        noActive:
+            'Obecnie nie ma aktywnych życzeń. Podarowane możesz zobaczyć w aplikacji.'
     },
     donate: {
         title: '💸 Wesprzyj autora darowizną 🥹👉👈',
@@ -474,7 +456,7 @@ const pl: Translation = {
         preview: {
             title: '📥 <b>Znaleziono na liście życzeń</b>',
             active: '🎁 Nowe życzenia: {count}',
-            gifted: '🎉 Podarowane, trafią do „Podarowane”: {count}',
+            gifted: '🎉 Podarowane, trafią do „Podarowane” w aplikacji: {count}',
             duplicates: '♻️ Już je masz, pominę: {count}',
             withoutPrice: '💸 Bez ceny (inna waluta): {count}',
             overLimit: '🚫 Poza limitem 500 życzeń: {count}',
@@ -497,7 +479,7 @@ const pl: Translation = {
         progress: '⏳ Dodano {created} z {planned}…',
         done: {
             summary: '✅ Import zakończony! Dodano życzeń: {created}.',
-            gifted: 'W tym podarowanych: {gifted}.',
+            gifted: 'W tym podarowanych (znajdziesz je w „Podarowane” w aplikacji): {gifted}.',
             photos: '🖼 Zdjęcia będą pojawiać się stopniowo.',
             photosLeft: '🖼 Zdjęcia wciąż się wczytują: {count}.'
         },

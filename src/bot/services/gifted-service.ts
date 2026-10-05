@@ -21,11 +21,6 @@ export type GiftedHiddenOutcome =
     | { status: 'updated'; wish: WishRecord }
     | { status: 'missing' };
 
-export interface GiftedPageRequest {
-    offset: number;
-    limit: number;
-}
-
 export interface ShowGiftedOutcome {
     user: UserRecord;
     changed: boolean;
@@ -122,11 +117,7 @@ export const createGiftedService = (
         },
         listVisibleOf(
             owner: Pick<UserRecord, 'id' | 'showGifted'>,
-            priceBounds: PriceBoundsByCurrency | null,
-            page: GiftedPageRequest = {
-                offset: 0,
-                limit: APP_THIRD_PARTY_GIFTED_LIMIT
-            }
+            priceBounds: PriceBoundsByCurrency | null
         ) {
             if (!owner.showGifted) {
                 return Promise.resolve([]);
@@ -135,29 +126,7 @@ export const createGiftedService = (
             return runRepository(
                 repositories.wishes.listGiftedVisibleOf(owner.id, {
                     filter: priceBounds,
-                    ...page
-                })
-            );
-        },
-        countOwned(userId: number, priceBounds: PriceBoundsByCurrency | null) {
-            return runRepository(
-                repositories.wishes.countOwnedGifted(userId, priceBounds)
-            );
-        },
-        findOwned(wishId: number, userId: number) {
-            return runRepository(
-                repositories.wishes.findOwnedGifted(wishId, userId)
-            );
-        },
-        listOwned(
-            userId: number,
-            priceBounds: PriceBoundsByCurrency | null,
-            page: GiftedPageRequest
-        ) {
-            return runRepository(
-                repositories.wishes.listOwnedGifted(userId, {
-                    filter: priceBounds,
-                    ...page
+                    limit: APP_THIRD_PARTY_GIFTED_LIMIT
                 })
             );
         }

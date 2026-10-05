@@ -106,12 +106,6 @@ export const renderWishHtml = (
     );
 };
 
-export const withoutPriority = <Wish extends WishMarkupSource>(
-    wish: Wish
-): Wish => {
-    return { ...wish, priorityLevel: 0 };
-};
-
 export const toWishMessage = (
     html: string,
     wish: Pick<WishRecord, 'images'>

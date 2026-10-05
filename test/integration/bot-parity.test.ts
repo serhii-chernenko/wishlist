@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, describe, it } from 'node:test';
+import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { getRuntimeCrypto, sha256Hex } from '../../src/api/auth/crypto';
 import { getMessages } from '../../src/bot/content/messages';
@@ -112,159 +112,74 @@ describe('Bot parity with the Mini App', () => {
         await webhook.reset();
     });
 
-    describe('own gifted wishes', () => {
-        it('offers the gifted list from the wishlist only when gifted wishes exist', async () => {
+    describe('own list stays active-only', () => {
+        it('has no gifted entry or gifted list in the bot', async () => {
             const owner = await webhook.registerUser(alice);
 
             await webhook.createWish(owner, 'Active');
-            await tap(alice, 'n:wl');
-
-            assert.equal(
-                callbackDataOf(webhook.lastMessage()).includes('wl:g:0'),
-                false
-            );
-
             await createGiftedWish(owner, 'Gifted one');
             await createGiftedWish(owner, 'Gifted two');
-            webhook.clearApiCalls();
             await tap(alice, 'n:wl');
 
-            const footer = webhook.lastMessage();
+            const texts = webhook.messageTexts();
 
-            assert.ok(callbackDataOf(footer).includes('wl:g:0'));
-            assert.ok(
-                buttonTextsOf(footer).includes(
-                    LL.wishlist.gifted.entry({ count: 2 })
-                )
+            assert.ok(texts.some(text => text.includes('Active')));
+            assert.equal(
+                texts.some(text => text.includes('Gifted')),
+                false
+            );
+            assert.equal(
+                webhook.sentMessages().some(message => {
+                    return callbackDataOf(message).some(data => {
+                        return data.startsWith('wl:g:');
+                    });
+                }),
+                false
             );
         });
 
-        it('keeps the gifted entry on an empty list that only has gifted wishes', async () => {
+        it('shows the plain empty list when only gifted wishes exist', async () => {
             const owner = await webhook.registerUser(alice);
 
             await createGiftedWish(owner, 'Gifted');
             await tap(alice, 'n:wl');
 
             assert.equal(webhook.lastMessage().text, LL.wishlist.empty());
-            assert.ok(callbackDataOf(webhook.lastMessage()).includes('wl:g:0'));
-        });
-
-        it('lists gifted wishes with restore and hide buttons and leaves out hidden-forever ones', async () => {
-            const owner = await webhook.registerUser(alice);
-            const shown = await createGiftedWish(owner, 'Kettle');
-            const hidden = await createGiftedWish(owner, 'Scarf');
-
-            await webhook.run(
-                webhook.d1.repositories.wishes.setGiftedHidden(
-                    hidden.id,
-                    owner.id,
-                    true
-                )
-            );
-            await tap(alice, 'wl:g:0');
-
-            const texts = webhook.messageTexts();
-
-            assert.equal(texts[0], LL.wishlist.gifted.title());
-            assert.ok(texts.some(text => text.includes('Kettle')));
             assert.equal(
-                texts.some(text => text.includes('Scarf')),
+                callbackDataOf(webhook.lastMessage()).some(data => {
+                    return data.startsWith('wl:g:');
+                }),
                 false
             );
-            assert.deepEqual(
-                callbackDataOf(messagesWith(`w:gr:${shown.id}`)[0]),
-                [`w:gr:${shown.id}`, `w:gh:${shown.id}`]
-            );
-            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
-                'n:wl',
-                'n:home'
-            ]);
         });
 
-        it('restores a gifted wish into the active list', async () => {
+        it('treats the removed gifted buttons of older messages as outdated', async () => {
             const owner = await webhook.registerUser(alice);
             const wish = await createGiftedWish(owner, 'Kettle');
 
-            await tap(alice, `w:gr:${wish.id}`);
+            for (const data of [
+                'wl:g:0',
+                `w:gr:${wish.id}`,
+                `w:gh:${wish.id}`,
+                `w:gh:y:${wish.id}`
+            ]) {
+                webhook.clearApiCalls();
+                await tap(alice, data);
+
+                assert.ok(
+                    answeredTexts().includes(LL.errors.outdatedButton()),
+                    data
+                );
+            }
 
             assert.deepEqual(await readWishState(wish.id), {
-                removed: 0,
-                done: 0,
+                removed: 1,
+                done: 1,
                 gifted_hidden: 0
             });
-            assert.ok(
-                webhook.messageTexts().includes(LL.wishlist.gifted.restored())
-            );
-            assert.ok(
-                webhook.messageTexts().includes(LL.wishlist.filled.before())
-            );
         });
 
-        it('treats a second restore press and another user as an outdated button', async () => {
-            const owner = await webhook.registerUser(alice);
-            const wish = await createGiftedWish(owner, 'Kettle');
-
-            await webhook.registerUser(bob);
-            await tap(bob, `w:gr:${wish.id}`);
-
-            assert.equal((await readWishState(wish.id))?.removed, 1);
-            assert.ok(
-                webhook.messageTexts().includes(LL.errors.outdatedButton())
-            );
-
-            await tap(alice, `w:gr:${wish.id}`);
-            webhook.clearApiCalls();
-            await tap(alice, `w:gr:${wish.id}`);
-
-            assert.ok(
-                webhook.messageTexts().includes(LL.errors.outdatedButton())
-            );
-            assert.equal((await readWishState(wish.id))?.removed, 0);
-        });
-
-        it('asks before hiding a gifted wish forever and repeats the hint', async () => {
-            const owner = await webhook.registerUser(alice);
-            const wish = await createGiftedWish(owner, 'Kettle <3');
-
-            await tap(alice, `w:gh:${wish.id}`);
-
-            assert.equal(
-                webhook.lastMessage().text,
-                LL.wishlist.gifted.hideConfirm({ title: 'Kettle &lt;3' })
-            );
-            assert.ok(
-                webhook
-                    .lastMessage()
-                    .text.includes(
-                        'Його не побачиш ні ти, ні друзі. У статистиці залишиться.'
-                    )
-            );
-            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
-                `w:gh:y:${wish.id}`,
-                'wl:g:0'
-            ]);
-
-            await tap(alice, 'wl:g:0');
-
-            assert.equal((await readWishState(wish.id))?.gifted_hidden, 0);
-
-            webhook.clearApiCalls();
-            await tap(alice, `w:gh:y:${wish.id}`);
-
-            assert.equal((await readWishState(wish.id))?.gifted_hidden, 1);
-            assert.ok(
-                webhook.messageTexts().includes(LL.wishlist.gifted.hidden())
-            );
-
-            webhook.clearApiCalls();
-            await tap(alice, `w:gh:y:${wish.id}`);
-
-            assert.ok(
-                webhook.messageTexts().includes(LL.errors.outdatedButton())
-            );
-        });
-
-        it('moves a wish removed as done into the gifted list and offers a cancel button', async () => {
+        it('moves a wish removed as done to the gifted list of the app and offers a cancel button', async () => {
             const owner = await webhook.registerUser(alice);
             const wish = await webhook.createWish(owner, 'Lamp');
 
@@ -280,23 +195,66 @@ describe('Bot parity with the Mini App', () => {
                     LL.wishlist.remove.cancel()
                 )
             );
+            assert.ok(webhook.lastMessage().text.includes('у застосунку'));
 
             await tap(alice, 'n:wl');
 
             assert.equal((await readWishState(wish.id))?.removed, 0);
 
             await tap(alice, `w:r:y:${wish.id}`);
-            webhook.clearApiCalls();
-            await tap(alice, 'wl:g:0');
 
+            assert.deepEqual(await readWishState(wish.id), {
+                removed: 1,
+                done: 1,
+                gifted_hidden: 0
+            });
             assert.ok(
-                webhook.messageTexts().some(text => text.includes('Lamp'))
+                webhook.messageTexts().includes(LL.wishlist.remove.gifted())
             );
+            assert.ok(LL.wishlist.remove.gifted().includes('у застосунку'));
+        });
+
+        it('deletes without moving to gifted on the no answer', async () => {
+            const owner = await webhook.registerUser(alice);
+            const wish = await webhook.createWish(owner, 'Lamp');
+
+            await tap(alice, `w:r:n:${wish.id}`);
+
+            assert.deepEqual(await readWishState(wish.id), {
+                removed: 1,
+                done: 0,
+                gifted_hidden: 0
+            });
         });
     });
 
-    describe('third-party gifted wishes', () => {
-        it('shows the active and gifted counts and a gifted button', async () => {
+    describe('third-party list shows active wishes only', () => {
+        let miniAppEnabledBefore: string | undefined;
+
+        const openMiniApp = () => {
+            Object.assign(webhook.d1.env, { MINI_APP_ENABLED: 'true' });
+        };
+
+        beforeEach(() => {
+            miniAppEnabledBefore = webhook.d1.env.MINI_APP_ENABLED;
+        });
+
+        afterEach(() => {
+            Object.assign(webhook.d1.env, {
+                MINI_APP_ENABLED: miniAppEnabledBefore
+            });
+        });
+
+        const webAppUrlsOf = (message: SentMessage) => {
+            const rows = (message.reply_markup?.inline_keyboard ??
+                []) as unknown as { web_app?: { url: string } }[][];
+
+            return rows.flat().flatMap(button => {
+                return button.web_app === undefined ? [] : [button.web_app.url];
+            });
+        };
+
+        it('shows the active wishes without gifted counts, buttons or cards', async () => {
             const owner = await webhook.registerUser(alice, {
                 showGifted: true
             });
@@ -306,26 +264,40 @@ describe('Bot parity with the Mini App', () => {
             await webhook.registerUser(bob);
             await searchAlice();
 
-            const header = webhook.messageTexts().find(text => {
+            const texts = webhook.messageTexts();
+            const header = texts.find(text => {
                 return text.startsWith(LL.findList.filled.before('@alice'));
             });
 
-            assert.ok(
-                header?.endsWith(
-                    LL.findList.gifted.counts({ active: 1, gifted: 1 })
-                )
+            assert.equal(header, LL.findList.filled.before('@alice'));
+            assert.ok(texts.some(text => text.includes('Active one')));
+            assert.equal(
+                texts.some(text => text.includes('Gifted one')),
+                false
             );
-            assert.ok(
-                callbackDataOf(webhook.lastMessage()).includes(
-                    `t:gl:${owner.id}:0`
-                )
+            assert.equal(
+                webhook.sentMessages().some(message => {
+                    return callbackDataOf(message).some(data => {
+                        return data.startsWith('t:gl:');
+                    });
+                }),
+                false
             );
         });
 
-        it('says there are no active wishes instead of an empty list when only gifted wishes are shown', async () => {
+        it('says there are no active wishes instead of an empty list when only gifted wishes are visible', async () => {
+            openMiniApp();
+
             const owner = await webhook.registerUser(alice, {
                 showGifted: true
             });
+            const share = await webhook.run(
+                webhook.d1.repositories.shares.publish(
+                    owner.id,
+                    'Alice',
+                    new Date()
+                )
+            );
 
             await createGiftedWish(owner, 'Gifted one');
             await webhook.registerUser(bob);
@@ -335,14 +307,47 @@ describe('Bot parity with the Mini App', () => {
                 webhook.messageTexts().includes(LL.findList.empty()),
                 false
             );
+            assert.equal(webhook.lastMessage().text, LL.findList.noActive());
             assert.equal(
-                webhook.lastMessage().text,
-                LL.findList.gifted.noActive()
+                LL.findList.noActive(),
+                'Активних бажань зараз немає. Подаровані можна переглянути в застосунку.'
             );
-            assert.ok(
-                buttonTextsOf(webhook.lastMessage()).includes(
-                    LL.findList.gifted.entry({ count: 1 })
-                )
+            assert.equal(
+                webhook
+                    .messageTexts()
+                    .some(text => text.includes('Gifted one')),
+                false
+            );
+            assert.equal(
+                callbackDataOf(webhook.lastMessage()).some(data => {
+                    return data.startsWith('t:gl:');
+                }),
+                false
+            );
+            assert.deepEqual(
+                webAppUrlsOf(webhook.lastMessage()).map(url => {
+                    return new URL(url).searchParams.get('start');
+                }),
+                [`s_${share.publicId}`]
+            );
+        });
+
+        it('opens the app search when the owner has no share link', async () => {
+            openMiniApp();
+
+            const owner = await webhook.registerUser(alice, {
+                showGifted: true
+            });
+
+            await createGiftedWish(owner, 'Gifted one');
+            await webhook.registerUser(bob);
+            await searchAlice();
+
+            assert.deepEqual(
+                webAppUrlsOf(webhook.lastMessage()).map(url => {
+                    return new URL(url).searchParams.get('start');
+                }),
+                ['find']
             );
         });
 
@@ -357,61 +362,23 @@ describe('Bot parity with the Mini App', () => {
 
             assert.ok(webhook.messageTexts().includes(LL.findList.empty()));
             assert.equal(
-                webhook.sentMessages().some(message => {
-                    return callbackDataOf(message).some(data => {
-                        return data.startsWith('t:gl:');
-                    });
-                }),
+                webhook.messageTexts().includes(LL.findList.noActive()),
                 false
             );
         });
 
-        it('lists the gifted wishes without reserve buttons', async () => {
-            const owner = await webhook.registerUser(alice, {
-                showGifted: true
-            });
-            const gifted = await createGiftedWish(owner, 'Gifted one');
-
-            await webhook.createWish(owner, 'Active one');
-            await webhook.registerUser(bob);
-            await searchAlice();
-            webhook.clearApiCalls();
-            await tap(bob, `t:gl:${owner.id}:0`);
-
-            const texts = webhook.messageTexts();
-
-            assert.equal(texts[0], LL.findList.gifted.title('@alice'));
-            assert.ok(texts.some(text => text.includes('Gifted one')));
-            assert.equal(
-                texts.some(text => text.includes('Active one')),
-                false
-            );
-            assert.equal(
-                webhook.sentMessages().some(message => {
-                    return callbackDataOf(message).some(data => {
-                        return data === `t:g:${gifted.id}`;
-                    });
-                }),
-                false
-            );
-            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
-                `t:p:${owner.id}:0`,
-                'n:home'
-            ]);
-        });
-
-        it('rejects the gifted button for an owner the viewer did not search', async () => {
+        it('treats the removed gifted button as outdated', async () => {
             const owner = await webhook.registerUser(alice, {
                 showGifted: true
             });
 
             await createGiftedWish(owner, 'Gifted one');
             await webhook.registerUser(bob);
+            await searchAlice();
+            webhook.clearApiCalls();
             await tap(bob, `t:gl:${owner.id}:0`);
 
-            assert.ok(
-                webhook.messageTexts().includes(LL.errors.outdatedButton())
-            );
+            assert.ok(answeredTexts().includes(LL.errors.outdatedButton()));
             assert.equal(
                 webhook
                     .messageTexts()
