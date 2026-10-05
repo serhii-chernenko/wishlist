@@ -6,6 +6,7 @@ import {
     getReleases,
     renderReleaseAnnouncement
 } from '../../bot/content/releases';
+import { getReleaseMedia } from '../../bot/content/release-media';
 import { createDb } from '../../db/client';
 import { createRepositories } from '../../db/repositories';
 import type { WorkerBindings } from '../env';
@@ -37,7 +38,8 @@ const releaseAnnouncementTelemetryFields = (entry: Record<string, unknown>) => {
         ...(typeof entry.errorType === 'string'
             ? { errorType: entry.errorType }
             : {}),
-        ...(typeof entry.reason === 'string' ? { reason: entry.reason } : {})
+        ...(typeof entry.reason === 'string' ? { reason: entry.reason } : {}),
+        ...(typeof entry.outcome === 'string' ? { outcome: entry.outcome } : {})
     };
 };
 
@@ -69,6 +71,7 @@ export const createReleaseAnnouncementDependencies = (
 
             return release ? renderReleaseAnnouncement(release, locale) : null;
         },
+        getReleaseMedia,
         async claimForSending(announcementId, now) {
             return Effect.runPromise(
                 repositories.releaseAnnouncements.claimForSending(
@@ -77,11 +80,27 @@ export const createReleaseAnnouncementDependencies = (
                 )
             );
         },
+        async sendMediaGroup(telegramId, fileIds) {
+            await telegram.sendMediaGroup(
+                telegramId,
+                fileIds.map(fileId => {
+                    return { type: 'photo', media: fileId };
+                })
+            );
+        },
         async sendMessage(telegramId, html) {
             await telegram.sendMessage(telegramId, html, {
                 parse_mode: 'HTML',
                 link_preview_options: { is_disabled: true }
             });
+        },
+        async markMediaSent(announcementId, now) {
+            await Effect.runPromise(
+                repositories.releaseAnnouncements.markMediaSent(
+                    announcementId,
+                    now
+                )
+            );
         },
         async markBlocked(telegramId, now) {
             await Effect.runPromise(

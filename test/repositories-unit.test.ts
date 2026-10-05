@@ -102,6 +102,7 @@ const expectedMethods: Record<string, string[]> = {
         'markSent',
         'claimForSending',
         'markSkipped',
+        'markMediaSent',
         'releaseToQueue',
         'markFailed',
         'requeueStaleQueued',

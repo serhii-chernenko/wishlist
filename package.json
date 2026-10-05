@@ -70,6 +70,7 @@
         "changeset:add": "changeset",
         "changeset:status": "changeset status",
         "releases:broadcast:prod": "tsx scripts/releases/trigger-broadcast.ts production",
+        "releases:media:upload": "tsx scripts/releases/upload-media.ts",
         "changeset:validate": "tsx scripts/releases/validate-changesets.ts",
         "changeset:version": "pnpm run changeset:validate && changeset version && tsx scripts/releases/stamp-changelog.ts && pnpm run releases:sync && pnpm install --lockfile-only",
         "lint": "oxlint .",

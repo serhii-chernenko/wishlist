@@ -93,7 +93,14 @@ describe('Release announcements on D1', () => {
         requeueJob: (
             job: ReleaseAnnouncementJob,
             delaySeconds: number
-        ) => Promise<void> = async () => undefined
+        ) => Promise<void> = async () => undefined,
+        album: {
+            fileIds: readonly string[];
+            sendMediaGroup: (
+                telegramId: number,
+                fileIds: readonly string[]
+            ) => Promise<void>;
+        } = { fileIds: [], sendMediaGroup: async () => undefined }
     ) => {
         const env = createWorkerEnv(harness, {
             BOT_TOKEN: '123456:test',
@@ -102,10 +109,21 @@ describe('Release announcements on D1', () => {
 
         return processReleaseAnnouncementBatch([message], {
             ...createReleaseAnnouncementDependencies(env),
+            getReleaseMedia: () => album.fileIds,
+            sendMediaGroup: album.sendMediaGroup,
             sendMessage,
             requeueJob,
             log: () => undefined
         });
+    };
+    const readMediaSentAt = async (userId: number) => {
+        const row = await harness.env.DB.prepare(
+            'SELECT media_sent_at AS mediaSentAt FROM release_announcements WHERE user_id = ? AND release_version = ?'
+        )
+            .bind(userId, currentVersion)
+            .first<{ mediaSentAt: number | null }>();
+
+        return row?.mediaSentAt ?? null;
     };
     const findUserId = async (telegramId: number) => {
         const row = await harness.env.DB.prepare(
@@ -355,6 +373,65 @@ describe('Release announcements on D1', () => {
             currentVersion
         );
         assert.equal(await countRows(harness, 'users'), 4);
+    });
+
+    it('sends the album once before the text across a rate-limited retry', async () => {
+        await seedUsers(1, outdatedVersion);
+        await runProducer([]);
+
+        const userId = await findUserId(1001);
+        const deliveries: string[] = [];
+        const album = {
+            fileIds: ['photo-a', 'photo-b', 'photo-c'],
+            async sendMediaGroup(
+                telegramId: number,
+                fileIds: readonly string[]
+            ) {
+                deliveries.push(`album:${telegramId}:${fileIds.length}`);
+            }
+        };
+        const requeued: number[] = [];
+
+        await runConsumer(
+            createMessage(userId),
+            async telegramId => {
+                deliveries.push(`text-limited:${telegramId}`);
+                throw telegramError(429, { retry_after: 2 });
+            },
+            async (_job, delaySeconds) => {
+                requeued.push(delaySeconds);
+            },
+            album
+        );
+
+        assert.deepEqual(requeued, [3]);
+        assert.deepEqual(await readAnnouncement(userId), {
+            status: 'queued',
+            attempts: 0,
+            lastErrorCode: 429
+        });
+        assert.notEqual(await readMediaSentAt(userId), null);
+
+        await runConsumer(
+            createMessage(userId),
+            async telegramId => {
+                deliveries.push(`text:${telegramId}`);
+            },
+            async () => undefined,
+            album
+        );
+
+        assert.deepEqual(deliveries, [
+            'album:1001:3',
+            'text-limited:1001',
+            'text:1001'
+        ]);
+        assert.deepEqual(await readAnnouncement(userId), {
+            status: 'sent',
+            attempts: 1,
+            lastErrorCode: null
+        });
+        assert.equal((await readUser(userId))?.releaseVersion, currentVersion);
     });
 
     it('renders the announcement in the stored or Telegram-derived locale and ignores duplicates', async () => {

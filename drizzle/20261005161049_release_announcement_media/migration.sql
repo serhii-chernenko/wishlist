@@ -1,0 +1,1 @@
+ALTER TABLE `release_announcements` ADD `media_sent_at` integer;

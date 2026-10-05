@@ -127,6 +127,20 @@ describe('D1 migrations', () => {
         }
     });
 
+    it('adds a nullable media_sent_at column to release announcements', async () => {
+        await harness.applyMigrations();
+
+        const { results: columns } = await harness.env.DB.prepare(
+            'PRAGMA table_info("release_announcements")'
+        ).all<{ name: string; type: string; notnull: number }>();
+        const mediaSentAt = columns.find(column => {
+            return column.name === 'media_sent_at';
+        });
+
+        assert.equal(mediaSentAt?.type.toLowerCase(), 'integer');
+        assert.equal(mediaSentAt?.notnull, 0);
+    });
+
     it('is a no-op when applied a second time', async () => {
         await harness.applyMigrations();
         const appliedBefore = await countRows(harness, '__drizzle_migrations');
