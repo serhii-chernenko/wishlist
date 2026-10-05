@@ -482,6 +482,11 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
 
     const listFailure = viewOnly ? null : list.failure;
     const shownGifted = nextOffset === null ? giftedItems : NO_GIFTED;
+    const onlyGifted =
+        visibleItems.length === 0 &&
+        filter === null &&
+        giftedTotal > 0 &&
+        (viewOnly || list.data !== undefined);
 
     return (
         <ScreenLayout
@@ -554,6 +559,11 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                     listFailure === null ? (
                         <TagSkeletons count={2} />
                     ) : null}
+                    {onlyGifted ? (
+                        <Tag class='state-tag'>
+                            <p class='state-text'>{LL.third.noActive()}</p>
+                        </Tag>
+                    ) : null}
                     {visibleItems.length > 0 || shownGifted.length > 0 ? (
                         <WishGrid label={LL.third.title()}>
                             {visibleItems.map((wish, index) => {
@@ -568,18 +578,15 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                         </WishGrid>
                     ) : null}
                     {visibleItems.length === 0 &&
+                    !onlyGifted &&
                     (viewOnly || list.data !== undefined) ? (
-                        filter === null && giftedTotal > 0 ? (
-                            <p class='third-quiet'>{LL.third.noActive()}</p>
-                        ) : (
-                            <Tag class='state-tag'>
-                                <p class='state-text'>
-                                    {filter === null
-                                        ? LL.third.empty()
-                                        : LL.third.filteredEmpty()}
-                                </p>
-                            </Tag>
-                        )
+                        <Tag class='state-tag'>
+                            <p class='state-text'>
+                                {filter === null
+                                    ? LL.third.empty()
+                                    : LL.third.filteredEmpty()}
+                            </p>
+                        </Tag>
                     ) : null}
                     {nextOffset === null ? null : (
                         <button

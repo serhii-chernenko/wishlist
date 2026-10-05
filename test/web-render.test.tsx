@@ -444,10 +444,10 @@ test('with no active wishes the empty alert needs no gifted wishes either', () =
 
     assert.match(empty, /<p class="empty">/);
     assert.doesNotMatch(empty, /No active wishes right now/);
-    assert.doesNotMatch(onlyGifted, /<p class="empty">/);
+    assert.doesNotMatch(onlyGifted, /Nothing here yet/);
     assert.match(
         onlyGifted,
-        /<p class="notice">No active wishes right now\. Below are the ones already gifted\.<\/p>/
+        /<p class="empty">No active wishes right now\. Below are the ones already gifted\.<\/p>/
     );
     assert.match(onlyGifted, /Gifted mug/);
 });

@@ -220,7 +220,7 @@ export const SharePage = ({ model }: { model: SharePageModel }) => {
                 {model.wishes.length > 0 ? null : gifted.length === 0 ? (
                     <p class='empty'>{LL.web.empty()}</p>
                 ) : (
-                    <p class='notice'>{LL.web.noActive()}</p>
+                    <p class='empty'>{LL.web.noActive()}</p>
                 )}
                 {model.wishes.length + gifted.length === 0 ? null : (
                     <>
