@@ -1,0 +1,135 @@
+# wishlist
+
+## 2.0.0 - 05.10.2026
+
+### Major Changes
+
+- [updated] Бот переїхав на нову хмарну інфраструктуру: тепер він працює швидше та надійніше. Усі листи бажань і списки «Хочу подарувати» збережені.
+    - en: The bot has moved to new cloud infrastructure, so it's faster and more reliable. All wish lists and "Gifts to give" lists are safe.
+    - pl: Bot przeniósł się do nowej infrastruktury w chmurze, więc działa szybciej i stabilniej. Wszystkie listy życzeń i listy „Chcę podarować” zostały zachowane.
+- [added] 🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
+  🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
+  🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.
+    - en: 🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
+      🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
+      🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.
+    - pl: 🇵🇱 Bot mówi teraz po polsku, angielsku i ukraińsku. Język zmienisz przyciskiem 🌐 lub poleceniem /lang, a w trybie automatycznym bot dopasuje się do języka twojego Telegrama.
+      🇺🇸 The bot now speaks English, Ukrainian, and Polish. Change the language with the 🌐 button or the /lang command, and in Auto mode the bot follows the language of your Telegram.
+      🇺🇦 Бот тепер розмовляє українською, англійською та польською. Змінити мову можна кнопкою 🌐 або командою /lang, а в режимі «Автоматично» бот підлаштовується під мову твого Телеграму.
+
+- [added] Бажання можна додати за посиланням: встав посилання на товар у застосунку або надішли його боту, і назва, опис, ціна та фото заповняться самі. Працює з більшістю магазинів, а решту завжди можна заповнити вручну.
+    - en: Add a wish from a link: paste a product link in the app or send it to the bot, and the title, description, price, and photos fill in automatically. It works with most stores, and you can always fill in the rest yourself.
+    - pl: Życzenie dodasz z linku: wklej link do produktu w aplikacji albo wyślij go botowi, a nazwa, opis, cena i zdjęcia uzupełnią się same. Działa z większością sklepów, a resztę zawsze uzupełnisz ręcznie.
+- [added] Можна імпортувати лист бажань з rewish.io: у налаштуваннях встав посилання на профіль чи колекцію, і бажання додадуться до твоїх без дублікатів. Подаровані потраплять у «Подароване», а фото підвантажаться поступово.
+    - en: You can import a wish list from rewish.io: paste a profile or collection link in Settings, and the wishes join yours without duplicates. Gifted ones go to "Gifted", and photos load gradually.
+    - pl: Możesz zaimportować listę życzeń z rewish.io: wklej link do profilu lub kolekcji w ustawieniach, a życzenia dołączą do twoich bez duplikatów. Podarowane trafią do „Podarowane”, a zdjęcia wczytają się stopniowo.
+- [added] Валюту тепер можна обрати в налаштуваннях: гривня, долар, євро або злотий. Кожне бажання зберігає валюту, в якій вказана ціна, а друзі бачать суму у своїй валюті, орієнтовно за щоденним курсом НБУ. На сторінці листа бажань валюту можна перемкнути вгорі.
+    - en: You can now pick your currency in Settings: hryvnia, US dollar, euro, or złoty. Each wish keeps the currency it was priced in, and friends see the amount in their own currency, converted approximately at the official daily rate. The wish list page has a currency switcher at the top.
+    - pl: Walutę możesz teraz wybrać w ustawieniach: hrywna, dolar amerykański, euro lub złoty. Każde życzenie zachowuje walutę, w której podano cenę, a znajomi widzą kwotę w swojej walucie, przeliczoną orientacyjnie po oficjalnym dziennym kursie. Na stronie listy życzeń walutę przełączysz u góry.
+- [updated] Замість позначки «Дуже хочу» тепер є пріоритет: низький, середній або високий, з кольоровою позначкою. Бажання з вищим пріоритетом стоять першими, а всі «Дуже хочу» стали високим пріоритетом.
+    - en: Instead of the "Really want this" mark, wishes now have a priority: low, medium, or high, with a colored badge. Higher-priority wishes come first, and every "Really want this" wish is now high priority.
+    - pl: Zamiast oznaczenia „Bardzo chcę” życzenia mają teraz priorytet: niski, średni lub wysoki, z kolorową plakietką. Życzenia o wyższym priorytecie są na początku, a wszystkie „Bardzo chcę” mają teraz wysoki priorytet.
+- [added] Можна зберегти адресу доставки, наприклад відділення чи поштомат, і в меню «Поділитися» обрати, що бачать інші: реквізити, телефон і адресу. Телефон і адресу бачать лише ті, хто відкриває твій лист у Телеграмі, на вебсторінці їх немає ніколи. Там само можна заборонити пошуковим системам показувати твою сторінку.
+    - en: You can save a delivery address, such as a post office branch or a parcel locker, and choose in the Share menu what others see: payment info, phone, and address. Only people who open your list in Telegram see the phone and address; they never appear on the web page. You can also keep search engines from showing your page there.
+    - pl: Możesz zapisać adres dostawy, na przykład oddział lub paczkomat, i w menu „Udostępnij” wybrać, co widzą inni: dane płatnicze, telefon i adres. Telefon i adres widzą tylko osoby, które otwierają twoją listę w Telegramie; na stronie internetowej nie pojawiają się nigdy. Tam też możesz zablokować wyświetlanie twojej strony w wyszukiwarkach.
+- [added] Подаровані бажання тепер не зникають: у застосунку вони стоять у кінці списку з позначкою «Подароване», а друзі бачать їх на сторінці листа, якщо ти не вимкнеш це в «Поділитися».
+    - en: Gifted wishes no longer disappear: in the app they sit at the end of your list with a "Gifted" band, and friends see them on your list page unless you turn that off in Share.
+    - pl: Podarowane życzenia już nie znikają: w aplikacji są na końcu listy z oznaczeniem „Podarowane”, a znajomi widzą je na stronie twojej listy, chyba że wyłączysz to w „Udostępnij”.
+- [added] Фото бажання тепер можна впорядкувати: перетягни їх у застосунку або зроби будь-яке фото першим у чаті. Перше фото стає головним.
+    - en: You can now reorder a wish's photos: drag them in the app or make any photo the first one in the chat. The first photo becomes the cover.
+    - pl: Zdjęcia życzenia możesz teraz ułożyć w dowolnej kolejności: przeciągnij je w aplikacji albo ustaw dowolne zdjęcie jako pierwsze w czacie. Pierwsze zdjęcie staje się zdjęciem głównym.
+
+- [added] Довгі списки бажань тепер розбиті на сторінки: кнопка «Показати ще» підвантажує наступні бажання.
+    - en: Long wish lists are now split into pages: the "Show more" button loads more wishes.
+    - pl: Długie listy życzeń są teraz podzielone na strony: przycisk „Pokaż więcej” wczytuje kolejne życzenia.
+- [added] «Поділитися» тепер створює власну сторінку твого листа бажань на https://wishlist.chernenko.dev замість telegra.ph. Посилання постійне, сторінка оновлюється сама після кожної зміни, має перемикач мов, а припинити ділитися можна будь-коли. Старі сторінки telegra.ph залишаться, але більше не оновлюватимуться.
+    - en: "Share" now creates your own wish list page on https://wishlist.chernenko.dev instead of telegra.ph. The link stays the same, the page updates automatically after every change, it has a language switcher, and you can stop sharing anytime. Old telegra.ph pages will stay up but won't be updated.
+    - pl: „Udostępnij” tworzy teraz własną stronę twojej listy życzeń na https://wishlist.chernenko.dev zamiast telegra.ph. Link się nie zmienia, strona aktualizuje się sama po każdej zmianie, ma przełącznik języków, a udostępnianie możesz wyłączyć w każdej chwili. Stare strony telegra.ph zostaną, ale nie będą już aktualizowane.
+- [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і бронювати бажання. Чат-бот працює як раніше, а дані спільні.
+    - en: Wishlist now has an app right inside Telegram: open it with the "Open app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.
+    - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne.
+- [added] Фото бажань тепер видно й на публічній сторінці листа бажань і їх можна гортати свайпом, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.
+    - en: Wish photos now appear on the public wish list page too, and you can swipe through them. From the page you can also open the list in Telegram right away and reserve a wish.
+    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń i można je przewijać palcem, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie.
+- [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
+    - en: You can now support the author via Monobank, Ko-fi, PayPal, or Revolut.
+    - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.
+- [added] Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.
+    - en: The /releases command shows the history of bot changes, and the bot now announces new versions on its own.
+    - pl: Polecenie /releases pokazuje historię zmian bota, a o nowych wersjach bot teraz informuje sam.
+- [fixed] Виправлено старі помилки: пошук за юзернеймом не залежить від регістру, видимість можна обрати лише за юзернеймом чи лише за номером, «Очистити» знову працює з підтвердженням, бронь скасовується для правильного бажання, у чужому листі знову видно кількість броней, а назви не ламають оформлення повідомлень.
+    - en: Old bugs are fixed: username search is no longer case-sensitive, you can be found by username only or by phone only, "Clear" works again with a confirmation, canceling a reservation affects the right wish, someone else's list shows the reservation count again, and titles no longer break message formatting.
+    - pl: Naprawiono stare błędy: wyszukiwanie po nazwie użytkownika nie zależy od wielkości liter, można być wyszukiwanym tylko po nazwie albo tylko po numerze, „Wyczyść” znowu działa z potwierdzeniem, rezerwacja anuluje się dla właściwego życzenia, na cudzej liście znów widać liczbę rezerwacji, a tytuły nie psują formatowania wiadomości.
+
+## 1.7.0 - 24.12.2023
+
+### Minor Changes
+
+- [added] До кожного бажання можна додавати орієнтовну вартість
+    - en: You can add an estimated price to every wish
+    - pl: Do każdego życzenia można dodać orientacyjną cenę
+- [added] Можна фільтрувати власний лист бажань за вартістю
+    - en: You can filter your own wish list by price
+    - pl: Własną listę życzeń można filtrować według ceny
+- [added] Можна фільтрувати лист бажань іншої людини за вартістю
+    - en: You can filter another person's wish list by price
+    - pl: Listę życzeń innej osoby można filtrować według ceny
+- [notes] Дякую моїй подрузі Марті за ідею :)
+    - en: Thanks to my friend Marta for the idea :)
+    - pl: Dzięki mojej przyjaciółce Marcie za pomysł :)
+- [notes] Смачної куті!
+    - en: Enjoy your kutia!
+    - pl: Smacznej kutii!
+
+## 1.6.0 - 23.12.2023
+
+### Minor Changes
+
+- [added] Тепер можна додавати свої реквізити (Моно-банку, PayPal, Buymeacoffee, тощо) на випадок, коли хтось не зможе подарувати тобі те, щоб ти хотів(-ла), але хоче перевести кошти, що б ти мав(-ла) змогу купити собі це самостійно. Реквізити будуть відображатися на екрані, коли твій лист бажань знайдуть інші користувачі або в контенті згенерованного посту за посиланням, коли ділишся своїм листом бажань.
+    - en: You can now add your own payment details (Monobank, PayPal, Buymeacoffee, etc.) in case someone can't give you what you want but would like to send money so you can buy it yourself. The details are shown on screen when other users find your wish list, and in the generated post behind the link when you share your wish list.
+    - pl: Teraz możesz dodać własne dane płatnicze (Monobank, PayPal, Buymeacoffee itp.) na wypadek, gdyby ktoś nie mógł podarować ci tego, czego chcesz, ale chciałby przesłać pieniądze, żeby można było to kupić samodzielnie. Dane są wyświetlane na ekranie, gdy inni użytkownicy znajdą twoją listę życzeń, oraz w wygenerowanym poście pod linkiem, gdy dzielisz się swoją listą życzeń.
+
+## 1.5.0 - 04.12.2023
+
+### Minor Changes
+
+- [updated] Коли ви реєструвалися, була вказано, що змінити спосіб, за яким вас зможуть знаходити інші користувачі буде неможливо. Радий повідомити, що тепер це не так! Тепер можна змінювати свою видимість для інших користувачів, щоб вас могли знаходити тільки за юзернеймом, тільки за номером телефону чи за обома варіантами
+    - en: When you signed up, it said that you could not change how other users find you. I am happy to say that this is no longer true! You can now change your visibility, so people can find you by username only, by phone number only, or by both
+    - pl: Przy rejestracji pisało, że nie da się zmienić sposobu, w jaki inni użytkownicy cię znajdują. Z radością informuję, że to już nieprawda! Teraz możesz zmienić swoją widoczność, żeby inni znajdowali cię tylko po nazwie użytkownika, tylko po numerze telefonu albo na oba sposoby
+- [notes] Також саме час нагадати про те, що з 5 на 6 грудня - ніч Миколайчика. Покладіть вашим коханим та рідним щось під подушку, якщо ви поруч та у вас є така змога! Та донатьте заради тих, хто наразі не поруч зі своєю сімʼєю!
+    - en: It is also time to remind you that the night of 5 to 6 December is the night of St Nicholas. Put something under the pillow of your loved ones if you are nearby and can! And donate for the sake of those who are not with their families right now!
+    - pl: Czas też przypomnieć, że w nocy z 5 na 6 grudnia jest noc świętego Mikołaja. Połóżcie coś pod poduszką swoim bliskim, jeśli jesteście obok i macie taką możliwość! I wspierajcie darowiznami tych, którzy teraz nie są ze swoimi rodzinami!
+
+## 1.4.0 - 03.12.2023
+
+### Minor Changes
+
+- [updated] Під час видалення бажання із власного листу, буде збиратися статистика чи було воно виконане (подароване) чи ні
+    - en: When you remove a wish from your own list, the bot records whether it was fulfilled (given) or not
+    - pl: Przy usuwaniu życzenia z własnej listy będzie zbierana statystyka, czy zostało ono spełnione (podarowane), czy nie
+- [updated] Завдяки цьому у статистиці буде виводитися не тільки, скільки бажань створено, а й скільки виконано за весь час
+    - en: Thanks to this, the statistics show not only how many wishes were created but also how many were fulfilled over all time
+    - pl: Dzięki temu statystyki pokażą nie tylko, ile życzeń utworzono, ale i ile spełniono przez cały czas
+
+## 1.3.0 - 02.12.2023
+
+### Minor Changes
+
+- [added] Тепер можна ділитися своїми бажаннями з близькими та друзями за допомогою зовнішнього посилання з Telegraph. Дякую за ідею Alex Kotyan
+    - en: You can now share your wishes with family and friends using an external Telegraph link. Thanks to Alex Kotyan for the idea
+    - pl: Teraz możesz dzielić się swoimi życzeniami z bliskimi i przyjaciółmi za pomocą zewnętrznego linku z Telegraph. Dzięki za pomysł Alex Kotyan
+- [added] Також деякі бажання можна приховати від інших, щоб не видаляти, якщо захочеш їх повернути з часом
+    - en: You can also hide some wishes from others instead of removing them, in case you want them back later
+    - pl: Niektóre życzenia można też ukryć przed innymi zamiast je usuwać, żeby móc je później przywrócić
+- [added] Зʼявилася статистика використання бота
+    - en: Bot usage statistics have appeared
+    - pl: Pojawiły się statystyki użycia bota
+- [updated] Зареєстрованим користувачам тепер не буде показуватися привітання, щоб зменшити розмір меню
+    - en: Registered users no longer see the greeting, which makes the menu smaller
+    - pl: Zarejestrowani użytkownicy nie będą już widzieć powitania, żeby menu było mniejsze
+- [notes] Якщо щось пішло не так, бота можна перезапустити командою /start
+    - en: If something goes wrong, you can restart the bot with the /start command
+    - pl: Jeśli coś pójdzie nie tak, możesz zrestartować bota poleceniem /start
+- [notes] Якщо вам подобаються зміни, на основному екрані є посилання, щоб подякувати автору за роботу
+    - en: If you like the changes, there is a link on the main screen to thank the author for the work
+    - pl: Jeśli podobają ci się zmiany, na głównym ekranie jest link, żeby podziękować autorowi za pracę

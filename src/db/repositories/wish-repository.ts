@@ -1,0 +1,1025 @@
+import {
+    and,
+    asc,
+    count,
+    desc,
+    eq,
+    exists,
+    gte,
+    inArray,
+    isNotNull,
+    isNull,
+    lt,
+    or,
+    sql,
+    type SQL
+} from 'drizzle-orm';
+
+import {
+    LIST_IMPORT_INSERT_ROWS_PER_STATEMENT,
+    WISH_PRIORITY_LEVELS,
+    type WishPriorityLevel
+} from '../../shared/app-api';
+import {
+    CURRENCIES,
+    type Currency,
+    type PriceBounds,
+    type PriceBoundsByCurrency
+} from '../../shared/money';
+import type { AppDb } from '../client';
+import {
+    gives,
+    maximumWishImages,
+    users,
+    wishes,
+    wishlistShares
+} from '../schema';
+import { chunk, DELETE_CHUNK_SIZE } from './chunk';
+import { createTryDb } from './try-db';
+
+export type WishRecord = typeof wishes.$inferSelect;
+export type WishFieldsPatch = Partial<
+    Pick<WishRecord, 'title' | 'description' | 'link' | 'price'>
+> & { currency?: Currency };
+
+export interface NewWishFields {
+    title: string;
+    description?: string | null;
+    link?: string | null;
+    price?: number;
+    currency: Currency;
+    priorityLevel?: WishPriorityLevel;
+    hidden?: boolean;
+}
+
+export interface WishFlags {
+    priorityLevel?: WishPriorityLevel;
+    hidden?: boolean;
+}
+
+export interface WishListOptions {
+    filter: PriceBoundsByCurrency | null;
+    offset: number;
+    limit: number;
+}
+
+export interface WishPage {
+    items: WishRecord[];
+    total: number;
+}
+
+export interface OwnWishPage extends WishPage {
+    giftedTotal: number;
+}
+
+export interface GiftedListOptions {
+    filter: PriceBoundsByCurrency | null;
+    limit: number;
+}
+
+export interface ImportedWishRow {
+    userId: number;
+    title: string;
+    description: string | null;
+    link: string | null;
+    price: number;
+    currency: Currency;
+    hidden: boolean;
+    removed: boolean;
+    done: boolean;
+    sourceRef: string;
+    sourceImageUrl: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface WishDedupeKey {
+    title: string;
+    link: string | null;
+    sourceRef: string | null;
+}
+
+export interface PendingPhotoWish {
+    id: number;
+    sourceRef: string | null;
+    sourceImageUrl: string;
+    removed: boolean;
+    done: boolean;
+    giftedHidden: boolean;
+    imageCount: number;
+}
+
+export const SHAREABLE_WISHES_LIMIT = 100;
+
+const tryDb = createTryDb('Wish repository');
+
+const findableOwner = () => {
+    return and(
+        isNull(users.blockedAt),
+        or(eq(users.usernameSearchable, true), isNotNull(users.phone))
+    );
+};
+
+const buildCurrencyPriceCondition = (
+    currency: Currency,
+    bounds: PriceBounds
+) => {
+    const conditions: SQL[] = [eq(wishes.currency, currency)];
+
+    if (bounds.min !== null) {
+        conditions.push(gte(wishes.price, bounds.min));
+    }
+
+    if (bounds.maxExclusive !== null) {
+        conditions.push(lt(wishes.price, bounds.maxExclusive));
+    }
+
+    return and(...conditions);
+};
+
+export const buildPriceFilterCondition = (
+    bounds: PriceBoundsByCurrency | null
+) => {
+    if (bounds === null) {
+        return undefined;
+    }
+
+    return or(
+        ...CURRENCIES.map(currency => {
+            return buildCurrencyPriceCondition(currency, bounds[currency]);
+        })
+    );
+};
+
+const toPriorityColumns = (priorityLevel: WishPriorityLevel) => {
+    return {
+        priorityLevel,
+        priority: priorityLevel === WISH_PRIORITY_LEVELS.high
+    };
+};
+
+export const WISH_LIST_ORDER = [
+    desc(wishes.priorityLevel),
+    desc(wishes.updatedAt),
+    desc(wishes.id)
+] as const;
+
+const ownedAndActive = (wishId: number, userId: number) => {
+    return and(
+        eq(wishes.id, wishId),
+        eq(wishes.userId, userId),
+        eq(wishes.removed, false)
+    );
+};
+
+export const isShownGifted = () => {
+    return and(
+        eq(wishes.removed, true),
+        eq(wishes.done, true),
+        eq(wishes.giftedHidden, false)
+    );
+};
+
+const buildGiftedVisibleCondition = (
+    ownerId: number,
+    filter: PriceBoundsByCurrency | null
+) => {
+    return and(
+        eq(wishes.userId, ownerId),
+        eq(wishes.hidden, false),
+        isShownGifted(),
+        eq(users.showGifted, true),
+        isNull(users.blockedAt),
+        buildPriceFilterCondition(filter)
+    );
+};
+
+export const isActiveOrShownGifted = () => {
+    return or(eq(wishes.removed, false), isShownGifted());
+};
+
+const ownedAndShownGifted = (wishId: number, userId: number) => {
+    return and(
+        eq(wishes.id, wishId),
+        eq(wishes.userId, userId),
+        isShownGifted()
+    );
+};
+
+const ownedAndGifted = (wishId: number, userId: number) => {
+    return and(
+        eq(wishes.id, wishId),
+        eq(wishes.userId, userId),
+        eq(wishes.removed, true),
+        eq(wishes.done, true)
+    );
+};
+
+const acceptsImportedImage = () => {
+    return and(
+        or(
+            eq(wishes.removed, false),
+            and(eq(wishes.done, true), eq(wishes.giftedHidden, false))
+        ),
+        sql`json_array_length(${wishes.images}) = 0`
+    );
+};
+
+const SQL_FALSE = sql`0`;
+const EMPTY_IMAGES = sql`'[]'`;
+
+/**
+ * One multi-row insert of imported wishes. The columns that never vary are
+ * SQL literals, so a row binds exactly `LIST_IMPORT_INSERT_COLUMNS` (13)
+ * parameters and a full statement stays under D1's 100-parameter ceiling.
+ * A row whose `(userId, sourceRef)` already exists is skipped.
+ */
+export const buildImportedWishInsert = (
+    db: AppDb,
+    rows: readonly ImportedWishRow[]
+) => {
+    return db
+        .insert(wishes)
+        .values(
+            rows.map(row => {
+                return {
+                    ...row,
+                    images: EMPTY_IMAGES,
+                    priority: SQL_FALSE,
+                    priorityLevel: SQL_FALSE,
+                    giftedHidden: SQL_FALSE
+                };
+            })
+        )
+        .onConflictDoNothing();
+};
+
+export const chunkImportedWishRows = (rows: readonly ImportedWishRow[]) => {
+    return chunk(rows, LIST_IMPORT_INSERT_ROWS_PER_STATEMENT);
+};
+
+export const GIFTED_LIST_ORDER = [desc(wishes.updatedAt), desc(wishes.id)];
+
+const ACTIVE_THEN_GIFTED_ORDER = [
+    asc(wishes.removed),
+    desc(
+        sql`case when ${wishes.removed} = 0 then ${wishes.priorityLevel} else 0 end`
+    ),
+    ...GIFTED_LIST_ORDER
+];
+
+const imageSlotPath = (index: number) => {
+    return `$[${index}]`;
+};
+
+const isImageIndex = (index: number) => {
+    return Number.isSafeInteger(index) && index >= 0;
+};
+
+const imageSlot = (index: number) => {
+    return sql<
+        string | null
+    >`json_extract(${wishes.images}, ${imageSlotPath(index)})`;
+};
+
+const toImageFileId = (value: string | null | undefined) => {
+    return typeof value === 'string' && value !== '' ? value : null;
+};
+
+export const createWishRepository = (db: AppDb) => {
+    return {
+        create(userId: number, title: string, currency: Currency, now: Date) {
+            return tryDb(async () => {
+                const [created] = await db
+                    .insert(wishes)
+                    .values({
+                        userId,
+                        title,
+                        currency,
+                        createdAt: now,
+                        updatedAt: now
+                    })
+                    .returning();
+
+                return created ?? null;
+            });
+        },
+        createWithFields(userId: number, fields: NewWishFields, now: Date) {
+            return tryDb(async () => {
+                const [created] = await db
+                    .insert(wishes)
+                    .values({
+                        userId,
+                        title: fields.title,
+                        description: fields.description ?? null,
+                        link: fields.link ?? null,
+                        ...(fields.price === undefined
+                            ? {}
+                            : { price: fields.price }),
+                        currency: fields.currency,
+                        ...(fields.priorityLevel === undefined
+                            ? {}
+                            : toPriorityColumns(fields.priorityLevel)),
+                        ...(fields.hidden === undefined
+                            ? {}
+                            : { hidden: fields.hidden }),
+                        createdAt: now,
+                        updatedAt: now
+                    })
+                    .returning();
+
+                return created ?? null;
+            });
+        },
+        countActive(userId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.removed, false)
+                        )
+                    );
+
+                return row?.total ?? 0;
+            });
+        },
+        listDedupeKeys(userId: number) {
+            return tryDb((): Promise<WishDedupeKey[]> => {
+                return db
+                    .select({
+                        title: wishes.title,
+                        link: wishes.link,
+                        sourceRef: wishes.sourceRef
+                    })
+                    .from(wishes)
+                    .where(eq(wishes.userId, userId));
+            });
+        },
+        insertImported(rows: readonly ImportedWishRow[]) {
+            return tryDb(async () => {
+                let inserted = 0;
+
+                for (const rowChunk of chunkImportedWishRows(rows)) {
+                    const created = await buildImportedWishInsert(
+                        db,
+                        rowChunk
+                    ).returning({ id: wishes.id });
+
+                    inserted += created.length;
+                }
+
+                return inserted;
+            });
+        },
+        listPendingPhotos(userId: number, limit: number) {
+            return tryDb(async (): Promise<PendingPhotoWish[]> => {
+                const rows = await db
+                    .select({
+                        id: wishes.id,
+                        sourceRef: wishes.sourceRef,
+                        sourceImageUrl: wishes.sourceImageUrl,
+                        removed: wishes.removed,
+                        done: wishes.done,
+                        giftedHidden: wishes.giftedHidden,
+                        imageCount: sql<number>`json_array_length(${wishes.images})`
+                    })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    )
+                    .orderBy(asc(wishes.id))
+                    .limit(limit);
+
+                return rows.flatMap(row => {
+                    return row.sourceImageUrl === null
+                        ? []
+                        : [
+                              {
+                                  ...row,
+                                  sourceImageUrl: row.sourceImageUrl,
+                                  imageCount: Number(row.imageCount)
+                              }
+                          ];
+                });
+            });
+        },
+        countPendingPhotos(userId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    );
+
+                return row?.total ?? 0;
+            });
+        },
+        appendImportedImage(wishId: number, userId: number, fileId: string) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({
+                        images: sql`json_insert(${wishes.images}, '$[#]', ${fileId})`,
+                        sourceImageUrl: null
+                    })
+                    .where(
+                        and(
+                            eq(wishes.id, wishId),
+                            eq(wishes.userId, userId),
+                            acceptsImportedImage()
+                        )
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        clearSourceImage(wishId: number, userId: number) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ sourceImageUrl: null })
+                    .where(
+                        and(eq(wishes.id, wishId), eq(wishes.userId, userId))
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        clearAllSourceImages(userId: number) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ sourceImageUrl: null })
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isNotNull(wishes.sourceImageUrl)
+                        )
+                    )
+                    .returning({ id: wishes.id });
+
+                return updated.length;
+            });
+        },
+        listActiveImagesJson(userId: number) {
+            return tryDb(async () => {
+                const rows = await db
+                    .select({ images: wishes.images })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.removed, false)
+                        )
+                    );
+
+                return rows.map(row => {
+                    return row.images;
+                });
+            });
+        },
+        listReferencedFileIds(fileIds: readonly string[]) {
+            return tryDb(async () => {
+                const referenced = new Set<string>();
+
+                for (const fileIdChunk of chunk(fileIds, DELETE_CHUNK_SIZE)) {
+                    const placeholders = sql.join(
+                        fileIdChunk.map(fileId => {
+                            return sql`${fileId}`;
+                        }),
+                        sql`, `
+                    );
+                    const rows = await db.all<{ fileId: string }>(
+                        sql`select distinct json_each.value as fileId from ${wishes}, json_each(${wishes.images}) where (${wishes.removed} = 0 or (${wishes.done} = 1 and ${wishes.giftedHidden} = 0)) and json_each.value in (${placeholders})`
+                    );
+
+                    for (const row of rows) {
+                        referenced.add(row.fileId);
+                    }
+                }
+
+                return referenced;
+            });
+        },
+        findOwned(wishId: number, userId: number) {
+            return tryDb(async () => {
+                const [wish] = await db
+                    .select()
+                    .from(wishes)
+                    .where(ownedAndActive(wishId, userId))
+                    .limit(1);
+
+                return wish ?? null;
+            });
+        },
+        findVisible(wishId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ wish: wishes })
+                    .from(wishes)
+                    .innerJoin(users, eq(users.id, wishes.userId))
+                    .where(
+                        and(
+                            eq(wishes.id, wishId),
+                            eq(wishes.hidden, false),
+                            eq(wishes.removed, false),
+                            findableOwner()
+                        )
+                    )
+                    .limit(1);
+
+                return row?.wish ?? null;
+            });
+        },
+        listOwned(userId: number, options: WishListOptions) {
+            return tryDb(async (): Promise<WishPage> => {
+                const condition = and(
+                    eq(wishes.userId, userId),
+                    eq(wishes.removed, false),
+                    buildPriceFilterCondition(options.filter)
+                );
+                const [items, totals] = await db.batch([
+                    db
+                        .select()
+                        .from(wishes)
+                        .where(condition)
+                        .orderBy(...WISH_LIST_ORDER)
+                        .limit(options.limit)
+                        .offset(options.offset),
+                    db.select({ total: count() }).from(wishes).where(condition)
+                ]);
+
+                return { items, total: totals[0]?.total ?? 0 };
+            });
+        },
+        listOwnedWithGifted(userId: number, options: WishListOptions) {
+            return tryDb(async (): Promise<OwnWishPage> => {
+                const priceCondition = buildPriceFilterCondition(
+                    options.filter
+                );
+                const countWhere = (state: SQL | undefined) => {
+                    return db
+                        .select({ total: count() })
+                        .from(wishes)
+                        .where(
+                            and(
+                                eq(wishes.userId, userId),
+                                state,
+                                priceCondition
+                            )
+                        );
+                };
+                const [items, activeTotals, giftedTotals] = await db.batch([
+                    db
+                        .select()
+                        .from(wishes)
+                        .where(
+                            and(
+                                eq(wishes.userId, userId),
+                                isActiveOrShownGifted(),
+                                priceCondition
+                            )
+                        )
+                        .orderBy(...ACTIVE_THEN_GIFTED_ORDER)
+                        .limit(options.limit)
+                        .offset(options.offset),
+                    countWhere(eq(wishes.removed, false)),
+                    countWhere(isShownGifted())
+                ]);
+
+                return {
+                    items,
+                    total: activeTotals[0]?.total ?? 0,
+                    giftedTotal: giftedTotals[0]?.total ?? 0
+                };
+            });
+        },
+        listGiftedVisibleOf(ownerId: number, options: GiftedListOptions) {
+            return tryDb(async () => {
+                const rows = await db
+                    .select({ wish: wishes })
+                    .from(wishes)
+                    .innerJoin(users, eq(users.id, wishes.userId))
+                    .where(buildGiftedVisibleCondition(ownerId, options.filter))
+                    .orderBy(...GIFTED_LIST_ORDER)
+                    .limit(options.limit);
+
+                return rows.map(row => {
+                    return row.wish;
+                });
+            });
+        },
+        countGiftedVisibleOf(
+            ownerId: number,
+            filter: PriceBoundsByCurrency | null
+        ) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .innerJoin(users, eq(users.id, wishes.userId))
+                    .where(buildGiftedVisibleCondition(ownerId, filter));
+
+                return row?.total ?? 0;
+            });
+        },
+        restoreGifted(wishId: number, userId: number, now: Date) {
+            return tryDb(async () => {
+                const [restored] = await db
+                    .update(wishes)
+                    .set({
+                        removed: false,
+                        done: false,
+                        giftedHidden: false,
+                        updatedAt: now
+                    })
+                    .where(ownedAndShownGifted(wishId, userId))
+                    .returning();
+
+                return restored ?? null;
+            });
+        },
+        setGiftedHidden(wishId: number, userId: number, giftedHidden: boolean) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ giftedHidden })
+                    .where(ownedAndGifted(wishId, userId))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        listVisibleOf(ownerId: number, options: WishListOptions) {
+            return tryDb(async (): Promise<WishPage> => {
+                const condition = and(
+                    eq(wishes.userId, ownerId),
+                    eq(wishes.hidden, false),
+                    eq(wishes.removed, false),
+                    isNull(users.blockedAt),
+                    buildPriceFilterCondition(options.filter)
+                );
+                const [rows, totals] = await db.batch([
+                    db
+                        .select({ wish: wishes })
+                        .from(wishes)
+                        .innerJoin(users, eq(users.id, wishes.userId))
+                        .where(condition)
+                        .orderBy(...WISH_LIST_ORDER)
+                        .limit(options.limit)
+                        .offset(options.offset),
+                    db
+                        .select({ total: count() })
+                        .from(wishes)
+                        .innerJoin(users, eq(users.id, wishes.userId))
+                        .where(condition)
+                ]);
+
+                return {
+                    items: rows.map(row => {
+                        return row.wish;
+                    }),
+                    total: totals[0]?.total ?? 0
+                };
+            });
+        },
+        hasShareable(userId: number) {
+            return tryDb(async () => {
+                const [wish] = await db
+                    .select({ id: wishes.id })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.hidden, false),
+                            eq(wishes.removed, false)
+                        )
+                    )
+                    .limit(1);
+
+                return wish !== undefined;
+            });
+        },
+        listShareable(userId: number) {
+            return tryDb(() => {
+                return db
+                    .select()
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            eq(wishes.hidden, false),
+                            eq(wishes.removed, false)
+                        )
+                    )
+                    .orderBy(...WISH_LIST_ORDER)
+                    .limit(SHAREABLE_WISHES_LIMIT);
+            });
+        },
+        updateFields(
+            wishId: number,
+            userId: number,
+            patch: WishFieldsPatch,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ ...patch, updatedAt: now })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        setPriorityLevel(
+            wishId: number,
+            userId: number,
+            priorityLevel: WishPriorityLevel,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({
+                        ...toPriorityColumns(priorityLevel),
+                        updatedAt: now
+                    })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        toggleHidden(wishId: number, userId: number, now: Date) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ hidden: sql`1 - ${wishes.hidden}`, updatedAt: now })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        setFlags(wishId: number, userId: number, flags: WishFlags, now: Date) {
+            return tryDb(async () => {
+                const changes = {
+                    ...(flags.priorityLevel === undefined
+                        ? {}
+                        : toPriorityColumns(flags.priorityLevel)),
+                    ...(flags.hidden === undefined
+                        ? {}
+                        : { hidden: flags.hidden })
+                };
+
+                if (Object.keys(changes).length === 0) {
+                    const [current] = await db
+                        .select()
+                        .from(wishes)
+                        .where(ownedAndActive(wishId, userId))
+                        .limit(1);
+
+                    return current ?? null;
+                }
+
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ ...changes, updatedAt: now })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        removeImageAt(
+            wishId: number,
+            userId: number,
+            index: number,
+            expectedJson: string,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [updated] = await db
+                    .update(wishes)
+                    .set({
+                        images: sql`json_remove(${wishes.images}, ${imageSlotPath(index)})`,
+                        updatedAt: now
+                    })
+                    .where(
+                        and(
+                            ownedAndActive(wishId, userId),
+                            eq(wishes.images, expectedJson),
+                            sql`json_array_length(${wishes.images}) > ${index}`
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        replaceImages(
+            wishId: number,
+            userId: number,
+            expectedJson: string,
+            nextJson: string,
+            now: Date
+        ) {
+            return tryDb(async () => {
+                const [updated] = await db
+                    .update(wishes)
+                    .set({ images: nextJson, updatedAt: now })
+                    .where(
+                        and(
+                            ownedAndActive(wishId, userId),
+                            eq(wishes.images, expectedJson)
+                        )
+                    )
+                    .returning();
+
+                return updated ?? null;
+            });
+        },
+        findImageFileId(wishId: number, index: number) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [row] = await db
+                    .select({ fileId: imageSlot(index) })
+                    .from(wishes)
+                    .where(and(eq(wishes.id, wishId), isActiveOrShownGifted()))
+                    .limit(1);
+
+                return toImageFileId(row?.fileId);
+            });
+        },
+        findViewerImageFileId(wishId: number, index: number) {
+            return tryDb(async () => {
+                if (!isImageIndex(index)) {
+                    return null;
+                }
+
+                const [row] = await db
+                    .select({ fileId: imageSlot(index) })
+                    .from(wishes)
+                    .leftJoin(users, eq(users.id, wishes.userId))
+                    .where(
+                        and(
+                            eq(wishes.id, wishId),
+                            eq(wishes.hidden, false),
+                            or(isNull(users.id), isNull(users.blockedAt)),
+                            or(
+                                eq(wishes.removed, false),
+                                and(isShownGifted(), eq(users.showGifted, true))
+                            )
+                        )
+                    )
+                    .limit(1);
+
+                return toImageFileId(row?.fileId);
+            });
+        },
+        findSharedWishImages(publicId: string, wishId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ images: wishes.images })
+                    .from(wishlistShares)
+                    .innerJoin(users, eq(users.id, wishlistShares.userId))
+                    .innerJoin(wishes, eq(wishes.userId, wishlistShares.userId))
+                    .where(
+                        and(
+                            eq(wishlistShares.publicId, publicId),
+                            isNull(wishlistShares.revokedAt),
+                            isNull(users.blockedAt),
+                            eq(wishes.id, wishId),
+                            eq(wishes.hidden, false),
+                            or(
+                                eq(wishes.removed, false),
+                                and(isShownGifted(), eq(users.showGifted, true))
+                            )
+                        )
+                    )
+                    .limit(1);
+
+                return row?.images ?? null;
+            });
+        },
+        appendImage(wishId: number, userId: number, fileId: string, now: Date) {
+            return tryDb(async () => {
+                const [appended] = await db
+                    .update(wishes)
+                    .set({
+                        images: sql`json_insert(${wishes.images}, '$[#]', ${fileId})`,
+                        updatedAt: now
+                    })
+                    .where(
+                        and(
+                            ownedAndActive(wishId, userId),
+                            sql`json_array_length(${wishes.images}) < ${maximumWishImages}`,
+                            sql`not exists (select 1 from json_each(${wishes.images}) where value = ${fileId})`
+                        )
+                    )
+                    .returning({
+                        count: sql<number>`json_array_length(${wishes.images})`
+                    });
+
+                if (appended) {
+                    return { appended: true, count: appended.count };
+                }
+
+                const [current] = await db
+                    .select({
+                        count: sql<number>`json_array_length(${wishes.images})`
+                    })
+                    .from(wishes)
+                    .where(
+                        and(eq(wishes.id, wishId), eq(wishes.userId, userId))
+                    )
+                    .limit(1);
+
+                return { appended: false, count: current?.count ?? 0 };
+            });
+        },
+        clearImages(wishId: number, userId: number, now: Date) {
+            return tryDb(async () => {
+                const updated = await db
+                    .update(wishes)
+                    .set({ images: '[]', updatedAt: now })
+                    .where(ownedAndActive(wishId, userId))
+                    .returning({ id: wishes.id });
+
+                return updated.length > 0;
+            });
+        },
+        softRemove(wishId: number, userId: number, done: boolean, now: Date) {
+            return tryDb(async () => {
+                const [, removedRows] = await db.batch([
+                    db.delete(gives).where(
+                        and(
+                            eq(gives.wishId, wishId),
+                            exists(
+                                db
+                                    .select({ one: sql`1` })
+                                    .from(wishes)
+                                    .where(ownedAndActive(wishId, userId))
+                            )
+                        )
+                    ),
+                    db
+                        .update(wishes)
+                        .set({ removed: true, done, updatedAt: now })
+                        .where(ownedAndActive(wishId, userId))
+                        .returning({ id: wishes.id })
+                ]);
+
+                return removedRows.length > 0;
+            });
+        },
+        softRemoveAll(userId: number, now: Date) {
+            return tryDb(async () => {
+                const activeOwnWishes = and(
+                    eq(wishes.userId, userId),
+                    eq(wishes.removed, false)
+                );
+                const [, removedRows] = await db.batch([
+                    db
+                        .delete(gives)
+                        .where(
+                            inArray(
+                                gives.wishId,
+                                db
+                                    .select({ id: wishes.id })
+                                    .from(wishes)
+                                    .where(activeOwnWishes)
+                            )
+                        ),
+                    db
+                        .update(wishes)
+                        .set({ removed: true, done: false, updatedAt: now })
+                        .where(activeOwnWishes)
+                        .returning({ id: wishes.id })
+                ]);
+
+                return removedRows.length;
+            });
+        }
+    };
+};

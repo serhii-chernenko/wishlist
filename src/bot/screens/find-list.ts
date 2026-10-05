@@ -1,0 +1,147 @@
+import {
+    checkRateLimit,
+    selectBoundLimiter,
+    telegramRateLimitKey
+} from '../../api/rate-limit';
+import { homeButton, singleColumnKeyboard } from '../content/keyboards';
+import { FIND_QUERY_MAX_LENGTH } from '../input/limits';
+import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
+import {
+    createWishScreenServices,
+    requireUser,
+    updateSession
+} from '../services/wish-screen-context';
+import { screen as thirdWishlistScreen } from './third-wishlist';
+
+const render = async (req: BotRequest) => {
+    const { LL } = req;
+
+    requireUser(req);
+    updateSession(req, { pendingInput: { kind: 'findQuery' } });
+    await req.send.text(
+        LL.findList.description(),
+        singleColumnKeyboard([homeButton(LL)])
+    );
+};
+
+const isSearchAllowed = async (req: BotRequest) => {
+    const gate = await checkRateLimit(
+        selectBoundLimiter(req.env, 'sensitive'),
+        telegramRateLimitKey(req.actor.id)
+    );
+
+    if (gate === 'missing' || gate === 'error') {
+        req.telemetry.rateLimiterGap?.('sensitive', gate);
+    }
+
+    return gate !== 'limited';
+};
+
+const handleQuery = async (req: BotRequest, rawText: string | undefined) => {
+    const { LL } = req;
+    const user = requireUser(req);
+    const { search } = createWishScreenServices(req);
+    const query = rawText?.trim() ?? '';
+
+    if (Array.from(query).length > FIND_QUERY_MAX_LENGTH) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'tooLong'
+        });
+        await req.send.text(
+            LL.findList.errors.tooLong(String(FIND_QUERY_MAX_LENGTH))
+        );
+        await render(req);
+
+        return;
+    }
+
+    if (!(await isSearchAllowed(req))) {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'rateLimited'
+        });
+        await req.send.text(LL.findList.errors.rateLimited());
+        await render(req);
+
+        return;
+    }
+
+    const outcome = await search.findByQuery({
+        query,
+        searcherId: user.id,
+        searcherIsAdmin: req.isAdmin,
+        searcherLocale: req.locale,
+        searcherCurrency: user.currency
+    });
+
+    if (outcome.status === 'needsCountryCode') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'needsCountryCode'
+        });
+        await req.send.text(LL.findList.errors.needsCountryCode());
+        await render(req);
+
+        return;
+    }
+
+    if (outcome.status === 'notFound') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'notFound'
+        });
+        await req.send.text(LL.findList.errors.notFound());
+        await render(req);
+
+        return;
+    }
+
+    if (outcome.status === 'self') {
+        req.telemetry.botActionCompleted({
+            action: 'wishlist_searched',
+            result: 'self'
+        });
+        await req.send.text(LL.findList.errors.foundYourself());
+        await render(req);
+
+        return;
+    }
+
+    const previous = req.session.find;
+    const keepsFilter =
+        previous !== null &&
+        previous.targetUserId === outcome.user.id &&
+        previous.query === query;
+
+    updateSession(req, {
+        pendingInput: null,
+        find: {
+            targetUserId: outcome.user.id,
+            query,
+            filter: keepsFilter ? previous.filter : null
+        }
+    });
+    req.telemetry.botActionCompleted({
+        action: 'wishlist_searched',
+        result: 'found'
+    });
+    await thirdWishlistScreen.render(req, {
+        ownerId: outcome.user.id,
+        offset: 0
+    });
+};
+
+export const screen: ScreenModule<undefined> = {
+    id: 'findList',
+    render,
+    onInput: async (req, input, message) => {
+        if (input.kind !== 'findQuery') {
+            return;
+        }
+
+        await handleQuery(req, 'text' in message ? message.text : undefined);
+    }
+};
+
+export const callbacks: CallbackTable = {};

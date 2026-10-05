@@ -1,0 +1,50 @@
+{
+    "value": [
+        {
+            "id": 6120907,
+            "re_wish_id": 382981,
+            "title": "[низький пріоритет] Waga AVX KC252 Barista",
+            "description": "Для відмірювання кавових зерен перед насипанням в млинок кавомашини",
+            "created": "2026-07-29T20:34:17.952668",
+            "avatar_path": "https://storage.rewish.io/00000000-0000-0000-0000-000000000009_compressed",
+            "purchase_link": "https://www.konesso.pl/product-pol-30024-Waga-AVX-KC252-Barista-Czarna.html",
+            "price": 180,
+            "currency": 5,
+            "status": 1,
+            "has_current_user_mark_as_gifting": false,
+            "is_new": false,
+            "created_by": "00000000-0000-0000-0000-00000000000a",
+            "is_verified": false,
+            "is_brand_profile_active": false,
+            "is_promoted": false,
+            "link_access": null,
+            "offer_link": null,
+            "domain": "konesso.pl",
+            "position": 1
+        },
+        {
+            "id": 6120873,
+            "re_wish_id": 382981,
+            "title": "[низький пріоритет] Elektryczny termometr Timemore",
+            "description": "Температура молока при збиванні",
+            "created": "2026-07-29T20:31:20.432851",
+            "avatar_path": "https://storage.rewish.io/00000000-0000-0000-0000-00000000000b_compressed",
+            "purchase_link": "https://www.konesso.pl/product-pol-28844-Elektryczny-termometr-Timemore-Bialy.html",
+            "price": 50,
+            "currency": 5,
+            "status": 1,
+            "has_current_user_mark_as_gifting": false,
+            "is_new": false,
+            "created_by": "00000000-0000-0000-0000-00000000000a",
+            "is_verified": false,
+            "is_brand_profile_active": false,
+            "is_promoted": false,
+            "link_access": null,
+            "offer_link": null,
+            "domain": "konesso.pl",
+            "position": 2
+        }
+    ],
+    "is_success": true,
+    "errors": []
+}

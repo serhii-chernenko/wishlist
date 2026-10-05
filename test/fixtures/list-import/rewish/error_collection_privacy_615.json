@@ -1,0 +1,5 @@
+{
+    "value": null,
+    "is_success": false,
+    "errors": [{ "code": "615", "message": "Collection privacy constraint" }]
+}

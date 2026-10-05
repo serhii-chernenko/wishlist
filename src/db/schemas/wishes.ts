@@ -1,0 +1,79 @@
+import { sql } from 'drizzle-orm';
+import {
+    check,
+    index,
+    integer,
+    snakeCase,
+    text,
+    uniqueIndex
+} from 'drizzle-orm/sqlite-core';
+
+import { users } from './users';
+
+export const maximumWishImages = 9;
+
+export const wishes = snakeCase.table(
+    'wishes',
+    {
+        id: integer().primaryKey({ autoIncrement: true }),
+        mongoId: text(),
+        userId: integer().references(() => users.id, {
+            onDelete: 'set null'
+        }),
+        title: text().notNull(),
+        description: text(),
+        link: text(),
+        images: text().notNull().default('[]'),
+        priority: integer({ mode: 'boolean' }).notNull().default(false),
+        priorityLevel: integer().notNull().default(0),
+        hidden: integer({ mode: 'boolean' }).notNull().default(false),
+        removed: integer({ mode: 'boolean' }).notNull().default(false),
+        done: integer({ mode: 'boolean' }).notNull().default(false),
+        giftedHidden: integer({ mode: 'boolean' }).notNull().default(false),
+        sourceRef: text(),
+        sourceImageUrl: text(),
+        price: integer().notNull().default(0),
+        currency: text().notNull().default('UAH'),
+        createdAt: integer({ mode: 'timestamp_ms' })
+            .notNull()
+            .$defaultFn(() => new Date()),
+        updatedAt: integer({ mode: 'timestamp_ms' })
+            .notNull()
+            .$defaultFn(() => new Date())
+    },
+    table => {
+        return [
+            uniqueIndex('wishes_mongo_id_unique').on(table.mongoId),
+            index('wishes_owner_list_index').on(
+                table.userId,
+                table.removed,
+                table.priority,
+                table.updatedAt
+            ),
+            index('wishes_owner_priority_level_index').on(
+                table.userId,
+                table.removed,
+                table.priorityLevel,
+                table.updatedAt
+            ),
+            index('wishes_share_fingerprint_index').on(
+                table.userId,
+                table.removed,
+                table.hidden,
+                table.updatedAt
+            ),
+            index('wishes_done_index').on(table.done),
+            uniqueIndex('wishes_owner_source_ref_unique')
+                .on(table.userId, table.sourceRef)
+                .where(sql`${table.sourceRef} is not null`),
+            index('wishes_pending_photo_index')
+                .on(table.userId, table.id)
+                .where(sql`${table.sourceImageUrl} is not null`),
+            check('wishes_price_check', sql`${table.price} >= 0`),
+            check(
+                'wishes_images_check',
+                sql`json_valid(${table.images}) and json_array_length(${table.images}) <= 9`
+            )
+        ];
+    }
+);

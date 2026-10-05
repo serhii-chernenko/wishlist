@@ -1,0 +1,39 @@
+{
+    "jsonLd": [
+        "\n            {\n                \"@context\": \"https://schema.org/\",\n                \"@type\": \"Product\",\n                \"name\": \"Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B\",\n                \"url\": \"https://prom.ua/ua/m3023168442349986171-elektrochajnik-litr-bez.html\",\n                \"description\": \"Електричні чайники Kamille виготовлені з високоякісних матеріалів з використанням новітніх технологій виробництва, завдяки чому вони підходять для інтенсивного щоденного використання, а їх естетичний зовнішній вигляд нео\",\n                \"image\": [\n                    \"https://images.prom.ua/2979921490_w200_h200_chajnik-elektricheskij-kamille.jpg\",\n                    \"https://images.prom.ua/2979921491_w200_h200_chajnik-elektricheskij-kamille.jpg\",\n                    \"https://images.prom.ua/2979921492_w200_h200_chajnik-elektricheskij-kamille.jpg\",\n                    \"https://images.prom.ua/2979921493_w200_h200_chajnik-elektricheskij-kamille.jpg\",\n                    \"https://images.prom.ua/2979921494_w200_h200_chajnik-elektricheskij-kamille.jpg\",\n                    \"https://images.prom.ua/2979921495_w200_h200_chajnik-elektricheskij-kamille.jpg\"\n                ],\n                \"sku\": \"KM-1719 B\",\n                \"brand\": { \"@type\": \"Brand\", \"name\": \"Kamille\" },\n                \"offers\": {\n                    \"@type\": \"Offer\",\n                    \"url\": \"https://prom.ua/ua/m3023168442349986171-elektrochajnik-litr-bez.html\",\n                    \"availability\": \"http://schema.org/OutOfStock\",\n                    \"price\": \"772\",\n                    \"priceCurrency\": \"UAH\",\n                    \"eligibleQuantity\": {\n                        \"@type\": \"QuantitativeValue\",\n                        \"value\": \"1\",\n                        \"unitCode\": \"C62\"\n                    },\n                    \"warranty\": {\n                        \"@type\": \"WarrantyPromise\",\n                        \"durationOfWarranty\": {\n                            \"@type\": \"QuantitativeValue\",\n                            \"value\": \"12\",\n                            \"unitCode\": \"MON\"\n                        }\n                    },\n                    \"itemCondition\": \"https://schema.org/NewCondition\",\n                    \"seller\": {\n                        \"@type\": \"Organization\",\n                        \"name\": \"Бренд-Посуд\"\n                    },\n                    \"acceptedPaymentMethod\": [\n                        {\n                            \"@id\": \"https://prom.ua/ua/p1371891022-chajnik-elektricheskij-kamille.html#evopay\"\n                        },\n                        {\n                            \"@id\": \"https://prom.ua/ua/p1371891022-chajnik-elektricheskij-kamille.html#bank_account\"\n                        },\n                        {\n                            \"@id\": \"https://prom.ua/ua/p1371891022-chajnik-elektricheskij-kamille.html#cash_on_delivery\"\n                        },\n                        {\n                            \"@id\": \"https://prom.ua/ua/p1371891022-chajnik-elektricheskij-kamille.html#rpay_parts\"\n                        }\n                    ]\n                },\n                \"review\": [\n                    {\n                        \"@type\": \"Review\",\n                        \"author\": { \"@type\": \"Person\", \"name\": \"Інна В.\" },\n                        \"datePublished\": \"2025-09-06\",\n                        \"description\": \"Зручний у використанні\"\n                    }\n                ],\n                \"aggregateRating\": {\n                    \"@type\": \"AggregateRating\",\n                    \"ratingValue\": \"5\",\n                    \"ratingCount\": \"2\",\n                    \"bestRating\": \"5\",\n                    \"worstRating\": \"1\"\n                },\n                \"mainEntityOfPage\": {\n                    \"@type\": \"WebPage\",\n                    \"@id\": \"https://prom.ua/ua/m3023168442349986171-elektrochajnik-litr-bez.html\"\n                }\n            }\n        ",
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"BreadcrumbList\",\n                \"itemListElement\": [\n                    {\n                        \"@type\": \"ListItem\",\n                        \"item\": \"https://prom.ua/ua/consumer-goods\",\n                        \"name\": \"Каталог товарів\",\n                        \"position\": \"1\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"item\": \"https://prom.ua/ua/Tehnika-i-elektronika\",\n                        \"name\": \"Техніка та електроніка\",\n                        \"position\": \"2\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"item\": \"https://prom.ua/ua/Bytovaya-tehnika\",\n                        \"name\": \"Побутова техніка\",\n                        \"position\": \"3\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"item\": \"https://prom.ua/ua/Kuhonnaya-melkaya-bytovaya-tehnika\",\n                        \"name\": \"Дрібна побутова техніка для кухні\",\n                        \"position\": \"4\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"item\": \"https://prom.ua/ua/Elektrochajniki\",\n                        \"name\": \"Електрочайники \",\n                        \"position\": \"5\"\n                    }\n                ]\n            }\n        "
+    ],
+    "meta": {
+        "twitter:card": ["summary"],
+        "twitter:image:src": [
+            "/cloud-cgi/static/catalog-ui/js/build/portal-portable/tw_prom-af4a19b1.jpg"
+        ],
+        "description": [
+            "Замовити Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B в Україні на маркетплейсі Prom.ua. Ціна: 772 ₴. Продавець: Бренд-Посуд. Фото, характеристики та відгуки"
+        ],
+        "og:url": [
+            "https://prom.ua/ua/m3023168442349986171-elektrochajnik-litr-bez.html"
+        ],
+        "og:title": [
+            "Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B, ціна 772 ₴: купити на Prom.ua | Україна, Дніпро"
+        ],
+        "og:description": [
+            "Замовити Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B в Україні на маркетплейсі Prom.ua. Ціна: 772 ₴. Продавець: Бренд-Посуд. Фото, характеристики та відгуки"
+        ],
+        "og:image": [
+            "https://images.prom.ua/2979921490_w700_h500_chajnik-elektricheskij-kamille.jpg"
+        ],
+        "og:site_name": ["Prom.ua"],
+        "twitter:title": [
+            "Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B, ціна 772 ₴: купити на Prom.ua | Україна, Дніпро"
+        ],
+        "twitter:description": [
+            "Замовити Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B в Україні на маркетплейсі Prom.ua. Ціна: 772 ₴. Продавець: Бренд-Посуд. Фото, характеристики та відгуки"
+        ]
+    },
+    "itemprops": [],
+    "canonical": "https://prom.ua/ua/m3023168442349986171-elektrochajnik-litr-bez.html",
+    "titleTag": "\n            Чайник електричний Kamille 1л пластиковий (білий з сірим) KM-1719B,\n            ціна 772 ₴: купити на Prom.ua | Україна, Дніпро\n        ",
+    "baseHref": null,
+    "truncated": false
+}

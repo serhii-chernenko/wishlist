@@ -1,0 +1,407 @@
+import {
+    checkRateLimit,
+    linkHostRateLimitKey,
+    selectLinkHostLimiter
+} from '../../../api/rate-limit';
+import {
+    LINK_IMPORT_BOT_IMAGES,
+    LINK_IMPORT_HTML_MAX_BYTES,
+    LINK_IMPORT_IMAGE_BUDGET_MS,
+    LINK_IMPORT_PAGE_TIMEOUT_MS
+} from '../../../shared/app-api';
+import { isCurrency } from '../../../shared/money';
+import {
+    appRateLimiterMissingEvent,
+    emitTelemetryEvent,
+    linkImportCompletedEvent,
+    type LinkImportCompletedInput,
+    type TelemetryContext,
+    type TelemetryFields
+} from '../../../worker/telemetry';
+import {
+    buildCacheEntry,
+    createLinkImportCache,
+    isCacheableOutcome
+} from './result-cache';
+import { resolveShop } from './shop';
+import { countUnsupportedSkips, createImageStaging } from './stage-images';
+import type {
+    CollectPageSignals,
+    CreateSafeFetcher,
+    ExtractProduct,
+    ExtractedProduct,
+    HashImportUrl,
+    LinkImportChannel,
+    LinkImportDeps,
+    LinkImportOutcome,
+    LinkImportResult,
+    LoadStagedImage,
+    NormalizeImportUrl,
+    NormalizedImportUrl,
+    RunLinkImport,
+    SafeFetchFailure,
+    StageImages,
+    StageImagesOutcome,
+    StagedImage,
+    StagedImageBody,
+    ToImportedDraft
+} from './types';
+import { isSkippedStagedImage } from './types';
+
+export interface LinkImportImplementations {
+    createSafeFetcher: CreateSafeFetcher;
+    collectPageSignals: CollectPageSignals;
+    extractProduct: ExtractProduct;
+    normalizeImportUrl: NormalizeImportUrl;
+    hashImportUrl: HashImportUrl;
+    emitTelemetry?: LinkImportTelemetryEmitter;
+}
+
+export type LinkImportTelemetryEmitter = (
+    env: LinkImportDeps['env'],
+    context: TelemetryContext,
+    fields: TelemetryFields
+) => void;
+
+export interface PreviewImages {
+    images: StagedImageBody[];
+    staged: StagedImage[];
+    skippedUnsupported: number;
+}
+
+const SAFE_FETCH_FAILURE_OUTCOMES = {
+    invalidUrl: 'invalidUrl',
+    blockedHost: 'invalidUrl',
+    tooManyRedirects: 'notProduct',
+    timeout: 'timeout',
+    tooLarge: 'notProduct',
+    badContentType: 'notProduct',
+    blockedStatus: 'blocked',
+    badStatus: 'notProduct',
+    network: 'timeout'
+} as const satisfies Record<SafeFetchFailure, LinkImportOutcome>;
+
+const TOO_MANY_REQUESTS_STATUS = 429;
+const FIRST_SERVER_ERROR_STATUS = 500;
+
+type ResultFields = Omit<LinkImportResult, 'elapsedMs'>;
+
+const isTransientStatus = (status: number | null) => {
+    return (
+        status !== null &&
+        (status === TOO_MANY_REQUESTS_STATUS ||
+            status >= FIRST_SERVER_ERROR_STATUS)
+    );
+};
+
+const toTelemetryContext = (deps: LinkImportDeps): TelemetryContext => {
+    const { waitUntil } = deps;
+
+    return waitUntil === undefined ? undefined : { waitUntil };
+};
+
+const emit = (
+    deps: LinkImportDeps,
+    fields: TelemetryFields,
+    emitter: LinkImportTelemetryEmitter = emitTelemetryEvent
+) => {
+    emitter(deps.env, toTelemetryContext(deps), fields);
+};
+
+const runInBackground = async (
+    deps: LinkImportDeps,
+    task: Promise<unknown>
+) => {
+    const settled = task.catch(() => undefined);
+
+    if (deps.waitUntil === undefined) {
+        await settled;
+    } else {
+        deps.waitUntil(settled);
+    }
+};
+
+const classifyProduct = (
+    product: ExtractedProduct | null
+): LinkImportOutcome => {
+    if (product === null) {
+        return 'notProduct';
+    }
+
+    return product.price !== null &&
+        product.price > 0 &&
+        product.currency !== null
+        ? 'ok'
+        : 'partial';
+};
+
+const toPositivePrice = (price: number | null) => {
+    return price !== null && Number.isFinite(price) && price > 0 ? price : null;
+};
+
+const toStoredPrice = (price: number | null) => {
+    return toPositivePrice(price === null ? null : Math.round(price));
+};
+
+/** Keeps `price` and `currency` only for currencies in `CURRENCIES`; any other priced currency becomes `sourcePrice`. */
+export const toImportedDraft: ToImportedDraft = (product, link) => {
+    const price = toPositivePrice(product?.price ?? null);
+    const storedPrice = toStoredPrice(price);
+    const currency = product?.currency?.trim().toUpperCase() ?? null;
+    const isOwnCurrency = storedPrice !== null && isCurrency(currency);
+
+    return {
+        title: product?.title ?? null,
+        description: product?.description ?? null,
+        link,
+        price: isOwnCurrency ? storedPrice : null,
+        currency: isOwnCurrency ? currency : null,
+        sourcePrice:
+            price !== null && !isOwnCurrency && currency
+                ? { amount: price, currency }
+                : null
+    };
+};
+
+/** Builds the closed-label `link_import_completed` input both channels report once an import finishes. */
+export const toLinkImportCompletedInput = (
+    result: LinkImportResult,
+    images: { staged: number; skipped: number; ingested: number }
+): LinkImportCompletedInput => {
+    return {
+        result: result.outcome,
+        source: result.product?.source ?? null,
+        shop: result.shop,
+        cacheOutcome: result.cache,
+        imagesStaged: images.staged,
+        imagesSkipped: images.skipped,
+        imagesIngested: images.ingested,
+        elapsedMs: result.elapsedMs
+    };
+};
+
+/** Emits `link_import_completed` with closed labels only; channels call it once, after staging or ingestion finishes. */
+export const reportLinkImportCompleted = (
+    deps: LinkImportDeps,
+    input: {
+        channel: LinkImportChannel;
+        result: LinkImportResult;
+        staged: number;
+        skipped: number;
+        ingested: number;
+    },
+    emitter?: LinkImportTelemetryEmitter
+) => {
+    emit(
+        deps,
+        linkImportCompletedEvent({
+            channel: input.channel,
+            ...toLinkImportCompletedInput(input.result, input)
+        }),
+        emitter
+    );
+};
+
+const isHostLimited = async (
+    deps: LinkImportDeps,
+    normalized: NormalizedImportUrl,
+    emitter: LinkImportTelemetryEmitter | undefined
+) => {
+    const outcome = await checkRateLimit(
+        selectLinkHostLimiter(deps.env),
+        linkHostRateLimitKey(normalized.registrableDomain)
+    );
+
+    if (outcome === 'missing' || outcome === 'error') {
+        emit(deps, appRateLimiterMissingEvent('import', outcome), emitter);
+    }
+
+    return outcome === 'limited';
+};
+
+const readProduct = async (
+    implementations: LinkImportImplementations,
+    response: Response,
+    finalUrl: string
+) => {
+    try {
+        const signals = await implementations.collectPageSignals(response);
+
+        return implementations.extractProduct(signals, finalUrl);
+    } catch {
+        return null;
+    }
+};
+
+const createRunLinkImport = (
+    implementations: LinkImportImplementations
+): RunLinkImport => {
+    return async (deps, request) => {
+        const now = deps.now ?? Date.now;
+        const startedAt = now();
+        const finish = (fields: ResultFields): LinkImportResult => {
+            return { ...fields, elapsedMs: Math.max(0, now() - startedAt) };
+        };
+        const normalized = implementations.normalizeImportUrl(request.url);
+
+        if (normalized === null) {
+            return finish({
+                outcome: 'invalidUrl',
+                product: null,
+                normalizedUrl: null,
+                host: null,
+                urlHash: null,
+                shop: 'other',
+                cache: 'miss'
+            });
+        }
+
+        const urlHash = await implementations.hashImportUrl(normalized.url);
+        const located = {
+            normalizedUrl: normalized.url,
+            host: normalized.host,
+            urlHash,
+            shop: resolveShop(normalized.host)
+        };
+        const cache = createLinkImportCache(deps.env.IMAGES, now);
+        const cached = await cache.get(urlHash);
+
+        if (cached !== null) {
+            return finish({
+                ...located,
+                outcome: cached.outcome,
+                product: cached.product,
+                cache: 'hit'
+            });
+        }
+
+        if (
+            await isHostLimited(deps, normalized, implementations.emitTelemetry)
+        ) {
+            return finish({
+                ...located,
+                outcome: 'rateLimited',
+                product: null,
+                cache: 'miss'
+            });
+        }
+
+        const page = await implementations
+            .createSafeFetcher(deps.fetch)
+            .fetchPage(normalized.url, {
+                timeoutMs: LINK_IMPORT_PAGE_TIMEOUT_MS,
+                maxBytes: LINK_IMPORT_HTML_MAX_BYTES
+            });
+        const product = page.ok
+            ? await readProduct(
+                  implementations,
+                  page.value.response,
+                  page.value.finalUrl
+              )
+            : null;
+        const outcome = page.ok
+            ? classifyProduct(product)
+            : SAFE_FETCH_FAILURE_OUTCOMES[page.failure];
+
+        const transient = !page.ok && isTransientStatus(page.status);
+
+        if (isCacheableOutcome(outcome) && !transient) {
+            await runInBackground(
+                deps,
+                cache.put(
+                    urlHash,
+                    buildCacheEntry({
+                        outcome,
+                        normalizedUrl: normalized.url,
+                        product,
+                        storedAt: now()
+                    })
+                )
+            );
+        }
+
+        return finish({ ...located, outcome, product, cache: 'miss' });
+    };
+};
+
+const firstIndexes = (count: number, limit: number) => {
+    return Array.from({ length: Math.min(count, limit) }, (_, index) => {
+        return index;
+    });
+};
+
+const createPreparePreviewImages = (
+    stageImages: StageImages,
+    loadStagedImage: LoadStagedImage
+) => {
+    return async (
+        deps: LinkImportDeps,
+        result: LinkImportResult,
+        limit: number = LINK_IMPORT_BOT_IMAGES
+    ): Promise<PreviewImages> => {
+        const { product, urlHash } = result;
+
+        if (product === null || urlHash === null) {
+            return { images: [], staged: [], skippedUnsupported: 0 };
+        }
+
+        const outcome: StageImagesOutcome = await stageImages(deps, {
+            urlHash,
+            imageUrls: product.images,
+            indexes: firstIndexes(product.images.length, limit),
+            budgetMs: LINK_IMPORT_IMAGE_BUDGET_MS,
+            keepBodies: true
+        });
+        const loaded = await Promise.all(
+            outcome.staged.map(image => {
+                return (
+                    outcome.bodies?.get(image.index) ??
+                    loadStagedImage(deps, { urlHash, index: image.index })
+                );
+            })
+        );
+        const images = loaded.filter((image): image is StagedImageBody => {
+            return !isSkippedStagedImage(image);
+        });
+        const unsupportedOnLoad = loaded.filter(image => {
+            return (
+                isSkippedStagedImage(image) &&
+                image.skipped === 'unsupportedFormat'
+            );
+        }).length;
+
+        return {
+            images,
+            staged: outcome.staged,
+            skippedUnsupported:
+                countUnsupportedSkips(outcome) + unsupportedOnLoad
+        };
+    };
+};
+
+/**
+ * Wires the link import pipeline from the fetch and extract functions:
+ * `run` is the cache, host limiter, fetch and extract orchestrator;
+ * `stageImages`/`loadStagedImage` stage and serve images under
+ * `import/<urlHash>/`; `preparePreviewImages` stages and loads the bot's
+ * preview images. Telemetry is left to the channel, so each import is
+ * counted once.
+ */
+export const createLinkImportServices = (
+    implementations: LinkImportImplementations
+) => {
+    const staging = createImageStaging(implementations.createSafeFetcher);
+
+    return {
+        run: createRunLinkImport(implementations),
+        stageImages: staging.stageImages,
+        loadStagedImage: staging.loadStagedImage,
+        toImportedDraft,
+        preparePreviewImages: createPreparePreviewImages(
+            staging.stageImages,
+            staging.loadStagedImage
+        )
+    };
+};
+
+export type LinkImportServiceSet = ReturnType<typeof createLinkImportServices>;

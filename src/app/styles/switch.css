@@ -1,0 +1,26 @@
+@layer components {
+    .segmented-option:has(input:checked),
+    .chip-group .chip[aria-pressed='true'] {
+        color: var(--on-heart);
+        background: var(--heart);
+        border-color: var(--ink);
+        box-shadow: var(--switch-lift) var(--switch-lift) 0 var(--ink);
+        translate: calc(var(--switch-lift) * -0.5)
+            calc(var(--switch-lift) * -0.5);
+    }
+
+    .segmented-option:has(input:checked):active,
+    .chip-group .chip[aria-pressed='true']:active {
+        box-shadow: 0 0 0 0 var(--ink);
+        translate: 0 0;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .segmented-option,
+        .chip-group .chip {
+            transition:
+                box-shadow var(--motion-switch),
+                translate var(--motion-switch);
+        }
+    }
+}

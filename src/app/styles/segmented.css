@@ -1,0 +1,55 @@
+@layer components {
+    .segmented {
+        display: grid;
+        grid-auto-columns: minmax(var(--tap-size), 1fr);
+        grid-auto-flow: column;
+        gap: 0.25rem;
+        min-inline-size: 0;
+        margin: calc(var(--segmented-label-gap) + var(--switch-lift)) 0
+            calc(var(--segmented-hint-gap) + var(--switch-lift));
+        padding: 0.25rem;
+        background: var(--tag);
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-pill);
+    }
+
+    .segmented-option {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--tap-size);
+        min-inline-size: var(--tap-size);
+        padding-inline: 0.75rem;
+        border: var(--border-thin) solid transparent;
+        border-radius: var(--radius-pill);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .segmented-option:has(input:focus-visible) {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-offset-inset);
+    }
+
+    .segmented:disabled .segmented-option {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .segmented-label {
+        min-inline-size: 0;
+        max-inline-size: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .segmented-input {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        opacity: 0;
+        cursor: inherit;
+    }
+}

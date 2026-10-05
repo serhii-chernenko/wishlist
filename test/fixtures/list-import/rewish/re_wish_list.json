@@ -1,0 +1,19 @@
+{
+    "value": [
+        {
+            "id": 318652,
+            "title": null,
+            "is_private": false,
+            "is_default": true,
+            "is_booked_hide": false,
+            "wishes_count": 45,
+            "has_new_wish": false,
+            "is_profile_brand_active": false,
+            "type": 0,
+            "link_access": null,
+            "position": null
+        }
+    ],
+    "is_success": true,
+    "errors": []
+}

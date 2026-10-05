@@ -1,0 +1,1243 @@
+import { useEffect, useState } from 'hono/jsx/dom';
+import { Trash2 } from 'lucide';
+
+import {
+    type ApiImage,
+    type FieldErrorCode,
+    type ImageReorderSource,
+    type OwnWishDto,
+    type WishPriority
+} from '../../shared/app-api';
+import { getCurrencySymbol, type Currency } from '../../shared/money';
+import type { AppTranslator } from '../i18n/i18n';
+import { fieldErrorMessage } from '../i18n/messages';
+import { getFieldErrors, hasErrorCode } from '../logic/errors';
+import { getApproximateDraftPrice, getLinkHost } from '../logic/format';
+import {
+    formatSourcePrice,
+    linkOnlyStart,
+    type ImportImageSource,
+    type ImportStart
+} from '../logic/link-import';
+import { runOptimistic } from '../logic/optimistic';
+import { createOrderQueue, orderImagesByHashes } from '../logic/reorder';
+import {
+    checkDraftForSubmit,
+    countFreePhotoSlots,
+    DRAFT_TEXT_FIELDS,
+    createPhotoQueue,
+    draftFromWish,
+    createEmptyDraft,
+    enqueuePhotos,
+    failQueuedPhotos,
+    isDraftDirty,
+    nextQueuedPhoto,
+    removePendingPhoto,
+    setPhotoStatus,
+    summarizePhotoQueue,
+    toCreateInput,
+    toDraftErrors,
+    toPatchInput,
+    toPhotoFailureKind,
+    validateDraft,
+    visibleDraftErrors,
+    withFlags,
+    type DraftErrors,
+    type DraftTextField,
+    type PhotoFailureKind,
+    type PhotoQueue,
+    type WishDraft
+} from '../logic/wish-draft';
+import { ImageDecodeError, resizeImage } from '../media/resize';
+import { useDirtyGuard, useEditorMode } from '../nav/guards';
+import type { ScreenProps } from '../nav/routes';
+import {
+    useApp,
+    useAppResource,
+    useEntryKey,
+    useLL,
+    useSession,
+    type AppServices
+} from '../state/context';
+import { findHandedOffImport } from '../state/import-handoff';
+import { toFailure, useLatest } from '../state/store';
+import { useBottomButton } from '../telegram/buttons';
+import { haptics } from '../telegram/haptics';
+import { openTelegramLink, requestWriteAccess } from '../telegram/links';
+import { confirmAction, showPopup } from '../telegram/popups';
+import { Field } from '../ui/field';
+import { Icon } from '../ui/icon';
+import { ImportNoteBanner } from '../ui/import-note';
+import {
+    PhotoPicker,
+    photoFailureText,
+    type UploadProgress
+} from '../ui/photo-picker';
+import { CurrencyPicker } from '../ui/currency-picker';
+import { ScreenLayout } from '../ui/screen';
+import { TagSkeletons } from '../ui/skeleton';
+import { Tag } from '../ui/tag';
+import { Toggle } from '../ui/toggle';
+import { WishDates } from '../ui/wish-dates';
+import { ErrorState } from '../ui/error-state';
+import { PriorityChoice } from '../ui/priority-choice';
+import {
+    forgetWish,
+    readCachedWish,
+    removeWishLocally,
+    storeWish,
+    updateCounts,
+    useWishHiddenToggle,
+    useWishPriorityChange,
+    WISHES_LIST_KEY,
+    wishItemKey
+} from './wishes';
+
+const FIELD_ID_PREFIX = 'wish-';
+const REMOVE_DONE = 'done';
+const REMOVE_NOT_DONE = 'notDone';
+
+type UploadSource =
+    | { kind: 'file'; file: Blob; previewUrl: string }
+    | ({ kind: 'import' } & ImportImageSource);
+
+const releasePreview = (source: UploadSource) => {
+    if (source.kind === 'file') {
+        URL.revokeObjectURL(source.previewUrl);
+    }
+};
+
+const toImportSource = (image: ImportImageSource): UploadSource => {
+    return { kind: 'import', ...image };
+};
+
+type UploadOutcome =
+    | { kind: 'done'; wish: OwnWishDto; added: boolean }
+    | { kind: 'failed'; failure: PhotoFailureKind };
+
+const fieldId = (field: DraftTextField) => {
+    return `${FIELD_ID_PREFIX}${field}`;
+};
+
+const revealField = (field: DraftTextField) => {
+    const element = document.getElementById(fieldId(field));
+
+    if (element !== null) {
+        element.focus({ preventScroll: true });
+        element.scrollIntoView({ block: 'center' });
+    }
+};
+
+const draftErrorText = (
+    LL: AppTranslator,
+    field: DraftTextField,
+    code: FieldErrorCode,
+    limits: { title: number; description: number; link: number }
+) => {
+    const errors = LL.editor.errors;
+
+    if (field === 'title') {
+        if (code === 'empty' || code === 'required') {
+            return errors.titleEmpty();
+        }
+
+        if (code === 'tooLong') {
+            return errors.titleTooLong({ max: limits.title });
+        }
+
+        if (code === 'containsLink') {
+            return errors.titleContainsLink();
+        }
+    }
+
+    if (field === 'description' && code === 'tooLong') {
+        return errors.descriptionTooLong({ max: limits.description });
+    }
+
+    if (field === 'price' && code === 'invalid') {
+        return errors.priceInvalid();
+    }
+
+    if (field === 'link' && code === 'invalid') {
+        return errors.linkInvalid();
+    }
+
+    return fieldErrorMessage(
+        LL,
+        code,
+        field === 'link' ? limits.link : limits.description
+    );
+};
+
+const askForWriteAccess = async (LL: AppTranslator) => {
+    const texts = LL.photos.writeAccess;
+    const confirmed = await confirmAction({
+        title: texts.title(),
+        message: texts.text(),
+        confirmText: texts.allow(),
+        cancelText: LL.common.cancel()
+    });
+
+    return confirmed && (await requestWriteAccess());
+};
+
+const sendPhoto = async (
+    services: AppServices,
+    wish: OwnWishDto,
+    source: UploadSource
+) => {
+    if (source.kind === 'import') {
+        return services.api.request('importWishImage', {
+            params: { id: wish.id },
+            body: { importToken: source.importToken, index: source.index }
+        });
+    }
+
+    const resized = await resizeImage(source.file);
+
+    return services.api.request('uploadWishImage', {
+        params: { id: wish.id },
+        body: resized.blob
+    });
+};
+
+const uploadPhoto = async (
+    services: AppServices,
+    wish: OwnWishDto,
+    source: UploadSource
+): Promise<UploadOutcome> => {
+    try {
+        const updated = await sendPhoto(services, wish, source);
+
+        return {
+            kind: 'done',
+            wish: updated,
+            added: updated.images.length > wish.images.length
+        };
+    } catch (error) {
+        if (error instanceof ImageDecodeError) {
+            return { kind: 'failed', failure: 'unsupported' };
+        }
+
+        const failure = toFailure(error);
+
+        return {
+            kind: 'failed',
+            failure: toPhotoFailureKind(
+                failure.kind === 'api' ? failure.code : null
+            )
+        };
+    }
+};
+
+/** Sequential photo uploads with per-tile state; in create mode photos wait in the queue until the wish exists. */
+const usePhotoUploads = (
+    wish: OwnWishDto | null,
+    imported: readonly ImportImageSource[]
+) => {
+    const services = useApp();
+    const LL = useLL();
+    const { config } = useSession();
+    const max = config.limits.images;
+    const [state] = useState(() => {
+        return {
+            queue: enqueuePhotos(
+                createPhotoQueue<UploadSource>(),
+                imported.map(toImportSource),
+                imported.length
+            ).queue,
+            pumping: false,
+            alive: true,
+            done: 0,
+            batch: 0
+        };
+    });
+    const [queue, setQueue] = useState(state.queue);
+    const [progress, setProgress] = useState<UploadProgress | null>(null);
+    const latestWish = useLatest(wish);
+
+    const update = (
+        change: (current: PhotoQueue<UploadSource>) => PhotoQueue<UploadSource>
+    ) => {
+        state.queue = change(state.queue);
+        setQueue(state.queue);
+    };
+
+    useEffect(() => {
+        return () => {
+            state.alive = false;
+
+            for (const item of state.queue.items) {
+                releasePreview(item.source);
+            }
+        };
+    }, []);
+
+    const uploadFailureText = (
+        failure: PhotoFailureKind,
+        source: UploadSource | undefined
+    ) => {
+        if (source?.kind === 'import' && failure === 'failed') {
+            return LL.linkImport.photosFailed();
+        }
+
+        if (source?.kind === 'import' && failure === 'unsupported') {
+            return LL.linkImport.photosUnsupported();
+        }
+
+        return photoFailureText(LL, failure, max);
+    };
+
+    const reportFailure = (
+        failure: PhotoFailureKind,
+        source?: UploadSource
+    ) => {
+        haptics.error();
+        services.toast.show(uploadFailureText(failure, source), 'error');
+    };
+
+    const pump = async (target: OwnWishDto | null = latestWish.current) => {
+        if (state.pumping || target === null) {
+            return;
+        }
+
+        state.pumping = true;
+        state.done = 0;
+        state.batch = summarizePhotoQueue(state.queue).active;
+
+        let current = target;
+        let added = 0;
+        let askedForAccess = false;
+
+        try {
+            for (;;) {
+                const next = nextQueuedPhoto(state.queue);
+
+                if (next === null || !state.alive) {
+                    break;
+                }
+
+                setProgress({ done: state.done, total: state.batch });
+                update(pending => {
+                    return setPhotoStatus(pending, next.key, 'uploading');
+                });
+
+                const outcome = await uploadPhoto(
+                    services,
+                    latestWish.current ?? current,
+                    next.source
+                );
+
+                if (outcome.kind === 'done') {
+                    current = outcome.wish;
+                    storeWish(services.cache, outcome.wish);
+                    releasePreview(next.source);
+                    update(pending => removePendingPhoto(pending, next.key));
+                    state.done += 1;
+                    added += outcome.added ? 1 : 0;
+
+                    if (!outcome.added) {
+                        services.toast.show(LL.photos.duplicate());
+                    }
+
+                    continue;
+                }
+
+                const { failure } = outcome;
+
+                if (failure === 'writeAccess' && !askedForAccess) {
+                    askedForAccess = true;
+
+                    if (await askForWriteAccess(LL)) {
+                        update(pending => {
+                            return setPhotoStatus(pending, next.key, 'queued');
+                        });
+
+                        continue;
+                    }
+                }
+
+                update(pending => {
+                    const failed = setPhotoStatus(
+                        pending,
+                        next.key,
+                        'failed',
+                        failure
+                    );
+
+                    return failure === 'full'
+                        ? failQueuedPhotos(failed, 'full')
+                        : failed;
+                });
+                reportFailure(failure, next.source);
+                services.reportEvent('uploadFailed', 'wishEditor');
+            }
+        } finally {
+            state.pumping = false;
+            setProgress(null);
+        }
+
+        if (added > 0) {
+            haptics.success();
+            services.toast.show(LL.photos.uploaded(), 'success');
+        }
+
+        return summarizePhotoQueue(state.queue);
+    };
+
+    const pick = (files: File[]) => {
+        const free = countFreePhotoSlots(
+            latestWish.current?.images.length ?? 0,
+            state.queue,
+            max
+        );
+        const sources = files.slice(0, free).map(file => {
+            return {
+                kind: 'file' as const,
+                file,
+                previewUrl: URL.createObjectURL(file)
+            };
+        });
+        const result = enqueuePhotos(state.queue, sources, free);
+
+        update(() => result.queue);
+
+        if (files.length > sources.length) {
+            reportFailure('full');
+        }
+
+        if (latestWish.current !== null) {
+            void pump();
+        }
+    };
+
+    const retry = (key: number) => {
+        update(pending => setPhotoStatus(pending, key, 'queued'));
+        void pump();
+    };
+
+    const discard = (key: number) => {
+        const item = state.queue.items.find(candidate => {
+            return candidate.key === key;
+        });
+
+        if (item !== undefined) {
+            releasePreview(item.source);
+        }
+
+        update(pending => removePendingPhoto(pending, key));
+    };
+
+    return {
+        queue,
+        progress,
+        pick,
+        retry,
+        discard,
+        start: pump,
+        summary: summarizePhotoQueue(queue)
+    };
+};
+
+/** Saves photo order changes one request at a time; a burst of moves collapses into the newest order and a failure restores the last order the server confirmed. */
+const usePhotoReorder = (wish: OwnWishDto | null, onReload: () => void) => {
+    const services = useApp();
+    const LL = useLL();
+    const [reordering, setReordering] = useState(false);
+    const latest = useLatest({ wish, onReload });
+    const [state] = useState(() => {
+        const { api, cache, toast } = services;
+        const box: {
+            confirmed: ApiImage[] | null;
+            source: ImageReorderSource;
+        } = { confirmed: null, source: 'button' };
+        const currentWish = () => {
+            const { wish: base } = latest.current;
+
+            return base === null
+                ? null
+                : (readCachedWish(cache, base.id) ?? base);
+        };
+        const finish = () => {
+            box.confirmed = null;
+            setReordering(false);
+        };
+
+        const queue = createOrderQueue<OwnWishDto>({
+            commit(hashes) {
+                return api.request('reorderWishImages', {
+                    params: { id: latest.current.wish?.id ?? 0 },
+                    body: { hashes: [...hashes], source: box.source }
+                });
+            },
+            committed(updated, isLatest) {
+                box.confirmed = updated.images;
+
+                if (isLatest) {
+                    storeWish(cache, updated);
+                    finish();
+                    toast.show(LL.photos.reorder.saved(), 'success');
+                }
+            },
+            failed(error) {
+                const shown = currentWish();
+                const failure = toFailure(error);
+
+                if (shown !== null && box.confirmed !== null) {
+                    storeWish(cache, { ...shown, images: box.confirmed });
+                }
+
+                finish();
+                haptics.error();
+
+                if (hasErrorCode(failure, 'imageChanged', 'notFound')) {
+                    toast.show(LL.photos.reorder.conflict(), 'error');
+                    latest.current.onReload();
+                } else {
+                    toast.failure(failure);
+                }
+            }
+        });
+
+        return {
+            submit(hashes: readonly string[], source: ImageReorderSource) {
+                const shown = currentWish();
+
+                if (shown === null) {
+                    return;
+                }
+
+                box.source = source;
+                box.confirmed ??= shown.images;
+                storeWish(cache, {
+                    ...shown,
+                    images: orderImagesByHashes(shown.images, hashes)
+                });
+                setReordering(true);
+                void queue.submit(hashes);
+            }
+        };
+    });
+
+    return { reordering, reorder: state.submit };
+};
+
+interface WishFormProps {
+    wish: OwnWishDto | null;
+    importStart: ImportStart | null;
+    onCreated: (wish: OwnWishDto) => void;
+    onReload: () => void;
+}
+
+const WishForm = ({
+    wish,
+    importStart,
+    onCreated,
+    onReload
+}: WishFormProps) => {
+    const services = useApp();
+    const { api, cache, nav, toast } = services;
+    const LL = useLL();
+    const { me, config, locale } = useSession();
+    const entryKey = useEntryKey();
+    const toggleHidden = useWishHiddenToggle();
+    const changePriority = useWishPriorityChange();
+    const limits = config.limits;
+    const [baseline, setBaseline] = useState<WishDraft>(() => {
+        return wish === null
+            ? createEmptyDraft(me.currency)
+            : draftFromWish(wish);
+    });
+    const [draft, setDraft] = useState<WishDraft>(() => {
+        return importStart?.draft ?? baseline;
+    });
+    const [touched, setTouched] = useState<ReadonlySet<DraftTextField>>(
+        () => new Set()
+    );
+    const [serverErrors, setServerErrors] = useState<DraftErrors>({});
+    const [saving, setSaving] = useState(false);
+    const [removingPhoto, setRemovingPhoto] = useState(false);
+    const photos = usePhotoUploads(wish, importStart?.images ?? []);
+    const photoOrder = usePhotoReorder(wish, onReload);
+    const current = useLatest({ baseline, draft });
+
+    useEffect(() => {
+        if (wish === null) {
+            return;
+        }
+
+        const next = draftFromWish(wish);
+        const edited =
+            isDraftDirty(current.current.baseline, current.current.draft) &&
+            isDraftDirty(next, current.current.draft);
+
+        if (edited) {
+            setBaseline(previous => withFlags(previous, next));
+            setDraft(previous => withFlags(previous, next));
+        } else {
+            setBaseline(next);
+            setDraft(next);
+        }
+    }, [wish]);
+
+    const mode = wish === null ? 'create' : 'edit';
+    const dirty = isDraftDirty(baseline, draft);
+    const clientErrors = validateDraft(draft);
+    const shownErrors: DraftErrors = {
+        ...visibleDraftErrors(clientErrors, touched),
+        ...serverErrors
+    };
+    const uploadsPending = photos.summary.active > 0;
+
+    useDirtyGuard(dirty || (mode === 'edit' && uploadsPending));
+    useEditorMode();
+
+    const leave = () => {
+        nav.setDirty(entryKey, false);
+        void nav.back();
+    };
+
+    const setText = (field: DraftTextField) => {
+        return (value: string) => {
+            setDraft(previous => ({ ...previous, [field]: value }));
+            setServerErrors(previous => {
+                if (previous[field] === undefined) {
+                    return previous;
+                }
+
+                const next = { ...previous };
+
+                delete next[field];
+
+                return next;
+            });
+        };
+    };
+
+    const setCurrency = (currency: Currency) => {
+        setDraft(previous => ({ ...previous, currency }));
+    };
+
+    const touch = (field: DraftTextField) => {
+        return () => {
+            setTouched(previous => {
+                return previous.has(field)
+                    ? previous
+                    : new Set([...previous, field]);
+            });
+        };
+    };
+
+    const setHidden = (value: boolean) => {
+        if (wish === null) {
+            setDraft(previous => {
+                return { ...previous, hidden: value };
+            });
+
+            return;
+        }
+
+        toggleHidden(wish, value);
+    };
+
+    const setPriority = (priority: WishPriority) => {
+        if (wish === null) {
+            setDraft(previous => {
+                return { ...previous, priority };
+            });
+
+            return;
+        }
+
+        changePriority(wish, priority);
+    };
+
+    const showServerErrors = (errors: DraftErrors) => {
+        setServerErrors(errors);
+
+        const [first] = DRAFT_TEXT_FIELDS.filter(field => {
+            return errors[field] !== undefined;
+        });
+
+        if (first !== undefined) {
+            revealField(first);
+        }
+    };
+
+    const rejectSubmit = (
+        check: Extract<ReturnType<typeof checkDraftForSubmit>, { ok: false }>
+    ) => {
+        setTouched(new Set(DRAFT_TEXT_FIELDS));
+        haptics.error();
+        services.reportEvent('validationFailed', 'wishEditor', {
+            field: check.firstInvalid,
+            ...(check.errors[check.firstInvalid] !== undefined && {
+                code: check.errors[check.firstInvalid]
+            })
+        });
+        toast.show(
+            check.onlyTitleMissing
+                ? LL.editor.titleMissing()
+                : LL.editor.fixFields({
+                      count: Object.keys(check.errors).length
+                  }),
+            'error'
+        );
+        revealField(check.firstInvalid);
+    };
+
+    const handleFailure = (error: unknown) => {
+        const failure = toFailure(error);
+        const fields = toDraftErrors(getFieldErrors(failure));
+
+        toast.failure(failure);
+
+        if (Object.keys(fields).length > 0) {
+            showServerErrors(fields);
+
+            return;
+        }
+
+        if (wish !== null && hasErrorCode(failure, 'notFound')) {
+            forgetWish(services, wish.id);
+            leave();
+        }
+    };
+
+    const finishCreate = async (created: OwnWishDto) => {
+        const summary = await photos.start(created);
+
+        if (
+            summary !== undefined &&
+            summary.failed === 0 &&
+            !isDraftDirty(current.current.baseline, current.current.draft)
+        ) {
+            leave();
+        }
+    };
+
+    const save = async () => {
+        if (saving) {
+            return;
+        }
+
+        const check = checkDraftForSubmit(draft, serverErrors);
+
+        if (!check.ok) {
+            rejectSubmit(check);
+
+            return;
+        }
+
+        if (!dirty) {
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            if (wish === null) {
+                const created = await api.request('createWish', {
+                    body: toCreateInput(draft)
+                });
+                const saved = draftFromWish(created);
+
+                haptics.success();
+                setBaseline(saved);
+                setDraft(saved);
+                setTouched(new Set());
+                cache.invalidate(WISHES_LIST_KEY);
+                updateCounts(services, counts => {
+                    return { ...counts, wishes: counts.wishes + 1 };
+                });
+                onCreated(created);
+                toast.show(LL.editor.created(), 'success');
+
+                if (photos.summary.active === 0) {
+                    leave();
+                } else {
+                    void finishCreate(created);
+                }
+
+                return;
+            }
+
+            const updated = await api.request('updateWish', {
+                params: { id: wish.id },
+                body: toPatchInput(baseline, draft)
+            });
+            const saved = draftFromWish(updated);
+
+            haptics.success();
+            storeWish(cache, updated);
+            setBaseline(saved);
+            setDraft(saved);
+            setTouched(new Set());
+            toast.show(LL.editor.saved(), 'success');
+
+            if (!uploadsPending) {
+                leave();
+            }
+        } catch (error) {
+            handleFailure(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    useBottomButton({
+        text: mode === 'create' ? LL.editor.create() : LL.editor.save(),
+        onClick: () => {
+            void save();
+        },
+        disabled: mode === 'edit' && !dirty,
+        progress: saving
+    });
+
+    const removeWish = async () => {
+        if (wish === null) {
+            return;
+        }
+
+        const texts = LL.editor.remove;
+        const choice = await showPopup({
+            title: texts.title(),
+            message: texts.text(),
+            actions: [
+                { id: REMOVE_DONE, text: texts.done() },
+                {
+                    id: REMOVE_NOT_DONE,
+                    text: texts.notDone(),
+                    kind: 'destructive'
+                },
+                { id: 'cancel', text: LL.common.cancel(), kind: 'cancel' }
+            ]
+        });
+
+        if (choice === null) {
+            return;
+        }
+
+        const wishId = wish.id;
+        const done = choice === REMOVE_DONE;
+        let local: ReturnType<typeof removeWishLocally> | null = null;
+
+        leave();
+        toast.undoable({
+            message: texts.success(),
+            apply() {
+                local = removeWishLocally(services, wishId);
+            },
+            restore() {
+                local?.restore();
+            },
+            async commit() {
+                try {
+                    await api.request('removeWish', {
+                        params: { id: wishId },
+                        body: { done }
+                    });
+                } catch (error) {
+                    if (!hasErrorCode(toFailure(error), 'notFound')) {
+                        throw error;
+                    }
+                }
+            },
+            committed() {
+                local?.settle();
+            }
+        });
+    };
+
+    const removePhoto = (image: ApiImage) => {
+        if (wish === null) {
+            return;
+        }
+
+        const latest = () => readCachedWish(cache, wish.id) ?? wish;
+        const previous = latest().images;
+        const index = previous.findIndex(item => item.hash === image.hash);
+
+        if (index === -1) {
+            return;
+        }
+
+        setRemovingPhoto(true);
+        void runOptimistic({
+            apply() {
+                storeWish(cache, {
+                    ...latest(),
+                    images: previous.filter(item => item.hash !== image.hash)
+                });
+            },
+            commit() {
+                return api.request('removeWishImage', {
+                    params: { id: wish.id, index },
+                    query: { hash: image.hash }
+                });
+            },
+            rollback() {
+                storeWish(cache, { ...latest(), images: previous });
+            },
+            settle(updated) {
+                storeWish(cache, updated);
+                toast.show(LL.photos.removed(), 'success');
+            },
+            fail(error) {
+                const failure = toFailure(error);
+
+                toast.failure(failure);
+
+                if (hasErrorCode(failure, 'imageChanged', 'notFound')) {
+                    onReload();
+                }
+            }
+        }).finally(() => {
+            setRemovingPhoto(false);
+        });
+    };
+
+    const removeAllPhotos = async () => {
+        if (wish === null) {
+            return;
+        }
+
+        setRemovingPhoto(true);
+
+        try {
+            storeWish(
+                cache,
+                await api.request('clearWishImages', {
+                    params: { id: wish.id }
+                })
+            );
+            toast.show(LL.toasts.removed(), 'success');
+        } catch (error) {
+            toast.failure(toFailure(error));
+        } finally {
+            setRemovingPhoto(false);
+        }
+    };
+
+    const addPhotosInChat = async () => {
+        if (wish === null) {
+            return;
+        }
+
+        try {
+            await api.request('startImageChatIntent', {
+                params: { id: wish.id }
+            });
+            toast.show(LL.photos.chatFallback.sent());
+            openTelegramLink(config.botUrl);
+        } catch (error) {
+            toast.failure(toFailure(error));
+        }
+    };
+
+    const errorFor = (field: DraftTextField) => {
+        const code = shownErrors[field];
+
+        return code === undefined
+            ? null
+            : draftErrorText(LL, field, code, limits);
+    };
+
+    const linkHost =
+        clientErrors.link === undefined ? getLinkHost(draft.link.trim()) : null;
+    const approximatePrice = getApproximateDraftPrice(
+        draft.price,
+        draft.currency,
+        me.currency,
+        locale,
+        config.rates
+    );
+    const importNote = wish === null ? (importStart?.note ?? null) : null;
+    const sourcePrice =
+        wish === null ? (importStart?.sourcePrice ?? null) : null;
+    const sourcePriceText =
+        sourcePrice !== null && draft.price.trim() === ''
+            ? LL.linkImport.sourcePrice({
+                  price: formatSourcePrice(sourcePrice, locale)
+              })
+            : null;
+    const pendingTiles = photos.queue.items.map(item => {
+        return {
+            key: item.key,
+            previewUrl: item.source.previewUrl,
+            status: item.status,
+            failure: item.failure
+        };
+    });
+
+    return (
+        <form
+            class='editor'
+            novalidate
+            onSubmit={(event: Event) => {
+                event.preventDefault();
+                void save();
+            }}
+        >
+            {importNote === null ? null : (
+                <ImportNoteBanner note={importNote} />
+            )}
+            <Tag class='editor-sheet'>
+                <Field
+                    id={fieldId('title')}
+                    label={LL.editor.title.label()}
+                    hint={LL.editor.title.hint()}
+                    placeholder={LL.editor.title.placeholder()}
+                    value={draft.title}
+                    onValue={setText('title')}
+                    onBlur={touch('title')}
+                    error={errorFor('title')}
+                    maxLength={limits.title}
+                    required
+                    requiredMark={LL.editor.requiredMark()}
+                    multiline
+                    rows={2}
+                />
+                <Field
+                    id={fieldId('description')}
+                    label={LL.editor.description.label()}
+                    hint={LL.editor.description.hint()}
+                    placeholder={LL.editor.description.placeholder()}
+                    value={draft.description}
+                    onValue={setText('description')}
+                    onBlur={touch('description')}
+                    error={errorFor('description')}
+                    maxLength={limits.description}
+                    optionalMark={LL.common.optional()}
+                    multiline
+                    rows={4}
+                />
+                <Field
+                    id={fieldId('price')}
+                    label={LL.editor.price.label()}
+                    hint={LL.editor.price.hint({
+                        currency: getCurrencySymbol(locale, draft.currency)
+                    })}
+                    placeholder={LL.editor.price.placeholder()}
+                    value={draft.price}
+                    onValue={setText('price')}
+                    onBlur={touch('price')}
+                    error={errorFor('price')}
+                    inputMode='decimal'
+                    suffix={getCurrencySymbol(locale, draft.currency)}
+                    optionalMark={LL.common.optional()}
+                    showCounter={false}
+                    after={
+                        <>
+                            <CurrencyPicker
+                                LL={LL}
+                                locale={locale}
+                                value={draft.currency}
+                                onChange={setCurrency}
+                            />
+                            {sourcePriceText === null ? null : (
+                                <p class='field-host'>{sourcePriceText}</p>
+                            )}
+                            {approximatePrice === null ? null : (
+                                <p class='field-host' aria-live='polite'>
+                                    {LL.money.approx({
+                                        amount: approximatePrice
+                                    })}
+                                </p>
+                            )}
+                        </>
+                    }
+                />
+                <Field
+                    id={fieldId('link')}
+                    label={LL.editor.link.label()}
+                    hint={LL.editor.link.hint()}
+                    placeholder={LL.editor.link.placeholder()}
+                    value={draft.link}
+                    onValue={setText('link')}
+                    onBlur={touch('link')}
+                    error={errorFor('link')}
+                    type='url'
+                    optionalMark={LL.common.optional()}
+                    inputMode='url'
+                    maxLength={limits.link}
+                    showCounter={false}
+                    after={
+                        linkHost === null ? undefined : (
+                            <p class='field-host'>
+                                {LL.editor.link.host({ host: linkHost })}
+                            </p>
+                        )
+                    }
+                />
+            </Tag>
+            <Tag class='editor-sheet'>
+                <PhotoPicker
+                    title={draft.title.trim() || LL.editor.createTitle()}
+                    images={wish?.images ?? []}
+                    pending={pendingTiles}
+                    max={limits.images}
+                    waitingForSave={wish === null}
+                    progress={photos.progress}
+                    removing={removingPhoto || photoOrder.reordering}
+                    reorderDisabled={uploadsPending || removingPhoto}
+                    onPick={photos.pick}
+                    onRemove={removePhoto}
+                    onRemoveAll={() => {
+                        void removeAllPhotos();
+                    }}
+                    onRetry={photos.retry}
+                    onDiscard={photos.discard}
+                    {...(wish !== null && {
+                        onChatFallback: () => {
+                            void addPhotosInChat();
+                        },
+                        onReorder: photoOrder.reorder
+                    })}
+                />
+            </Tag>
+            <Tag class='editor-sheet'>
+                <div class='priority-field'>
+                    <p class='priority-field-label' id='wish-priority-label'>
+                        {LL.editor.priority.label()}
+                    </p>
+                    <PriorityChoice
+                        name='wish-priority'
+                        value={draft.priority}
+                        onChange={setPriority}
+                        groupDescribedBy='wish-priority-hint'
+                    />
+                    <p id='wish-priority-hint' class='field-hint'>
+                        {LL.editor.priority.hint()}
+                    </p>
+                </div>
+                <Toggle
+                    id='wish-hidden'
+                    label={LL.editor.hidden.label()}
+                    hint={LL.editor.hidden.hint()}
+                    pressed={draft.hidden}
+                    onToggle={next => {
+                        setHidden(next);
+                    }}
+                />
+            </Tag>
+            {wish === null ? null : (
+                <div class='editor-footer'>
+                    <WishDates
+                        createdAt={wish.createdAt}
+                        updatedAt={wish.updatedAt}
+                        className='editor-dates'
+                    />
+                    <button
+                        type='button'
+                        class='btn danger-button'
+                        onClick={() => {
+                            void removeWish();
+                        }}
+                    >
+                        <Icon icon={Trash2} />
+                        {LL.editor.remove.action()}
+                    </button>
+                </div>
+            )}
+        </form>
+    );
+};
+
+interface WishEditorViewProps {
+    wishId: number | null;
+    importStart: ImportStart | null;
+}
+
+const WishEditorView = ({
+    wishId: initialWishId,
+    importStart
+}: WishEditorViewProps) => {
+    const services = useApp();
+    const LL = useLL();
+    const entryKey = useEntryKey();
+    const [wishId, setWishId] = useState<number | null>(initialWishId);
+    const resource = useAppResource<OwnWishDto>(
+        wishId === null ? null : wishItemKey(wishId),
+        signal => {
+            return services.api.request('getWish', {
+                params: { id: wishId ?? 0 },
+                signal
+            });
+        }
+    );
+    const failure = resource.failure;
+    const missing = failure !== null && hasErrorCode(failure, 'notFound');
+
+    useEffect(() => {
+        if (missing && wishId !== null) {
+            forgetWish(services, wishId);
+            services.toast.failure(failure);
+            services.nav.setDirty(entryKey, false);
+            void services.nav.back();
+        }
+    }, [missing]);
+
+    const waiting = wishId !== null && resource.data === undefined;
+
+    return (
+        <ScreenLayout
+            id='wishEditor'
+            title={
+                wishId === null
+                    ? LL.editor.createTitle()
+                    : LL.editor.editTitle()
+            }
+            busy={waiting && failure === null}
+        >
+            {waiting ? (
+                failure === null || missing ? (
+                    <TagSkeletons count={2} />
+                ) : (
+                    <ErrorState
+                        failure={failure}
+                        onRetry={() => {
+                            void resource.reload();
+                        }}
+                    />
+                )
+            ) : (
+                <WishForm
+                    wish={resource.data ?? null}
+                    importStart={importStart}
+                    onCreated={created => {
+                        services.cache.mutate<OwnWishDto>(
+                            wishItemKey(created.id),
+                            () => created
+                        );
+                        setWishId(created.id);
+                        services.nav.retarget(
+                            { screen: 'wishEditor', wishId: created.id },
+                            'linkImport'
+                        );
+                    }}
+                    onReload={() => {
+                        void resource.reload();
+                    }}
+                />
+            )}
+        </ScreenLayout>
+    );
+};
+
+export const WishEditorScreen = ({ route }: ScreenProps<'wishEditor'>) => {
+    const { me } = useSession();
+    const [importStart] = useState<ImportStart | null>(() => {
+        const link = route.importLink;
+
+        if (link === undefined) {
+            return null;
+        }
+
+        return (
+            findHandedOffImport(link) ?? linkOnlyStart(link, me.currency, null)
+        );
+    });
+
+    return <WishEditorView wishId={route.wishId} importStart={importStart} />;
+};

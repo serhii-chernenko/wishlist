@@ -1,0 +1,58 @@
+@layer components {
+    .import-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        line-height: 1.45;
+        color: var(--text);
+        background: var(--tag);
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-control);
+        box-shadow: var(--shadow-hard);
+    }
+
+    .import-note .icon {
+        flex: none;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.125rem;
+    }
+
+    .import-note-failed {
+        border-style: dashed;
+    }
+
+    .import-loading {
+        margin-top: 1.5rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .link-import-form {
+        display: grid;
+        gap: 1.25rem;
+    }
+
+    .link-import-paste {
+        justify-self: start;
+        gap: 0.5rem;
+    }
+
+    .link-import-paste .icon {
+        flex: none;
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .link-import-actions {
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .link-import-actions .text-button {
+        padding-inline: 0;
+    }
+}

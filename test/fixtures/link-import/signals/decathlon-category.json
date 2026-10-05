@@ -1,0 +1,16 @@
+{
+    "jsonLd": [
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"Product\",\n                \"url\": \"https://www.decathlon.pl/sporty/turystyka-trekking/plecaki-podrozne\",\n                \"name\": \"Plecaki podróżne\",\n                \"aggregateRating\": {\n                    \"@type\": \"AggregateRating\",\n                    \"ratingValue\": 4.5,\n                    \"ratingCount\": 283108,\n                    \"bestRating\": 5,\n                    \"worstRating\": 1\n                },\n                \"offers\": {\n                    \"@type\": \"AggregateOffer\",\n                    \"highPrice\": 1678.05,\n                    \"lowPrice\": 14.99,\n                    \"priceCurrency\": \"PLN\"\n                }\n            }\n        ",
+        "\n            {\n                \"@context\": \"https://schema.org\",\n                \"@type\": \"BreadcrumbList\",\n                \"itemListElement\": [\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": 1,\n                        \"name\": \"Home\",\n                        \"item\": \"https://www.decathlon.pl/\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": 2,\n                        \"name\": \"Sporty\",\n                        \"item\": \"https://www.decathlon.pl/sporty\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": 3,\n                        \"name\": \"Turystyka, Trekking\",\n                        \"item\": \"https://www.decathlon.pl/sporty/turystyka-trekking\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": 4,\n                        \"name\": \"Plecaki turystyczne i trekkingowe\",\n                        \"item\": \"https://www.decathlon.pl/sporty/turystyka-trekking/plecaki-turystyczne-i-trekkingowe\"\n                    },\n                    {\n                        \"@type\": \"ListItem\",\n                        \"position\": 5,\n                        \"name\": \"Plecaki podróżne\",\n                        \"item\": \"https://www.decathlon.pl/sporty/turystyka-trekking/plecaki-podrozne\"\n                    }\n                ]\n            }\n        "
+    ],
+    "meta": {
+        "description": [
+            "Plecaki podróżne to oferta funkcjonalnych modeli, idealnych jako bagaż podręczny do samolotu. Sprawdź asortyment i zamów!"
+        ]
+    },
+    "itemprops": [],
+    "canonical": "https://www.decathlon.pl/sporty/turystyka-trekking/plecaki-podrozne",
+    "titleTag": "\n            Plecaki podróżne - plecaki do samolotu | Sklep Decathlon.pl\n        ",
+    "baseHref": null,
+    "truncated": false
+}

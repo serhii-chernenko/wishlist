@@ -1,0 +1,53 @@
+{
+    "value": {
+        "id": "00000000-0000-0000-0000-000000000002",
+        "code": "tESt01",
+        "is_private": false,
+        "state": 1,
+        "user_name": "",
+        "self_description": null,
+        "first_name": "REDACTED",
+        "last_name": "REDACTED",
+        "avatar_path": null,
+        "is_verified": false,
+        "profile_type": 1,
+        "banks_count": 1,
+        "wishes_count": 0,
+        "collections_count": 0,
+        "has_subscribed": false,
+        "bank_id": 18743,
+        "bank_state": 1,
+        "bank_has_viewed": false,
+        "completed_wishes_count": 0,
+        "subscribers_count": 6,
+        "subscriptions_count": 6,
+        "is_online": false,
+        "last_activity_date": "2026-10-04T15:51:39",
+        "birthday_date": null,
+        "user_achievements": [
+            {
+                "is_active": false,
+                "type": 2
+            },
+            {
+                "is_active": true,
+                "type": 3
+            },
+            {
+                "is_active": false,
+                "type": 1
+            },
+            {
+                "is_active": false,
+                "type": 4
+            },
+            {
+                "is_active": false,
+                "type": 5
+            }
+        ],
+        "user_links": []
+    },
+    "is_success": true,
+    "errors": []
+}

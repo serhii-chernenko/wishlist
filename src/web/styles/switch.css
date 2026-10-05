@@ -1,0 +1,67 @@
+@layer components {
+    .lang-switch ul,
+    .theme-switch ul,
+    .currency-switch ul {
+        display: inline-flex;
+        gap: 0.125rem;
+        padding: 0.1875rem;
+        border: var(--border-regular) solid var(--ink);
+        border-radius: var(--radius-pill);
+    }
+
+    .lang-switch a,
+    .lang-switch span,
+    .theme-switch a,
+    .theme-switch span,
+    .currency-switch a,
+    .currency-switch span {
+        display: inline-grid;
+        place-items: center;
+        min-width: 2.25rem;
+        min-height: 2rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        text-decoration: none;
+        border: var(--border-thin) solid transparent;
+        border-radius: var(--radius-pill);
+    }
+
+    .lang-switch a:focus-visible,
+    .theme-switch a:focus-visible,
+    .currency-switch a:focus-visible {
+        outline-offset: var(--focus-offset-inset);
+    }
+
+    .lang-switch [aria-current],
+    .theme-switch [aria-current],
+    .currency-switch [aria-current] {
+        color: var(--on-heart);
+        background: var(--heart);
+        border-color: var(--ink);
+        box-shadow: var(--switch-lift) var(--switch-lift) 0 var(--ink);
+        translate: calc(var(--switch-lift) * -0.5)
+            calc(var(--switch-lift) * -0.5);
+    }
+
+    .lang-switch [aria-current]:active,
+    .theme-switch [aria-current]:active,
+    .currency-switch [aria-current]:active {
+        box-shadow: 0 0 0 0 var(--ink);
+        translate: 0 0;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .lang-switch a,
+        .lang-switch span,
+        .theme-switch a,
+        .theme-switch span,
+        .currency-switch a,
+        .currency-switch span {
+            transition:
+                box-shadow var(--motion-switch),
+                translate var(--motion-switch);
+        }
+    }
+}

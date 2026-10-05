@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "noEmit": true,
+        "resolveJsonModule": true,
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "skipLibCheck": true,
+        "exactOptionalPropertyTypes": true,
+        "noUncheckedIndexedAccess": true,
+        "forceConsistentCasingInFileNames": true,
+        "jsx": "react-jsx",
+        "jsxImportSource": "hono/jsx/dom",
+        "types": []
+    },
+    "include": [
+        "src/app/**/*.ts",
+        "src/app/**/*.tsx",
+        "src/shared/**/*.ts",
+        "src/bot/input/*.ts",
+        "src/bot/content/intl.ts"
+    ]
+}
