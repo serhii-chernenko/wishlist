@@ -29,15 +29,13 @@ const isTelegramWebhookPath = (value: unknown): value is string => {
     );
 };
 
-export const isLinkImportEnabled = (
-    env: Pick<WorkerBindings, 'LINK_IMPORT_ENABLED'>
-) => {
+export const isLinkImportEnabled = (env: { LINK_IMPORT_ENABLED?: string }) => {
     return env.LINK_IMPORT_ENABLED === 'true';
 };
 
-export const isListImportEnabled = (
-    env: Pick<WorkerBindings, 'WISHLIST_IMPORT_ENABLED'>
-) => {
+export const isListImportEnabled = (env: {
+    WISHLIST_IMPORT_ENABLED?: string;
+}) => {
     return env.WISHLIST_IMPORT_ENABLED === 'true';
 };
 
