@@ -6,7 +6,7 @@
 @plugin 'daisyui' {
     themes: false;
     logs: false;
-    include: button, input, textarea, radio, loading, carousel;
+    include: button, input, textarea, radio, loading, carousel, card;
 }
 
 @plugin 'daisyui/theme' {
@@ -203,17 +203,11 @@
 
     .boot-tag {
         min-height: 6rem;
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-hard);
         animation: var(--animation-pulse);
     }
 
     .boot-tag-hero {
         min-height: 9rem;
-        border-radius: var(--radius-hero);
-        box-shadow: var(--shadow-hard-lg);
         transform: rotate(-1.5deg);
     }
 
@@ -624,20 +618,10 @@
     }
 
     .toast-item {
-        display: flex;
         align-items: center;
         gap: 0.5rem;
         padding: 0.5rem 0.5rem 0.5rem 1rem;
-        color: var(--text);
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-tile);
-        box-shadow: var(--shadow-hard);
         pointer-events: auto;
-    }
-
-    .toast-error {
-        border-style: dashed;
     }
 
     .toast-text {
@@ -670,16 +654,10 @@
     }
 
     .popup {
-        display: grid;
         gap: 0.75rem;
         width: 100%;
         max-width: 26rem;
         padding: 1.25rem;
-        color: var(--text);
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: 4px 4px 0 var(--ink);
     }
 
     .popup-title {
@@ -918,10 +896,6 @@
     .choice-group-list {
         gap: 0;
         overflow: hidden;
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-hard);
     }
 
     .choice-group-list .choice-card {
@@ -1226,10 +1200,6 @@
     .menu-list {
         margin-top: 0.5rem;
         overflow: hidden;
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-hard);
     }
 
     .menu-list {
@@ -1330,7 +1300,6 @@
     }
 
     .menu-list-pairs {
-        display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -1418,14 +1387,8 @@
     }
 
     .step {
-        position: relative;
-        display: grid;
         gap: 0.375rem;
         padding: 1rem 1.125rem 1.125rem 4rem;
-        background: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-hard);
         counter-increment: step;
     }
 
@@ -2036,6 +1999,7 @@
 }
 
 @import '../../web/styles/priority.css';
+@import './daisy-cards.css';
 @import './segmented.css';
 @import './switch.css';
 @import './priority.css';

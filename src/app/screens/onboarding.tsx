@@ -85,7 +85,7 @@ export const MenuSection = ({
     const nav = useNav();
     const headingId = `${id}-title`;
     const listClass = [
-        'menu-list',
+        'card card-border menu-list',
         layout === 'pairs' ? 'menu-list-pairs' : '',
         primary ? 'menu-list-primary' : ''
     ]
@@ -180,7 +180,7 @@ export const OnboardingView = ({ id }: { id: 'home' | 'onboarding' }) => {
                 <ol class='steps'>
                     {STEP_KEYS.map(key => {
                         return (
-                            <li key={key} class='step'>
+                            <li key={key} class='card card-border step'>
                                 <h3 class='step-title'>
                                     {guest.steps[key].title()}
                                 </h3>

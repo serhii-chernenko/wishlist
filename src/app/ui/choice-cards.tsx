@@ -45,7 +45,7 @@ export const ChoiceCards = <Value extends string>({
         <fieldset
             class={
                 variant === 'list'
-                    ? 'choice-group choice-group-list'
+                    ? 'card card-border choice-group choice-group-list'
                     : 'choice-group'
             }
             disabled={disabled}

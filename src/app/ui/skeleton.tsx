@@ -13,10 +13,19 @@ export const TagSkeletons = ({
         <div class='boot' role='status'>
             <span class='sr-only'>{LL.common.loading()}</span>
             {hero ? (
-                <div class='boot-tag boot-tag-hero' aria-hidden='true' />
+                <div
+                    class='card card-border boot-tag boot-tag-hero'
+                    aria-hidden='true'
+                />
             ) : null}
             {Array.from({ length: count }, (_, index) => {
-                return <div key={index} class='boot-tag' aria-hidden='true' />;
+                return (
+                    <div
+                        key={index}
+                        class='card card-border boot-tag'
+                        aria-hidden='true'
+                    />
+                );
             })}
         </div>
     );

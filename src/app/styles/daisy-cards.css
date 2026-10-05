@@ -1,0 +1,35 @@
+@layer utilities {
+    .card {
+        background: var(--tag);
+        border-color: var(--ink);
+        box-shadow: var(--shadow-hard);
+    }
+
+    .popup {
+        box-shadow: 4px 4px 0 var(--ink);
+    }
+
+    .boot-tag-hero {
+        border-radius: var(--radius-hero);
+        box-shadow: var(--shadow-hard-lg);
+    }
+
+    .toast-item {
+        flex-direction: row;
+        border-radius: var(--radius-tile);
+    }
+
+    .import-note {
+        flex-direction: row;
+        border-radius: var(--radius-control);
+    }
+
+    .toast-error,
+    .import-note-failed {
+        border-style: dashed;
+    }
+
+    .menu-list-pairs {
+        display: grid;
+    }
+}
