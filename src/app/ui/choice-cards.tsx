@@ -88,7 +88,7 @@ export const ChoiceCards = <Value extends string>({
                         </span>
                         <input
                             type='radio'
-                            class='radio choice-radio'
+                            class='radio radio-neutral choice-radio'
                             name={name}
                             value={option.value}
                             checked={value === option.value}
