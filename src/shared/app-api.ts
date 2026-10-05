@@ -279,6 +279,7 @@ export const CLIENT_EVENT_KINDS = [
     'networkError',
     'sdkUnsupported',
     'uploadFailed',
+    'giveOwnerOpened',
     'screenView',
     'validationFailed',
     'importTimeout'
@@ -508,10 +509,18 @@ export type OwnerDto = {
     canGive: boolean;
 };
 
+export type GiveOwnerListDto = {
+    label: string;
+    source:
+        | { kind: 'owner'; owner: OwnerDto }
+        | { kind: 'share'; publicId: string };
+};
+
 export type GiveEntryDto = {
     wish: Omit<ThirdWishDto, 'givers'>;
     ownerUsername: string | null;
     otherGivers: number;
+    ownerList?: GiveOwnerListDto;
 };
 
 export type MeDto = {

@@ -2251,7 +2251,12 @@ describe('wishlist screens on D1', () => {
             assert.ok(!wishes[1]?.item.html.includes('380501112233'));
             assert.equal(wishes[1]?.item.html.includes('hidden-name'), false);
             assert.deepEqual(callbackDataOf(wishes[0]?.keyboard), [
-                `g:r:${first.id}`
+                `g:r:${first.id}`,
+                `g:o:${owner.id}`
+            ]);
+            assert.deepEqual(callbackDataOf(wishes[1]?.keyboard), [
+                `g:r:${second.id}`,
+                `g:o:${phoneOwner.id}`
             ]);
 
             const ask = createRequest(viewer);

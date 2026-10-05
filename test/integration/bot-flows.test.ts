@@ -139,7 +139,7 @@ describe('Bot flows through the Worker on D1', () => {
                   language: row.language,
                   state: JSON.parse(row.state) as {
                       pendingInput: { kind: string } | null;
-                      find: object | null;
+                      find: { targetUserId: number } | null;
                   }
               }
             : null;
@@ -1329,6 +1329,190 @@ describe('Bot flows through the Worker on D1', () => {
                     webhook.callsOf('editMessageReplyMarkup')[0]?.payload
                 ).includes('"inline_keyboard":[]')
             );
+        });
+
+        describe('opening the owner list from the give list', () => {
+            const giveToOwner = async () => {
+                const { owner, wish } = await seedOwner();
+                const bobUser = await webhook.registerUser(bob);
+
+                await webhook.run(
+                    webhook.d1.repositories.gives.add(
+                        bobUser.id,
+                        wish.id,
+                        new Date()
+                    )
+                );
+
+                return { owner, wish, bobUser };
+            };
+            const findGiveMessage = (wishId: number) => {
+                return webhook.sentMessages().find(message => {
+                    return callbackDataOf(message).includes(`g:r:${wishId}`);
+                });
+            };
+            const answeredTexts = () => {
+                return webhook.callsOf('answerCallbackQuery').map(call => {
+                    return call.payload.text;
+                });
+            };
+
+            it('adds the owner list button to a give of a reachable owner', async () => {
+                const { owner, wish } = await giveToOwner();
+
+                await tap(bob, 'n:gl');
+
+                const entry = findGiveMessage(wish.id);
+
+                assert.ok(entry);
+                assert.ok(callbackDataOf(entry).includes(`g:o:${owner.id}`));
+                assert.ok(
+                    buttonTextsOf(entry).includes(LL.giveList.actions.owner())
+                );
+            });
+
+            it('omits the button when the wish has no owner', async () => {
+                const { wish } = await giveToOwner();
+
+                await webhook.d1.env.DB.prepare(
+                    'UPDATE wishes SET user_id = NULL WHERE id = ?'
+                )
+                    .bind(wish.id)
+                    .run();
+                await tap(bob, 'n:gl');
+
+                const entry = findGiveMessage(wish.id);
+
+                assert.ok(entry);
+                assert.equal(
+                    callbackDataOf(entry).some(data => {
+                        return data.startsWith('g:o:');
+                    }),
+                    false
+                );
+            });
+
+            it('renders the owner list inline like a search result', async () => {
+                const { owner, wish } = await giveToOwner();
+
+                await tap(bob, 'n:gl');
+                webhook.clearApiCalls();
+                await tap(bob, `g:o:${owner.id}`);
+
+                const texts = webhook.messageTexts();
+
+                assert.ok(texts.some(text => text.includes('<b>@alice</b>')));
+                assert.ok(texts.some(text => text.includes('Bicycle')));
+                assert.equal(
+                    texts.some(text => text.includes('Hidden one')),
+                    false
+                );
+                assert.ok(
+                    webhook.sentMessages().some(message => {
+                        return callbackDataOf(message).includes(
+                            `t:t:${wish.id}`
+                        );
+                    })
+                );
+                assert.equal(
+                    (await readSession(bob.id))?.state.find?.targetUserId,
+                    owner.id
+                );
+            });
+
+            it('names an owner without a public username by the fallback label', async () => {
+                const { owner } = await giveToOwner();
+
+                await webhook.d1.env.DB.prepare(
+                    'UPDATE users SET username_searchable = 0 WHERE id = ?'
+                )
+                    .bind(owner.id)
+                    .run();
+                await tap(bob, `g:o:${owner.id}`);
+
+                const texts = webhook.messageTexts();
+
+                assert.ok(
+                    texts.some(text => {
+                        return text.includes(
+                            `<b>${LL.giveList.ownerFallback()}</b>`
+                        );
+                    })
+                );
+                assert.equal(
+                    texts.some(text => text.includes('+380501112233')),
+                    false
+                );
+            });
+
+            it('answers an outdated toast for a forged owner id', async () => {
+                const { owner } = await giveToOwner();
+
+                await webhook.registerUser(carol);
+                webhook.clearApiCalls();
+                await tap(carol, `g:o:${owner.id}`);
+
+                assert.deepEqual(answeredTexts(), [LL.errors.outdatedButton()]);
+                assert.equal(
+                    webhook
+                        .messageTexts()
+                        .some(text => text.includes('Bicycle')),
+                    false
+                );
+            });
+
+            it('answers an outdated toast once the give is gone', async () => {
+                const { owner, wish, bobUser } = await giveToOwner();
+
+                await webhook.run(
+                    webhook.d1.repositories.gives.remove(bobUser.id, wish.id)
+                );
+                webhook.clearApiCalls();
+                await tap(bob, `g:o:${owner.id}`);
+
+                assert.deepEqual(answeredTexts(), [LL.errors.outdatedButton()]);
+            });
+
+            it('answers an outdated toast once the owner is blocked', async () => {
+                const { owner } = await giveToOwner();
+
+                await webhook.d1.env.DB.prepare(
+                    'UPDATE users SET blocked_at = 1 WHERE id = ?'
+                )
+                    .bind(owner.id)
+                    .run();
+                webhook.clearApiCalls();
+                await tap(bob, `g:o:${owner.id}`);
+
+                assert.deepEqual(answeredTexts(), [LL.errors.outdatedButton()]);
+                assert.equal(
+                    webhook
+                        .messageTexts()
+                        .some(text => text.includes('Bicycle')),
+                    false
+                );
+            });
+
+            it('answers an outdated toast once the owner is reachable only by a share link', async () => {
+                const { owner } = await giveToOwner();
+
+                await webhook.d1.env.DB.prepare(
+                    'UPDATE users SET username_searchable = 0, phone = NULL, phone_digits = NULL WHERE id = ?'
+                )
+                    .bind(owner.id)
+                    .run();
+                await webhook.run(
+                    webhook.d1.repositories.shares.publish(
+                        owner.id,
+                        'Alice',
+                        new Date()
+                    )
+                );
+                webhook.clearApiCalls();
+                await tap(bob, `g:o:${owner.id}`);
+
+                assert.deepEqual(answeredTexts(), [LL.errors.outdatedButton()]);
+            });
         });
 
         it('asks before cleaning the give list and renders the empty state', async () => {

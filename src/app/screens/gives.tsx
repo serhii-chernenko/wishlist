@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'hono/jsx/dom';
-import { Trash2, X } from 'lucide';
+import { Trash2, UserRound, X } from 'lucide';
 
 import type { GiveEntryDto, GiveListDto } from '../../shared/app-api';
 import { hasErrorCode } from '../logic/errors';
@@ -120,7 +120,7 @@ const GiveBadges = ({ entry }: { entry: GiveEntryDto }) => {
 
 export const GivesScreen = (_props: ScreenProps<'gives'>) => {
     const services = useApp();
-    const { api, nav, toast } = services;
+    const { api, nav, toast, reportEvent } = services;
     const LL = useLL();
     const [loadingMore, setLoadingMore] = useState(false);
     const [detailsId, setDetailsId] = useState<number | null>(null);
@@ -254,6 +254,41 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
         setDetailsId(null);
     };
 
+    const openOwnerList = (entry: GiveEntryDto) => {
+        const { ownerList } = entry;
+
+        if (ownerList === undefined) {
+            return;
+        }
+
+        closeDetails();
+        reportEvent('giveOwnerOpened', 'gives');
+        nav.push({ screen: 'thirdList', source: ownerList.source });
+    };
+
+    const renderOwnerButton = (entry: GiveEntryDto) => {
+        const { ownerList } = entry;
+
+        if (ownerList === undefined) {
+            return null;
+        }
+
+        return (
+            <button
+                type='button'
+                class='btn btn-primary give-owner-list'
+                onClick={() => {
+                    openOwnerList(entry);
+                }}
+            >
+                <Icon icon={UserRound} />
+                {ownerList.label === ''
+                    ? LL.gives.openOwnerUnnamed()
+                    : LL.gives.openOwner({ owner: ownerList.label })}
+            </button>
+        );
+    };
+
     const renderDropButton = (entry: GiveEntryDto, compact: boolean) => {
         return (
             <button
@@ -343,7 +378,12 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                 <WishDetailsSheet
                     wish={detailsEntry.wish}
                     onClose={closeDetails}
-                    action={renderDropButton(detailsEntry, false)}
+                    action={
+                        <>
+                            {renderOwnerButton(detailsEntry)}
+                            {renderDropButton(detailsEntry, false)}
+                        </>
+                    }
                 />
             )}
         </ScreenLayout>

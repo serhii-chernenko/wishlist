@@ -85,6 +85,7 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'thirdFilter', ownerId: 5, filter: 2 }, 't:f:5:2'],
     [{ type: 'thirdFilter', ownerId: 5, filter: null }, 't:f:5:x'],
     [{ type: 'giveListPage', offset: 30 }, 'g:p:30'],
+    [{ type: 'giveOwnerList', ownerId: 5 }, 'g:o:5'],
     [{ type: 'giveRemove', wishId: 9 }, 'g:r:9'],
     [{ type: 'giveRemoveConfirm', wishId: 9 }, 'g:r:y:9'],
     [{ type: 'giveRemoveKeep', wishId: 9 }, 'g:r:n:9'],
@@ -132,6 +133,7 @@ const WORST_CASE_VARIANTS: readonly EncodableCallbackAction[] = [
     { type: 'linkOfferAccept', createdAt: MAX_ID },
     { type: 'wishlistPage', offset: MAX_OFFSET },
     { type: 'giveListPage', offset: MAX_OFFSET },
+    { type: 'giveOwnerList', ownerId: MAX_ID },
     { type: 'giveRemoveConfirm', wishId: MAX_ID },
     { type: 'giveRemoveKeep', wishId: MAX_ID },
     { type: 'releasesPage', offset: MAX_OFFSET },
@@ -305,6 +307,9 @@ test('malformed new-style data decodes as outdated', () => {
         't:gl:0:0',
         'g:r:x:5',
         'g:r:y',
+        'g:o',
+        'g:o:0',
+        'g:o:5:1',
         'g:p:1:2',
         'p:rm:n',
         'p:rm:y:1',
@@ -346,6 +351,7 @@ test('callback categories are closed and never contain ids', () => {
     );
     assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
     assert.equal(getCallbackCategory('g:r:y:12345'), 'giveList:removeConfirm');
+    assert.equal(getCallbackCategory('g:o:12345'), 'giveList:owner');
     assert.equal(getCallbackCategory('w:ir:7:0:a1b2c3d4'), 'wish:imageRemove');
     assert.equal(getCallbackCategory('rel:p:3'), 'releases:page');
     assert.equal(

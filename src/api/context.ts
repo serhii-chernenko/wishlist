@@ -155,6 +155,18 @@ export const getSigner = (c: ApiContext): Signer => {
     });
 };
 
+export const mintOwnerToken = (
+    c: ApiContext,
+    viewer: Pick<UserRecord, 'id'>,
+    owner: Pick<UserRecord, 'id'>
+) => {
+    return getSigner(c).mintOwnerToken({
+        ownerId: owner.id,
+        viewerUserId: viewer.id,
+        now: c.var.deps.now()
+    });
+};
+
 export const getImportSigner = (c: ApiContext): ImportSigner => {
     return createImportSigner({
         botToken: c.env.BOT_TOKEN,

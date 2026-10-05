@@ -9,7 +9,7 @@ import {
 } from '../content/keyboards';
 import { getPageWindow, normalizeOffset } from '../content/pagination';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
-import type { WishRecord } from '../../db/repositories';
+import type { UserRecord, WishRecord } from '../../db/repositories';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
     createWishFormatters,
@@ -20,6 +20,7 @@ import {
     updateSession
 } from '../services/wish-screen-context';
 import { escapeHtml } from '../utils/strings';
+import { screen as thirdWishlistScreen } from './third-wishlist';
 
 export interface GiveListParams {
     offset?: number;
@@ -27,15 +28,37 @@ export interface GiveListParams {
 
 const buildGiveKeyboard = (
     req: BotRequest,
-    wish: Pick<WishRecord, 'id' | 'link'>
+    wish: Pick<WishRecord, 'id' | 'link'>,
+    ownerId: number | null
 ) => {
     return singleColumnKeyboard([
         ...openLinkButton(req, wish.link),
         callbackButton(req.LL.findList.actions.take(), {
             type: 'giveRemove',
             wishId: wish.id
-        })
+        }),
+        ownerId === null
+            ? null
+            : callbackButton(req.LL.giveList.actions.owner(), {
+                  type: 'giveOwnerList',
+                  ownerId
+              })
     ]);
+};
+
+const resolveReachableOwnerId = async (
+    req: BotRequest,
+    viewerId: number,
+    owner: UserRecord | null
+) => {
+    const { ownerAccess } = createWishScreenServices(req);
+    const access = await ownerAccess.resolve(viewerId, owner);
+
+    return owner !== null && access?.kind === 'findable' ? owner.id : null;
+};
+
+const resolveOwnerQueryLabel = (req: BotRequest, owner: UserRecord) => {
+    return getOwnerPublicUsername(owner) ?? req.LL.giveList.ownerFallback();
 };
 
 const buildRemoveConfirmationKeyboard = (req: BotRequest, wishId: number) => {
@@ -106,7 +129,11 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
 
         await req.send.wish(
             toWishMessage(html, wish),
-            buildGiveKeyboard(req, wish)
+            buildGiveKeyboard(
+                req,
+                wish,
+                await resolveReachableOwnerId(req, user.id, owner)
+            )
         );
     }
 
@@ -157,14 +184,43 @@ export const callbacks: CallbackTable = {
         );
     },
     giveRemoveKeep: async (req, action) => {
-        requireUser(req);
+        const user = requireUser(req);
 
-        const { wishes } = createWishScreenServices(req);
+        const { wishes, search } = createWishScreenServices(req);
         const wish = await wishes.findVisible(action.wishId);
+        const owner =
+            wish === null || wish.userId === null
+                ? null
+                : await search.findById(wish.userId);
 
         await req.send.replaceKeyboard(
-            buildGiveKeyboard(req, wish ?? { id: action.wishId, link: null })
+            buildGiveKeyboard(
+                req,
+                wish ?? { id: action.wishId, link: null },
+                await resolveReachableOwnerId(req, user.id, owner)
+            )
         );
+    },
+    giveOwnerList: async (req, action) => {
+        const user = requireUser(req);
+        const { ownerAccess } = createWishScreenServices(req);
+        const target = await ownerAccess.resolveForGiver(
+            user.id,
+            action.ownerId
+        );
+
+        if (target === null || target.access.kind !== 'findable') {
+            await req.send.toast(req.LL.errors.outdatedButton());
+
+            return;
+        }
+
+        req.telemetry.botActionCompleted({ action: 'give_owner_opened' });
+        await thirdWishlistScreen.render(req, {
+            ownerId: target.owner.id,
+            offset: 0,
+            query: resolveOwnerQueryLabel(req, target.owner)
+        });
     },
     giveRemoveConfirm: async (req, action) => {
         const user = requireUser(req);

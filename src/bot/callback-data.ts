@@ -244,6 +244,8 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `t:f:${action.ownerId}:${encodeFilter(action.filter)}`;
         case 'giveListPage':
             return `g:p:${action.offset}`;
+        case 'giveOwnerList':
+            return `g:o:${action.ownerId}`;
         case 'giveRemove':
             return `g:r:${action.wishId}`;
         case 'giveRemoveConfirm':
@@ -686,6 +688,12 @@ const decodeGiveList = (parts: readonly string[]): CallbackAction => {
         });
     }
 
+    if (command === 'o') {
+        const ownerId = parseEntityId(argument);
+
+        return ownerId === null ? OUTDATED : { type: 'giveOwnerList', ownerId };
+    }
+
     if (command === 'r') {
         return decodeGiveRemove(argument, second);
     }
@@ -961,6 +969,7 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     thirdFilterMenu: 'third:filterMenu',
     thirdFilter: 'third:filter',
     giveListPage: 'giveList:page',
+    giveOwnerList: 'giveList:owner',
     giveRemove: 'giveList:remove',
     giveRemoveConfirm: 'giveList:removeConfirm',
     giveRemoveKeep: 'giveList:removeKeep',

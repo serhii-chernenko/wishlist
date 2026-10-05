@@ -115,6 +115,25 @@ export const createGiveRepository = (db: AppDb) => {
                 return { items: rows, total: totals[0]?.total ?? 0 };
             });
         },
+        hasVisibleWishOfOwner(giverId: number, ownerId: number) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ id: gives.id })
+                    .from(gives)
+                    .innerJoin(wishes, eq(wishes.id, gives.wishId))
+                    .where(
+                        and(
+                            eq(gives.userId, giverId),
+                            eq(wishes.userId, ownerId),
+                            eq(wishes.removed, false),
+                            eq(wishes.hidden, false)
+                        )
+                    )
+                    .limit(1);
+
+                return row !== undefined;
+            });
+        },
         giversByWishIds(wishIds: readonly number[]) {
             return tryDb(async () => {
                 const giversByWishId = new Map<number, number[]>();

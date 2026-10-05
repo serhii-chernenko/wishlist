@@ -2,11 +2,10 @@ import { FIND_QUERY_MAX_LENGTH } from '../../bot/input/limits';
 import { isAdminActor } from '../../bot/runtime/context';
 import { createSearchService } from '../../bot/services/search-service';
 import type { SearchInput, SearchResultDto } from '../../shared/app-api';
-import { requireUser, type ApiHandler } from '../context';
+import { mintOwnerToken, requireUser, type ApiHandler } from '../context';
 import { resolveViewerLocale, toOwnerDto } from '../dto';
 import { createBodyReader, readJsonBody } from '../validate';
 import { emitAppAction } from '../telemetry';
-import { mintOwnerToken } from './lists';
 
 const countCodePoints = (value: string) => {
     return Array.from(value).length;
