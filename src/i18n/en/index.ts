@@ -303,6 +303,10 @@ const en: Translation = {
         },
         givers: '\n\n👥 <i>Others who reserved this: {0}</i>',
         owner: '\n\n👤 For: <b>{0}</b>',
+        ownerFallback: 'this person',
+        actions: {
+            owner: '👤 Wish list'
+        },
         success: {
             remove: '✅ Reservation canceled. The wish was removed from your <b>Gifts to give</b> list!',
             clean: '✅ All reservations canceled. Your <b>Gifts to give</b> list is now empty!'
@@ -1329,6 +1333,8 @@ const en: Translation = {
             owner: 'For {owner}',
             others: 'Also reserved by {count} {{count:person|people}}',
             open: 'Open',
+            openOwner: 'Open wish list of {owner}',
+            openOwnerUnnamed: 'Open wish list',
             remove: 'Cancel reservation',
             removed: 'Reservation canceled',
             clean: {

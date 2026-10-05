@@ -1033,6 +1033,16 @@ type RootTranslation = {
 		 * @param {string} 0
 		 */
 		owner: RequiredParams<'0'>
+		/**
+		 * ц​і​є​ї​ ​л​ю​д​и​н​и
+		 */
+		ownerFallback: string
+		actions: {
+			/**
+			 * �​�​ ​Л​и​с​т​ ​б​а​ж​а​н​ь
+			 */
+			owner: string
+		}
 		success: {
 			/**
 			 * ✅​ ​Б​р​о​н​ь​ ​с​к​а​с​о​в​а​н​о​,​ ​б​а​ж​а​н​н​я​ ​п​р​и​б​р​а​н​о​ ​з​і​ ​с​п​и​с​к​у​ ​<​b​>​Х​о​ч​у​ ​п​о​д​а​р​у​в​а​т​и​<​/​b​>​!
@@ -4087,6 +4097,15 @@ type RootTranslation = {
 			 */
 			open: string
 			/**
+			 * В​і​д​к​р​и​т​и​ ​л​и​с​т​ ​б​а​ж​а​н​ь​ ​{​o​w​n​e​r​}
+			 * @param {string} owner
+			 */
+			openOwner: RequiredParams<'owner'>
+			/**
+			 * В​і​д​к​р​и​т​и​ ​л​и​с​т​ ​б​а​ж​а​н​ь
+			 */
+			openOwnerUnnamed: string
+			/**
 			 * С​к​а​с​у​в​а​т​и​ ​б​р​о​н​ь
 			 */
 			remove: string
@@ -6045,6 +6064,16 @@ export type TranslationFunctions = {
 	👤 Для юзера: <b>{0}</b>
 		 */
 		owner: (arg0: string) => LocalizedString
+		/**
+		 * цієї людини
+		 */
+		ownerFallback: () => LocalizedString
+		actions: {
+			/**
+			 * 👤 Лист бажань
+			 */
+			owner: () => LocalizedString
+		}
 		success: {
 			/**
 			 * ✅ Бронь скасовано, бажання прибрано зі списку <b>Хочу подарувати</b>!
@@ -8968,6 +8997,14 @@ export type TranslationFunctions = {
 			 * Відкрити
 			 */
 			open: () => LocalizedString
+			/**
+			 * Відкрити лист бажань {owner}
+			 */
+			openOwner: (arg: { owner: string }) => LocalizedString
+			/**
+			 * Відкрити лист бажань
+			 */
+			openOwnerUnnamed: () => LocalizedString
 			/**
 			 * Скасувати бронь
 			 */

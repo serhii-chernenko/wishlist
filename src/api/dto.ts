@@ -226,6 +226,29 @@ export const toThirdPartyPayments = (payments: string | null) => {
         : truncateWithMark(payments, APP_THIRD_PARTY_PAYMENTS_MAX_LENGTH);
 };
 
+export const getPublicOwnerUsername = (
+    owner: Pick<UserRecord, 'username' | 'usernameSearchable'>
+) => {
+    return owner.usernameSearchable && owner.username ? owner.username : null;
+};
+
+export const toShareLabel = (input: {
+    displayName: string | null;
+    showUsername: boolean;
+    owner: Pick<UserRecord, 'username' | 'usernameSearchable'>;
+}) => {
+    const name = input.displayName?.trim() ?? '';
+    const username = input.showUsername
+        ? getPublicOwnerUsername(input.owner)
+        : null;
+
+    if (username === null) {
+        return name;
+    }
+
+    return name === '' ? `@${username}` : `${name} (@${username})`;
+};
+
 export const toOwnerDto = (input: {
     owner: Pick<UserRecord, 'payments' | 'showPayments'>;
     token: string | null;

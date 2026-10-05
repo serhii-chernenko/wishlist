@@ -305,6 +305,10 @@ const pl: Translation = {
         },
         givers: '\n\n👥 <i>Rezerwacje innych osób: {0}</i>',
         owner: '\n\n👤 Dla: <b>{0}</b>',
+        ownerFallback: 'tej osoby',
+        actions: {
+            owner: '👤 Lista życzeń'
+        },
         success: {
             remove: '✅ Rezerwacja anulowana, życzenie usunięto z listy <b>Chcę podarować</b>!',
             clean: '✅ Wszystkie rezerwacje anulowane, lista <b>Chcę podarować</b> jest pusta!'
@@ -1344,6 +1348,8 @@ const pl: Translation = {
             owner: 'Dla {owner}',
             others: 'Zarezerwowane też przez {count} {{count:|inną osobę||inne osoby|innych osób|innej osoby}}',
             open: 'Otwórz',
+            openOwner: 'Otwórz listę życzeń {owner}',
+            openOwnerUnnamed: 'Otwórz listę życzeń',
             remove: 'Anuluj rezerwację',
             removed: 'Rezerwacja anulowana',
             clean: {

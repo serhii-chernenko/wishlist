@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 
 import { createGiveService } from '../../bot/services/give-service';
+import { createOwnerAccessService } from '../../bot/services/owner-access-service';
 import type {
     GiveListEntry,
     Repositories,
@@ -10,17 +11,22 @@ import {
     APP_PAGE_SIZE,
     type GiveEntryDto,
     type GiveListDto,
+    type GiveOwnerListDto,
     type RemovedCountDto
 } from '../../shared/app-api';
 import {
     getSigner,
+    mintOwnerToken,
     requireUser,
     type ApiContext,
     type ApiHandler
 } from '../context';
 import {
+    getPublicOwnerUsername,
     mintWishImages,
+    toOwnerDto,
     toPageDto,
+    toShareLabel,
     toVisibleWishDto,
     type ImageMintingContext
 } from '../dto';
@@ -40,12 +46,6 @@ export const getViewerImageMintingContext = (
     };
 };
 
-export const getPublicOwnerUsername = (
-    owner: Pick<UserRecord, 'username' | 'usernameSearchable'>
-) => {
-    return owner.usernameSearchable && owner.username ? owner.username : null;
-};
-
 export const loadGivers = (
     repos: Repositories,
     wishIds: readonly number[]
@@ -53,11 +53,55 @@ export const loadGivers = (
     return Effect.runPromise(repos.gives.giversByWishIds(wishIds));
 };
 
+const resolveOwnerList = async (
+    c: ApiContext,
+    viewer: UserRecord,
+    owner: UserRecord | null
+): Promise<GiveOwnerListDto | null> => {
+    const access = await createOwnerAccessService(c.var.repos).resolve(
+        viewer.id,
+        owner
+    );
+
+    if (owner === null || access === null) {
+        return null;
+    }
+
+    if (access.kind === 'shareOnly') {
+        return {
+            label: toShareLabel({
+                displayName: access.share.displayName,
+                showUsername: access.share.showUsername,
+                owner
+            }),
+            source: { kind: 'share', publicId: access.share.publicId }
+        };
+    }
+
+    const username = getPublicOwnerUsername(owner);
+    const label = username === null ? '' : `@${username}`;
+
+    return {
+        label,
+        source: {
+            kind: 'owner',
+            owner: toOwnerDto({
+                owner,
+                token: await mintOwnerToken(c, viewer, owner),
+                label,
+                source: 'search',
+                contact: null
+            })
+        }
+    };
+};
+
 const toGiveEntryDto = async (
     context: ImageMintingContext,
     viewerId: number,
     entry: GiveListEntry,
-    giversByWish: GiversLookup
+    giversByWish: GiversLookup,
+    ownerList: GiveOwnerListDto | null
 ): Promise<GiveEntryDto> => {
     const { wish, owner } = entry;
     const givers = giversByWish.get(wish.id) ?? [];
@@ -67,7 +111,8 @@ const toGiveEntryDto = async (
         ownerUsername: owner === null ? null : getPublicOwnerUsername(owner),
         otherGivers: givers.filter(giverId => {
             return giverId !== viewerId;
-        }).length
+        }).length,
+        ...(ownerList === null ? {} : { ownerList })
     };
 };
 
@@ -86,8 +131,14 @@ export const listGives: ApiHandler = async c => {
     );
     const context = getViewerImageMintingContext(c);
     const items = await Promise.all(
-        page.items.map(entry => {
-            return toGiveEntryDto(context, user.id, entry, giversByWish);
+        page.items.map(async entry => {
+            return toGiveEntryDto(
+                context,
+                user.id,
+                entry,
+                giversByWish,
+                await resolveOwnerList(c, user, entry.owner)
+            );
         })
     );
     const body: GiveListDto = toPageDto(items, page.total, offset);

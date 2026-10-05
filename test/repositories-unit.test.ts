@@ -75,7 +75,14 @@ const expectedMethods: Record<string, string[]> = {
         'clearSourceImage',
         'clearAllSourceImages'
     ],
-    gives: ['add', 'remove', 'removeAll', 'listForGiver', 'giversByWishIds'],
+    gives: [
+        'add',
+        'remove',
+        'removeAll',
+        'listForGiver',
+        'hasVisibleWishOfOwner',
+        'giversByWishIds'
+    ],
     sessions: [
         'get',
         'saveState',

@@ -196,6 +196,7 @@ export type CallbackAction =
     | { type: 'thirdFilterMenu'; ownerId: number }
     | { type: 'thirdFilter'; ownerId: number; filter: WishFilter | null }
     | { type: 'giveListPage'; offset: number }
+    | { type: 'giveOwnerList'; ownerId: number }
     | { type: 'giveRemove'; wishId: number }
     | { type: 'giveRemoveConfirm'; wishId: number }
     | { type: 'giveRemoveKeep'; wishId: number }
@@ -286,6 +287,7 @@ export type BotActionName =
     | 'give_added'
     | 'give_removed'
     | 'give_list_cleaned'
+    | 'give_owner_opened'
     | 'payments_updated'
     | 'payments_removed'
     | 'feedback_sent'

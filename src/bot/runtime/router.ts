@@ -72,6 +72,7 @@ export const KEYBOARD_PRESERVING_CALLBACK_TYPES: ReadonlySet<CallbackActionType>
     new Set([
         'thirdGive',
         'thirdTake',
+        'giveOwnerList',
         'giveRemove',
         'giveRemoveConfirm',
         'giveRemoveKeep',
@@ -82,6 +83,7 @@ export const KEYBOARD_PRESERVING_CALLBACK_TYPES: ReadonlySet<CallbackActionType>
 export const TOAST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([
     'thirdGive',
     'thirdTake',
+    'giveOwnerList',
     'giveRemove',
     'giveRemoveConfirm',
     'outdated'

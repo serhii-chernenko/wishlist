@@ -407,7 +407,11 @@ describe('Bot parity with the Mini App', () => {
                     .map(button => {
                         return button.callback_data ?? button.url;
                     }),
-                ['https://shop.example/book', `g:r:${wish.id}`]
+                [
+                    'https://shop.example/book',
+                    `g:r:${wish.id}`,
+                    `g:o:${owner.id}`
+                ]
             );
 
             const gives = await webhook.queryAll(

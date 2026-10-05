@@ -875,6 +875,123 @@ describe('Mini App API third-party lists, search and gives', () => {
             );
         });
 
+        describe('owner list of a give', () => {
+            const giveTo = async (
+                overrides: Partial<
+                    Parameters<D1Harness['repositories']['users']['create']>[0]
+                > = {}
+            ) => {
+                const viewer = await registerUser(VIEWER);
+                const owner = await registerUser(OWNER_A, overrides);
+                const wish = await addWish(owner.id, 'Gift');
+
+                await run(
+                    harness.repositories.gives.add(viewer.id, wish.id, NOW)
+                );
+
+                return { viewer, owner, wish };
+            };
+            const readGives = async () => {
+                return (await (
+                    await call(VIEWER, 'GET', '/gives')
+                ).json()) as GiveListDto;
+            };
+
+            it('hands out a viewer-bound owner token with the public username label', async () => {
+                const { wish } = await giveTo({
+                    phone: '+380501234567',
+                    phoneDigits: '380501234567'
+                });
+                const [entry] = (await readGives()).items;
+                const ownerList = entry?.ownerList;
+
+                assert.equal(ownerList?.label, '@alice_a');
+                assert.equal(ownerList?.source.kind, 'owner');
+                assert.ok(ownerList?.source.kind === 'owner');
+                assert.equal(ownerList.source.owner.canGive, true);
+                assert.equal(ownerList.source.owner.source, 'search');
+                assert.equal(
+                    JSON.stringify(entry).includes('380501234567'),
+                    false
+                );
+
+                const { token } = ownerList.source.owner;
+
+                assert.ok(token);
+
+                const opened = await call(
+                    VIEWER,
+                    'GET',
+                    `/lists/${token}/wishes`
+                );
+
+                assert.equal(opened.status, 200);
+                assert.equal(
+                    ((await opened.json()) as OwnerWishListDto).items[0]?.id,
+                    wish.id
+                );
+
+                const foreign = await call(
+                    STRANGER,
+                    'GET',
+                    `/lists/${token}/wishes`
+                );
+
+                assert.notEqual(foreign.status, 200);
+            });
+
+            it('uses an empty label for an owner found only by phone', async () => {
+                await giveTo({
+                    usernameSearchable: false,
+                    phone: '+380501234567',
+                    phoneDigits: '380501234567'
+                });
+
+                const [entry] = (await readGives()).items;
+
+                assert.equal(entry?.ownerList?.label, '');
+                assert.equal(entry?.ownerList?.source.kind, 'owner');
+                assert.equal(entry?.ownerUsername, null);
+                assert.equal(
+                    JSON.stringify(entry).includes('380501234567'),
+                    false
+                );
+            });
+
+            it('never exposes the owner of a give once the owner is unreachable', async () => {
+                const { owner } = await giveTo();
+
+                await makeUnfindable(owner);
+
+                const list = await readGives();
+
+                assert.equal(list.total, 0);
+                assert.equal(
+                    list.items.some(entry => entry.ownerList !== undefined),
+                    false
+                );
+            });
+
+            it('never exposes the owner of a give once the owner is blocked', async () => {
+                const { owner } = await giveTo();
+
+                await run(
+                    harness.repositories.users.markBlockedByTelegramId(
+                        owner.telegramId,
+                        NOW
+                    )
+                );
+
+                const list = await readGives();
+
+                assert.equal(list.total, 0);
+                assert.equal(
+                    list.items.some(entry => entry.ownerList !== undefined),
+                    false
+                );
+            });
+        });
+
         it('does not let one user remove another user give', async () => {
             const viewer = await registerUser(VIEWER);
 

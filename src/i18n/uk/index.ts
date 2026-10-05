@@ -305,6 +305,10 @@ const uk: BaseTranslation = {
         },
         givers: '\n\n👥 <i>Також забронювали: {0:string}</i>',
         owner: '\n\n👤 Для юзера: <b>{0:string}</b>',
+        ownerFallback: 'цієї людини',
+        actions: {
+            owner: '👤 Лист бажань'
+        },
         success: {
             remove: '✅ Бронь скасовано, бажання прибрано зі списку <b>Хочу подарувати</b>!',
             clean: '✅ Усі броні скасовано, список <b>Хочу подарувати</b> очищено!'
@@ -1334,6 +1338,8 @@ const uk: BaseTranslation = {
             owner: 'Для {owner:string}',
             others: 'Також забронювали: {count:number} {{count:|людина||людини|людей|людини}}',
             open: 'Відкрити',
+            openOwner: 'Відкрити лист бажань {owner:string}',
+            openOwnerUnnamed: 'Відкрити лист бажань',
             remove: 'Скасувати бронь',
             removed: 'Бронь скасовано',
             clean: {

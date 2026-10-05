@@ -29,15 +29,18 @@ import {
 } from '../../shared/money';
 import {
     getSigner,
+    mintOwnerToken,
     readExchangeRates,
     requireUser,
     type ApiContext,
     type ApiHandler
 } from '../context';
 import {
+    getPublicOwnerUsername,
     mintWishImages,
     resolveViewerLocale,
     toOwnerDto,
+    toShareLabel,
     toImageHash,
     toPageDto,
     toThirdWishDto,
@@ -48,11 +51,7 @@ import { ApiError } from '../errors';
 import { kickPhotoDrainOnLoad } from '../photo-drain';
 import { readIdParam, readOffset, readOptionalQueryInteger } from '../validate';
 import { emitAppAction } from '../telemetry';
-import {
-    getViewerImageMintingContext,
-    getPublicOwnerUsername,
-    loadGivers
-} from './gives';
+import { getViewerImageMintingContext, loadGivers } from './gives';
 
 const MIN_WISH_FILTER = 0;
 const MAX_WISH_FILTER = 4;
@@ -66,18 +65,6 @@ export const isOwnerAvailableTo = (
         isFindableOwner(owner) &&
         (owner.id !== viewer.id || isAdminActor(c.env, c.var.actor))
     );
-};
-
-export const mintOwnerToken = (
-    c: ApiContext,
-    viewer: Pick<UserRecord, 'id'>,
-    owner: Pick<UserRecord, 'id'>
-) => {
-    return getSigner(c).mintOwnerToken({
-        ownerId: owner.id,
-        viewerUserId: viewer.id,
-        now: c.var.deps.now()
-    });
 };
 
 const readOwnerIdFromToken = async (c: ApiContext, viewer: UserRecord) => {
@@ -132,23 +119,6 @@ const countGiftedOfOwner = (
 
 const withGifted = <Item>(gifted: Item[]) => {
     return gifted.length > 0 ? { gifted } : {};
-};
-
-const toShareLabel = (input: {
-    displayName: string | null;
-    showUsername: boolean;
-    owner: Pick<UserRecord, 'username' | 'usernameSearchable'>;
-}) => {
-    const name = input.displayName?.trim() ?? '';
-    const username = input.showUsername
-        ? getPublicOwnerUsername(input.owner)
-        : null;
-
-    if (username === null) {
-        return name;
-    }
-
-    return name === '' ? `@${username}` : `${name} (@${username})`;
 };
 
 const toSharedWishItems = (

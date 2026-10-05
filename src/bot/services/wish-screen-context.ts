@@ -15,6 +15,7 @@ import type { WishMarkupFormatters } from '../content/wish-markup';
 import { BotUserError } from '../errors';
 import type { BotRequest, SessionState, WishFilter } from '../runtime/types';
 import { createGiveService } from './give-service';
+import { createOwnerAccessService } from './owner-access-service';
 import { createSearchService } from './search-service';
 import { createShareService } from './share-service';
 import { createWishService } from './wish-service';
@@ -74,7 +75,8 @@ export const createWishScreenServices = (req: BotRequest) => {
         wishes: createWishService(req.repos),
         gives: createGiveService(req.repos),
         search: createSearchService(req.repos),
-        share: createShareService(req.repos)
+        share: createShareService(req.repos),
+        ownerAccess: createOwnerAccessService(req.repos)
     };
 };
 
@@ -124,11 +126,4 @@ export const getOwnerPublicUsername = (
     return null;
 };
 
-export const isFindableOwner = (
-    owner: Pick<UserRecord, 'usernameSearchable' | 'phone' | 'blockedAt'>
-) => {
-    return (
-        owner.blockedAt === null &&
-        (owner.usernameSearchable || owner.phone !== null)
-    );
-};
+export { isFindableOwner } from './owner-access-service';
