@@ -48,9 +48,9 @@
 - [added] Лист бажань тепер має застосунок прямо в Телеграмі: відкрий його кнопкою «Відкрити застосунок» у боті, з профілю бота або командою /app. У застосунку можна все те саме, що й у чаті: додавати й редагувати бажання з фото, ділитися листом, шукати листи друзів і бронювати бажання. Чат-бот працює як раніше, а дані спільні.
     - en: Wishlist now has an app right inside Telegram: open it with the "Open app" button in the bot, from the bot's profile or with the /app command. The app does everything the chat does: add and edit wishes with photos, share your list, find friends' lists and reserve wishes. The chat bot works as before, and both use the same data.
     - pl: Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne.
-- [added] Фото бажань тепер видно й на публічній сторінці листа бажань і їх можна гортати свайпом, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.
-    - en: Wish photos now appear on the public wish list page too, and you can swipe through them. From the page you can also open the list in Telegram right away and reserve a wish.
-    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń i można je przewijać palcem, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie.
+- [added] Фото бажань тепер видно й на публічній сторінці листа бажань, їх можна гортати свайпом і відкривати на весь екран, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.
+    - en: Wish photos now appear on the public wish list page too: swipe through them or open them fullscreen. From the page you can also open the list in Telegram right away and reserve a wish.
+    - pl: Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń, można je przewijać palcem i otwierać na pełnym ekranie, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie.
 - [updated] Підтримати автора тепер можна через Monobank, Ko-fi, PayPal або Revolut.
     - en: You can now support the author via Monobank, Ko-fi, PayPal, or Revolut.
     - pl: Autora możesz teraz wesprzeć przez Monobank, Ko-fi, PayPal lub Revolut.

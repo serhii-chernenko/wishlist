@@ -13,13 +13,19 @@
         width: var(--tap-size);
         height: var(--tap-size);
         padding: 0;
-        font-size: 1.5rem;
-        line-height: 1;
         color: var(--viewer-scrim);
         cursor: pointer;
         background: var(--viewer-ink);
         border: 0;
         border-radius: var(--radius-round);
+    }
+
+    .photo-viewer-close::before {
+        width: 1.25rem;
+        height: 1.25rem;
+        content: '';
+        background: currentColor;
+        mask: url('/icons/close.svg') center / contain no-repeat;
     }
 
     .photo-viewer-close:focus-visible {

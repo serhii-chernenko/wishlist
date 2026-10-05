@@ -523,7 +523,7 @@ test('every photo opens the card viewer through a native popover that works with
     ]);
     assert.equal(
         html.match(
-            /<button class="photo-viewer-close" popovertarget="v\d" popovertargetaction="hide" aria-label="Close">×<\/button>/g
+            /<button class="photo-viewer-close" popovertarget="v\d" popovertargetaction="hide" aria-label="Close"><\/button>/g
         )?.length,
         2
     );
