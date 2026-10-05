@@ -155,7 +155,7 @@ Generated-file ownership: only the orchestrator commits `public/app/*` and `publ
     @plugin 'daisyui' { themes: false; logs: false; include: button, input, textarea, toggle, radio, badge, skeleton, toast, alert, menu, join, loading, list; }
     @plugin 'daisyui/theme' { name: 'wishlist'; default: true; color-scheme: light;
       --color-base-100:#ffffff; --color-base-200:#f1e3fb; --color-base-300:<lavender shade>; --color-base-content:#000000;
-      --color-primary:#f57aa6; --color-primary-content:#000000; --color-secondary:#2aabe2; --color-secondary-content:#000000;
+      --color-primary:#f57aa6; --color-primary-content:#000000; --color-secondary:#7cc6ee; --color-secondary-content:#000000;
       --color-accent:#7a1040; --color-accent-content:#ffffff; --color-neutral:#000000; --color-neutral-content:#ffffff;
       --color-error:<AAA vs #fff>; --color-error-content:#ffffff; (info/success/warning likewise)
       --radius-box:14px; --radius-field:10px; --radius-selector:999px; --border:2.5px; --depth:0; --noise:0; }
