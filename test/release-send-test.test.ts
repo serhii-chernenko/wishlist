@@ -7,6 +7,7 @@ import {
     createReleaseAnnouncementSender,
     RELEASE_ANNOUNCEMENT_MESSAGE_OPTIONS,
     renderReleaseAnnouncementText,
+    renderShortReleaseAnnouncementText,
     sendReleaseAnnouncementCopy,
     type ReleaseAnnouncementTelegram
 } from '../src/worker/queues/release-announcement-delivery';
@@ -18,6 +19,8 @@ import {
 const releaseVersion = '2.0.0';
 const adminChatId = '777';
 const fileIds = ['file-a', 'file-b', 'file-c'];
+const noShortText = () => null;
+const shortCaption = '<b>Short</b>';
 
 interface TelegramCall {
     method: 'sendPhoto' | 'sendMediaGroup' | 'sendMessage';
@@ -29,8 +32,13 @@ interface TelegramCall {
 const createFakeTelegram = () => {
     const calls: TelegramCall[] = [];
     const telegram: ReleaseAnnouncementTelegram = {
-        async sendPhoto(chatId, photo) {
-            calls.push({ method: 'sendPhoto', chatId, payload: photo });
+        async sendPhoto(chatId, photo, extra) {
+            calls.push({
+                method: 'sendPhoto',
+                chatId,
+                payload: photo,
+                ...(extra === undefined ? {} : { extra })
+            });
         },
         async sendMediaGroup(chatId, media) {
             calls.push({ method: 'sendMediaGroup', chatId, payload: media });
@@ -60,10 +68,11 @@ test('the test copy sends the album first and then the announcement text', async
         chatId: adminChatId,
         releaseVersion,
         locale: 'en',
-        getMedia: () => fileIds
+        getMedia: () => fileIds,
+        getShortText: noShortText
     });
 
-    assert.deepEqual(result, { mediaPhotos: 3 });
+    assert.deepEqual(result, { mediaPhotos: 3, shortAnnouncement: false });
     assert.deepEqual(
         calls.map(call => call.method),
         ['sendMediaGroup', 'sendMessage']
@@ -90,10 +99,11 @@ test('the test copy sends one file id as a single photo and then the text', asyn
         chatId: adminChatId,
         releaseVersion,
         locale: 'uk',
-        getMedia: () => ['cover']
+        getMedia: () => ['cover'],
+        getShortText: noShortText
     });
 
-    assert.deepEqual(result, { mediaPhotos: 1 });
+    assert.deepEqual(result, { mediaPhotos: 1, shortAnnouncement: false });
     assert.deepEqual(
         calls.map(call => call.method),
         ['sendPhoto', 'sendMessage']
@@ -110,10 +120,11 @@ test('the test copy sends only the text when the release has no album', async ()
         chatId: adminChatId,
         releaseVersion,
         locale: 'uk',
-        getMedia: () => []
+        getMedia: () => [],
+        getShortText: noShortText
     });
 
-    assert.deepEqual(result, { mediaPhotos: 0 });
+    assert.deepEqual(result, { mediaPhotos: 0, shortAnnouncement: false });
     assert.deepEqual(
         calls.map(call => call.method),
         ['sendMessage']
@@ -129,19 +140,48 @@ test('the test copy fails before sending anything for an unknown release', async
             chatId: adminChatId,
             releaseVersion: '0.0.1',
             locale: 'uk',
-            getMedia: () => fileIds
+            getMedia: () => fileIds,
+            getShortText: noShortText
         }),
         /No release notes found for 0.0.1/
     );
     assert.deepEqual(calls, []);
 });
 
-const mediaCases = [
-    { name: 'photo', ids: ['cover'] },
-    { name: 'album', ids: fileIds }
+const parityCases = [
+    {
+        name: 'photo',
+        ids: ['cover'],
+        short: null,
+        methods: ['sendPhoto', 'sendMessage']
+    },
+    {
+        name: 'album',
+        ids: fileIds,
+        short: null,
+        methods: ['sendMediaGroup', 'sendMessage']
+    },
+    {
+        name: 'captioned photo',
+        ids: ['cover'],
+        short: shortCaption,
+        methods: ['sendPhoto']
+    },
+    {
+        name: 'short text with an album',
+        ids: fileIds,
+        short: shortCaption,
+        methods: ['sendMediaGroup', 'sendMessage']
+    },
+    {
+        name: 'short text without media',
+        ids: [],
+        short: shortCaption,
+        methods: ['sendMessage']
+    }
 ];
 
-for (const { name, ids } of mediaCases) {
+for (const { name, ids, short, methods } of parityCases) {
     for (const locale of ['uk', 'en', 'pl'] as const) {
         test(`the test copy matches what the queue consumer sends as a ${name} in ${locale}`, async () => {
             const broadcast = createFakeTelegram();
@@ -164,9 +204,11 @@ for (const { name, ids } of mediaCases) {
                     };
                 },
                 renderAnnouncement: renderReleaseAnnouncementText,
+                renderShortAnnouncement: () => short,
                 getReleaseMedia: () => ids,
                 claimForSending: async () => true,
                 sendReleaseMedia: sender.sendReleaseMedia,
+                sendReleasePhotoWithCaption: sender.sendReleasePhotoWithCaption,
                 sendMessage: sender.sendMessage,
                 markMediaSent: async () => undefined,
                 markBlocked: async () => undefined,
@@ -196,15 +238,13 @@ for (const { name, ids } of mediaCases) {
                 chatId: adminChatId,
                 releaseVersion,
                 locale,
-                getMedia: () => ids
+                getMedia: () => ids,
+                getShortText: () => short
             });
 
             assert.deepEqual(
                 broadcast.calls.map(call => call.method),
-                [
-                    ids.length === 1 ? 'sendPhoto' : 'sendMediaGroup',
-                    'sendMessage'
-                ]
+                methods
             );
             assert.deepEqual(
                 withoutChat(testCopy.calls),
@@ -213,6 +253,98 @@ for (const { name, ids } of mediaCases) {
         });
     }
 }
+
+test('the test copy sends one photo with the short text as an HTML caption', async () => {
+    const { calls, telegram } = createFakeTelegram();
+
+    const result = await sendReleaseAnnouncementCopy({
+        sender: createReleaseAnnouncementSender(telegram),
+        chatId: adminChatId,
+        releaseVersion,
+        locale: 'en',
+        getMedia: () => ['cover'],
+        getShortText: () => shortCaption
+    });
+
+    assert.deepEqual(result, { mediaPhotos: 1, shortAnnouncement: true });
+    assert.deepEqual(calls, [
+        {
+            method: 'sendPhoto',
+            chatId: adminChatId,
+            payload: 'cover',
+            extra: { parse_mode: 'HTML', caption: shortCaption }
+        }
+    ]);
+});
+
+test('the test copy sends the short text as a normal message when there is no media', async () => {
+    const { calls, telegram } = createFakeTelegram();
+
+    await sendReleaseAnnouncementCopy({
+        sender: createReleaseAnnouncementSender(telegram),
+        chatId: adminChatId,
+        releaseVersion,
+        locale: 'pl',
+        getMedia: () => [],
+        getShortText: () => shortCaption
+    });
+
+    assert.deepEqual(calls, [
+        {
+            method: 'sendMessage',
+            chatId: adminChatId,
+            payload: shortCaption,
+            extra: RELEASE_ANNOUNCEMENT_MESSAGE_OPTIONS
+        }
+    ]);
+});
+
+test('the test copy asks for the short text of the requested locale', async () => {
+    const { telegram } = createFakeTelegram();
+    const requestedLocales: string[] = [];
+
+    await sendReleaseAnnouncementCopy({
+        sender: createReleaseAnnouncementSender(telegram),
+        chatId: adminChatId,
+        releaseVersion,
+        locale: 'pl',
+        getMedia: () => ['cover'],
+        getShortText: (_version, locale) => {
+            requestedLocales.push(locale);
+            return shortCaption;
+        }
+    });
+
+    assert.deepEqual(requestedLocales, ['pl']);
+});
+
+test('the committed 2.0.0 announcement goes out as one captioned photo in every locale', async () => {
+    for (const locale of ['uk', 'en', 'pl'] as const) {
+        const { calls, telegram } = createFakeTelegram();
+
+        await sendReleaseAnnouncementCopy({
+            sender: createReleaseAnnouncementSender(telegram),
+            chatId: adminChatId,
+            releaseVersion,
+            locale,
+            getMedia: () => ['cover']
+        });
+
+        assert.equal(calls.length, 1, locale);
+        assert.equal(calls[0]?.method, 'sendPhoto', locale);
+        assert.deepEqual(
+            calls[0]?.extra,
+            {
+                parse_mode: 'HTML',
+                caption: renderShortReleaseAnnouncementText(
+                    releaseVersion,
+                    locale
+                )
+            },
+            locale
+        );
+    }
+});
 
 test('the queue handler builds its sender and text from the shared delivery module', () => {
     const source = fs.readFileSync(

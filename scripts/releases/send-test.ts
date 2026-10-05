@@ -6,7 +6,8 @@ import { getLatestReleaseVersion } from '../../src/bot/content/releases';
 import { getAvailableLanguageCodes, type AppLocale } from '../../src/bot/i18n';
 import {
     createReleaseAnnouncementSender,
-    sendReleaseAnnouncementCopy
+    sendReleaseAnnouncementCopy,
+    type ReleaseAnnouncementCopyResult
 } from '../../src/worker/queues/release-announcement-delivery';
 import type { AppEnvTarget } from '../cloudflare/runtime-env';
 import { resolveUploadCredentials } from './upload-media';
@@ -89,14 +90,27 @@ export const parseSendTestArguments = (
     return { version, locale, target };
 };
 
-const describeMedia = (photoCount: number) => {
+const describePhotos = (photoCount: number) => {
     if (photoCount === 0) {
-        return ' without photos';
+        return 'without photos';
     }
 
     return photoCount === 1
-        ? ' with a photo'
-        : ` with a ${photoCount}-photo album`;
+        ? 'with a photo'
+        : `with a ${photoCount}-photo album`;
+};
+
+const describeDelivery = ({
+    mediaPhotos,
+    shortAnnouncement
+}: ReleaseAnnouncementCopyResult) => {
+    if (!shortAnnouncement) {
+        return describePhotos(mediaPhotos);
+    }
+
+    return mediaPhotos === 1
+        ? 'as a short caption under a photo'
+        : `as a short text ${describePhotos(mediaPhotos)}`;
 };
 
 const redact = (message: string, secret: string) => {
@@ -110,7 +124,7 @@ const run = async () => {
     const { botToken, chatId } = resolveUploadCredentials(target);
 
     try {
-        const { mediaPhotos } = await sendReleaseAnnouncementCopy({
+        const result = await sendReleaseAnnouncementCopy({
             sender: createReleaseAnnouncementSender(new Telegram(botToken)),
             chatId,
             releaseVersion: version,
@@ -118,7 +132,7 @@ const run = async () => {
         });
 
         console.log(
-            `Sent the ${version} announcement (${locale}, ${target} bot) to the admin chat${describeMedia(mediaPhotos)}.`
+            `Sent the ${version} announcement (${locale}, ${target} bot) to the admin chat ${describeDelivery(result)}.`
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

@@ -49,6 +49,8 @@ interface Scenario {
     currentVersion?: string;
     media?: readonly string[];
     mediaErrors?: unknown[];
+    shortText?: string | null;
+    captionErrors?: unknown[];
 }
 
 const createUser = (overrides: Partial<AnnouncementUser> = {}) => {
@@ -71,9 +73,16 @@ const createHarness = (scenario: Scenario = {}) => {
     const user = scenario.user === undefined ? createUser() : scenario.user;
     const pendingErrors = [...(scenario.sendErrors ?? [])];
     const pendingMediaErrors = [...(scenario.mediaErrors ?? [])];
+    const pendingCaptionErrors = [...(scenario.captionErrors ?? [])];
     const state = {
         sent: [] as { telegramId: number; html: string }[],
         albums: [] as { telegramId: number; fileIds: readonly string[] }[],
+        captioned: [] as {
+            telegramId: number;
+            fileId: string;
+            captionHtml: string;
+        }[],
+        shortLocales: [] as string[],
         calls: [] as string[],
         mediaMarks: [] as number[],
         blocked: [] as number[],
@@ -102,6 +111,10 @@ const createHarness = (scenario: Scenario = {}) => {
                 ? `announcement ${locale}`
                 : scenario.rendered;
         },
+        renderShortAnnouncement(_version, locale) {
+            state.shortLocales.push(locale);
+            return scenario.shortText ?? null;
+        },
         getReleaseMedia: () => scenario.media ?? [],
         async claimForSending() {
             state.claims += 1;
@@ -117,6 +130,17 @@ const createHarness = (scenario: Scenario = {}) => {
             }
 
             state.albums.push({ telegramId, fileIds });
+        },
+        async sendReleasePhotoWithCaption(telegramId, fileId, captionHtml) {
+            state.calls.push('caption');
+
+            const queuedError = pendingCaptionErrors.shift();
+
+            if (queuedError) {
+                throw queuedError;
+            }
+
+            state.captioned.push({ telegramId, fileId, captionHtml });
         },
         async sendMessage(telegramId, html) {
             state.calls.push('text');
@@ -799,4 +823,177 @@ test('albums inside a batch keep the next user one interval per photo away', asy
 
     assert.deepEqual(state.calls, ['album', 'text', 'album', 'text']);
     assert.deepEqual(state.sleeps, [150, 50, 150]);
+});
+
+const shortText = '<b>Short</b>\n\n• one';
+const cover = ['cover'];
+
+test('a short announcement with one photo goes out as one captioned photo', async () => {
+    const { outcome, state } = await runOne({ media: cover, shortText });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['caption']);
+    assert.deepEqual(state.captioned, [
+        { telegramId: 5001, fileId: 'cover', captionHtml: shortText }
+    ]);
+    assert.deepEqual(state.sent, []);
+    assert.deepEqual(state.albums, []);
+    assert.deepEqual(state.mediaMarks, [10]);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+    assert.deepEqual(mediaEvents(state.logs), [
+        { event: 'release_announcement_media', outcome: 'sent', releaseVersion }
+    ]);
+    assert.equal(state.logs.at(-1)?.event, 'release_announcement_sent');
+});
+
+test('the short announcement is requested in the locale of the user', async () => {
+    const { state } = await runOne({ media: cover, shortText });
+
+    assert.deepEqual(state.shortLocales, ['uk']);
+    assert.deepEqual(state.locales, ['uk']);
+});
+
+test('a short announcement without media is sent as a normal message', async () => {
+    const { outcome, state } = await runOne({ media: [], shortText });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['text']);
+    assert.deepEqual(state.sent, [{ telegramId: 5001, html: shortText }]);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+});
+
+test('a short announcement with an album sends the album and then the short text', async () => {
+    const { outcome, state } = await runOne({
+        media: albumFileIds,
+        shortText
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['album', 'text']);
+    assert.deepEqual(state.sent, [{ telegramId: 5001, html: shortText }]);
+    assert.deepEqual(state.captioned, []);
+    assert.deepEqual(state.mediaMarks, [10]);
+});
+
+test('without a short announcement one photo still goes out before the full text', async () => {
+    const { state } = await runOne({ media: cover });
+
+    assert.deepEqual(state.calls, ['album', 'text']);
+    assert.deepEqual(state.captioned, []);
+    assert.deepEqual(state.sent, [
+        { telegramId: 5001, html: 'announcement uk' }
+    ]);
+});
+
+test('a retry after the photo was delivered sends the short text without the photo', async () => {
+    const { state } = await runOne({
+        media: cover,
+        shortText,
+        announcement: { id: 10, status: 'queued', mediaSentAt: new Date(500) }
+    });
+
+    assert.deepEqual(state.calls, ['text']);
+    assert.deepEqual(state.sent, [{ telegramId: 5001, html: shortText }]);
+    assert.deepEqual(state.mediaMarks, []);
+});
+
+test('a 429 on the captioned photo re-enqueues the job and the retry sends it once', async () => {
+    const { dependencies, state } = createHarness({
+        media: cover,
+        shortText,
+        captionErrors: [telegramError(429, { retryAfter: 7 })]
+    });
+    const first = createMessage();
+    const second = createMessage();
+
+    await processReleaseAnnouncementBatch([first.message], dependencies);
+
+    assert.equal(first.outcome.acked, true);
+    assert.deepEqual(state.requeued, [
+        { job: { releaseVersion, userId: 1 }, delaySeconds: 8 }
+    ]);
+    assert.deepEqual(state.marks, [['queued', 10, 429, false]]);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.captioned, []);
+
+    await processReleaseAnnouncementBatch([second.message], dependencies);
+
+    assert.equal(state.captioned.length, 1);
+    assert.deepEqual(state.calls, ['caption', 'caption']);
+    assert.deepEqual(state.marks.at(-1), ['sent', 10, 1, releaseVersion]);
+});
+
+test('a redelivery of a captioned photo row in sending is skipped and never resent', async () => {
+    const { outcome, state } = await runOne({
+        media: cover,
+        shortText,
+        announcement: { id: 10, status: 'sending', mediaSentAt: new Date(500) }
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, []);
+    assert.deepEqual(state.marks, [['skipped', 10, 1, releaseVersion, null]]);
+});
+
+test('403 on the captioned photo blocks the user and skips the row', async () => {
+    const { outcome, state } = await runOne({
+        media: cover,
+        shortText,
+        captionErrors: [telegramError(403)]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['caption']);
+    assert.deepEqual(state.blocked, [5001]);
+    assert.deepEqual(state.marks, [['skipped', 10, 1, releaseVersion, 403]]);
+    assert.equal(mediaEvents(state.logs)[0]?.outcome, 'skipped');
+});
+
+test('an ambiguous failure on the captioned photo is skipped and never resent', async () => {
+    for (const captionError of [telegramError(502), new TypeError('fetch')]) {
+        const { outcome, state } = await runOne({
+            media: cover,
+            shortText,
+            captionErrors: [captionError]
+        });
+
+        assert.equal(outcome.acked, true);
+        assert.deepEqual(state.calls, ['caption']);
+        assert.deepEqual(state.mediaMarks, []);
+        assert.equal(state.marks[0]?.[0], 'skipped');
+        assert.equal(mediaEvents(state.logs)[0]?.outcome, 'ambiguous');
+    }
+});
+
+test('a bad file id on the captioned photo falls back to the short text', async () => {
+    const { outcome, state } = await runOne({
+        media: cover,
+        shortText,
+        captionErrors: [
+            telegramError(400, { description: 'Bad Request: wrong file id' })
+        ]
+    });
+
+    assert.equal(outcome.acked, true);
+    assert.deepEqual(state.calls, ['caption', 'text']);
+    assert.deepEqual(state.sent, [{ telegramId: 5001, html: shortText }]);
+    assert.deepEqual(state.mediaMarks, []);
+    assert.deepEqual(state.marks, [['sent', 10, 1, releaseVersion]]);
+    assert.equal(mediaEvents(state.logs)[0]?.outcome, 'failed');
+});
+
+test('the captioned photo counts as one message for pacing', async () => {
+    const { dependencies, state } = createHarness({
+        media: cover,
+        shortText
+    });
+
+    await processReleaseAnnouncementBatch(
+        [createMessage().message, createMessage().message],
+        dependencies
+    );
+
+    assert.deepEqual(state.calls, ['caption', 'caption']);
+    assert.deepEqual(state.sleeps, [50]);
 });

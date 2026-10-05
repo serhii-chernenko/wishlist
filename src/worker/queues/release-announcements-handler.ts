@@ -8,7 +8,8 @@ import { createRepositories } from '../../db/repositories';
 import type { WorkerBindings } from '../env';
 import {
     createReleaseAnnouncementSender,
-    renderReleaseAnnouncementText
+    renderReleaseAnnouncementText,
+    renderShortReleaseAnnouncementText
 } from './release-announcement-delivery';
 import type { ReleaseAnnouncementJob } from './release-announcement-job';
 import {
@@ -65,6 +66,7 @@ export const createReleaseAnnouncementDependencies = (
             return Effect.runPromise(repositories.users.findById(userId));
         },
         renderAnnouncement: renderReleaseAnnouncementText,
+        renderShortAnnouncement: renderShortReleaseAnnouncementText,
         getReleaseMedia,
         async claimForSending(announcementId, now) {
             return Effect.runPromise(
@@ -75,6 +77,7 @@ export const createReleaseAnnouncementDependencies = (
             );
         },
         sendReleaseMedia: sender.sendReleaseMedia,
+        sendReleasePhotoWithCaption: sender.sendReleasePhotoWithCaption,
         sendMessage: sender.sendMessage,
         async markMediaSent(announcementId, now) {
             await Effect.runPromise(
