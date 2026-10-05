@@ -2046,10 +2046,9 @@ type RootTranslation = {
 			 */
 			photos: RequiredParams<'count'>
 			/**
-			 * {​c​o​u​n​t​}​ ​{​{​ф​о​т​о​|​ф​о​т​о​|​ф​о​т​о​|​ф​о​т​о​}​}
-			 * @param {number} count
+			 * З​а​к​р​и​т​и
 			 */
-			photoCount: RequiredParams<'count'>
+			close: string
 			/**
 			 * Д​е​т​а​л​ь​н​і​ш​е
 			 */
@@ -7004,9 +7003,9 @@ export type TranslationFunctions = {
 			 */
 			photos: (arg: { count: number }) => LocalizedString
 			/**
-			 * {count} {{фото|фото|фото|фото}}
+			 * Закрити
 			 */
-			photoCount: (arg: { count: number }) => LocalizedString
+			close: () => LocalizedString
 			/**
 			 * Детальніше
 			 */

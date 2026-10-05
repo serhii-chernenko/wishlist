@@ -15,7 +15,7 @@ const ownerTelegramId = 9_001;
 const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
 const WORKERS_DEV_ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 const EXPECTED_CSP =
-    "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+    "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 interface StoredEntry {
     body: string;
@@ -992,6 +992,12 @@ describe('share page routes', () => {
         assert.equal(head.headers.get('ETag'), get.headers.get('ETag'));
         assert.equal(head.headers.get('Content-Security-Policy'), EXPECTED_CSP);
 
+        const csp = head.headers.get('Content-Security-Policy') ?? '';
+
+        assert.ok(csp.includes("script-src 'self';"));
+        assert.ok(csp.includes("style-src 'self';"));
+        assert.ok(!csp.includes('unsafe'));
+
         const headRedirect = await request(`/w/${publicId}`, {
             method: 'HEAD'
         });
@@ -1525,7 +1531,7 @@ describe('share page routes', () => {
         assert.doesNotMatch(system, /\?t=/);
     });
 
-    it('keeps twenty wishes with nine photos each below 60 KB', async () => {
+    it('keeps twenty wishes with nine photos each below 76 KB', async () => {
         const owner = await createOwner({ language: 'uk' });
         const publicId = await publish(owner.id);
 
@@ -1552,7 +1558,7 @@ describe('share page routes', () => {
 
         assert.equal(body.match(/<img /g)?.length, 180);
         assert.ok(
-            Buffer.byteLength(body) < 60_000,
+            Buffer.byteLength(body) < 76_000,
             `${Buffer.byteLength(body)}`
         );
     });

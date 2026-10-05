@@ -1,23 +1,24 @@
-import { useEffect, useRef, useState } from 'hono/jsx/dom';
+import { useRef } from 'hono/jsx/dom';
 
 import type { ApiImage } from '../../shared/app-api';
 import { getPhotoLoading } from '../../shared/photo-loading';
 import {
     classifyPointerGesture,
-    nearestSlideIndex,
     type GesturePoint
 } from '../logic/photo-carousel';
+import { PhotoDots } from './photo-dots';
 import { PhotoFrame } from './photo-frame';
+import { useActiveSlide } from './use-active-slide';
 
 export interface PhotoCarouselProps {
     images: readonly ApiImage[];
     label: string;
     describeSlide: (slideIndex: number) => string;
     cardIndex: number;
-    onOpen?: () => void;
+    onOpen?: (slideIndex: number) => void;
 }
 
-/** Swipeable photo strip with dot indicators; a tap opens the card, a swipe only scrolls. */
+/** Swipeable photo strip with dot indicators; a tap opens the viewer on the tapped slide, a swipe only scrolls. */
 export const PhotoCarousel = ({
     images,
     label,
@@ -27,32 +28,7 @@ export const PhotoCarousel = ({
 }: PhotoCarouselProps) => {
     const scroller = useRef<HTMLDivElement>(null);
     const pressStart = useRef<GesturePoint | null>(null);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const count = images.length;
-
-    useEffect(() => {
-        const element = scroller.current;
-
-        if (element === null) {
-            return undefined;
-        }
-
-        const syncActiveIndex = () => {
-            setActiveIndex(
-                nearestSlideIndex(
-                    element.scrollLeft,
-                    element.clientWidth,
-                    count
-                )
-            );
-        };
-
-        element.addEventListener('scroll', syncActiveIndex, { passive: true });
-
-        return () => {
-            element.removeEventListener('scroll', syncActiveIndex);
-        };
-    }, [count]);
+    const activeIndex = useActiveSlide(scroller, images.length);
 
     const readPoint = (event: MouseEvent): GesturePoint => {
         return {
@@ -79,7 +55,7 @@ export const PhotoCarousel = ({
                           classifyPointerGesture(start, readPoint(event)) ===
                               'tap'
                       ) {
-                          onOpen();
+                          onOpen(activeIndex);
                       }
                   }
               };
@@ -105,20 +81,7 @@ export const PhotoCarousel = ({
                     );
                 })}
             </div>
-            <div class='photo-dots' aria-hidden='true'>
-                {images.map((image, slideIndex) => {
-                    return (
-                        <span
-                            key={image.url}
-                            class={
-                                slideIndex === activeIndex
-                                    ? 'photo-dot photo-dot-active'
-                                    : 'photo-dot'
-                            }
-                        />
-                    );
-                })}
-            </div>
+            <PhotoDots images={images} activeIndex={activeIndex} />
         </>
     );
 };

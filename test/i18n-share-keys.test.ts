@@ -42,7 +42,7 @@ const expectedWebKeys = [
     'web.wish.link',
     'web.wish.photo',
     'web.wish.photos',
-    'web.wish.photoCount',
+    'web.wish.close',
     'web.wish.details',
     'web.wish.created',
     'web.wish.updated',

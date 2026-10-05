@@ -114,6 +114,12 @@ export const renderHomePage = (model: HomePageModel) => {
     return `${DOCTYPE}${document.toString()}`;
 };
 
+const hasPhotos = (model: SharePageModel) => {
+    return [...model.wishes, ...(model.gifted ?? [])].some(wish => {
+        return (wish.photos?.length ?? 0) > 0;
+    });
+};
+
 export const renderSharePage = (model: SharePageModel) => {
     const LL = getTranslator(model.language);
     const ownerName = model.displayName ?? SITE_NAME;
@@ -133,6 +139,7 @@ export const renderSharePage = (model: SharePageModel) => {
             indexable={model.indexable}
             alternates={buildAlternates(model)}
             assetVersion={model.assetVersion}
+            carouselScript={hasPhotos(model)}
             theme={model.theme ?? 'system'}
         >
             <SharePage model={model} />

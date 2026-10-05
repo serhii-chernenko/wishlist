@@ -39,7 +39,6 @@ export const WishDetailsSheet = ({
                     band={gifted ? LL.gifted.band() : undefined}
                     index={FIRST_CARD_INDEX}
                     pending={wish.photoPending === true}
-                    onOpen={undefined}
                 />
                 {!gifted && isBadgePriority(wish.priority) ? (
                     <PriorityBadge priority={wish.priority} />

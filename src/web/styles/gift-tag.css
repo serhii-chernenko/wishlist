@@ -24,6 +24,8 @@
         --wish-grid-gap: 1.5rem 0.75rem;
         --price-inset: 1.0625rem;
         --z-raised: 1;
+        --viewer-scrim: #0b0610;
+        --viewer-ink: #f1e3fb;
     }
 
     :root,
