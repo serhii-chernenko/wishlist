@@ -342,6 +342,153 @@
                             }
                         ]
                     }
+                },
+                {
+                    "title": "Release announcements delivered (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 22,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Delivered' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'release_announcement_sent' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release announcements blocked by user (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 22,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Blocked the bot' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'release_announcement_skipped' AND (reason = 'user_blocked' OR errorCode = 403) SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release delivery rate (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 22,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE eventName = 'release_announcement_sent') AS 'Delivered, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName IN ('release_announcement_sent', 'release_announcement_skipped', 'release_announcement_failed', 'release_announcement_ambiguous') SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release delivery outcomes over time",
+                    "layout": {
+                        "column": 1,
+                        "row": 25,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName IN ('release_announcement_sent', 'release_announcement_skipped', 'release_announcement_failed', 'release_announcement_ambiguous') FACET eventName TIMESERIES SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release delivered vs blocked over time",
+                    "layout": {
+                        "column": 7,
+                        "row": 25,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT filter(count(*), WHERE eventName = 'release_announcement_sent') AS 'Delivered', filter(count(*), WHERE reason = 'user_blocked' OR errorCode = 403) AS 'Blocked' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName IN ('release_announcement_sent', 'release_announcement_skipped', 'release_announcement_failed', 'release_announcement_ambiguous') TIMESERIES SINCE 7 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release delivery by version",
+                    "layout": {
+                        "column": 1,
+                        "row": 29,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT filter(sum(candidates), WHERE eventName = 'release_broadcast_completed') AS 'Candidates', filter(sum(enqueued), WHERE eventName = 'release_broadcast_completed') AS 'Queued', filter(count(*), WHERE eventName = 'release_announcement_sent') AS 'Delivered', filter(count(*), WHERE eventName = 'release_announcement_skipped' AND (reason = 'user_blocked' OR errorCode = 403)) AS 'Blocked', filter(count(*), WHERE eventName = 'release_announcement_skipped') AS 'Skipped (all)', filter(count(*), WHERE eventName = 'release_announcement_failed') AS 'Failed', filter(count(*), WHERE eventName = 'release_announcement_ambiguous') AS 'Ambiguous', filter(count(*), WHERE eventName = 'release_announcement_sent') * 100 / filter(sum(enqueued), WHERE eventName = 'release_broadcast_completed') AS 'Coverage, % of queued' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND (eventName = 'release_broadcast_completed' OR eventName IN ('release_announcement_sent', 'release_announcement_skipped', 'release_announcement_failed', 'release_announcement_ambiguous')) FACET releaseVersion SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Release skips and failures by Telegram error code",
+                    "layout": {
+                        "column": 7,
+                        "row": 29,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName IN ('release_announcement_skipped', 'release_announcement_failed', 'release_announcement_ambiguous') FACET eventName, errorCode SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
                 }
             ]
         },
@@ -660,6 +807,48 @@
                             {
                                 "accountIds": [8569908],
                                 "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'user_registered' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Blocked share of registered users (%)",
+                    "layout": {
+                        "column": 1,
+                        "row": 23,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT latest(blockedUsers) * 100 / latest(registeredUsers) AS 'Blocked, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot membership changes per day (blocked or restarted)",
+                    "layout": {
+                        "column": 7,
+                        "row": 23,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND updateType = 'my_chat_member' TIMESERIES 1 day SINCE 30 days ago"
                             }
                         ]
                     }
@@ -1607,7 +1796,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers1) AS 'Bot only', latest(appOnlyUsers1) AS 'App only', latest(bothChannelUsers1) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                                "query": "SELECT latest(botOnlyUsers1d) AS 'Bot only', latest(appOnlyUsers1d) AS 'App only', latest(bothChannelUsers1d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
                             }
                         ]
                     }
@@ -1628,7 +1817,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers7) AS 'Bot only', latest(appOnlyUsers7) AS 'App only', latest(bothChannelUsers7) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                                "query": "SELECT latest(botOnlyUsers7d) AS 'Bot only', latest(appOnlyUsers7d) AS 'App only', latest(bothChannelUsers7d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
                             }
                         ]
                     }
@@ -1649,7 +1838,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers30) AS 'Bot only', latest(appOnlyUsers30) AS 'App only', latest(bothChannelUsers30) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
+                                "query": "SELECT latest(botOnlyUsers30d) AS 'Bot only', latest(appOnlyUsers30d) AS 'App only', latest(bothChannelUsers30d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' SINCE 2 hours ago"
                             }
                         ]
                     }
@@ -1670,7 +1859,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers1) AS 'Bot only', latest(appOnlyUsers1) AS 'App only', latest(bothChannelUsers1) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                                "query": "SELECT latest(botOnlyUsers1d) AS 'Bot only', latest(appOnlyUsers1d) AS 'App only', latest(bothChannelUsers1d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
                             }
                         ]
                     }
@@ -1691,7 +1880,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers7) AS 'Bot only', latest(appOnlyUsers7) AS 'App only', latest(bothChannelUsers7) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                                "query": "SELECT latest(botOnlyUsers7d) AS 'Bot only', latest(appOnlyUsers7d) AS 'App only', latest(bothChannelUsers7d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
                             }
                         ]
                     }
@@ -1712,7 +1901,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT latest(botOnlyUsers30) AS 'Bot only', latest(appOnlyUsers30) AS 'App only', latest(bothChannelUsers30) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
+                                "query": "SELECT latest(botOnlyUsers30d) AS 'Bot only', latest(appOnlyUsers30d) AS 'App only', latest(bothChannelUsers30d) AS 'Both' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_state_snapshot' TIMESERIES SINCE 30 days ago"
                             }
                         ]
                     }
@@ -2169,7 +2358,7 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed') FACET kind TIMESERIES 1 day SINCE 30 days ago"
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed', 'importTimeout') FACET kind TIMESERIES 1 day SINCE 30 days ago"
                             }
                         ]
                     }
@@ -2190,7 +2379,1153 @@
                         "nrqlQueries": [
                             {
                                 "accountIds": [8569908],
-                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed') FACET kind, screen SINCE 30 days ago LIMIT 30"
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind IN ('renderError', 'networkError', 'sdkUnsupported', 'uploadFailed', 'importTimeout') FACET kind, screen SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "All actions per day by channel",
+                    "layout": {
+                        "column": 1,
+                        "row": 47,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' FACET channel TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App share of all actions (%)",
+                    "layout": {
+                        "column": 7,
+                        "row": 47,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE channel = 'app') AS 'Mini App, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Actions by channel and action (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 51,
+                        "width": 12,
+                        "height": 6
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Actions' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' FACET action, channel SINCE 30 days ago LIMIT 100"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Feature usage by channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 57,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' FACET cases(WHERE action IN ('wish_created', 'wish_updated', 'wish_removed', 'wish_restored', 'wish_priority_set', 'wish_images_reordered') AS 'Wishes', WHERE action IN ('give_added', 'give_removed', 'give_list_cleaned', 'gifted_hidden', 'show_gifted_changed') AS 'Gives and gifted', WHERE action IN ('wishlist_shared', 'wishlist_share_stopped', 'wishlist_share_rotated', 'wishlist_share_username_toggled', 'wishlist_share_indexing_toggled') AS 'Sharing', WHERE action IN ('wishlist_searched', 'wishlist_filtered') AS 'Search and filters', WHERE action IN ('payments_updated', 'payments_removed', 'delivery_address_updated', 'delivery_address_removed', 'contact_disclosure_changed') AS 'Payments and delivery', WHERE action IN ('language_changed', 'currency_changed', 'visibility_changed', 'feedback_sent', 'user_registered', 'wishlist_cleaned') AS 'Settings and account'), channel SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Imports by channel (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 57,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName IN ('link_import_completed', 'list_import_previewed', 'list_import_completed') FACET eventName, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Screens & modes",
+            "description": "Which screens people open: Mini App screen views against bot navigation (nav:* callbacks and commands), Mini App launches by start kind, and a per-mode comparison. Closed labels only; the Mini App does not report a start kind with a screen view, so launches are shown next to views.",
+            "widgets": [
+                {
+                    "title": "Mini App screen views (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Screen views' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'screenView' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot navigation taps (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Navigation taps' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory LIKE 'nav:%' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot commands (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Commands' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND commandCategory IS NOT NULL AND commandCategory NOT IN ('nonCommand', 'message', 'contact', 'photo', 'notParsed') SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App screen views by screen (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'screenView' FACET screen SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot navigation by screen (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 4,
+                        "width": 6,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory LIKE 'nav:%' FACET callbackCategory SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App screen views per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 9,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'screenView' FACET screen TIMESERIES 1 day SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot navigation per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 9,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory LIKE 'nav:%' FACET callbackCategory TIMESERIES 1 day SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Bot commands by category (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 13,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND commandCategory IS NOT NULL AND commandCategory NOT IN ('nonCommand', 'message', 'contact', 'photo', 'notParsed') FACET commandCategory SINCE 30 days ago LIMIT 15"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App launches by start kind (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 13,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET startKind SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App launches per day by start kind",
+                    "layout": {
+                        "column": 1,
+                        "row": 17,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET startKind TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Mini App launches by start kind and platform (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 17,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Launches' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_session_started' FACET startKind, platform SINCE 30 days ago LIMIT 50"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Per-mode comparison: bot navigation vs Mini App screen views",
+                    "layout": {
+                        "column": 1,
+                        "row": 21,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT filter(count(*), WHERE eventName = 'telegram_webhook_completed') AS 'Bot navigation', filter(count(*), WHERE eventName = 'app_client_event') AS 'Mini App screen views' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND ((eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory LIKE 'nav:%') OR (eventName = 'app_client_event' AND kind = 'screenView')) TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Shared screens: bot vs Mini App (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 25,
+                        "width": 12,
+                        "height": 5
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT filter(count(*), WHERE eventName = 'telegram_webhook_completed') AS 'Bot', filter(count(*), WHERE eventName = 'app_client_event') AS 'Mini App' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND ((eventName = 'telegram_webhook_completed' AND outcome = 'accepted' AND callbackCategory LIKE 'nav:%') OR (eventName = 'app_client_event' AND kind = 'screenView')) FACET cases(WHERE screen = 'home' OR callbackCategory = 'nav:home' AS 'Home', WHERE screen = 'wishes' OR callbackCategory = 'nav:wishlist' AS 'Wishes', WHERE screen = 'gives' OR callbackCategory = 'nav:giveList' AS 'Gives', WHERE screen = 'find' OR callbackCategory = 'nav:findList' AS 'Find', WHERE screen = 'feedback' OR callbackCategory = 'nav:feedback' AS 'Feedback', WHERE screen = 'stats' OR callbackCategory = 'nav:stats' AS 'Stats', WHERE screen = 'donate' OR callbackCategory = 'nav:donate' AS 'Donate', WHERE screen = 'payments' OR callbackCategory = 'nav:payments' AS 'Payments', WHERE screen = 'language' OR callbackCategory = 'nav:language' AS 'Language', WHERE screen = 'releases' OR callbackCategory = 'nav:releases' AS 'Releases', WHERE screen = 'settings' OR callbackCategory = 'nav:settings' AS 'Settings', WHERE screen = 'currency' OR callbackCategory = 'nav:currency' AS 'Currency', WHERE screen = 'delivery' OR callbackCategory = 'nav:delivery' AS 'Delivery', WHERE screen = 'listImport' OR callbackCategory = 'nav:listImport' AS 'List import') SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2.0 features",
+            "description": "Adoption and health of the 2.0.0 features: display currency, priority levels, contact disclosure, search indexing, gifted list, delivery address, photo reorder, link import and list import. Closed labels and count buckets only; no addresses, links, wish ids or text.",
+            "widgets": [
+                {
+                    "title": "Currency changes (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Changes' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'currency_changed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Priority levels set (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Set' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_priority_set' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Photo reorders (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 1,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Reorders' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_images_reordered' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Currency changes by currency and channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'currency_changed' FACET result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Share page display currency and source (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 4,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'share_page_served' AND result IN ('rendered', 'cached', 'notModified') FACET displayCurrency, currencySource SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Priority set by level and channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 8,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_priority_set' FACET result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Priority set per day by level",
+                    "layout": {
+                        "column": 7,
+                        "row": 8,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_priority_set' FACET result TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Contact disclosure toggles by field (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 12,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'contact_disclosure_changed' FACET field, result, channel SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Search indexing and show-gifted toggles (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 12,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wishlist_share_indexing_toggled', 'show_gifted_changed') FACET action, result, channel SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Delivery address updated and removed (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 16,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('delivery_address_updated', 'delivery_address_removed') FACET action, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Gifted restore and hide (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 16,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('wish_restored', 'gifted_hidden') FACET action, result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "2.0 actions per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 20,
+                        "width": 12,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action IN ('currency_changed', 'wish_priority_set', 'wish_images_reordered', 'contact_disclosure_changed', 'wishlist_share_indexing_toggled', 'show_gifted_changed', 'gifted_hidden', 'wish_restored', 'delivery_address_updated', 'delivery_address_removed') FACET action TIMESERIES 1 day SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Photo reorder by source and channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 24,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_images_reordered' FACET result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Photo changes by result and channel (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 24,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'bot_action_completed' AND action = 'wish_updated' AND field = 'images' FACET result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link imports (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 28,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Imports' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import success rate (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 28,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE result IN ('ok', 'partial')) AS 'Success, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import cache hit ratio (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 28,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT percentage(count(*), WHERE cacheOutcome = 'hit') AS 'Cache hits, %' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import outcomes by channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 31,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET result, channel SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import outcomes per day",
+                    "layout": {
+                        "column": 7,
+                        "row": 31,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.area"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET result TIMESERIES 1 day SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import by source (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 35,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET source SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import by shop (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 35,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET shop SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import cache outcome (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 39,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.pie"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET cacheOutcome SINCE 30 days ago LIMIT 5"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import elapsed time bucket (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 39,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET elapsedBucket SINCE 30 days ago LIMIT 10"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Link import images staged, ingested and skipped (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 43,
+                        "width": 12,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Imports' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'link_import_completed' FACET imagesStaged, imagesIngested, imagesSkipped SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import previews (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 47,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Previews' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_previewed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List imports completed (30d)",
+                    "layout": {
+                        "column": 5,
+                        "row": 47,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Completed' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_completed' AND result = 'success' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List imports failed (30d)",
+                    "layout": {
+                        "column": 9,
+                        "row": 47,
+                        "width": 4,
+                        "height": 3
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.billboard"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Failed' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_completed' AND result = 'failed' SINCE 30 days ago"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import preview results by kind and channel (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 50,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_previewed' FACET result, kind, channel SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import preview items and duplicates (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 50,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Previews' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_previewed' AND result = 'ok' FACET itemsBucket, duplicatesBucket SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import completions by result and reason (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 54,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_completed' FACET result, reason SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import completions by kind, visibility and trigger (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 54,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_completed' FACET kind, visibility, trigger SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import created and gifted wishes (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 58,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Imports' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_completed' AND result = 'success' FACET createdBucket, giftedBucket SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import photos drained by result and trigger (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 58,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.bar"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_photos_drained' FACET result, trigger SINCE 30 days ago LIMIT 20"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "List import photos ingested and failed (30d)",
+                    "layout": {
+                        "column": 1,
+                        "row": 62,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Drains' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'list_import_photos_drained' FACET ingestedBucket, failedBucket SINCE 30 days ago LIMIT 30"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Client errors by screen (30d)",
+                    "layout": {
+                        "column": 7,
+                        "row": 62,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.table"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Errors' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind NOT IN ('screenView', 'validationFailed') FACET screen, kind SINCE 30 days ago LIMIT 50"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "title": "Import timeouts reported by clients per day",
+                    "layout": {
+                        "column": 1,
+                        "row": 66,
+                        "width": 6,
+                        "height": 4
+                    },
+                    "linkedEntityGuids": null,
+                    "visualization": {
+                        "id": "viz.line"
+                    },
+                    "rawConfiguration": {
+                        "nrqlQueries": [
+                            {
+                                "accountIds": [8569908],
+                                "query": "SELECT count(*) AS 'Import timeouts' FROM Log_wishlist WHERE `service.name` = 'wishlist' AND botEnvironment = 'production' AND eventName = 'app_client_event' AND kind = 'importTimeout' FACET screen TIMESERIES 1 day SINCE 30 days ago"
                             }
                         ]
                     }
