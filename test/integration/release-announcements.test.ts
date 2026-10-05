@@ -96,11 +96,11 @@ describe('Release announcements on D1', () => {
         ) => Promise<void> = async () => undefined,
         album: {
             fileIds: readonly string[];
-            sendMediaGroup: (
+            sendReleaseMedia: (
                 telegramId: number,
                 fileIds: readonly string[]
             ) => Promise<void>;
-        } = { fileIds: [], sendMediaGroup: async () => undefined }
+        } = { fileIds: [], sendReleaseMedia: async () => undefined }
     ) => {
         const env = createWorkerEnv(harness, {
             BOT_TOKEN: '123456:test',
@@ -110,7 +110,7 @@ describe('Release announcements on D1', () => {
         return processReleaseAnnouncementBatch([message], {
             ...createReleaseAnnouncementDependencies(env),
             getReleaseMedia: () => album.fileIds,
-            sendMediaGroup: album.sendMediaGroup,
+            sendReleaseMedia: album.sendReleaseMedia,
             sendMessage,
             requeueJob,
             log: () => undefined
@@ -383,7 +383,7 @@ describe('Release announcements on D1', () => {
         const deliveries: string[] = [];
         const album = {
             fileIds: ['photo-a', 'photo-b', 'photo-c'],
-            async sendMediaGroup(
+            async sendReleaseMedia(
                 telegramId: number,
                 fileIds: readonly string[]
             ) {

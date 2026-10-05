@@ -70,12 +70,29 @@ const createFakeApi = (
             count: number;
             silent: boolean | undefined;
         }[],
+        photos: [] as {
+            chatId: number | string;
+            filename: string | undefined;
+            silent: boolean | undefined;
+        }[],
         deleted: [] as { chatId: number | string; messageId: number }[]
     };
 
     return {
         calls,
         api: {
+            async sendPhoto(
+                chatId: number | string,
+                _photo: Blob,
+                extra?: { disable_notification?: boolean; filename?: string }
+            ) {
+                calls.photos.push({
+                    chatId,
+                    filename: extra?.filename,
+                    silent: extra?.disable_notification
+                });
+                return options.messages?.[0] ?? albumMessages[0]!;
+            },
             async sendMediaGroup(
                 chatId: number | string,
                 items: readonly MediaGroupPhoto[],
@@ -114,18 +131,20 @@ test('the release media config is tracked by the gitignore allowlist', () => {
     assert.ok(gitignore.includes(`!${RELEASE_MEDIA_CONFIG_FILE}`));
 });
 
-test('release media reads two to ten file ids and ignores anything else', () => {
+test('release media reads one to ten file ids and ignores anything else', () => {
     const config = {
         '2.0.0': ['a', 'b', 'c'],
         '2.1.0': ['only-one'],
+        '2.5.0': [],
         '2.2.0': Array.from({ length: 11 }, (_, index) => `id-${index}`),
         '2.3.0': ['a', ''],
         '2.4.0': 'a,b'
     };
 
     assert.deepEqual(readReleaseMediaFileIds(config, '2.0.0'), ['a', 'b', 'c']);
+    assert.deepEqual(readReleaseMediaFileIds(config, '2.1.0'), ['only-one']);
 
-    for (const version of ['2.1.0', '2.2.0', '2.3.0', '2.4.0', '9.9.9']) {
+    for (const version of ['2.5.0', '2.2.0', '2.3.0', '2.4.0', '9.9.9']) {
         assert.deepEqual(readReleaseMediaFileIds(config, version), []);
     }
 
@@ -138,7 +157,7 @@ test('release media reads two to ten file ids and ignores anything else', () => 
     assert.ok(Array.isArray(getReleaseMedia('0.0.1')));
 });
 
-test('upload arguments take a version, two to ten photos and an optional target', () => {
+test('upload arguments take a version, one to ten photos and an optional target', () => {
     assert.deepEqual(parseUploadArguments(['2.0.0', 'a.jpg', 'b.PNG']), {
         version: '2.0.0',
         files: ['a.jpg', 'b.PNG'],
@@ -150,11 +169,16 @@ test('upload arguments take a version, two to ten photos and an optional target'
         'preview'
     );
 
+    assert.deepEqual(parseUploadArguments(['2.0.0', 'cover.jpg']).files, [
+        'cover.jpg'
+    ]);
+
     const rejected: string[][] = [
         [],
         ['2.0', 'a.jpg', 'b.jpg'],
         ['v2.0.0', 'a.jpg', 'b.jpg'],
-        ['2.0.0', 'a.jpg'],
+        ['2.0.0'],
+        ['2.0.0', ...Array.from({ length: 11 }, (_, index) => `${index}.jpg`)],
         ['2.0.0', ...Array.from({ length: 11 }, (_, index) => `${index}.jpg`)],
         ['2.0.0', 'a.jpg', 'b.gif'],
         ['2.0.0', 'a.jpg', 'b.jpg', '--target=staging'],
@@ -228,6 +252,23 @@ test('uploading sends one silent album to the admin chat, reads the file ids and
         { chatId: adminChatId, messageId: 42 },
         { chatId: adminChatId, messageId: 43 }
     ]);
+});
+
+test('uploading one photo sends a single silent photo, reads its file id and deletes the message', async () => {
+    const { api, calls } = createFakeApi();
+    const fileIds = await uploadReleaseMedia({
+        api,
+        chatId: adminChatId,
+        photos: photos.slice(0, 1),
+        log: () => undefined
+    });
+
+    assert.deepEqual(fileIds, ['a-large']);
+    assert.deepEqual(calls.photos, [
+        { chatId: adminChatId, filename: '1.jpg', silent: true }
+    ]);
+    assert.deepEqual(calls.albums, []);
+    assert.deepEqual(calls.deleted, [{ chatId: adminChatId, messageId: 41 }]);
 });
 
 test('a failed cleanup still returns the file ids and asks for a manual delete', async () => {
