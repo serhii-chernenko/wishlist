@@ -53,7 +53,7 @@ export interface ReleaseAnnouncementConsumerDependencies {
     ) => string | null;
     getReleaseMedia: (releaseVersion: string) => readonly string[];
     claimForSending: (announcementId: number, now: Date) => Promise<boolean>;
-    sendMediaGroup: (
+    sendReleaseMedia: (
         telegramId: number,
         fileIds: readonly string[]
     ) => Promise<void>;
@@ -388,7 +388,7 @@ const handleMessage = async (
             pacing,
             fileIds.length,
             () => {
-                return dependencies.sendMediaGroup(user.telegramId, fileIds);
+                return dependencies.sendReleaseMedia(user.telegramId, fileIds);
             }
         );
 
