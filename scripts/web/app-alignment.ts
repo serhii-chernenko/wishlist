@@ -436,6 +436,7 @@ interface StickyHeaderMeasure {
 
 const STICKY_HEADER_MEASURE = `(() => {
     const header = document.querySelector('.screen-header-sticky');
+    const bar = header.querySelector('.screen-header-bar');
     const title = header.querySelector('.screen-title');
     const range = document.createRange();
 
@@ -445,7 +446,7 @@ const STICKY_HEADER_MEASURE = `(() => {
 
     return {
         stuck: header.hasAttribute('data-stuck'),
-        height: header.getBoundingClientRect().height,
+        height: bar.getBoundingClientRect().height,
         titleLines: new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size,
         chipHeight: chip === null ? 0 : chip.getBoundingClientRect().height
     };

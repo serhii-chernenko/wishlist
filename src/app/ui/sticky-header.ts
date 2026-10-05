@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'hono/jsx/dom';
 
 import {
     isPastStickyEdge,
-    measureStickyHeader,
+    learnStickyFullHeight,
     STICKY_SETTLE_MS,
     type StickyPhase
 } from '../logic/sticky-header';
@@ -14,22 +14,22 @@ const supportsObservers = () => {
     );
 };
 
-/** Marks the header `data-stuck` once the sentinel above it scrolls past the sticky edge, and sizes the reserve below it so the collapse never shifts the content. */
+/** Marks the header `data-stuck` once the sentinel above it scrolls past the sticky edge. The header shell keeps the expanded height as `min-height`, so the collapse happens inside a box that never changes the document layout. */
 export const useStickyHeader = (enabled: boolean) => {
     const sentinel = useRef<HTMLDivElement>(null);
     const header = useRef<HTMLElement>(null);
-    const reserve = useRef<HTMLDivElement>(null);
+    const bar = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const sentinelElement = sentinel.current;
         const headerElement = header.current;
-        const reserveElement = reserve.current;
+        const barElement = bar.current;
 
         if (
             !enabled ||
             sentinelElement === null ||
             headerElement === null ||
-            reserveElement === null ||
+            barElement === null ||
             !supportsObservers()
         ) {
             return undefined;
@@ -40,14 +40,12 @@ export const useStickyHeader = (enabled: boolean) => {
         let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
         const measure = () => {
-            const next = measureStickyHeader(
+            fullHeight = learnStickyFullHeight(
                 fullHeight,
-                headerElement.getBoundingClientRect().height,
+                barElement.getBoundingClientRect().height,
                 phase
             );
-
-            fullHeight = next.fullHeight;
-            reserveElement.style.height = `${next.reserve}px`;
+            headerElement.style.minHeight = `${fullHeight}px`;
         };
 
         const settle = () => {
@@ -83,7 +81,7 @@ export const useStickyHeader = (enabled: boolean) => {
             }
         });
 
-        resizes.observe(headerElement, { box: 'border-box' });
+        resizes.observe(barElement, { box: 'border-box' });
         crossings.observe(sentinelElement);
 
         return () => {
@@ -91,9 +89,9 @@ export const useStickyHeader = (enabled: boolean) => {
             resizes.disconnect();
             crossings.disconnect();
             headerElement.removeAttribute('data-stuck');
-            reserveElement.style.height = '';
+            headerElement.style.minHeight = '';
         };
     }, [enabled]);
 
-    return { sentinel, header, reserve };
+    return { sentinel, header, bar };
 };

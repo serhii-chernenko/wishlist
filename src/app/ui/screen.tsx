@@ -58,6 +58,37 @@ export const ScreenLayout = ({
     const showHome = deeperThanRoot && !isNativeHomeButton();
     const stickyRefs = useStickyHeader(sticky);
 
+    const headerContent = (
+        <>
+            {showBack ? (
+                <button
+                    type='button'
+                    class='back-link'
+                    onClick={() => {
+                        void nav.back();
+                    }}
+                >
+                    {LL.common.back()}
+                </button>
+            ) : null}
+            <div class='screen-heading'>
+                <h1 id={titleId} class='screen-title' tabindex={-1}>
+                    {title}
+                </h1>
+                {actions === undefined ? null : (
+                    <div class='screen-actions'>{actions}</div>
+                )}
+            </div>
+            {lead === undefined ? null : <p class='screen-lead'>{lead}</p>}
+            {summary === undefined ? null : (
+                <div class='screen-summary'>{summary}</div>
+            )}
+            {toolbar === undefined ? null : (
+                <div class='screen-toolbar'>{toolbar}</div>
+            )}
+        </>
+    );
+
     return (
         <main
             class='screen'
@@ -72,48 +103,18 @@ export const ScreenLayout = ({
                     aria-hidden='true'
                 />
             ) : null}
-            <header
-                class={
-                    sticky
-                        ? 'screen-header screen-header-sticky'
-                        : 'screen-header'
-                }
-                ref={stickyRefs.header}
-            >
-                {showBack ? (
-                    <button
-                        type='button'
-                        class='back-link'
-                        onClick={() => {
-                            void nav.back();
-                        }}
-                    >
-                        {LL.common.back()}
-                    </button>
-                ) : null}
-                <div class='screen-heading'>
-                    <h1 id={titleId} class='screen-title' tabindex={-1}>
-                        {title}
-                    </h1>
-                    {actions === undefined ? null : (
-                        <div class='screen-actions'>{actions}</div>
-                    )}
-                </div>
-                {lead === undefined ? null : <p class='screen-lead'>{lead}</p>}
-                {summary === undefined ? null : (
-                    <div class='screen-summary'>{summary}</div>
-                )}
-                {toolbar === undefined ? null : (
-                    <div class='screen-toolbar'>{toolbar}</div>
-                )}
-            </header>
             {sticky ? (
-                <div
-                    class='sticky-reserve'
-                    ref={stickyRefs.reserve}
-                    aria-hidden='true'
-                />
-            ) : null}
+                <header
+                    class='screen-header screen-header-sticky'
+                    ref={stickyRefs.header}
+                >
+                    <div class='screen-header-bar' ref={stickyRefs.bar}>
+                        {headerContent}
+                    </div>
+                </header>
+            ) : (
+                <header class='screen-header'>{headerContent}</header>
+            )}
             {children}
             {showHome ? <HomeLink /> : null}
         </main>

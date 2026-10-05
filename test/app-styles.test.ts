@@ -397,7 +397,15 @@ test('the sticky list header respects the safe area, compacts its chips and hono
     );
     assert.match(
         STICKY_HEADER_SOURCE,
-        /\[data-stuck\] \{[^}]*border-bottom-color: var\(--ink\);/
+        /\[data-stuck\] \.screen-header-bar \{[^}]*border-bottom-color: var\(--ink\);/
+    );
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\.screen-header-sticky \{[^}]*pointer-events: none;/
+    );
+    assert.match(
+        STICKY_HEADER_SOURCE,
+        /\.screen-header-bar \{[^}]*pointer-events: auto;/
     );
     assert.match(
         STICKY_HEADER_SOURCE,

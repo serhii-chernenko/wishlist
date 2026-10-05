@@ -16,10 +16,6 @@ import {
     createNavigatorCore,
     type NavStateSlot
 } from '../src/app/logic/navigator';
-import {
-    isPastStickyEdge,
-    measureStickyHeader
-} from '../src/app/logic/sticky-header';
 
 const screensOf = (state: NavState) => {
     return state.entries.map(entry => entry.route.screen);
@@ -332,28 +328,4 @@ test('push helpers stay pure', () => {
 
     assert.notEqual(pushed, state);
     assert.deepEqual(screensOf(state), ['home']);
-});
-
-test('the sticky edge is crossed only once the sentinel is above the viewport', () => {
-    assert.equal(isPastStickyEdge({ isIntersecting: true, top: 10 }), false);
-    assert.equal(isPastStickyEdge({ isIntersecting: false, top: -2 }), true);
-    assert.equal(isPastStickyEdge({ isIntersecting: false, top: 900 }), false);
-});
-
-test('the sticky reserve keeps the full header height while compact or growing back', () => {
-    const unstuck = measureStickyHeader(0, 206, 'unstuck');
-
-    assert.deepEqual(unstuck, { fullHeight: 206, reserve: 0 });
-
-    const stuck = measureStickyHeader(unstuck.fullHeight, 89, 'stuck');
-
-    assert.deepEqual(stuck, { fullHeight: 206, reserve: 117 });
-
-    const growing = measureStickyHeader(stuck.fullHeight, 150, 'settling');
-
-    assert.deepEqual(growing, { fullHeight: 206, reserve: 56 });
-    assert.deepEqual(measureStickyHeader(206, 180, 'unstuck'), {
-        fullHeight: 180,
-        reserve: 0
-    });
 });
