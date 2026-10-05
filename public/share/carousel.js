@@ -2,6 +2,9 @@
     const on = (type, listener, options = true) => {
         document.addEventListener(type, listener, options);
     };
+    const isStage = element => {
+        return element.classList.contains('wish-stage');
+    };
     const indexOf = strip => {
         return Math.round(
             Math.abs(strip.scrollLeft) / (strip.clientWidth || 1)
@@ -28,8 +31,12 @@
         { capture: true, passive: true }
     );
 
+    if (!('showPopover' in HTMLElement.prototype)) {
+        return;
+    }
+
     on('beforetoggle', ({ target }) => {
-        const strip = target.querySelector('.carousel');
+        const strip = isStage(target) && target.querySelector('.carousel');
 
         if (strip) {
             strip.dataset.slide = indexOf(strip);
@@ -37,6 +44,10 @@
     });
 
     on('toggle', ({ target, newState }) => {
+        if (!isStage(target)) {
+            return;
+        }
+
         const strip = target.querySelector('.carousel');
 
         if (strip) {
@@ -51,11 +62,9 @@
 
     on('click', event => {
         const invoker = event.target.closest('[popovertarget]');
+        const isOpenSlide = invoker?.closest(':popover-open');
 
-        if (
-            invoker?.closest(':popover-open') &&
-            !invoker.hasAttribute('popovertargetaction')
-        ) {
+        if (isOpenSlide && !invoker.hasAttribute('popovertargetaction')) {
             event.preventDefault();
         }
     });
@@ -63,15 +72,18 @@
     on(
         'keydown',
         event => {
+            if (event.key !== 'Tab') {
+                return;
+            }
+
             const stage = document.querySelector('.wish-stage:popover-open');
             const items = [
                 ...(stage?.querySelectorAll('button, .carousel') ?? [])
             ];
-            const next =
-                items.indexOf(document.activeElement) +
-                (event.shiftKey ? -1 : 1);
+            const step = event.shiftKey ? -1 : 1;
+            const next = items.indexOf(document.activeElement) + step;
 
-            if (event.key === 'Tab' && stage) {
+            if (stage) {
                 event.preventDefault();
                 items[(next + items.length) % items.length].focus();
             }

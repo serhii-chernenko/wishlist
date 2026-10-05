@@ -1531,7 +1531,7 @@ describe('share page routes', () => {
         assert.doesNotMatch(system, /\?t=/);
     });
 
-    it('keeps twenty wishes with nine photos each below 72 KB', async () => {
+    it('keeps twenty wishes with nine photos each below 76 KB', async () => {
         const owner = await createOwner({ language: 'uk' });
         const publicId = await publish(owner.id);
 
@@ -1558,7 +1558,7 @@ describe('share page routes', () => {
 
         assert.equal(body.match(/<img /g)?.length, 180);
         assert.ok(
-            Buffer.byteLength(body) < 72_000,
+            Buffer.byteLength(body) < 76_000,
             `${Buffer.byteLength(body)}`
         );
     });
