@@ -80,11 +80,11 @@ Decisions:
 - [x] App UI: Tailwind + daisyUI with the gift-tag design system, Telegram theme, BackButton/MainButton, haptics (2026-10-03)
 - [x] Screens: own list, wish editor, give list, search, other lists, share settings, payments, visibility, language, feedback, stats, donate (2026-10-03)
 - [x] Bot entry points: "Open app" buttons, `/app` command, startapp deep links, preview menu button (2026-10-03)
-- [ ] BotFather: Main Mini App for the preview bot and for production
-- [ ] Tests, review, security audit
+- [x] BotFather: Main Mini App for the preview bot and for production; default menu button "App" set with `pnpm telegram:menu:set:prod`
+- [x] Tests, review, security audit
 - [x] Prices in the viewer's language currency (UAH, EUR, PLN) with approximate NBU conversion, per-currency price filters and a daily rates refresh (2026-10-04)
-- [ ] Preview test on @InevixTestBot, production rollout
-- [ ] Production rollout: apply the six pending migrations (`20261004162852_list_imports` included; `20261003214556_many_harry_osborn`, `20261004011719_careless_mulholland_black`, `20261004083515_far_impossible_man`, `20261004090459_flat_omega_sentinel`, `20261004111004_show_gifted_default_on`) by hand with `pnpm db:migrate:prod` before the deploy, an approved exception to the merge-only migration rule ([OPERATIONS section 17, Rollout runbook](./docs/OPERATIONS.md#rollout-runbook))
+- [x] Preview test on @InevixTestBot, production rollout (2026-10-05)
+- [x] Production rollout: all pending migrations applied by hand before the 2.0.0 deploy on 2026-10-05; later ones (`release_announcement_media`) applied by Workers Builds on merge
 - [x] Docs and 2.0.0 changelog: OPERATIONS section 17, README, AGENTS, dashboard page `Mini App`, three 2.0.0 bullets (2026-10-03)
 
 ### Batch 2 (in 2.0.0, started 2026-10-04)
@@ -104,7 +104,7 @@ Decisions:
 - [x] Navigation fixes, native Home button, compact sticky list header, two-column grid from 320px, toast position (2026-10-04)
 - [x] List import from rewish.io (preview, merge with dedupe, hidden or public, gifted kept, background photos), bot and app (8e36c74, 2026-10-04)
 - [x] Pre-rollout backup 2026-10-05T10:53Z: `.backups/production-20261005T105319Z.sql` (local, git-ignored), Time Travel bookmark `000001bf-00000000-000050fb-748f8a8b9e52580a4b5b10e053ad43aa`; production still on version `631ee852`, 299 users, 1202 wishes
-- [ ] One structured device test pass on @InevixTestBot before the final changelog approval (2026-10-04)
+- [x] Device test pass on @InevixTestBot and production (2026-10-05) (2026-10-04)
 - [x] Review, security audit, preview test (2026-10-04)
 - [x] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order (2026-10-04)
 - [x] Production rollout additions documented: Time Travel bookmark, priority count check, new migrations, post-deploy priority repair, R2 `import/` lifecycle rule (added on both buckets 2026-10-04)
@@ -112,13 +112,13 @@ Decisions:
 ### Cutover
 
 - [x] Preview rehearsal: real snapshot imported and reconciled
-- [ ] User approval of copy and the 2.0.0 changelog
+- [x] User approval of copy and the 2.0.0 changelog (2026-10-05)
 - [x] VPS deploy secrets removed from the GitHub repository
 - [x] VPS container frozen
 - [x] Post-freeze backup via `backup-dbs` (pinned SHA)
 - [x] Production D1 imported and reconciled
 - [x] Production webhook set
-- [ ] PR merged, 2.0.0 released on GitHub, announcement broadcast delivered
+- [x] PR merged, 2.0.0 released on GitHub (tag on 90270c2), announcement broadcast delivered 2026-10-05: 263 sent as one photo with a short caption, 36 skipped (blocked or deleted), 0 failed
 
 ### Retirement
 
