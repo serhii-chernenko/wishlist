@@ -123,7 +123,7 @@ const EXPECTED_TOKENS = {
         ink: '#000000',
         text: '#000000',
         heart: '#f57aa6',
-        box: '#2aabe2',
+        box: '#7cc6ee',
         'heart-ink': '#7a1040'
     },
     dark: {
@@ -132,7 +132,7 @@ const EXPECTED_TOKENS = {
         ink: '#f1e3fb',
         text: '#fbf4ff',
         heart: '#f57aa6',
-        box: '#2aabe2'
+        box: '#7cc6ee'
     }
 } as const;
 
