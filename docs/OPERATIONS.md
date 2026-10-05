@@ -743,6 +743,7 @@ In the bot, `/releases` and the home menu's What's new button show the three new
 - The consumer sends the notes in the user's language (`users.language`, or Auto from the stored Telegram language code) and stores the new version on the user.
 - Delivery is at-most-once on ambiguity: a duplicate is worse than a missed message. A network error with no response, a 5xx, or a redelivery of a row in `sending` is marked `skipped` and never resent. A 403 sets `users.blocked_at` and skips; a permanent 400 skips; any other 400 marks the row `failed`. A 429 re-enqueues the job after `retry_after + 1` seconds.
 - A release can carry one photo or a photo album that arrives right before the text. See Release photo or album below.
+- A release can carry a short announcement per locale that goes out as the caption of its single photo. See Short announcement below.
 - Stale recovery: each cron run re-enqueues `queued` rows untouched for over 3 hours and marks `sending` rows stuck over 3 hours as `skipped`.
 - Per-user results are in `release_announcements`:
 
@@ -801,6 +802,36 @@ Delivery rules for the photo or album (a single photo follows the same rules as 
 - Telemetry: one `release_announcement_media` event per album attempt with the closed `outcome` label `sent`, `failed`, `skipped`, `rate_limited` or `ambiguous`, plus `errorCode` on failures. File ids and Telegram descriptions are never logged.
 
 Pacing: the consumer spaces Telegram calls by `MINIMUM_SEND_INTERVAL_MILLISECONDS` (50 ms) per counted message, and an album of N photos counts as N (a single photo counts as 1). With 3 photos and the text, one user takes about 200 ms, so a batch of 10 (`max_batch_size: 10`, `max_concurrency: 1`) sends about 20 messages per second, under Telegram's 30 per second broadcast limit, and finishes in about 2 seconds plus API latency. The album and the text to one chat are a short burst that Telegram allows. The queue settings in `wrangler.jsonc` stay unchanged.
+
+### Short announcement
+
+A release can carry a short broadcast text per locale. It replaces the full changelog text in the broadcast only; `/releases`, the app and GitHub Releases keep the full changelog.
+
+`releases.announcements.json` (repository root, bundled into the Worker, allowlisted in `.gitignore`) maps a release version to one Telegram HTML text per locale:
+
+```json
+{ "2.0.0": { "uk": "<b>...</b>", "en": "...", "pl": "..." } }
+```
+
+Rules, enforced by `test/release-short-announcement.test.ts` (part of `pnpm run check`) and re-checked at runtime:
+
+- All three locales (`uk`, `en`, `pl`) are present, with no other keys. An entry that breaks a rule is ignored at runtime, so the broadcast falls back to the full text.
+- Only `<b>` and `<i>` tags, balanced. A literal `<`, `>` or `&` is written as `&lt;`, `&gt;` or `&amp;`.
+- At most 1000 visible characters. The count strips the tags, decodes `&lt; &gt; &amp; &quot;` to one character and counts UTF-16 code units, which is how Telegram counts a caption of at most 1024 characters. An emoji such as the party popper counts as 2. The 24 character margin keeps the text safe if Telegram counts differently.
+- A user whose locale has no text gets the `uk` text.
+
+Delivery, in the consumer and in `pnpm releases:send:test` (the same code):
+
+| Release has                                  | Sends                                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| a short text and exactly one photo `file_id` | one `sendPhoto` with the short text as the caption (`parse_mode` HTML); no separate text message |
+| a short text and no photo                    | the short text as a normal message                                                               |
+| a short text and 2 to 10 photos              | the album, then the short text as a normal message                                               |
+| no short text                                | the photo or album and the full announcement text, as before                                     |
+
+The captioned photo is the whole announcement, so one successful send marks `media_sent_at` and the row `sent`. Error mapping is the one of the text message: 403 blocks and skips, a permanent 400 skips, 429 re-enqueues without counting an attempt and the retry sends the photo again, 5xx or a network error without a response is ambiguous and the row is skipped without a resend. Any other 400 (for example a wrong `file_id`) is logged as a failed `release_announcement_media` event and the short text is sent as a normal message. A retry of a row whose `media_sent_at` is already set sends only the short text. The captioned photo counts as one message for pacing.
+
+Check the result with `pnpm releases:send:test --locale uk|en|pl` before resuming the queue, as described above. Run it for all three locales.
 
 ### GitHub releases
 

@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { getLatestReleaseVersion } from '../../src/bot/content/releases';
+import {
+    renderReleaseAnnouncementText,
+    renderShortReleaseAnnouncementText
+} from '../../src/worker/queues/release-announcement-delivery';
 import { processReleaseAnnouncementBatch } from '../../src/worker/queues/release-announcements';
 import type { ReleaseAnnouncementMessage } from '../../src/worker/queues/release-announcements';
 import { createReleaseAnnouncementDependencies } from '../../src/worker/queues/release-announcements-handler';
@@ -455,9 +459,10 @@ describe('Release announcements on D1', () => {
         assert.equal(delivered.get(1002)?.length, 1);
         assert.equal(delivered.get(1001)?.length, 1);
         assert.notEqual(delivered.get(1001)?.[0], delivered.get(1002)?.[0]);
-        assert.match(
-            delivered.get(1002)?.[0] ?? '',
-            new RegExp(currentVersion)
+        assert.equal(
+            delivered.get(1002)?.[0],
+            renderShortReleaseAnnouncementText(currentVersion, 'en') ??
+                renderReleaseAnnouncementText(currentVersion, 'en')
         );
         assert.deepEqual(await readAnnouncement(englishId), {
             status: 'sent',
