@@ -9,6 +9,17 @@ import { dismissKeyboardOnEnter } from '../telegram/keyboard';
 
 type InputMode = 'text' | 'decimal' | 'numeric' | 'url' | 'tel' | 'search';
 
+const CONTROL_CLASS = {
+    input: {
+        valid: 'input input-neutral field-control',
+        invalid: 'input input-error field-control'
+    },
+    textarea: {
+        valid: 'textarea textarea-neutral field-control',
+        invalid: 'textarea textarea-error field-control'
+    }
+} as const;
+
 export interface FieldProps {
     id: string;
     label: string;
@@ -157,7 +168,9 @@ export const Field = ({
 
     const shared = {
         id,
-        class: multiline ? 'textarea field-control' : 'input field-control',
+        class: CONTROL_CLASS[multiline ? 'textarea' : 'input'][
+            error ? 'invalid' : 'valid'
+        ],
         value,
         placeholder,
         disabled,

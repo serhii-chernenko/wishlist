@@ -26,7 +26,7 @@ const HomeLink = () => {
         <div class='screen-home'>
             <button
                 type='button'
-                class='text-button'
+                class='btn btn-link btn-accent text-button'
                 onClick={() => {
                     haptics.selection();
                     void nav.home();
@@ -63,7 +63,7 @@ export const ScreenLayout = ({
             {showBack ? (
                 <button
                     type='button'
-                    class='back-link'
+                    class='btn btn-link btn-accent back-link'
                     onClick={() => {
                         void nav.back();
                     }}

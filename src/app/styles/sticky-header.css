@@ -117,8 +117,7 @@
         background: var(--paper);
     }
 
-    .screen-header-sticky[data-stuck]
-        :is(.back-link, .screen-lead, .screen-summary) {
+    .screen-header-sticky[data-stuck] :is(.screen-lead, .screen-summary) {
         display: none;
     }
 

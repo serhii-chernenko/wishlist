@@ -23,7 +23,11 @@ export const ImportNoteBanner = ({ note }: { note: ImportNote }) => {
 
     return (
         <p
-            class={failed ? 'import-note import-note-failed' : 'import-note'}
+            class={
+                failed
+                    ? 'card card-border import-note import-note-failed'
+                    : 'card card-border import-note'
+            }
             role='status'
         >
             <Icon icon={failed ? Info : Link2} />

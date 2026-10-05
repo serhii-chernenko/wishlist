@@ -1,15 +1,19 @@
 @layer components {
     :root {
+        --radius-selector: 999px;
+        --radius-field: 10px;
+        --radius-box: 14px;
+        --border: 2.5px;
         --border-thin: 2px;
-        --border-regular: 2.5px;
+        --border-regular: var(--border);
         --border-thick: 3px;
-        --radius-pill: 999px;
+        --radius-pill: var(--radius-selector);
         --radius-round: 50%;
         --radius-hero: 22px;
-        --radius-card: 14px;
+        --radius-card: var(--radius-box);
         --radius-card-inner: calc(var(--radius-card) - var(--border-regular));
         --radius-tile: 12px;
-        --radius-control: 10px;
+        --radius-control: var(--radius-field);
         --radius-small: 8px;
         --focus-offset: 2px;
         --focus-offset-inset: -5px;

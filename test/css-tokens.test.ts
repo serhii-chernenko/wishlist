@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const STYLE_FILES = [
     'src/app/styles/app.css',
+    'src/app/styles/daisy-cards.css',
     'src/web/styles/gift-tag.css',
     'src/web/styles/share.css'
 ] as const;

@@ -199,8 +199,8 @@ export const ToastHost = ({ closeLabel }: { closeLabel: string }) => {
                         key={item.id}
                         class={
                             undo === undefined
-                                ? `toast-item toast-${item.tone}`
-                                : `toast-item toast-${item.tone} toast-countdown`
+                                ? `card card-border toast-item toast-${item.tone}`
+                                : `card card-border toast-item toast-${item.tone} toast-countdown`
                         }
                     >
                         <p class='toast-text'>{item.message}</p>
