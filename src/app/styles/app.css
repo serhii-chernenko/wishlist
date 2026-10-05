@@ -6,9 +6,7 @@
 @plugin 'daisyui' {
     themes: false;
     logs: false;
-    include:
-        button, input, textarea, toggle, radio, badge, skeleton, toast, alert,
-        join, loading, carousel;
+    include: button, input, textarea, radio, loading, carousel;
 }
 
 @plugin 'daisyui/theme' {
@@ -764,8 +762,7 @@
         box-shadow: none;
     }
 
-    :where(.btn, .toggle, .radio, .input, .textarea):focus-visible,
-    :where(.toggle):has(:focus-visible) {
+    :where(.btn, .radio, .input, .textarea):focus-visible {
         outline: var(--focus-outline);
         outline-offset: var(--focus-offset);
     }
@@ -793,44 +790,8 @@
         border-color: var(--color-error);
     }
 
-    :where(.toggle, .radio) {
+    :where(.radio) {
         --input-color: var(--ink);
-    }
-
-    :where(.toggle):checked,
-    :where(.toggle)[aria-checked='true'] {
-        background-color: var(--heart);
-    }
-
-    :where(.badge) {
-        color: var(--text);
-        background-color: var(--tag);
-        border: var(--border-thin) solid var(--ink);
-        font-weight: 600;
-    }
-
-    :where(
-        .alert:not(.alert-error, .alert-info, .alert-success, .alert-warning)
-    ) {
-        color: var(--text);
-        background-color: var(--tag);
-    }
-
-    :where(.alert) {
-        border: var(--border-regular) solid var(--ink);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-hard);
-    }
-
-    :where(.toast) {
-        padding-bottom: calc(var(--safe-bottom) + 0.75rem);
-    }
-
-    :where(.skeleton) {
-        background-image: none;
-        background-color: var(--tag);
-        border: var(--border-regular) solid var(--ink);
-        animation: var(--animation-pulse);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -843,10 +804,6 @@
         ) {
             translate: none;
             box-shadow: 1px 1px 0 var(--ink);
-        }
-
-        :where(.skeleton) {
-            animation: none;
         }
     }
 }
