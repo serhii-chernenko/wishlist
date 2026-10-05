@@ -158,9 +158,9 @@ const BootSkeleton = () => {
     return (
         <div class='screen' aria-busy='true'>
             <div class='boot' aria-hidden='true'>
-                <div class='boot-tag boot-tag-hero' />
-                <div class='boot-tag' />
-                <div class='boot-tag' />
+                <div class='card card-border boot-tag boot-tag-hero' />
+                <div class='card card-border boot-tag' />
+                <div class='card card-border boot-tag' />
             </div>
         </div>
     );
