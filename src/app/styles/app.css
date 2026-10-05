@@ -2095,6 +2095,7 @@
 @import '../../web/styles/carousel.css';
 @import '../../web/styles/gifted.css';
 @import './gifted.css';
+@import './wish-sheet.css';
 @import './carousel.css';
 @import './danger.css';
 @import './link-import.css';

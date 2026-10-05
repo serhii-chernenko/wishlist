@@ -386,20 +386,9 @@ const uk: BaseTranslation = {
         title: '❤️ <b>{0:string}</b>',
         description: '\n\n✏️ Опис:\n{0:string}',
         priority: {
-            low: {
-                owner: '\n\n<blockquote>🟢 <b>Наразі трохи хочу це</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>🟢 <b>Наразі трохи хоче це</b></blockquote>'
-            },
-            medium: {
-                owner: '\n\n<blockquote>🟡 <b>Наразі хочу це</b></blockquote>',
-                watcher: '\n\n<blockquote>🟡 <b>Наразі хоче це</b></blockquote>'
-            },
-            high: {
-                owner: '\n\n<blockquote>❗️ <b>Наразі дуже хочу це!</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>❗️ <b>Наразі дуже хоче це!</b></blockquote>'
-            }
+            low: '\n\n<blockquote>🟢 <b>Пріоритет: низький</b></blockquote>',
+            medium: '\n\n<blockquote>🟡 <b>Пріоритет: середній</b></blockquote>',
+            high: '\n\n<blockquote>🔴 <b>Пріоритет: високий</b></blockquote>'
         },
         hidden: '\n\n🫣 <i>Це бажання приховане від інших!</i>',
         price: '\n\n💸 Орієнтовна вартість: <b>{0:string}</b>',

@@ -272,7 +272,6 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
         const summary = summarizeGivers(giverIds, viewer.id);
         const html =
             renderWishHtml(LL, wish, formatters, {
-                audience: 'watcher',
                 detail: 'full',
                 showHidden: false
             }) + getGiversLine(req, summary);

@@ -149,7 +149,6 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
 
     for (const wish of page.items) {
         const html = renderWishHtml(LL, wish, formatters, {
-            audience: 'owner',
             detail: 'summary',
             showHidden: true
         });

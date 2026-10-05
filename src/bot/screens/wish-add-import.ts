@@ -333,7 +333,6 @@ const deliverPreview = async (
     bodies: readonly StagedImageBody[]
 ): Promise<ImportPreviewResult> => {
     const html = renderWishHtml(req.LL, wish, createWishFormatters(req), {
-        audience: 'owner',
         detail: 'full',
         showHidden: true
     });

@@ -24,6 +24,7 @@ import { EmptyState } from '../ui/empty-state';
 import { Icon } from '../ui/icon';
 import { ScreenLayout } from '../ui/screen';
 import { WishGrid, WishTag } from '../ui/wish-tag';
+import { WishDetailsSheet } from './wish-details-sheet';
 import {
     GIVES_LIST_KEY,
     LoadingOrError,
@@ -122,6 +123,7 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
     const { api, nav, toast } = services;
     const LL = useLL();
     const [loadingMore, setLoadingMore] = useState(false);
+    const [detailsId, setDetailsId] = useState<number | null>(null);
     const list = useAppResource<GiveListDto>(GIVES_LIST_KEY, signal => {
         return loadGives(services, 0, signal);
     });
@@ -241,6 +243,36 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
     };
 
     const items = page?.items ?? [];
+    const detailsEntry =
+        detailsId === null
+            ? undefined
+            : items.find(entry => {
+                  return giveKey(entry) === detailsId;
+              });
+
+    const closeDetails = () => {
+        setDetailsId(null);
+    };
+
+    const renderDropButton = (entry: GiveEntryDto, compact: boolean) => {
+        return (
+            <button
+                type='button'
+                class={
+                    compact
+                        ? 'btn btn-sm danger-button give-drop'
+                        : 'btn danger-button give-drop'
+                }
+                onClick={() => {
+                    dropGive(entry);
+                    closeDetails();
+                }}
+            >
+                <Icon icon={X} />
+                {LL.gives.remove()}
+            </button>
+        );
+    };
 
     return (
         <ScreenLayout
@@ -279,19 +311,11 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                                     key={entry.wish.id}
                                     wish={entry.wish}
                                     index={index}
+                                    onOpen={() => {
+                                        setDetailsId(giveKey(entry));
+                                    }}
                                     badges={<GiveBadges entry={entry} />}
-                                    actions={
-                                        <button
-                                            type='button'
-                                            class='btn btn-sm danger-button give-drop'
-                                            onClick={() => {
-                                                dropGive(entry);
-                                            }}
-                                        >
-                                            <Icon icon={X} />
-                                            {LL.gives.remove()}
-                                        </button>
-                                    }
+                                    actions={renderDropButton(entry, true)}
                                 />
                             );
                         })}
@@ -314,6 +338,13 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                         </button>
                     </div>
                 </>
+            )}
+            {detailsEntry === undefined ? null : (
+                <WishDetailsSheet
+                    wish={detailsEntry.wish}
+                    onClose={closeDetails}
+                    action={renderDropButton(detailsEntry, false)}
+                />
             )}
         </ScreenLayout>
     );

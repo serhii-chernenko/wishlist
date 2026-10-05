@@ -1,0 +1,52 @@
+@layer components {
+    .action-sheet-scrollable .action-sheet-panel {
+        max-height: calc(100dvh - 1rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        touch-action: auto;
+    }
+
+    .wish-sheet {
+        --card-border: var(--border-thin);
+        display: grid;
+        gap: 0.75rem;
+        justify-items: start;
+    }
+
+    .wish-sheet > * {
+        max-width: 100%;
+    }
+
+    .wish-sheet .wish-photo {
+        order: 0;
+        width: 100%;
+        margin: 0;
+        border: var(--card-border) solid var(--ink);
+        border-radius: var(--radius-control);
+    }
+
+    .wish-sheet .wish-photo[data-band] .photo-dots {
+        bottom: 2.75rem;
+    }
+
+    .wish-sheet .wish-link {
+        margin-top: 0;
+    }
+
+    .wish-sheet-description {
+        font-size: 1rem;
+        line-height: 1.5;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
+
+    .wish-sheet-dates {
+        font-size: 0.875rem;
+        line-height: 1.45;
+    }
+
+    .wish-sheet .action-sheet-actions {
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+}

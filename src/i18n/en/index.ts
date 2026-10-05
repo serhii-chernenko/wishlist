@@ -383,20 +383,9 @@ const en: Translation = {
         title: '❤️ <b>{0}</b>',
         description: '\n\n✏️ Description:\n{0}',
         priority: {
-            low: {
-                owner: '\n\n<blockquote>🟢 <b>I kind of want this</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>🟢 <b>They kind of want this</b></blockquote>'
-            },
-            medium: {
-                owner: '\n\n<blockquote>🟡 <b>I want this</b></blockquote>',
-                watcher: '\n\n<blockquote>🟡 <b>They want this</b></blockquote>'
-            },
-            high: {
-                owner: '\n\n<blockquote>❗️ <b>I really want this!</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>❗️ <b>They really want this!</b></blockquote>'
-            }
+            low: '\n\n<blockquote>🟢 <b>Priority: low</b></blockquote>',
+            medium: '\n\n<blockquote>🟡 <b>Priority: medium</b></blockquote>',
+            high: '\n\n<blockquote>🔴 <b>Priority: high</b></blockquote>'
         },
         hidden: '\n\n🫣 <i>This wish is hidden from others!</i>',
         price: '\n\n💸 Estimated price: <b>{0}</b>',

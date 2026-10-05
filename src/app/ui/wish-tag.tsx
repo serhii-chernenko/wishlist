@@ -41,7 +41,7 @@ const PendingPhotoNote = () => {
     return <span class='sr-only'>{LL.a11y.photoLoading()}</span>;
 };
 
-const WishCover = ({
+export const WishCover = ({
     images,
     title,
     band,
@@ -104,6 +104,36 @@ const WishCover = ({
     );
 };
 
+export const WishLink = ({
+    wish
+}: {
+    wish: Pick<WishTagModel, 'link' | 'linkHost'>;
+}) => {
+    const LL = useLL();
+    const host = wish.linkHost ?? getLinkHost(wish.link);
+
+    if (wish.link === null || host === null) {
+        return null;
+    }
+
+    const { link } = wish;
+
+    return (
+        <a
+            class='wish-link'
+            href={link}
+            rel='noopener noreferrer nofollow'
+            target='_blank'
+            onClick={(event: MouseEvent) => {
+                event.preventDefault();
+                openLink(link);
+            }}
+        >
+            {LL.third.openLink({ host })}
+        </a>
+    );
+};
+
 /** The compact gift-tag card shared with the share page markup (`.wish` / `.wish-tag`). */
 export const WishTag = ({
     wish,
@@ -113,7 +143,6 @@ export const WishTag = ({
     actions
 }: WishTagProps) => {
     const LL = useLL();
-    const host = wish.linkHost ?? getLinkHost(wish.link);
     const gifted = wish.gifted === true;
 
     return (
@@ -151,20 +180,7 @@ export const WishTag = ({
                 ) : null}
                 {badges}
                 <PriceChip price={wish.price} currency={wish.currency} />
-                {wish.link !== null && host !== null ? (
-                    <a
-                        class='wish-link'
-                        href={wish.link}
-                        rel='noopener noreferrer nofollow'
-                        target='_blank'
-                        onClick={(event: MouseEvent) => {
-                            event.preventDefault();
-                            openLink(wish.link ?? '');
-                        }}
-                    >
-                        {LL.third.openLink({ host })}
-                    </a>
-                ) : null}
+                <WishLink wish={wish} />
                 {actions === undefined ? null : (
                     <div class='wish-actions'>{actions}</div>
                 )}

@@ -386,21 +386,9 @@ const pl: Translation = {
         title: '❤️ <b>{0}</b>',
         description: '\n\n✏️ Opis:\n{0}',
         priority: {
-            low: {
-                owner: '\n\n<blockquote>🟢 <b>Trochę tego teraz chcę</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>🟢 <b>Ta osoba trochę tego teraz chce</b></blockquote>'
-            },
-            medium: {
-                owner: '\n\n<blockquote>🟡 <b>Chcę tego teraz</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>🟡 <b>Ta osoba chce tego teraz</b></blockquote>'
-            },
-            high: {
-                owner: '\n\n<blockquote>❗️ <b>Bardzo tego teraz chcę!</b></blockquote>',
-                watcher:
-                    '\n\n<blockquote>❗️ <b>Ta osoba bardzo tego teraz chce!</b></blockquote>'
-            }
+            low: '\n\n<blockquote>🟢 <b>Priorytet: niski</b></blockquote>',
+            medium: '\n\n<blockquote>🟡 <b>Priorytet: średni</b></blockquote>',
+            high: '\n\n<blockquote>🔴 <b>Priorytet: wysoki</b></blockquote>'
         },
         hidden: '\n\n🫣 <i>To życzenie jest ukryte przed innymi!</i>',
         price: '\n\n💸 Orientacyjna cena: <b>{0}</b>',

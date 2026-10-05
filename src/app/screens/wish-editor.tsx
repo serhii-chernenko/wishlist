@@ -12,11 +12,7 @@ import { getCurrencySymbol, type Currency } from '../../shared/money';
 import type { AppTranslator } from '../i18n/i18n';
 import { fieldErrorMessage } from '../i18n/messages';
 import { getFieldErrors, hasErrorCode } from '../logic/errors';
-import {
-    formatIsoDate,
-    getApproximateDraftPrice,
-    getLinkHost
-} from '../logic/format';
+import { getApproximateDraftPrice, getLinkHost } from '../logic/format';
 import {
     formatSourcePrice,
     linkOnlyStart,
@@ -82,6 +78,7 @@ import { ScreenLayout } from '../ui/screen';
 import { TagSkeletons } from '../ui/skeleton';
 import { Tag } from '../ui/tag';
 import { Toggle } from '../ui/toggle';
+import { WishDates } from '../ui/wish-dates';
 import { ErrorState } from '../ui/error-state';
 import { PriorityChoice } from '../ui/priority-choice';
 import {
@@ -1126,19 +1123,11 @@ const WishForm = ({
             </Tag>
             {wish === null ? null : (
                 <div class='editor-footer'>
-                    <p class='editor-dates'>
-                        {LL.editor.createdAt({
-                            date: formatIsoDate(wish.createdAt, locale)
-                        })}
-                        {wish.updatedAt === wish.createdAt ? null : (
-                            <>
-                                <br />
-                                {LL.editor.updatedAt({
-                                    date: formatIsoDate(wish.updatedAt, locale)
-                                })}
-                            </>
-                        )}
-                    </p>
+                    <WishDates
+                        createdAt={wish.createdAt}
+                        updatedAt={wish.updatedAt}
+                        className='editor-dates'
+                    />
                     <button
                         type='button'
                         class='btn danger-button'

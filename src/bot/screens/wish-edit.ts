@@ -152,7 +152,6 @@ const renderEdit = async (req: BotRequest, params: WishEditParams) => {
     updateSession(req, { pendingInput: null });
 
     const html = renderWishHtml(LL, wish, createWishFormatters(req), {
-        audience: 'owner',
         detail: 'full',
         showHidden: true
     });

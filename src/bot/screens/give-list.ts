@@ -67,7 +67,6 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
         const reference = owner === null ? null : getOwnerPublicUsername(owner);
         const html =
             renderWishHtml(LL, wish, createWishFormatters(req), {
-                audience: 'watcher',
                 detail: 'full',
                 showHidden: false
             }) +

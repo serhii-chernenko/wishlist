@@ -1261,48 +1261,24 @@ type RootTranslation = {
 		 */
 		description: RequiredParams<'0'>
 		priority: {
-			low: {
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​Н​а​р​а​з​і​ ​т​р​о​х​и​ ​х​о​ч​у​ ​ц​е​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				owner: string
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​Н​а​р​а​з​і​ ​т​р​о​х​и​ ​х​о​ч​е​ ​ц​е​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				watcher: string
-			}
-			medium: {
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​Н​а​р​а​з​і​ ​х​о​ч​у​ ​ц​е​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				owner: string
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​Н​а​р​а​з​і​ ​х​о​ч​е​ ​ц​е​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				watcher: string
-			}
-			high: {
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​❗​️​ ​<​b​>​Н​а​р​а​з​і​ ​д​у​ж​е​ ​х​о​ч​у​ ​ц​е​!​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				owner: string
-				/**
-				 * 
-			​
-			​<​b​l​o​c​k​q​u​o​t​e​>​❗​️​ ​<​b​>​Н​а​р​а​з​і​ ​д​у​ж​е​ ​х​о​ч​е​ ​ц​е​!​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
-				 */
-				watcher: string
-			}
+			/**
+			 * 
+		​
+		​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​П​р​і​о​р​и​т​е​т​:​ ​н​и​з​ь​к​и​й​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
+			 */
+			low: string
+			/**
+			 * 
+		​
+		​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​П​р​і​о​р​и​т​е​т​:​ ​с​е​р​е​д​н​і​й​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
+			 */
+			medium: string
+			/**
+			 * 
+		​
+		​<​b​l​o​c​k​q​u​o​t​e​>​�​�​ ​<​b​>​П​р​і​о​р​и​т​е​т​:​ ​в​и​с​о​к​и​й​<​/​b​>​<​/​b​l​o​c​k​q​u​o​t​e​>
+			 */
+			high: string
 		}
 		/**
 		 * 
@@ -6248,48 +6224,24 @@ export type TranslationFunctions = {
 		 */
 		description: (arg0: string) => LocalizedString
 		priority: {
-			low: {
-				/**
-				 * 
-		
-			<blockquote>🟢 <b>Наразі трохи хочу це</b></blockquote>
-				 */
-				owner: () => LocalizedString
-				/**
-				 * 
-		
-			<blockquote>🟢 <b>Наразі трохи хоче це</b></blockquote>
-				 */
-				watcher: () => LocalizedString
-			}
-			medium: {
-				/**
-				 * 
-		
-			<blockquote>🟡 <b>Наразі хочу це</b></blockquote>
-				 */
-				owner: () => LocalizedString
-				/**
-				 * 
-		
-			<blockquote>🟡 <b>Наразі хоче це</b></blockquote>
-				 */
-				watcher: () => LocalizedString
-			}
-			high: {
-				/**
-				 * 
-		
-			<blockquote>❗️ <b>Наразі дуже хочу це!</b></blockquote>
-				 */
-				owner: () => LocalizedString
-				/**
-				 * 
-		
-			<blockquote>❗️ <b>Наразі дуже хоче це!</b></blockquote>
-				 */
-				watcher: () => LocalizedString
-			}
+			/**
+			 * 
+	
+		<blockquote>🟢 <b>Пріоритет: низький</b></blockquote>
+			 */
+			low: () => LocalizedString
+			/**
+			 * 
+	
+		<blockquote>🟡 <b>Пріоритет: середній</b></blockquote>
+			 */
+			medium: () => LocalizedString
+			/**
+			 * 
+	
+		<blockquote>🔴 <b>Пріоритет: високий</b></blockquote>
+			 */
+			high: () => LocalizedString
 		}
 		/**
 		 * 

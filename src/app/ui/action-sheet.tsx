@@ -11,6 +11,7 @@ export interface ActionSheetProps {
     title: string;
     subtitle?: string;
     closeLabel: string;
+    scrollable?: boolean;
     onClose: () => void;
     children?: Child;
 }
@@ -20,6 +21,7 @@ export const ActionSheet = ({
     title,
     subtitle,
     closeLabel,
+    scrollable = false,
     onClose,
     children
 }: ActionSheetProps) => {
@@ -51,7 +53,11 @@ export const ActionSheet = ({
     return (
         <dialog
             ref={dialogRef}
-            class='action-sheet'
+            class={
+                scrollable
+                    ? 'action-sheet action-sheet-scrollable'
+                    : 'action-sheet'
+            }
             aria-labelledby={SHEET_TITLE_ID}
             onCancel={(event: Event) => {
                 event.preventDefault();

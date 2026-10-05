@@ -287,7 +287,11 @@ test('gifted wishes follow active ones as compact cards with the gifted band', (
         /<div class="wish-photo wish-photo-placeholder" data-band="Подароване">/
     );
     assert.match(giftedCard, /class="price"/);
-    assert.doesNotMatch(giftedCard, /priority-badge|wish-link|wish-details/);
+    assert.doesNotMatch(giftedCard, /priority-badge|wish-link/);
+    assert.match(
+        giftedCard,
+        /<details class="wish-details"><summary>Детальніше<\/summary><p class="wish-dates">Додано [^<]+<\/p><\/details>/
+    );
     assert.doesNotMatch(html, /Gifted description/);
     assert.doesNotMatch(renderSharePage(buildModel()), /data-band|wish-gifted/);
 });

@@ -205,26 +205,24 @@ export const WishCard = ({
                         {LL.web.wish.link({ host: hostname })}
                     </a>
                 ) : null}
-                {gifted ? null : (
-                    <details class='wish-details'>
-                        <summary>{LL.web.wish.details()}</summary>
-                        {wish.description ? (
-                            <p class='wish-text'>
-                                <InlineContent
-                                    nodes={inlineMarkup(
-                                        cutDescription(wish.description),
-                                        { emphasis: false }
-                                    )}
-                                />
-                            </p>
-                        ) : null}
-                        <p class='wish-dates'>
-                            {created === updated
-                                ? LL.web.wish.created({ date: created })
-                                : LL.web.wish.updated({ created, updated })}
+                <details class='wish-details'>
+                    <summary>{LL.web.wish.details()}</summary>
+                    {!gifted && wish.description ? (
+                        <p class='wish-text'>
+                            <InlineContent
+                                nodes={inlineMarkup(
+                                    cutDescription(wish.description),
+                                    { emphasis: false }
+                                )}
+                            />
                         </p>
-                    </details>
-                )}
+                    ) : null}
+                    <p class='wish-dates'>
+                        {created === updated
+                            ? LL.web.wish.created({ date: created })
+                            : LL.web.wish.updated({ created, updated })}
+                    </p>
+                </details>
             </article>
         </li>
     );

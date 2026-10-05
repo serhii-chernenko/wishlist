@@ -12,12 +12,9 @@ export interface WishMarkupFormatters {
     formatDate(value: Date): string;
 }
 
-export type WishMarkupAudience = 'owner' | 'watcher';
-
 export type WishMarkupDetail = 'full' | 'summary';
 
 export interface WishMarkupOptions {
-    audience: WishMarkupAudience;
     detail: WishMarkupDetail;
     showHidden: boolean;
 }
@@ -34,18 +31,14 @@ export type WishMarkupSource = Pick<
     | 'updatedAt'
 >;
 
-const getPriorityBlock = (
-    LL: TranslationFunctions,
-    level: number,
-    audience: WishMarkupAudience
-) => {
+const getPriorityBlock = (LL: TranslationFunctions, level: number) => {
     const priority = toWishPriority(level);
 
     if (priority === 'none') {
         return '';
     }
 
-    return LL.markup.priority[priority][audience]();
+    return LL.markup.priority[priority]();
 };
 
 export const renderWishHtml = (
@@ -79,7 +72,7 @@ export const renderWishHtml = (
         return title + price + dateLines + hidden;
     }
 
-    const priority = getPriorityBlock(LL, wish.priorityLevel, options.audience);
+    const priority = getPriorityBlock(LL, wish.priorityLevel);
     const description = wish.description
         ? LL.markup.description(escapeHtml(cutDescription(wish.description)))
         : '';

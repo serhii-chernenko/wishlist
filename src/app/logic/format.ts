@@ -26,6 +26,17 @@ export const formatIsoDate = (value: string, locale: AppLocale) => {
     return Number.isNaN(date.getTime()) ? '' : formatDate(date, locale);
 };
 
+export const describeWishDates = (
+    createdAt: string,
+    updatedAt: string,
+    locale: AppLocale
+) => {
+    const created = formatIsoDate(createdAt, locale);
+    const updated = formatIsoDate(updatedAt, locale);
+
+    return { created, updated: updated === created ? '' : updated };
+};
+
 const DOTTED_DATE_PATTERN = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
 const NOON_UTC_HOUR = 12;
 

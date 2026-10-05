@@ -41,6 +41,7 @@ import { ScreenLayout } from '../ui/screen';
 import { Tag } from '../ui/tag';
 import { WishGrid, WishTag } from '../ui/wish-tag';
 import { refreshGives } from './gives';
+import { WishDetailsSheet } from './wish-details-sheet';
 
 interface ThirdListData {
     items: ThirdWishDto[];
@@ -199,6 +200,7 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
     const publicId = source.kind === 'share' ? source.publicId : null;
     const [filter, setFilter] = useState<WishFilterValue | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [detailsId, setDetailsId] = useState<number | null>(null);
     const [pendingGives] = useState(() => new Set<number>());
 
     const shared = useAppResource(
@@ -429,15 +431,49 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
         )
     ];
 
+    const renderGiveButton = (
+        wish: ThirdWishDto | SharedWishDto,
+        afterToggle?: () => void
+    ) => {
+        if (!('givers' in wish) || wish.gifted === true) {
+            return undefined;
+        }
+
+        const action = nextGiveAction(wish.givers);
+        const label = action === 'take' ? LL.third.take() : LL.third.give();
+
+        return (
+            <button
+                type='button'
+                class={
+                    action === 'take'
+                        ? 'btn third-give'
+                        : 'btn btn-primary third-give'
+                }
+                aria-label={`${label}: ${wish.title}`}
+                onClick={() => {
+                    void toggleGive(wish);
+                    afterToggle?.();
+                }}
+            >
+                {label}
+            </button>
+        );
+    };
+
     const renderWish = (wish: ThirdWishDto | SharedWishDto, index: number) => {
         const givers =
             'givers' in wish && wish.gifted !== true ? wish.givers : null;
+        const giveButton = renderGiveButton(wish);
 
         return (
             <WishTag
                 key={wish.id}
                 wish={wish}
                 index={index}
+                onOpen={() => {
+                    setDetailsId(wish.id);
+                }}
                 badges={
                     <>
                         {wish.description === null ? null : (
@@ -452,33 +488,21 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                         )}
                     </>
                 }
-                actions={
-                    givers === null || !('givers' in wish) ? undefined : (
-                        <button
-                            type='button'
-                            class={
-                                nextGiveAction(givers) === 'take'
-                                    ? 'btn third-give'
-                                    : 'btn btn-primary third-give'
-                            }
-                            aria-label={`${
-                                nextGiveAction(givers) === 'take'
-                                    ? LL.third.take()
-                                    : LL.third.give()
-                            }: ${wish.title}`}
-                            onClick={() => {
-                                void toggleGive(wish);
-                            }}
-                        >
-                            {nextGiveAction(givers) === 'take'
-                                ? LL.third.take()
-                                : LL.third.give()}
-                        </button>
-                    )
-                }
+                actions={giveButton}
             />
         );
     };
+
+    const closeDetails = () => {
+        setDetailsId(null);
+    };
+
+    const detailsWish =
+        detailsId === null
+            ? undefined
+            : [...visibleItems, ...giftedItems].find(wish => {
+                  return wish.id === detailsId;
+              });
 
     const listFailure = viewOnly ? null : list.failure;
     const shownGifted = nextOffset === null ? giftedItems : NO_GIFTED;
@@ -608,6 +632,13 @@ export const ThirdListScreen = ({ route }: ScreenProps<'thirdList'>) => {
                         </button>
                     )}
                 </>
+            )}
+            {detailsWish === undefined ? null : (
+                <WishDetailsSheet
+                    wish={detailsWish}
+                    onClose={closeDetails}
+                    action={renderGiveButton(detailsWish, closeDetails)}
+                />
             )}
         </ScreenLayout>
     );

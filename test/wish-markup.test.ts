@@ -39,7 +39,6 @@ const createWish = (
 };
 
 const ownerFull = {
-    audience: 'owner',
     detail: 'full',
     showHidden: true
 } as const;
@@ -86,7 +85,7 @@ test('full owner markup lists title, priority, description, price and dates', ()
         html,
         [
             '❤️ <b>Кавоварка</b>',
-            '\n\n<blockquote>❗️ <b>Наразі дуже хочу це!</b></blockquote>',
+            '\n\n<blockquote>🔴 <b>Пріоритет: високий</b></blockquote>',
             '\n\n✏️ Опис:\nОпис',
             '\n\n💸 Орієнтовна вартість: <b>2500 ₴</b>',
             '\n\n🗓 <i>Створено: 2026-01-02</i>',
@@ -95,28 +94,12 @@ test('full owner markup lists title, priority, description, price and dates', ()
     );
 });
 
-test('watcher markup uses the watcher priority wording', () => {
-    const html = renderWishHtml(
-        LL,
-        createWish({ priorityLevel: 3 }),
-        formatters,
-        {
-            audience: 'watcher',
-            detail: 'full',
-            showHidden: false
-        }
-    );
-
-    assert.ok(html.includes('Наразі дуже хоче це!'));
-    assert.equal(html.includes('Наразі дуже хочу це!'), false);
-});
-
 test('every priority level except none adds its own priority block', () => {
     const expectedByLevel: Record<number, string | null> = {
         0: null,
-        1: 'Наразі трохи хочу це',
-        2: 'Наразі хочу це',
-        3: 'Наразі дуже хочу це!'
+        1: 'Пріоритет: низький',
+        2: 'Пріоритет: середній',
+        3: 'Пріоритет: високий'
     };
 
     for (const [level, expected] of Object.entries(expectedByLevel)) {
@@ -189,7 +172,7 @@ test('summary markup shows title, price and one date line only', () => {
             updatedAt: new Date('2026-02-03T10:00:00Z')
         }),
         formatters,
-        { audience: 'owner', detail: 'summary', showHidden: true }
+        { detail: 'summary', showHidden: true }
     );
 
     assert.equal(
