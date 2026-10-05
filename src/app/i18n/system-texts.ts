@@ -3,7 +3,6 @@ import type { AppDictionary, AppLocale } from '../../shared/app-api';
 export type SystemNoticeKind =
     | 'outside'
     | 'expired'
-    | 'unavailable'
     | 'previewOnly'
     | 'unsupported'
     | 'bootError';
@@ -21,11 +20,6 @@ export const SYSTEM_TEXTS = {
             title: 'Сесія застаріла',
             text: 'Застосунок був відкритий надто довго. Закрий його й відкрий знову.',
             cta: 'Закрити застосунок'
-        },
-        unavailable: {
-            title: 'Застосунок тимчасово недоступний',
-            text: 'Ми вже працюємо над цим. Поки що все можна зробити в чаті з ботом.',
-            cta: 'Відкрити бота'
         },
         previewOnly: {
             title: 'Тестова версія',
@@ -54,11 +48,6 @@ export const SYSTEM_TEXTS = {
             text: 'The app has been open for too long. Close it and open it again.',
             cta: 'Close app'
         },
-        unavailable: {
-            title: 'The app is temporarily unavailable',
-            text: 'We’re on it. In the meantime, you can use the bot in chat.',
-            cta: 'Open the bot'
-        },
         previewOnly: {
             title: 'Test version',
             text: 'This version of the app is open to the author only. Please use the main bot.',
@@ -85,11 +74,6 @@ export const SYSTEM_TEXTS = {
             title: 'Sesja wygasła',
             text: 'Aplikacja była otwarta zbyt długo. Zamknij ją i otwórz ponownie.',
             cta: 'Zamknij aplikację'
-        },
-        unavailable: {
-            title: 'Aplikacja jest chwilowo niedostępna',
-            text: 'Już nad tym pracujemy. Tymczasem wszystko możesz zrobić w czacie z botem.',
-            cta: 'Otwórz bota'
         },
         previewOnly: {
             title: 'Wersja testowa',

@@ -31,7 +31,6 @@ export type ApiRequestOptions<Key extends AppApiRouteKey> = {
     body?: AppApiEndpoints[Key]['body'];
     signal?: AbortSignal;
     keepalive?: boolean;
-    handleDisabledLocally?: boolean;
 };
 
 export class ApiRequestError extends Error {
@@ -172,12 +171,7 @@ export const createApiClient = ({
 
             if (delay === null) {
                 const screen = toSystemScreen(failure);
-                const handledLocally =
-                    options.handleDisabledLocally === true &&
-                    failure.kind === 'api' &&
-                    failure.code === 'disabled';
-
-                if (screen !== null && !handledLocally) {
+                if (screen !== null) {
                     onSystemFailure?.(screen, failure);
                 }
 

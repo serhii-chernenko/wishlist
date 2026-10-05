@@ -10,7 +10,6 @@ import type { WorkerApp } from '../app';
 import {
     getTelegramWebhookPath,
     hasRequiredWorkerConfiguration,
-    isListImportEnabled,
     type WorkerBindings
 } from '../env';
 import { readWorkerExchangeRates } from '../exchange-rates';
@@ -368,8 +367,7 @@ export const handleUpdateWithWishlistBot = async (
     linkImportServices?: LinkImportServiceSet,
     listImportService?: ListImportService
 ) => {
-    const linkImport = toBotLinkImport(env, linkImportServices);
-    const listImport = isListImportEnabled(env) ? listImportService : undefined;
+    const linkImport = toBotLinkImport(linkImportServices);
     const telemetry: WishlistBotTelemetry = {
         botActionCompleted(input) {
             emitTelemetryEvent(env, context, {
@@ -409,7 +407,9 @@ export const handleUpdateWithWishlistBot = async (
     const bot = createBot(env, {
         telemetry,
         ...(linkImport === undefined ? {} : { linkImport }),
-        ...(listImport === undefined ? {} : { listImport }),
+        ...(listImportService === undefined
+            ? {}
+            : { listImport: listImportService }),
         readExchangeRates: repository => {
             return readWorkerExchangeRates(env, context, repository);
         },

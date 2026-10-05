@@ -127,8 +127,7 @@ describe('image proxy', () => {
         return {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
-            BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true'
+            BOT_ENVIRONMENT: 'production'
         } as unknown as WorkerBindings;
     };
 

@@ -40,18 +40,10 @@ export const webAppButton = (
     return { text, web_app: { url } };
 };
 
-export const isMiniAppEnabled = (req: Pick<BotRequest, 'env'>) => {
-    return req.env.MINI_APP_ENABLED === 'true';
-};
-
 export const appEntryButton = (
     req: Pick<BotRequest, 'env' | 'publicOrigin' | 'LL'>,
     start?: string
-): InlineKeyboardButton.WebAppButton | null => {
-    if (!isMiniAppEnabled(req)) {
-        return null;
-    }
-
+): InlineKeyboardButton.WebAppButton => {
     const origin = resolvePublicOrigin(
         req.publicOrigin,
         req.env.BOT_ENVIRONMENT

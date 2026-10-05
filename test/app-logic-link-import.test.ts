@@ -197,10 +197,6 @@ test('request failures are told apart by what the screen does next', () => {
         'invalidUrl'
     );
     assert.equal(
-        classifyImportFailure({ kind: 'api', status: 503, code: 'disabled' }),
-        'disabled'
-    );
-    assert.equal(
         classifyImportFailure({
             kind: 'api',
             status: 429,

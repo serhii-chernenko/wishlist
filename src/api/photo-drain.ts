@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
 
-import { isListImportEnabled } from '../worker/env';
 import { kickListImport } from '../worker/list-import';
 import { getListImportDeps, runInBackground, type ApiContext } from './context';
 
@@ -22,7 +21,7 @@ const kickWhenPhotosPending = async (c: ApiContext, ownerId: number) => {
  * drain lease, so repeated loads inside the interval do nothing.
  */
 export const kickPhotoDrainOnLoad = async (c: ApiContext, ownerId: number) => {
-    if (c.var.deps.listImport === undefined || !isListImportEnabled(c.env)) {
+    if (c.var.deps.listImport === undefined) {
         return;
     }
 

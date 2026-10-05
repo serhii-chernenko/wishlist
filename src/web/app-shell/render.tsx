@@ -1,4 +1,3 @@
-import { HeroTag } from '../share/components/hero';
 import type { SharePageLanguage } from '../share/public-id';
 import { FONT_PRELOAD_PATH } from '../share/components/layout';
 
@@ -18,39 +17,12 @@ const NOSCRIPT_TEXTS = {
     pl: 'Aplikacja wymaga JavaScriptu. Włącz go albo otwórz bota w Telegramie.'
 } as const satisfies Record<SharePageLanguage, string>;
 
-const UNAVAILABLE_TEXTS = {
-    uk: {
-        title: 'Застосунок тимчасово недоступний',
-        text: 'Ми скоро повернемо його. Лист бажань усе ще працює в чаті з ботом.',
-        action: 'Відкрити бота'
-    },
-    en: {
-        title: 'The app is temporarily unavailable',
-        text: 'We’re on it. In the meantime, you can use the bot in chat.',
-        action: 'Open the bot'
-    },
-    pl: {
-        title: 'Aplikacja jest chwilowo niedostępna',
-        text: 'Już nad tym pracujemy. Tymczasem wszystko możesz zrobić w czacie z botem.',
-        action: 'Otwórz bota'
-    }
-} as const satisfies Record<
-    SharePageLanguage,
-    { title: string; text: string; action: string }
->;
-
 const NOSCRIPT_LANGUAGES = ['uk', 'en', 'pl'] as const;
 
 export interface AppShellModel {
     assetVersion: string;
     botUrl: string;
     environment: string;
-}
-
-export interface AppUnavailableModel {
-    language: SharePageLanguage;
-    assetVersion: string;
-    botUrl: string;
 }
 
 const buildVersionedPath = (path: string, assetVersion: string) => {
@@ -134,40 +106,6 @@ const AppShell = ({ assetVersion, botUrl, environment }: AppShellModel) => {
     );
 };
 
-const AppUnavailable = ({
-    language,
-    assetVersion,
-    botUrl
-}: AppUnavailableModel) => {
-    const texts = UNAVAILABLE_TEXTS[language];
-
-    return (
-        <html lang={language} data-theme={DEFAULT_THEME}>
-            <AppHead assetVersion={assetVersion} />
-            <body>
-                <main class='screen'>
-                    <HeroTag
-                        heading={<span class='hero-name'>{texts.title}</span>}
-                    >
-                        <p class='hero-meta'>{texts.text}</p>
-                        <a
-                            class='cta hero-action'
-                            href={botUrl}
-                            rel='noopener noreferrer'
-                        >
-                            {texts.action}
-                        </a>
-                    </HeroTag>
-                </main>
-            </body>
-        </html>
-    );
-};
-
 export const renderAppShell = (model: AppShellModel) => {
     return `${DOCTYPE}${(<AppShell {...model} />).toString()}`;
-};
-
-export const renderAppUnavailable = (model: AppUnavailableModel) => {
-    return `${DOCTYPE}${(<AppUnavailable {...model} />).toString()}`;
 };

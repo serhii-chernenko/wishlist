@@ -172,7 +172,6 @@ describe('Priority levels in the Mini App API', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             ADMIN_ID: '1',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,

@@ -19,7 +19,6 @@ import {
     suggestListImportVisibility,
     type ParsedListUrl
 } from '../../shared/list-import-url';
-import { isListImportEnabled } from '../../worker/env';
 import { kickListImport } from '../../worker/list-import';
 import {
     callbackButton,
@@ -94,9 +93,7 @@ const wait = (milliseconds: number) => {
 export const isListImportAvailable = (
     req: Pick<BotRequest, 'env' | 'services'>
 ) => {
-    return (
-        req.services.listImport !== undefined && isListImportEnabled(req.env)
-    );
+    return req.services.listImport !== undefined;
 };
 
 const getAvailableService = (req: BotRequest) => {

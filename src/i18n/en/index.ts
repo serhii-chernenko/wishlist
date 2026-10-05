@@ -864,7 +864,6 @@ const en: Translation = {
                 'Too many actions in a row. Try again in {seconds} {{seconds:second|seconds}}.',
             upstream: 'Telegram isn’t responding right now. Try again later.',
             notDelivered: 'Couldn’t send your feedback. Try again later.',
-            disabled: 'The app is temporarily unavailable.',
             internal: 'Something went wrong on our end. Try again.',
             notImplemented: 'This feature isn’t available yet.'
         },
@@ -1241,9 +1240,7 @@ const en: Translation = {
                 timeout:
                     'The page is taking too long to respond. Fill in the wish manually.',
                 rateLimited:
-                    'Too many requests to this store. Fill in the wish manually or try again later.',
-                disabled:
-                    'Filling in from a link isn’t available right now. Fill in the wish manually.'
+                    'Too many requests to this store. Fill in the wish manually or try again later.'
             }
         },
         listImport: {

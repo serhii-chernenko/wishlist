@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
+import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { getRuntimeCrypto, sha256Hex } from '../../src/api/auth/crypto';
 import { getMessages } from '../../src/bot/content/messages';
@@ -229,22 +229,6 @@ describe('Bot parity with the Mini App', () => {
     });
 
     describe('third-party list shows active wishes only', () => {
-        let miniAppEnabledBefore: string | undefined;
-
-        const openMiniApp = () => {
-            Object.assign(webhook.d1.env, { MINI_APP_ENABLED: 'true' });
-        };
-
-        beforeEach(() => {
-            miniAppEnabledBefore = webhook.d1.env.MINI_APP_ENABLED;
-        });
-
-        afterEach(() => {
-            Object.assign(webhook.d1.env, {
-                MINI_APP_ENABLED: miniAppEnabledBefore
-            });
-        });
-
         const webAppUrlsOf = (message: SentMessage) => {
             const rows = (message.reply_markup?.inline_keyboard ??
                 []) as unknown as { web_app?: { url: string } }[][];
@@ -286,8 +270,6 @@ describe('Bot parity with the Mini App', () => {
         });
 
         it('says there are no active wishes instead of an empty list when only gifted wishes are visible', async () => {
-            openMiniApp();
-
             const owner = await webhook.registerUser(alice, {
                 showGifted: true
             });
@@ -333,8 +315,6 @@ describe('Bot parity with the Mini App', () => {
         });
 
         it('opens the app search when the owner has no share link', async () => {
-            openMiniApp();
-
             const owner = await webhook.registerUser(alice, {
                 showGifted: true
             });

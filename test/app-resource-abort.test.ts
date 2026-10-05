@@ -84,28 +84,3 @@ test('client events are sent with keepalive, other calls without', async () => {
 
     assert.deepEqual(seen, [true, undefined]);
 });
-
-test('a disabled answer reaches the system screen unless the caller handles it', async () => {
-    const failures: string[] = [];
-    const client = createApiClient({
-        initData: 'x',
-        onSystemFailure: screen => {
-            failures.push(screen);
-        },
-        fetchImpl: () => {
-            return Promise.resolve(
-                Response.json({ error: { code: 'disabled' } }, { status: 503 })
-            );
-        }
-    });
-
-    await assert.rejects(client.request('importLink', { body: { url: 'x' } }));
-    await assert.rejects(
-        client.request('importLink', {
-            body: { url: 'x' },
-            handleDisabledLocally: true
-        })
-    );
-
-    assert.deepEqual(failures, ['unavailable']);
-});

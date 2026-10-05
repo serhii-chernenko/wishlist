@@ -55,7 +55,6 @@ describe('Mini App API auth and bootstrap', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             ADMIN_ID: String(ADMIN_TELEGRAM_ID),
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
@@ -336,22 +335,6 @@ describe('Mini App API auth and bootstrap', () => {
 
         assert.equal(limited.status, 200);
         assert.equal(eventsNamed('app_rate_limiter_missing').length, 0);
-    });
-
-    it('answers 503 disabled for every API path when the kill switch is off', async () => {
-        const env = buildEnv({ MINI_APP_ENABLED: 'false' });
-
-        for (const path of ['/bootstrap', '/wishes', '/does-not-exist']) {
-            const response = await request(
-                path,
-                { initData: signedFor() },
-                env
-            );
-
-            assert.equal(response.status, 503, path);
-            assert.deepEqual(await readError(response), { code: 'disabled' });
-            assert.equal(response.headers.get('cache-control'), 'no-store');
-        }
     });
 
     it('bootstraps a guest without creating anything', async () => {

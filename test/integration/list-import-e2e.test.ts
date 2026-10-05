@@ -355,8 +355,6 @@ describe('list import end to end in the Mini App', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'local',
-            MINI_APP_ENABLED: 'true',
-            WISHLIST_IMPORT_ENABLED: 'true',
             ADMIN_ID: String(OWNER.id),
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
@@ -481,13 +479,6 @@ describe('list import end to end in the Mini App', () => {
     });
 
     it('previews, commits, polls until done, drains the photos and creates nothing on a re-run', async () => {
-        const bootstrap = await callApi<{
-            config: { listImportEnabled: boolean };
-        }>('/bootstrap', { method: 'GET' });
-
-        assert.equal(bootstrap.status, 200, JSON.stringify(bootstrap.body));
-        assert.equal(bootstrap.body.config.listImportEnabled, true);
-
         const preview = await callApi<ListImportPreviewDto>(
             '/list-import/preview',
             { body: { url: PROFILE_URL } }
@@ -597,8 +588,7 @@ describe('list import end to end in the bot', () => {
         const env = {
             ...createWorkerEnv(webhook.d1, {
                 BOT_TOKEN,
-                BOT_ENVIRONMENT: 'preview',
-                WISHLIST_IMPORT_ENABLED: 'true'
+                BOT_ENVIRONMENT: 'preview'
             }),
             APP_IMPORT_LIMITER: undefined,
             LINK_HOST_LIMITER: undefined

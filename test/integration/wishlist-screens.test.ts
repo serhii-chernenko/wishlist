@@ -1215,7 +1215,7 @@ describe('wishlist screens on D1', () => {
     });
 
     describe('wish add and edit', () => {
-        it('creates a wish from the title and opens the ten-action edit menu', async () => {
+        it('creates a wish from the title and opens the edit menu with the app button', async () => {
             const owner = await createUser();
             const { request, events, savedSessions } = createRequest(owner);
 
@@ -1232,7 +1232,7 @@ describe('wishlist screens on D1', () => {
 
             const menu = lastText(events);
 
-            assert.equal(buttonsOf(menu.keyboard).length, 10);
+            assert.equal(buttonsOf(menu.keyboard).length, 11);
             assert.equal(savedSessions.at(-1)?.pendingInput, null);
 
             const stored = await harness.env.DB.prepare(

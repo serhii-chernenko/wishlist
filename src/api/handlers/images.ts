@@ -21,7 +21,6 @@ import {
     type AppUploadContentType,
     type OwnWishDto
 } from '../../shared/app-api';
-import { isLinkImportEnabled } from '../../worker/env';
 import {
     appPhotoUploadedEvent,
     type AppPhotoUploadResult,
@@ -338,10 +337,6 @@ const requireImportClaims = async (
 };
 
 export const importWishImage: ApiHandler = async c => {
-    if (!isLinkImportEnabled(c.env)) {
-        throw new ApiError('disabled');
-    }
-
     const services = requireLinkImportServices(c);
     const { user, wishId, wish } = await requireOwnedWish(c);
 

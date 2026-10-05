@@ -259,8 +259,6 @@ describe('link import end to end in the Mini App', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
-            LINK_IMPORT_ENABLED: 'true',
             ADMIN_ID: '1',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
@@ -483,7 +481,6 @@ describe('link import end to end in the bot', () => {
             ...webhook.d1.env,
             BOT_TOKEN,
             BOT_ENVIRONMENT: 'local',
-            LINK_IMPORT_ENABLED: 'true',
             APP_IMPORT_LIMITER: undefined,
             LINK_HOST_LIMITER: undefined
         } as unknown as WorkerBindings;

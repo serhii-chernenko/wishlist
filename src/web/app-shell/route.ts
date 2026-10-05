@@ -2,20 +2,17 @@ import type { Context } from 'hono';
 
 import type { WorkerApp } from '../../worker/app';
 import type { WorkerBindings } from '../../worker/env';
-import { matchAcceptLanguage } from '../share/accept-language';
 import { etagMatches, getDeployId } from '../share/fingerprint';
-import type { SharePageLanguage } from '../share/public-id';
 import {
     APP_REDIRECT_SECURITY_HEADERS,
     APP_SHELL_SECURITY_HEADERS
 } from './csp';
-import { renderAppShell, renderAppUnavailable } from './render';
+import { renderAppShell } from './render';
 
 type AppShellContext = Context<{ Bindings: WorkerBindings }>;
 
 const APP_PATH = '/app';
 const APP_TRAILING_SLASH_PATH = '/app/';
-const DEFAULT_LANGUAGE: SharePageLanguage = 'uk';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const ETAG_BYTES = 16;
 const REDIRECT_MAX_AGE_SECONDS = 86_400;
@@ -26,16 +23,10 @@ const bytesToHex = (bytes: Uint8Array) => {
     }).join('');
 };
 
-const computeShellFingerprint = async (
-    deployId: string,
-    enabled: boolean,
-    language: SharePageLanguage | null
-) => {
+const computeShellFingerprint = async (deployId: string) => {
     const digest = await crypto.subtle.digest(
         'SHA-256',
-        new TextEncoder().encode(
-            JSON.stringify(['app-shell', deployId, enabled, language])
-        )
+        new TextEncoder().encode(JSON.stringify(['app-shell', deployId]))
     );
 
     return bytesToHex(new Uint8Array(digest).slice(0, ETAG_BYTES));
@@ -50,23 +41,9 @@ const buildShellHeaders = (fingerprint: string) => {
 };
 
 const serveAppShell = async (c: AppShellContext) => {
-    const enabled = c.env.MINI_APP_ENABLED === 'true';
     const deployId = getDeployId(c.env);
-    const language = enabled
-        ? null
-        : (matchAcceptLanguage(c.req.header('Accept-Language')) ??
-          DEFAULT_LANGUAGE);
-    const fingerprint = await computeShellFingerprint(
-        deployId,
-        enabled,
-        language
-    );
+    const fingerprint = await computeShellFingerprint(deployId);
     const headers = buildShellHeaders(fingerprint);
-
-    if (language !== null) {
-        headers.set('Content-Language', language);
-        headers.set('Vary', 'Accept-Language');
-    }
 
     if (etagMatches(c.req.header('If-None-Match'), fingerprint)) {
         return new Response(null, { status: 304, headers });
@@ -74,18 +51,11 @@ const serveAppShell = async (c: AppShellContext) => {
 
     headers.set('Content-Type', HTML_CONTENT_TYPE);
 
-    const html =
-        language === null
-            ? renderAppShell({
-                  assetVersion: deployId,
-                  botUrl: c.env.WISHLIST_TG_URL,
-                  environment: c.env.BOT_ENVIRONMENT
-              })
-            : renderAppUnavailable({
-                  language,
-                  assetVersion: deployId,
-                  botUrl: c.env.WISHLIST_TG_URL
-              });
+    const html = renderAppShell({
+        assetVersion: deployId,
+        botUrl: c.env.WISHLIST_TG_URL,
+        environment: c.env.BOT_ENVIRONMENT
+    });
 
     return new Response(html, { status: 200, headers });
 };

@@ -14,7 +14,6 @@ import {
     type LinkImportDto,
     type LinkImportImageDto
 } from '../../shared/app-api';
-import { isLinkImportEnabled } from '../../worker/env';
 import { linkImportCompletedEvent } from '../../worker/telemetry';
 import {
     emitApiTelemetry,
@@ -28,7 +27,6 @@ import {
     type ApiHandler,
     type LinkImportServices
 } from '../context';
-import { ApiError } from '../errors';
 import { createBodyReader, readJsonBody, validationError } from '../validate';
 
 const readLinkInput = async (c: ApiContext) => {
@@ -172,10 +170,6 @@ const toImportableImages = (result: LinkImportResult) => {
 };
 
 export const importLink: ApiHandler = async c => {
-    if (!isLinkImportEnabled(c.env)) {
-        throw new ApiError('disabled');
-    }
-
     const services = requireLinkImportServices(c);
     const user = requireUser(c);
     const link = await readLinkInput(c);

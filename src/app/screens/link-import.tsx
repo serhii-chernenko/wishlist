@@ -87,8 +87,7 @@ export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
         try {
             const result = await api.request('importLink', {
                 body: { url: importTarget.url },
-                signal: controller.signal,
-                handleDisabledLocally: true
+                signal: controller.signal
             });
 
             if (!lifecycle.alive) {
@@ -122,9 +121,7 @@ export const LinkImportScreen = (_props: ScreenProps<'linkImport'>) => {
 
             haptics.error();
 
-            if (kind === 'disabled') {
-                openLinkOnly(importTarget.url, 'disabled');
-            } else if (kind === 'rateLimited') {
+            if (kind === 'rateLimited') {
                 openLinkOnly(importTarget.url, 'rateLimited');
             } else {
                 setLoading(null);
