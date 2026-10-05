@@ -16,6 +16,7 @@ import {
     ACCOUNT_SUBDOMAIN,
     callTelegramApi,
     formatTelegramWebhookInfo,
+    MENU_BUTTON_TEXT,
     parsePreviewBaseUrl,
     readConfiguredWebhookOrigin,
     readWebhookInfo,
@@ -54,7 +55,6 @@ const GH_PAGE_SIZE = 100;
 const MAX_PULL_REQUESTS_INSPECTED = 3;
 const SMOKE_COMMAND_TEXT = '/start';
 const STATUS_PATH = '/status';
-const PREVIEW_MENU_BUTTON_TEXT = 'App';
 const PREVIEW_ENVIRONMENT_COMMANDS = ['wait', 'point', 'smoke', 'reset'];
 const buildCheckNamePattern = /workers builds/i;
 const previewUrlHeaderPattern = /^### Preview URL:\s*(\S+)/m;
@@ -1124,7 +1124,7 @@ export const pointPreviewWebhook = async (
 
     await setAdminMenuButton(dependencies, adminChatId, {
         type: 'web_app',
-        text: PREVIEW_MENU_BUTTON_TEXT,
+        text: MENU_BUTTON_TEXT,
         web_app: { url: buildAppUrl(origin) }
     });
 

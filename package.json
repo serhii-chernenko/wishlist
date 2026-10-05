@@ -48,6 +48,8 @@
         "telegram:webhook:delete:preview": "tsx scripts/telegram/webhook.ts delete preview",
         "telegram:commands:set:prod": "tsx scripts/telegram/webhook.ts commands production",
         "telegram:commands:set:preview": "tsx scripts/telegram/webhook.ts commands preview",
+        "telegram:menu:set:prod": "tsx scripts/telegram/webhook.ts menu production",
+        "telegram:menu:set:preview": "tsx scripts/telegram/webhook.ts menu preview",
         "preview:url": "tsx scripts/telegram/preview.ts url",
         "preview:wait": "tsx scripts/telegram/preview.ts wait",
         "preview:point": "tsx scripts/telegram/preview.ts point",

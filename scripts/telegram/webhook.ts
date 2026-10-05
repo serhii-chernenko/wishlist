@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { buildAppUrl } from '../../src/shared/app-links';
+
 import {
     loadOptionalEnvFile,
     createWebhookUrl,
@@ -13,7 +15,7 @@ import {
     runLocalCommand
 } from './preview-environment';
 
-type WebhookAction = 'set' | 'info' | 'delete' | 'commands';
+type WebhookAction = 'set' | 'info' | 'delete' | 'commands' | 'menu';
 type EnvTarget = 'local' | 'production' | 'preview';
 
 export const TELEGRAM_API_MAX_RESPONSE_BYTES = 64 * 1024;
@@ -65,13 +67,14 @@ const parseAction = (value: string | undefined): WebhookAction => {
         value === 'set' ||
         value === 'info' ||
         value === 'delete' ||
-        value === 'commands'
+        value === 'commands' ||
+        value === 'menu'
     ) {
         return value;
     }
 
     throw new Error(
-        'Webhook action must be one of: set, info, delete, commands'
+        'Webhook action must be one of: set, info, delete, commands, menu'
     );
 };
 
@@ -93,6 +96,7 @@ export const ALLOWED_UPDATES = [
 export const DEFAULT_MAX_CONNECTIONS = 1;
 export const MAX_CONNECTIONS_LIMIT = 100;
 export const BOT_COMMAND_NAMES = ['start', 'lang', 'releases', 'app'] as const;
+export const MENU_BUTTON_TEXT = 'App';
 
 const dropPendingUpdatesFlagPrefix = '--drop-pending-updates=';
 const maxConnectionsFlagPrefix = '--max-connections=';
@@ -212,11 +216,17 @@ export const parseWebhookArguments = (
         maxConnectionsValue === undefined
             ? {}
             : { maxConnections: parseMaxConnections(maxConnectionsValue) };
-    const dropPendingUpdates = parseDropPendingUpdates(
-        action,
-        target,
-        remainingFlags
-    );
+
+    if (action === 'menu' && remainingFlags.length > 0) {
+        throw new Error(
+            'Webhook menu accepts only --url for the preview target'
+        );
+    }
+
+    const dropPendingUpdates =
+        action === 'menu'
+            ? undefined
+            : parseDropPendingUpdates(action, target, remainingFlags);
 
     if (target !== 'preview') {
         if (baseUrlValue !== undefined) {
@@ -646,6 +656,36 @@ export const setTelegramCommands = async (
     }
 };
 
+export const createMenuButtonParameters = (baseUrl: string) => {
+    const parameters = new URLSearchParams();
+
+    parameters.set(
+        'menu_button',
+        JSON.stringify({
+            type: 'web_app',
+            text: MENU_BUTTON_TEXT,
+            web_app: { url: buildAppUrl(baseUrl) }
+        })
+    );
+
+    return parameters;
+};
+
+export const setTelegramMenuButton = async (
+    baseUrl: string | undefined,
+    options: TelegramApiCallOptions = {}
+) => {
+    const appBaseUrl = baseUrl ?? requireEnv('WORKER_BASE_URL');
+
+    await callTelegramApi(
+        'setChatMenuButton',
+        createMenuButtonParameters(appBaseUrl),
+        options
+    );
+
+    return buildAppUrl(appBaseUrl);
+};
+
 export interface WebhookRunDependencies {
     loadPreviewEnvironment: () => Promise<unknown>;
     loadOptionalEnvFile: (target: 'local' | 'production') => unknown;
@@ -680,6 +720,11 @@ export const runWebhookCommand = async (
         )();
 
         await setTelegramCommands(commandSets, dependencies.telegram);
+        return;
+    }
+
+    if (action === 'menu') {
+        await setTelegramMenuButton(baseUrl, dependencies.telegram);
         return;
     }
 
