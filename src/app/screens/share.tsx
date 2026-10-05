@@ -106,7 +106,7 @@ const DetailsNoticeView = ({ notice }: { notice: DetailsNotice }) => {
             {target === null ? null : (
                 <button
                     type='button'
-                    class='text-button'
+                    class='btn btn-link btn-accent text-button'
                     onClick={() => {
                         haptics.selection();
                         void nav.navigateTo(target.screen);
@@ -618,7 +618,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                     <div class='share-web-actions'>
                                         <button
                                             type='button'
-                                            class='text-button'
+                                            class='btn btn-link btn-accent text-button'
                                             onClick={() => {
                                                 void copyLink(url);
                                             }}
@@ -627,7 +627,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                         </button>
                                         <button
                                             type='button'
-                                            class='text-button'
+                                            class='btn btn-link btn-accent text-button'
                                             onClick={() => {
                                                 openLink(url);
                                             }}

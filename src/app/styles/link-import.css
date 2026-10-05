@@ -51,8 +51,4 @@
         display: flex;
         justify-content: flex-start;
     }
-
-    .link-import-actions .text-button {
-        padding-inline: 0;
-    }
 }

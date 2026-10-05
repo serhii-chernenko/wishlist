@@ -324,20 +324,6 @@
         max-width: var(--measure);
     }
 
-    .back-link {
-        justify-self: start;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        min-height: var(--tap-size);
-        padding-inline: 0.25rem 0.75rem;
-        font-weight: 600;
-        color: var(--heart-ink);
-        background: none;
-        border: 0;
-        cursor: pointer;
-    }
-
     .back-link::before {
         content: '';
         width: 0.5rem;
@@ -377,28 +363,6 @@
 
     .field-label {
         font-weight: 600;
-    }
-
-    .field-control {
-        width: 100%;
-        min-height: var(--tap-size);
-        font-size: 1rem;
-    }
-
-    .field-row .field-control {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .textarea.field-control {
-        max-block-size: calc(var(--field-max-rows) * 1lh + var(--field-chrome));
-        overflow-y: auto;
-    }
-
-    @supports (field-sizing: content) {
-        .textarea.field-control:not([data-autosize='rows']) {
-            field-sizing: content;
-        }
     }
 
     .field-row {
@@ -601,11 +565,6 @@
         height: calc(var(--safe-bottom) + 4.5rem);
     }
 
-    .bottom-bar .bottom-bar-button {
-        min-height: 3rem;
-        font-family: var(--font-display);
-    }
-
     .toast-host {
         position: fixed;
         inset: auto 0 0;
@@ -712,90 +671,6 @@
         .toggle-switch,
         .toggle-switch::after {
             transition: none;
-        }
-    }
-}
-
-@layer utilities {
-    .bottom-bar .bottom-bar-button {
-        width: 100%;
-    }
-
-    :where(.btn:not(.btn-ghost, .btn-link, .btn-outline)) {
-        border-color: var(--ink);
-        box-shadow: var(--shadow-hard);
-        font-weight: 600;
-        text-shadow: none;
-        transition:
-            translate var(--motion-press),
-            box-shadow var(--motion-press);
-    }
-
-    :where(
-        .btn:not(.btn-ghost, .btn-link, .btn-outline):not(
-                .btn-primary,
-                .btn-secondary,
-                .btn-accent,
-                .btn-neutral
-            )
-    ) {
-        --btn-bg: var(--tag);
-        --btn-fg: var(--text);
-    }
-
-    :where(
-        .btn:not(.btn-ghost, .btn-link, .btn-outline):active:not(:disabled)
-    ) {
-        translate: 2px 2px;
-        box-shadow: 0 0 0 transparent;
-    }
-
-    :where(.btn:not(.btn-ghost, .btn-link, .btn-outline):disabled) {
-        box-shadow: none;
-    }
-
-    :where(.btn, .radio, .input, .textarea):focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: var(--focus-offset);
-    }
-
-    :where(.btn:not(.btn-ghost, .btn-link, .btn-outline)):focus-visible {
-        box-shadow: var(--shadow-focus), var(--shadow-hard);
-    }
-
-    :where(.input, .textarea) {
-        --input-color: var(--ink);
-        background-color: var(--tag);
-        color: var(--text);
-        border-color: var(--ink);
-        box-shadow: none;
-    }
-
-    :where(.input, .textarea):focus,
-    :where(.input, .textarea):focus-within {
-        --input-color: var(--ink);
-        box-shadow: var(--shadow-focus);
-    }
-
-    :where(.input, .textarea)[aria-invalid='true'] {
-        --input-color: var(--color-error);
-        border-color: var(--color-error);
-    }
-
-    :where(.radio) {
-        --input-color: var(--ink);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        :where(.btn:not(.btn-ghost, .btn-link, .btn-outline)) {
-            transition: none;
-        }
-
-        :where(
-            .btn:not(.btn-ghost, .btn-link, .btn-outline):active:not(:disabled)
-        ) {
-            translate: none;
-            box-shadow: 1px 1px 0 var(--ink);
         }
     }
 }
@@ -1601,32 +1476,6 @@
         margin-top: 1.5rem;
     }
 
-    .text-button {
-        display: inline-flex;
-        align-items: center;
-        min-height: var(--tap-size);
-        padding-inline: 0.25rem;
-        font: inherit;
-        font-weight: 600;
-        color: var(--heart-ink);
-        text-decoration: underline;
-        text-decoration-thickness: var(--underline-thickness);
-        text-underline-offset: var(--underline-offset);
-        background: none;
-        border: 0;
-        cursor: pointer;
-    }
-
-    .text-button-danger {
-        gap: 0.375rem;
-        color: var(--danger);
-    }
-
-    .text-button:disabled {
-        cursor: not-allowed;
-        opacity: var(--opacity-muted);
-    }
-
     .give-meta {
         display: grid;
         gap: 0.125rem;
@@ -1717,10 +1566,6 @@
 
     .field:has([aria-invalid='true']) .field-label {
         color: var(--color-error);
-    }
-
-    :where(.input, .textarea)[aria-invalid='true'] {
-        border-width: var(--border-thick);
     }
 
     .field-host {
@@ -1989,52 +1834,6 @@
     }
 }
 
-@layer utilities {
-    .input.field-control,
-    .textarea.field-control,
-    .select.field-control {
-        width: 100%;
-        max-width: 100%;
-        font-size: 1rem;
-    }
-
-    .textarea.field-control {
-        padding-block: var(--field-pad-block);
-    }
-
-    .textarea.field-control[rows='1'] {
-        min-height: calc(1 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='2'] {
-        min-height: calc(2 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='3'] {
-        min-height: calc(3 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='4'] {
-        min-height: calc(4 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='5'] {
-        min-height: calc(5 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='6'] {
-        min-height: calc(6 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='7'] {
-        min-height: calc(7 * 1lh + var(--field-chrome));
-    }
-
-    .textarea.field-control[rows='8'] {
-        min-height: calc(8 * 1lh + var(--field-chrome));
-    }
-}
-
 @import '../../web/styles/priority.css';
 @import './segmented.css';
 @import './switch.css';
@@ -2051,3 +1850,4 @@
 @import './link-import.css';
 @import './list-import.css';
 @import './sticky-header.css';
+@import './daisy-forms.css';

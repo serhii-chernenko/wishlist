@@ -330,7 +330,7 @@ export const GivesScreen = (_props: ScreenProps<'gives'>) => {
                     <div class='list-footer'>
                         <button
                             type='button'
-                            class='text-button text-button-danger'
+                            class='btn btn-link btn-error text-button text-button-danger'
                             onClick={clean}
                         >
                             <Icon icon={Trash2} />
