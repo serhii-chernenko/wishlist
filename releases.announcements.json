@@ -1,0 +1,7 @@
+{
+    "2.0.0": {
+        "uk": "<b>Лист бажань 2.0 🎉</b>\n\nЩо нового:\n• Застосунок прямо в Телеграмі: кнопка «App» біля поля вводу або /app\n• Бажання за посиланням: назва, фото й ціна заповняться самі\n• Імпорт з rewish.io\n• Валюта на вибір: ₴ $ € zł\n• Пріоритети, «Подароване» та фото на весь екран\n• Адреса доставки й контроль того, що бачать інші\n• Своя сторінка листа на wishlist.chernenko.dev\n• Бот говорить українською, англійською та польською\n\nУсі зміни: /releases",
+        "en": "<b>Wishlist 2.0 🎉</b>\n\nWhat's new:\n• An app right inside Telegram: the “App” button next to the message field, or /app\n• Add a wish from a link: title, photos, and price fill in automatically\n• Import from rewish.io\n• Pick your currency: ₴ $ € zł\n• Priorities, “Gifted”, and fullscreen photos\n• Delivery address and control over what others see\n• Your own wish list page at wishlist.chernenko.dev\n• The bot speaks Ukrainian, English, and Polish\n\nAll changes: /releases",
+        "pl": "<b>Lista życzeń 2.0 🎉</b>\n\nCo nowego:\n• Aplikacja w Telegramie: przycisk „App” obok pola wiadomości lub /app\n• Życzenie z linku: nazwa, zdjęcia i cena uzupełnią się same\n• Import z rewish.io\n• Waluta do wyboru: ₴ $ € zł\n• Priorytety, „Podarowane” i zdjęcia na pełnym ekranie\n• Adres dostawy i kontrola nad tym, co widzą inni\n• Własna strona listy na wishlist.chernenko.dev\n• Bot mówi po ukraińsku, angielsku i polsku\n\nWszystkie zmiany: /releases"
+    }
+}

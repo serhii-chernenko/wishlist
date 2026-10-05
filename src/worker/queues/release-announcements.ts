@@ -1,5 +1,6 @@
 import { resolveAppLocale, type AppLocale } from '../../bot/i18n';
 import { isSemverLower } from '../../bot/utils/semver';
+import { selectCaptionedPhotoFileId } from './release-announcement-delivery';
 import type { ReleaseAnnouncementJob } from './release-announcement-job';
 
 export const QUEUE_MAX_RETRIES = 5;
@@ -51,11 +52,20 @@ export interface ReleaseAnnouncementConsumerDependencies {
         releaseVersion: string,
         locale: AppLocale
     ) => string | null;
+    renderShortAnnouncement: (
+        releaseVersion: string,
+        locale: AppLocale
+    ) => string | null;
     getReleaseMedia: (releaseVersion: string) => readonly string[];
     claimForSending: (announcementId: number, now: Date) => Promise<boolean>;
     sendReleaseMedia: (
         telegramId: number,
         fileIds: readonly string[]
+    ) => Promise<void>;
+    sendReleasePhotoWithCaption: (
+        telegramId: number,
+        fileId: string,
+        captionHtml: string
     ) => Promise<void>;
     sendMessage: (telegramId: number, html: string) => Promise<void>;
     markMediaSent: (announcementId: number, now: Date) => Promise<void>;
@@ -304,12 +314,10 @@ const handleMessage = async (
         return;
     }
 
-    const text = dependencies.renderAnnouncement(
-        releaseVersion,
-        resolveAppLocale(user.language, user.telegramLanguageCode)
-    );
+    const locale = resolveAppLocale(user.language, user.telegramLanguageCode);
+    const fullText = dependencies.renderAnnouncement(releaseVersion, locale);
 
-    if (text === null) {
+    if (fullText === null) {
         dependencies.log({
             event: 'release_announcement_notes_missing',
             ...logContext
@@ -318,6 +326,11 @@ const handleMessage = async (
         return;
     }
 
+    const shortText = dependencies.renderShortAnnouncement(
+        releaseVersion,
+        locale
+    );
+    const text = shortText ?? fullText;
     const claimed = await dependencies.claimForSending(
         announcement.id,
         timestamp()
@@ -382,6 +395,18 @@ const handleMessage = async (
         });
     };
 
+    const describeMediaFailure = (failure: TelegramFailure) => {
+        if (isAmbiguousFailure(failure)) {
+            return 'ambiguous';
+        }
+
+        if (isPermanentFailure(failure)) {
+            return 'skipped';
+        }
+
+        return failure.errorCode === 429 ? 'rate_limited' : 'failed';
+    };
+
     const sendAlbumBeforeText = async (fileIds: readonly string[]) => {
         const albumOutcome = await sendPaced(
             dependencies,
@@ -426,26 +451,7 @@ const handleMessage = async (
         return true;
     };
 
-    const mediaFileIds = dependencies.getReleaseMedia(releaseVersion);
-
-    if (mediaFileIds.length > 0 && announcement.mediaSentAt === null) {
-        const shouldSendText = await sendAlbumBeforeText(mediaFileIds);
-
-        if (!shouldSendText) {
-            return;
-        }
-    }
-
-    const outcome = await sendPaced(
-        dependencies,
-        pacing,
-        TEXT_SEND_WEIGHT,
-        () => {
-            return dependencies.sendMessage(user.telegramId, text);
-        }
-    );
-
-    if (outcome.delivered) {
+    const markDelivered = async () => {
         await writeState('sent', () => {
             return dependencies.markSent(
                 announcement.id,
@@ -459,63 +465,140 @@ const handleMessage = async (
             ...logContext
         });
         message.ack();
-        return;
-    }
+    };
 
-    const { failure } = outcome;
+    const handleDeliveryFailure = async (failure: TelegramFailure) => {
+        if (isAmbiguousFailure(failure)) {
+            await writeState('ambiguous', () => {
+                return dependencies.markSkipped(
+                    announcement.id,
+                    user.id,
+                    releaseVersion,
+                    failure.errorCode,
+                    timestamp()
+                );
+            });
+            dependencies.log({
+                event: 'release_announcement_ambiguous',
+                reason:
+                    failure.errorCode === null
+                        ? 'no_telegram_response'
+                        : 'telegram_server_error',
+                errorCode: failure.errorCode,
+                ...logContext
+            });
+            message.ack();
+            return;
+        }
 
-    if (isAmbiguousFailure(failure)) {
-        await writeState('ambiguous', () => {
-            return dependencies.markSkipped(
+        if (isPermanentFailure(failure)) {
+            await skipUnreachableUser(failure);
+            return;
+        }
+
+        if (failure.errorCode === 429) {
+            await requeueRateLimited(failure);
+            return;
+        }
+
+        await writeState('failed', () => {
+            return dependencies.markFailed(
                 announcement.id,
-                user.id,
-                releaseVersion,
                 failure.errorCode,
                 timestamp()
             );
         });
         dependencies.log({
-            event: 'release_announcement_ambiguous',
-            reason:
-                failure.errorCode === null
-                    ? 'no_telegram_response'
-                    : 'telegram_server_error',
+            event: 'release_announcement_failed',
             errorCode: failure.errorCode,
+            attempts: message.attempts,
+            description: failure.description.slice(
+                0,
+                LOGGED_DESCRIPTION_MAX_LENGTH
+            ),
             ...logContext
         });
+
         message.ack();
-        return;
-    }
+    };
 
-    if (isPermanentFailure(failure)) {
-        await skipUnreachableUser(failure);
-        return;
-    }
-
-    if (failure.errorCode === 429) {
-        await requeueRateLimited(failure);
-        return;
-    }
-
-    await writeState('failed', () => {
-        return dependencies.markFailed(
-            announcement.id,
-            failure.errorCode,
-            timestamp()
+    const sendText = async () => {
+        const outcome = await sendPaced(
+            dependencies,
+            pacing,
+            TEXT_SEND_WEIGHT,
+            () => {
+                return dependencies.sendMessage(user.telegramId, text);
+            }
         );
-    });
-    dependencies.log({
-        event: 'release_announcement_failed',
-        errorCode: failure.errorCode,
-        attempts: message.attempts,
-        description: failure.description.slice(
-            0,
-            LOGGED_DESCRIPTION_MAX_LENGTH
-        ),
-        ...logContext
-    });
 
-    message.ack();
+        if (outcome.delivered) {
+            await markDelivered();
+            return;
+        }
+
+        await handleDeliveryFailure(outcome.failure);
+    };
+
+    const sendCaptionedPhoto = async (fileId: string, captionHtml: string) => {
+        const outcome = await sendPaced(
+            dependencies,
+            pacing,
+            TEXT_SEND_WEIGHT,
+            () => {
+                return dependencies.sendReleasePhotoWithCaption(
+                    user.telegramId,
+                    fileId,
+                    captionHtml
+                );
+            }
+        );
+
+        if (outcome.delivered) {
+            await writeState('media_sent', () => {
+                return dependencies.markMediaSent(announcement.id, timestamp());
+            });
+            logMediaOutcome('sent');
+            await markDelivered();
+            return;
+        }
+
+        const { failure } = outcome;
+        const fallsBackToText =
+            !isAmbiguousFailure(failure) &&
+            !isPermanentFailure(failure) &&
+            failure.errorCode !== 429;
+
+        logMediaOutcome(describeMediaFailure(failure), failure.errorCode);
+
+        if (fallsBackToText) {
+            await sendText();
+            return;
+        }
+
+        await handleDeliveryFailure(failure);
+    };
+
+    const mediaFileIds = dependencies.getReleaseMedia(releaseVersion);
+    const captionedFileId =
+        announcement.mediaSentAt === null
+            ? selectCaptionedPhotoFileId(shortText, mediaFileIds)
+            : null;
+
+    if (captionedFileId !== null && shortText !== null) {
+        await sendCaptionedPhoto(captionedFileId, shortText);
+        return;
+    }
+
+    if (mediaFileIds.length > 0 && announcement.mediaSentAt === null) {
+        const shouldSendText = await sendAlbumBeforeText(mediaFileIds);
+
+        if (!shouldSendText) {
+            return;
+        }
+    }
+
+    await sendText();
 };
 
 export const processReleaseAnnouncementBatch = async (
