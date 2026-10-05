@@ -230,7 +230,7 @@ describe('Bot flows through the Worker on D1', () => {
                 'n:find',
                 'wl:share',
                 'n:set',
-                'n:auth'
+                'n:priv'
             ]);
         });
 
@@ -1386,6 +1386,8 @@ describe('Bot flows through the Worker on D1', () => {
             assert.ok(
                 webhook.messageTexts().includes(LL.payments.edit.success())
             );
+            await tap(alice, 'n:set');
+
             assert.ok(
                 buttonTextsOf(webhook.lastMessage()).includes(
                     LL.payments.title.update()

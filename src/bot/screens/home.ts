@@ -41,19 +41,6 @@ const userKeyboard = (req: BotRequest, user: UserRecord) => {
         navigationButton(LL.findList.title(), 'findList'),
         callbackButton(LL.actions.share(), { type: 'wishlistShare' }),
         navigationButton(LL.settings.title(), 'settings'),
-        navigationButton(LL.auth.title.user(), 'auth'),
-        navigationButton(
-            user.payments
-                ? LL.payments.title.update()
-                : LL.payments.title.add(),
-            'payments'
-        ),
-        navigationButton(
-            user.deliveryAddress
-                ? LL.delivery.title.update()
-                : LL.delivery.title.add(),
-            'delivery'
-        ),
         navigationButton(LL.privacy.title(), 'privacy'),
         navigationButton(LL.feedback.title(), 'feedback'),
         navigationButton(LL.stats.action(), 'stats'),
