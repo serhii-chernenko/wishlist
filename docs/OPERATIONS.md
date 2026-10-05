@@ -778,7 +778,15 @@ Run a broadcast with an album:
 1. Pause delivery before the merge: `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`.
 2. Run `pnpm releases:media:upload <version> <files...>` and commit `releases.media.json` on the release branch.
 3. Merge to `main`. Workers Builds applies migrations and deploys; the deploy runs `pnpm releases:broadcast:prod`, which queues the jobs.
-4. Check one album by hand if you want, then resume delivery: `pnpm exec wrangler queues resume-delivery wishlist-release-announcements`.
+4. Send a test copy to the admin (below), check it, then resume delivery: `pnpm exec wrangler queues resume-delivery wishlist-release-announcements`.
+
+Send a test copy to the admin before resuming the queue:
+
+```sh
+pnpm releases:send:test [--version X.Y.Z] [--locale uk|en|pl] [--target=production|preview|local]
+```
+
+It sends to `ADMIN_ID` only: the album (when `releases.media.json` has ids for that version) and then the announcement text, through the same render and send code the queue consumer uses (HTML parse mode, link previews disabled), so the copy matches what a recipient gets. It defaults to the newest version, the `uk` locale and the production bot, reads `BOT_TOKEN` and `ADMIN_ID` from the environment or the target's `.dev.vars` file, and never prints them. It does not touch the queue, `release_announcements` rows or any other user, so it can be run any number of times. The locale is not read from D1; pass `--locale` to check another language. The committed file ids are production ids, so `--target=preview` or `--target=local` fails on the album with a 400 and sends no text.
 
 Resume only after the ids are deployed. A user who got the text before that never gets the album, because their `release_version` is already updated.
 

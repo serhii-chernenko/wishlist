@@ -1,15 +1,15 @@
 import { Effect } from 'effect';
 import { Telegram } from 'telegraf';
 
-import {
-    getLatestReleaseVersion,
-    getReleases,
-    renderReleaseAnnouncement
-} from '../../bot/content/releases';
+import { getLatestReleaseVersion } from '../../bot/content/releases';
 import { getReleaseMedia } from '../../bot/content/release-media';
 import { createDb } from '../../db/client';
 import { createRepositories } from '../../db/repositories';
 import type { WorkerBindings } from '../env';
+import {
+    createReleaseAnnouncementSender,
+    renderReleaseAnnouncementText
+} from './release-announcement-delivery';
 import type { ReleaseAnnouncementJob } from './release-announcement-job';
 import {
     processReleaseAnnouncementBatch,
@@ -48,7 +48,7 @@ export const createReleaseAnnouncementDependencies = (
     context?: ExecutionContext
 ): ReleaseAnnouncementConsumerDependencies => {
     const repositories = createRepositories(createDb(env));
-    const telegram = new Telegram(env.BOT_TOKEN);
+    const sender = createReleaseAnnouncementSender(new Telegram(env.BOT_TOKEN));
 
     return {
         isBroadcastEnabled: () => env.ENABLE_RELEASE_BROADCAST === 'true',
@@ -64,13 +64,7 @@ export const createReleaseAnnouncementDependencies = (
         findUser(userId) {
             return Effect.runPromise(repositories.users.findById(userId));
         },
-        renderAnnouncement(releaseVersion, locale) {
-            const release = getReleases().find(candidate => {
-                return candidate.version === releaseVersion;
-            });
-
-            return release ? renderReleaseAnnouncement(release, locale) : null;
-        },
+        renderAnnouncement: renderReleaseAnnouncementText,
         getReleaseMedia,
         async claimForSending(announcementId, now) {
             return Effect.runPromise(
@@ -80,20 +74,8 @@ export const createReleaseAnnouncementDependencies = (
                 )
             );
         },
-        async sendMediaGroup(telegramId, fileIds) {
-            await telegram.sendMediaGroup(
-                telegramId,
-                fileIds.map(fileId => {
-                    return { type: 'photo', media: fileId };
-                })
-            );
-        },
-        async sendMessage(telegramId, html) {
-            await telegram.sendMessage(telegramId, html, {
-                parse_mode: 'HTML',
-                link_preview_options: { is_disabled: true }
-            });
-        },
+        sendMediaGroup: sender.sendMediaGroup,
+        sendMessage: sender.sendMessage,
         async markMediaSent(announcementId, now) {
             await Effect.runPromise(
                 repositories.releaseAnnouncements.markMediaSent(
