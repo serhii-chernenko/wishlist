@@ -103,6 +103,7 @@ Decisions:
 - [x] Copy pass (Polish, US English) over all strings
 - [x] Navigation fixes, native Home button, compact sticky list header, two-column grid from 320px, toast position (2026-10-04)
 - [x] List import from rewish.io (preview, merge with dedupe, hidden or public, gifted kept, background photos), bot and app (8e36c74, 2026-10-04)
+- [x] Pre-rollout backup 2026-10-05T10:53Z: `.backups/production-20261005T105319Z.sql` (local, git-ignored), Time Travel bookmark `000001bf-00000000-000050fb-748f8a8b9e52580a4b5b10e053ad43aa`; production still on version `631ee852`, 299 users, 1202 wishes
 - [ ] One structured device test pass on @InevixTestBot before the final changelog approval (2026-10-04)
 - [x] Review, security audit, preview test (2026-10-04)
 - [x] Rewrite the 2.0.0 currency bullet, add bullets for priority, delivery details and photo order (2026-10-04)
