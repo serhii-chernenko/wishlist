@@ -20,7 +20,7 @@ const adminChatId = '777';
 const fileIds = ['file-a', 'file-b', 'file-c'];
 
 interface TelegramCall {
-    method: 'sendMediaGroup' | 'sendMessage';
+    method: 'sendPhoto' | 'sendMediaGroup' | 'sendMessage';
     chatId: number | string;
     payload: unknown;
     extra?: unknown;
@@ -29,6 +29,9 @@ interface TelegramCall {
 const createFakeTelegram = () => {
     const calls: TelegramCall[] = [];
     const telegram: ReleaseAnnouncementTelegram = {
+        async sendPhoto(chatId, photo) {
+            calls.push({ method: 'sendPhoto', chatId, payload: photo });
+        },
         async sendMediaGroup(chatId, media) {
             calls.push({ method: 'sendMediaGroup', chatId, payload: media });
         },
@@ -60,7 +63,7 @@ test('the test copy sends the album first and then the announcement text', async
         getMedia: () => fileIds
     });
 
-    assert.deepEqual(result, { albumPhotos: 3 });
+    assert.deepEqual(result, { mediaPhotos: 3 });
     assert.deepEqual(
         calls.map(call => call.method),
         ['sendMediaGroup', 'sendMessage']
@@ -79,6 +82,26 @@ test('the test copy sends the album first and then the announcement text', async
     assert.equal(RELEASE_ANNOUNCEMENT_MESSAGE_OPTIONS.parse_mode, 'HTML');
 });
 
+test('the test copy sends one file id as a single photo and then the text', async () => {
+    const { calls, telegram } = createFakeTelegram();
+
+    const result = await sendReleaseAnnouncementCopy({
+        sender: createReleaseAnnouncementSender(telegram),
+        chatId: adminChatId,
+        releaseVersion,
+        locale: 'uk',
+        getMedia: () => ['cover']
+    });
+
+    assert.deepEqual(result, { mediaPhotos: 1 });
+    assert.deepEqual(
+        calls.map(call => call.method),
+        ['sendPhoto', 'sendMessage']
+    );
+    assert.equal(calls[0]?.chatId, adminChatId);
+    assert.equal(calls[0]?.payload, 'cover');
+});
+
 test('the test copy sends only the text when the release has no album', async () => {
     const { calls, telegram } = createFakeTelegram();
 
@@ -90,7 +113,7 @@ test('the test copy sends only the text when the release has no album', async ()
         getMedia: () => []
     });
 
-    assert.deepEqual(result, { albumPhotos: 0 });
+    assert.deepEqual(result, { mediaPhotos: 0 });
     assert.deepEqual(
         calls.map(call => call.method),
         ['sendMessage']
@@ -113,69 +136,82 @@ test('the test copy fails before sending anything for an unknown release', async
     assert.deepEqual(calls, []);
 });
 
-for (const locale of ['uk', 'en', 'pl'] as const) {
-    test(`the test copy matches what the queue consumer sends in ${locale}`, async () => {
-        const broadcast = createFakeTelegram();
-        const testCopy = createFakeTelegram();
-        const sender = createReleaseAnnouncementSender(broadcast.telegram);
-        const dependencies: ReleaseAnnouncementConsumerDependencies = {
-            isBroadcastEnabled: () => true,
-            getCurrentReleaseVersion: () => releaseVersion,
-            async findAnnouncement() {
-                return { id: 1, status: 'queued', mediaSentAt: null };
-            },
-            async findUser() {
-                return {
-                    id: 1,
-                    telegramId: Number(adminChatId),
-                    language: locale,
-                    telegramLanguageCode: null,
-                    releaseVersion: '1.0.0',
-                    blockedAt: null
-                };
-            },
-            renderAnnouncement: renderReleaseAnnouncementText,
-            getReleaseMedia: () => fileIds,
-            claimForSending: async () => true,
-            sendMediaGroup: sender.sendMediaGroup,
-            sendMessage: sender.sendMessage,
-            markMediaSent: async () => undefined,
-            markBlocked: async () => undefined,
-            markSent: async () => undefined,
-            markSkipped: async () => undefined,
-            releaseToQueue: async () => undefined,
-            markFailed: async () => undefined,
-            requeueJob: async () => undefined,
-            sleep: async () => undefined,
-            now: () => 0,
-            log: () => undefined
-        };
+const mediaCases = [
+    { name: 'photo', ids: ['cover'] },
+    { name: 'album', ids: fileIds }
+];
 
-        await processReleaseAnnouncementBatch(
-            [
-                {
-                    body: { releaseVersion, userId: 1 },
-                    attempts: 1,
-                    ack: () => undefined,
-                    retry: () => undefined
-                }
-            ],
-            dependencies
-        );
-        await sendReleaseAnnouncementCopy({
-            sender: createReleaseAnnouncementSender(testCopy.telegram),
-            chatId: adminChatId,
-            releaseVersion,
-            locale,
-            getMedia: () => fileIds
+for (const { name, ids } of mediaCases) {
+    for (const locale of ['uk', 'en', 'pl'] as const) {
+        test(`the test copy matches what the queue consumer sends as a ${name} in ${locale}`, async () => {
+            const broadcast = createFakeTelegram();
+            const testCopy = createFakeTelegram();
+            const sender = createReleaseAnnouncementSender(broadcast.telegram);
+            const dependencies: ReleaseAnnouncementConsumerDependencies = {
+                isBroadcastEnabled: () => true,
+                getCurrentReleaseVersion: () => releaseVersion,
+                async findAnnouncement() {
+                    return { id: 1, status: 'queued', mediaSentAt: null };
+                },
+                async findUser() {
+                    return {
+                        id: 1,
+                        telegramId: Number(adminChatId),
+                        language: locale,
+                        telegramLanguageCode: null,
+                        releaseVersion: '1.0.0',
+                        blockedAt: null
+                    };
+                },
+                renderAnnouncement: renderReleaseAnnouncementText,
+                getReleaseMedia: () => ids,
+                claimForSending: async () => true,
+                sendReleaseMedia: sender.sendReleaseMedia,
+                sendMessage: sender.sendMessage,
+                markMediaSent: async () => undefined,
+                markBlocked: async () => undefined,
+                markSent: async () => undefined,
+                markSkipped: async () => undefined,
+                releaseToQueue: async () => undefined,
+                markFailed: async () => undefined,
+                requeueJob: async () => undefined,
+                sleep: async () => undefined,
+                now: () => 0,
+                log: () => undefined
+            };
+
+            await processReleaseAnnouncementBatch(
+                [
+                    {
+                        body: { releaseVersion, userId: 1 },
+                        attempts: 1,
+                        ack: () => undefined,
+                        retry: () => undefined
+                    }
+                ],
+                dependencies
+            );
+            await sendReleaseAnnouncementCopy({
+                sender: createReleaseAnnouncementSender(testCopy.telegram),
+                chatId: adminChatId,
+                releaseVersion,
+                locale,
+                getMedia: () => ids
+            });
+
+            assert.deepEqual(
+                broadcast.calls.map(call => call.method),
+                [
+                    ids.length === 1 ? 'sendPhoto' : 'sendMediaGroup',
+                    'sendMessage'
+                ]
+            );
+            assert.deepEqual(
+                withoutChat(testCopy.calls),
+                withoutChat(broadcast.calls)
+            );
         });
-
-        assert.equal(broadcast.calls.length, 2);
-        assert.deepEqual(
-            withoutChat(testCopy.calls),
-            withoutChat(broadcast.calls)
-        );
-    });
+    }
 }
 
 test('the queue handler builds its sender and text from the shared delivery module', () => {

@@ -13,6 +13,10 @@ export const RELEASE_ANNOUNCEMENT_MESSAGE_OPTIONS = {
 } as const;
 
 export interface ReleaseAnnouncementTelegram {
+    sendPhoto(
+        chatId: ReleaseAnnouncementChatId,
+        photo: string
+    ): Promise<unknown>;
     sendMediaGroup(
         chatId: ReleaseAnnouncementChatId,
         media: { type: 'photo'; media: string }[]
@@ -25,7 +29,7 @@ export interface ReleaseAnnouncementTelegram {
 }
 
 export interface ReleaseAnnouncementSender {
-    sendMediaGroup: (
+    sendReleaseMedia: (
         chatId: ReleaseAnnouncementChatId,
         fileIds: readonly string[]
     ) => Promise<void>;
@@ -50,7 +54,14 @@ export const createReleaseAnnouncementSender = (
     telegram: ReleaseAnnouncementTelegram
 ): ReleaseAnnouncementSender => {
     return {
-        async sendMediaGroup(chatId, fileIds) {
+        async sendReleaseMedia(chatId, fileIds) {
+            const [singleFileId] = fileIds;
+
+            if (fileIds.length === 1 && singleFileId !== undefined) {
+                await telegram.sendPhoto(chatId, singleFileId);
+                return;
+            }
+
             await telegram.sendMediaGroup(
                 chatId,
                 fileIds.map(fileId => {
@@ -77,7 +88,7 @@ export interface SendReleaseAnnouncementCopyOptions {
 }
 
 export interface ReleaseAnnouncementCopyResult {
-    albumPhotos: number;
+    mediaPhotos: number;
 }
 
 export const sendReleaseAnnouncementCopy = async (
@@ -99,10 +110,10 @@ export const sendReleaseAnnouncementCopy = async (
     const fileIds = getMedia(releaseVersion);
 
     if (fileIds.length > 0) {
-        await sender.sendMediaGroup(chatId, fileIds);
+        await sender.sendReleaseMedia(chatId, fileIds);
     }
 
     await sender.sendMessage(chatId, text);
 
-    return { albumPhotos: fileIds.length };
+    return { mediaPhotos: fileIds.length };
 };

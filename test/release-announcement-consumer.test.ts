@@ -107,7 +107,7 @@ const createHarness = (scenario: Scenario = {}) => {
             state.claims += 1;
             return scenario.claimed ?? true;
         },
-        async sendMediaGroup(telegramId, fileIds) {
+        async sendReleaseMedia(telegramId, fileIds) {
             state.calls.push('album');
 
             const queuedError = pendingMediaErrors.shift();

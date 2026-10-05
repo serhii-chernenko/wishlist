@@ -1,6 +1,6 @@
 import releaseMediaConfig from '../../../releases.media.json';
 
-export const RELEASE_MEDIA_MIN_ITEMS = 2;
+export const RELEASE_MEDIA_MIN_ITEMS = 1;
 export const RELEASE_MEDIA_MAX_ITEMS = 10;
 
 export type ReleaseMediaConfig = Record<string, readonly string[]>;

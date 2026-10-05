@@ -134,7 +134,7 @@ export const pickLargestFileId = (message: SentPhotoMessage) => {
 };
 
 export interface UploadReleaseMediaOptions {
-    api: Pick<TelegramApi, 'sendMediaGroup' | 'deleteMessage'>;
+    api: Pick<TelegramApi, 'sendPhoto' | 'sendMediaGroup' | 'deleteMessage'>;
     chatId: string;
     photos: readonly MediaGroupPhoto[];
     log?: (message: string) => void;
@@ -144,9 +144,20 @@ export const uploadReleaseMedia = async (
     options: UploadReleaseMediaOptions
 ) => {
     const { api, chatId, photos, log = console.log } = options;
-    const messages = await api.sendMediaGroup(chatId, photos, {
-        disable_notification: true
-    });
+    const [singlePhoto] = photos;
+    const messages =
+        photos.length === 1 && singlePhoto
+            ? [
+                  await api.sendPhoto(chatId, singlePhoto.photo, {
+                      disable_notification: true,
+                      ...(singlePhoto.filename === undefined
+                          ? {}
+                          : { filename: singlePhoto.filename })
+                  })
+              ]
+            : await api.sendMediaGroup(chatId, photos, {
+                  disable_notification: true
+              });
 
     if (messages.length !== photos.length) {
         throw new Error(

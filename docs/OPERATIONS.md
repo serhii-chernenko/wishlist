@@ -81,7 +81,7 @@ Design points:
 | `gives`                 | "I want to give" marks, unique per `(user_id, wish_id)`                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `sessions`              | Router state per private-chat user, pruned after 90 days                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `telegram_updates`      | Webhook idempotency ledger, pruned by the daily cron                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `release_announcements` | Announcement status per release version and user (`queued`, `sending`, `sent`, `skipped`, `failed`) and `media_sent_at`, set once the release album was delivered (or its delivery was ambiguous)                                                                                                                                                                                                                                                                                  |
+| `release_announcements` | Announcement status per release version and user (`queued`, `sending`, `sent`, `skipped`, `failed`) and `media_sent_at`, set once the release photo or album was delivered (or its delivery was ambiguous)                                                                                                                                                                                                                                                                         |
 | `exchange_rates`        | Hryvnias per dollar, euro and złoty from the NBU, with the rate date and the fetch time (see section 18)                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## 2. Local setup
@@ -411,7 +411,7 @@ Known D1 behavior:
 
 Share pages ship with the additive migration that creates `wishlist_shares` (section 12). The batch 2 migrations (`20261004083515_far_impossible_man` and `20261004090459_flat_omega_sentinel`: per-wish currency, priority levels, the disclosure flags, the delivery address, the indexing flag and the gifted flags) and `20261004111004_show_gifted_default_on` (a data-only `UPDATE users SET show_gifted = 1`) are additive too and keep the legacy `wishes.priority` column; the rollout steps are in section 12 and section 17. The old `users.telegraph_access_token` column stays in the schema, unused and `NULL`, so the code in production keeps working across the deploy. Drop it in 2.1 with two steps: deploy code that no longer lists the column, then migrate (`ALTER TABLE users DROP COLUMN telegraph_access_token`, not a table rebuild).
 
-`20261005161049_release_announcement_media` adds the nullable `release_announcements.media_sent_at` column (`ALTER TABLE ... ADD`). Existing rows, including queued 2.0.0 rows, get `NULL`, so their album is still sent. Like every migration it is applied by Workers Builds (`db:migrate:ci`) when the branch merges to `main`; do not run `db:migrate:prod` by hand.
+`20261005161049_release_announcement_media` adds the nullable `release_announcements.media_sent_at` column (`ALTER TABLE ... ADD`). Existing rows, including queued 2.0.0 rows, get `NULL`, so their photo or album is still sent. Like every migration it is applied by Workers Builds (`db:migrate:ci`) when the branch merges to `main`; do not run `db:migrate:prod` by hand.
 
 Keep every migration additive (new tables, new nullable or defaulted columns, new indexes). During a deploy the old code runs against the new schema for a short time, and a migration is applied before the code that needs it. Ship destructive changes (drop, rename, new NOT NULL without default) in two releases: first stop using the column, then drop it.
 
@@ -742,7 +742,7 @@ In the bot, `/releases` and the home menu's What's new button show the three new
 - The producer compares the newest manifest version with each registered, non-blocked user's `release_version`. A user on a lower version gets one `release_announcements` row (unique per version and user) and one queue job on `wishlist-release-announcements`.
 - The consumer sends the notes in the user's language (`users.language`, or Auto from the stored Telegram language code) and stores the new version on the user.
 - Delivery is at-most-once on ambiguity: a duplicate is worse than a missed message. A network error with no response, a 5xx, or a redelivery of a row in `sending` is marked `skipped` and never resent. A 403 sets `users.blocked_at` and skips; a permanent 400 skips; any other 400 marks the row `failed`. A 429 re-enqueues the job after `retry_after + 1` seconds.
-- A release can carry a photo album that arrives right before the text. See Release album below.
+- A release can carry one photo or a photo album that arrives right before the text. See Release photo or album below.
 - Stale recovery: each cron run re-enqueues `queued` rows untouched for over 3 hours and marks `sending` rows stuck over 3 hours as `skipped`.
 - Per-user results are in `release_announcements`:
 
@@ -759,21 +759,21 @@ pnpm exec wrangler queues resume-delivery wishlist-release-announcements
 
 The kill switch variable `ENABLE_RELEASE_BROADCAST` (`"true"` in production in `wrangler.jsonc`) needs a redeploy to take effect. While it is off the consumer sends nothing and retries each message after 600 seconds, so jobs eventually reach the dead-letter queue. Prefer pausing the queue for an emergency stop.
 
-### Release album
+### Release photo or album
 
-`releases.media.json` (repository root, bundled into the Worker) maps a release version to 2 to 10 Telegram photo `file_id`s, for example `{ "2.0.0": ["AgAC...", "AgAC...", "AgAC..."] }`. When the version being announced has an entry, the consumer sends those photos as one album (`sendMediaGroup`, no caption) and then the announcement text, unchanged. A version without an entry sends only the text, as before. An invalid entry (fewer than 2 or more than 10 ids, empty ids) is ignored at runtime and fails `test/release-media.test.ts`.
+`releases.media.json` (repository root, bundled into the Worker) maps a release version to 1 to 10 Telegram photo `file_id`s, for example `{ "2.0.0": ["AgAC..."] }`. When the version being announced has an entry, the consumer sends it right before the announcement text, unchanged: a single id goes out as one photo (`sendPhoto`, no caption), 2 to 10 ids as one album (`sendMediaGroup`, no caption). Prefer one photo: Telegram crops the tiles of an album, so a single image shows in full. The 2.0.0 entry holds the cover only. A version without an entry sends only the text, as before. An invalid entry (no ids, more than 10 ids, empty ids) is ignored at runtime and fails `test/release-media.test.ts`.
 
 A `file_id` belongs to the bot that uploaded the photo. The committed ids must come from the production bot; the preview bot cannot send them (it gets a 400 and the text still goes out, see below).
 
-Upload the photos once (JPEG, PNG or WebP, 10 MB each; the 2.0.0 album uses 4:5 images):
+Upload the photos once (1 to 10 files, JPEG, PNG or WebP, 10 MB each):
 
 ```sh
 pnpm releases:media:upload 2.0.0 ~/album/1.jpg ~/album/2.jpg ~/album/3.jpg
 ```
 
-The script reads `BOT_TOKEN` and `ADMIN_ID` from the environment or `.dev.vars.production` and never prints them. It sends one silent album to the `ADMIN_ID` chat, keeps the largest size `file_id` of each photo, deletes the uploaded messages (if a delete fails it says so; delete them by hand) and writes the ids for that version into `releases.media.json`, keeping other versions. Running it again for the same version replaces the ids. `--target=preview` or `--target=local` uploads with that bot and only prints the ids, because the config holds production ids only. Review and commit `releases.media.json`; the album ships with the next production deploy.
+The script reads `BOT_TOKEN` and `ADMIN_ID` from the environment or `.dev.vars.production` and never prints them. It sends one silent photo (one file) or one silent album (several files) to the `ADMIN_ID` chat, keeps the largest size `file_id` of each photo, deletes the uploaded messages (if a delete fails it says so; delete them by hand) and writes the ids for that version into `releases.media.json`, keeping other versions. Running it again for the same version replaces the ids. `--target=preview` or `--target=local` uploads with that bot and only prints the ids, because the config holds production ids only. Review and commit `releases.media.json`; the photo or album ships with the next production deploy.
 
-Run a broadcast with an album:
+Run a broadcast with a photo or an album:
 
 1. Pause delivery before the merge: `pnpm exec wrangler queues pause-delivery wishlist-release-announcements`.
 2. Run `pnpm releases:media:upload <version> <files...>` and commit `releases.media.json` on the release branch.
@@ -786,11 +786,11 @@ Send a test copy to the admin before resuming the queue:
 pnpm releases:send:test [--version X.Y.Z] [--locale uk|en|pl] [--target=production|preview|local]
 ```
 
-It sends to `ADMIN_ID` only: the album (when `releases.media.json` has ids for that version) and then the announcement text, through the same render and send code the queue consumer uses (HTML parse mode, link previews disabled), so the copy matches what a recipient gets. It defaults to the newest version, the `uk` locale and the production bot, reads `BOT_TOKEN` and `ADMIN_ID` from the environment or the target's `.dev.vars` file, and never prints them. It does not touch the queue, `release_announcements` rows or any other user, so it can be run any number of times. The locale is not read from D1; pass `--locale` to check another language. The committed file ids are production ids, so `--target=preview` or `--target=local` fails on the album with a 400 and sends no text.
+It sends to `ADMIN_ID` only: the photo or album (when `releases.media.json` has ids for that version) and then the announcement text, through the same render and send code the queue consumer uses (HTML parse mode, link previews disabled), so the copy matches what a recipient gets. It defaults to the newest version, the `uk` locale and the production bot, reads `BOT_TOKEN` and `ADMIN_ID` from the environment or the target's `.dev.vars` file, and never prints them. It does not touch the queue, `release_announcements` rows or any other user, so it can be run any number of times. The locale is not read from D1; pass `--locale` to check another language. The committed file ids are production ids, so `--target=preview` or `--target=local` fails on the photo or album with a 400 and sends no text.
 
-Resume only after the ids are deployed. A user who got the text before that never gets the album, because their `release_version` is already updated.
+Resume only after the ids are deployed. A user who got the text before that never gets the photo or album, because their `release_version` is already updated.
 
-Delivery rules for the album:
+Delivery rules for the photo or album (a single photo follows the same rules as an album):
 
 - The album is sent after the row is claimed (`sending`) and before the text. A delivered album sets `media_sent_at`; a later retry of the same row (after a 429 on the text) sends only the text.
 - 403 on the album: the user is marked blocked and the row skipped, no text. A chat-level 400 (chat not found, deactivated and the other permanent descriptions): the row is skipped, no text.
@@ -800,7 +800,7 @@ Delivery rules for the album:
 - A Worker crash between the album and the text leaves the row in `sending`; like any redelivery in `sending`, it is skipped.
 - Telemetry: one `release_announcement_media` event per album attempt with the closed `outcome` label `sent`, `failed`, `skipped`, `rate_limited` or `ambiguous`, plus `errorCode` on failures. File ids and Telegram descriptions are never logged.
 
-Pacing: the consumer spaces Telegram calls by `MINIMUM_SEND_INTERVAL_MILLISECONDS` (50 ms) per counted message, and an album of N photos counts as N. With 3 photos and the text, one user takes about 200 ms, so a batch of 10 (`max_batch_size: 10`, `max_concurrency: 1`) sends about 20 messages per second, under Telegram's 30 per second broadcast limit, and finishes in about 2 seconds plus API latency. The album and the text to one chat are a short burst that Telegram allows. The queue settings in `wrangler.jsonc` stay unchanged.
+Pacing: the consumer spaces Telegram calls by `MINIMUM_SEND_INTERVAL_MILLISECONDS` (50 ms) per counted message, and an album of N photos counts as N (a single photo counts as 1). With 3 photos and the text, one user takes about 200 ms, so a batch of 10 (`max_batch_size: 10`, `max_concurrency: 1`) sends about 20 messages per second, under Telegram's 30 per second broadcast limit, and finishes in about 2 seconds plus API latency. The album and the text to one chat are a short burst that Telegram allows. The queue settings in `wrangler.jsonc` stay unchanged.
 
 ### GitHub releases
 

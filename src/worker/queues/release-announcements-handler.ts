@@ -74,7 +74,7 @@ export const createReleaseAnnouncementDependencies = (
                 )
             );
         },
-        sendMediaGroup: sender.sendMediaGroup,
+        sendReleaseMedia: sender.sendReleaseMedia,
         sendMessage: sender.sendMessage,
         async markMediaSent(announcementId, now) {
             await Effect.runPromise(

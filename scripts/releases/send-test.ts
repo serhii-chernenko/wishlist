@@ -89,6 +89,16 @@ export const parseSendTestArguments = (
     return { version, locale, target };
 };
 
+const describeMedia = (photoCount: number) => {
+    if (photoCount === 0) {
+        return ' without photos';
+    }
+
+    return photoCount === 1
+        ? ' with a photo'
+        : ` with a ${photoCount}-photo album`;
+};
+
 const redact = (message: string, secret: string) => {
     return secret ? message.split(secret).join('[redacted]') : message;
 };
@@ -100,7 +110,7 @@ const run = async () => {
     const { botToken, chatId } = resolveUploadCredentials(target);
 
     try {
-        const { albumPhotos } = await sendReleaseAnnouncementCopy({
+        const { mediaPhotos } = await sendReleaseAnnouncementCopy({
             sender: createReleaseAnnouncementSender(new Telegram(botToken)),
             chatId,
             releaseVersion: version,
@@ -108,7 +118,7 @@ const run = async () => {
         });
 
         console.log(
-            `Sent the ${version} announcement (${locale}, ${target} bot) to the admin chat${albumPhotos > 0 ? ` with a ${albumPhotos}-photo album` : ' without an album'}.`
+            `Sent the ${version} announcement (${locale}, ${target} bot) to the admin chat${describeMedia(mediaPhotos)}.`
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
