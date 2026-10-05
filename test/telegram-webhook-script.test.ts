@@ -12,9 +12,11 @@ import {
     BOT_COMMAND_NAMES,
     callTelegramApi,
     createDropPendingUpdatesParameters,
+    createMenuButtonParameters,
     createSetMyCommandsParameters,
     formatTelegramWebhookInfo,
     loadLocalizedBotCommandSets,
+    MENU_BUTTON_TEXT,
     parseDropPendingUpdates,
     parseMaxConnections,
     parsePreviewBaseUrl,
@@ -883,6 +885,138 @@ test('raw production commands skip getMe and load the production env file', asyn
             fake.requests[0]?.url.includes(`bot${shellBotToken}/`),
             true
         );
+    });
+});
+
+test('webhook menu takes no flags for production and only --url for preview', () => {
+    assert.deepEqual(parseWebhookArguments('menu', 'production', []), {
+        dropPendingUpdates: undefined,
+        baseUrl: undefined
+    });
+    assert.deepEqual(parseWebhookArguments('menu', 'production', ['--']), {
+        dropPendingUpdates: undefined,
+        baseUrl: undefined
+    });
+    assert.deepEqual(
+        parseWebhookArguments('menu', 'preview', ['--url', previewOrigin]),
+        { dropPendingUpdates: undefined, baseUrl: previewOrigin }
+    );
+    assert.throws(() => {
+        parseWebhookArguments('menu', 'preview', []);
+    }, /requires --url/);
+    assert.throws(() => {
+        parseWebhookArguments('menu', 'production', ['--url', previewOrigin]);
+    }, /only supported for the preview target/);
+    assert.throws(() => {
+        parseWebhookArguments('menu', 'preview', [
+            '--url',
+            previewOrigin,
+            '--drop-pending-updates=true'
+        ]);
+    }, /accepts only --url/);
+    assert.throws(() => {
+        parseWebhookArguments('menu', 'production', ['--max-connections=2']);
+    }, /only supported for webhook set/);
+});
+
+test('setChatMenuButton parameters carry a web_app button without a chat id', () => {
+    const parameters = createMenuButtonParameters('https://worker.example/');
+
+    assert.equal(parameters.has('chat_id'), false);
+    assert.deepEqual(JSON.parse(parameters.get('menu_button') ?? ''), {
+        type: 'web_app',
+        text: MENU_BUTTON_TEXT,
+        web_app: { url: 'https://worker.example/app' }
+    });
+    assert.equal(MENU_BUTTON_TEXT, 'App');
+});
+
+test('raw production menu uses WORKER_BASE_URL and skips getMe', async () => {
+    await withShellEnvironment(async () => {
+        const fake = createTelegramFake('anyone');
+        const loadedTargets: string[] = [];
+
+        process.env.WORKER_BASE_URL = 'https://wishlist.chernenko.dev';
+
+        await runWebhookCommand(
+            'menu',
+            'production',
+            [],
+            createRunDependencies(fake, {
+                loadPreviewEnvironment: async () => {
+                    throw new Error('Unexpected preview env load');
+                },
+                loadOptionalEnvFile: target => {
+                    loadedTargets.push(target);
+                }
+            })
+        );
+
+        assert.deepEqual(loadedTargets, ['production']);
+        assert.deepEqual(fake.methods(), ['setChatMenuButton']);
+        assert.equal(
+            fake.requests[0]?.url.includes(`bot${shellBotToken}/`),
+            true
+        );
+
+        const body = new URLSearchParams(fake.requests[0]?.body);
+
+        assert.equal(body.has('chat_id'), false);
+        assert.deepEqual(JSON.parse(body.get('menu_button') ?? ''), {
+            type: 'web_app',
+            text: 'App',
+            web_app: { url: 'https://wishlist.chernenko.dev/app' }
+        });
+    });
+});
+
+test('raw preview menu verifies the preview bot and points at the --url origin', async () => {
+    await withShellEnvironment(async () => {
+        const fake = createTelegramFake('InevixTestBot');
+
+        await runWebhookCommand(
+            'menu',
+            'preview',
+            ['--url', previewOrigin],
+            createRunDependencies(fake)
+        );
+
+        assert.deepEqual(fake.methods(), ['getMe', 'setChatMenuButton']);
+        assert.equal(
+            fake.requests.every(request => {
+                return request.url.includes(`bot${previewFileBotToken}/`);
+            }),
+            true
+        );
+        assert.deepEqual(
+            JSON.parse(
+                new URLSearchParams(fake.requests[1]?.body).get(
+                    'menu_button'
+                ) ?? ''
+            ),
+            {
+                type: 'web_app',
+                text: 'App',
+                web_app: { url: `${previewOrigin}/app` }
+            }
+        );
+    });
+});
+
+test('raw preview menu aborts for the production bot before changing anything', async () => {
+    await withShellEnvironment(async () => {
+        const fake = createTelegramFake('wishlist_ua_bot');
+
+        await assert.rejects(
+            runWebhookCommand(
+                'menu',
+                'preview',
+                ['--url', previewOrigin],
+                createRunDependencies(fake)
+            ),
+            /production bot/
+        );
+        assert.deepEqual(fake.methods(), ['getMe']);
     });
 });
 
