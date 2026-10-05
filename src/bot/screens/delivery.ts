@@ -135,6 +135,24 @@ export const callbacks: CallbackTable = {
     async deliveryRemove(req) {
         const { LL, user } = req;
 
+        if (!user?.deliveryAddress) {
+            await render(req);
+            return;
+        }
+
+        await req.send.text(
+            LL.delivery.removeConfirm(),
+            singleColumnKeyboard([
+                callbackButton(LL.actions.yes(), {
+                    type: 'deliveryRemoveConfirm'
+                }),
+                navigationButton(LL.actions.no(), 'delivery')
+            ])
+        );
+    },
+    async deliveryRemoveConfirm(req) {
+        const { LL, user } = req;
+
         if (!user) {
             await homeScreen.render(req, undefined);
             return;

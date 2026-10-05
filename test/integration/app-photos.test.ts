@@ -326,6 +326,18 @@ describe('Mini App photo endpoints', () => {
             .map(event => event.result);
     };
 
+    const imageChangeResults = () => {
+        return events
+            .filter(event => {
+                return (
+                    event.event === 'bot_action_completed' &&
+                    event.action === 'wish_updated' &&
+                    event.field === 'images'
+                );
+            })
+            .map(event => event.result);
+    };
+
     before(async () => {
         harness = await createD1Harness();
         await harness.applyMigrations();
@@ -383,6 +395,7 @@ describe('Mini App photo endpoints', () => {
             new RegExp(`^/img/w/${wish.id}/0/${key.slice(0, 16)}\\?e=\\d+&s=`)
         );
         assert.deepEqual(eventResults(), ['appended']);
+        assert.deepEqual(imageChangeResults(), ['added']);
     });
 
     it('populates R2 from the Telegram re-encoded file on the first proxy miss', async () => {
@@ -632,6 +645,7 @@ describe('Mini App photo endpoints', () => {
 
         assert.equal(removed.status, 200);
         assert.deepEqual(await storedImages(wish.id), ['first', 'third']);
+        assert.deepEqual(imageChangeResults(), ['removed']);
         assert.deepEqual(
             body.images.map(image => image.hash),
             [await hashOf('first'), await hashOf('third')]
@@ -652,6 +666,7 @@ describe('Mini App photo endpoints', () => {
         assert.equal(response.status, 200);
         assert.deepEqual(body.images, []);
         assert.deepEqual(await storedImages(wish.id), []);
+        assert.deepEqual(imageChangeResults(), ['cleared']);
     });
 
     it('starts the chat intent: pending wishField images and the add or update prompt', async () => {

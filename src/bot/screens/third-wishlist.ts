@@ -17,9 +17,17 @@ import {
     removeReplyKeyboard,
     singleColumnKeyboard
 } from '../content/keyboards';
-import { getPageWindow, normalizeOffset } from '../content/pagination';
+import {
+    getPageWindow,
+    normalizeOffset,
+    WISHES_PAGE_SIZE
+} from '../content/pagination';
 import { PAYMENTS_MAX_LENGTH, truncateWithMark } from '../input/limits';
-import { renderWishHtml, toWishMessage } from '../content/wish-markup';
+import {
+    renderWishHtml,
+    toWishMessage,
+    withoutPriority
+} from '../content/wish-markup';
 import type {
     BotRequest,
     CallbackTable,
@@ -27,6 +35,7 @@ import type {
     WishFilter
 } from '../runtime/types';
 import { resolveOwnerContact } from '../services/contact-service';
+import { createGiftedService } from '../services/gifted-service';
 import { summarizeGivers, type GiverSummary } from '../services/give-service';
 import {
     createWishFormatters,
@@ -98,6 +107,48 @@ const buildFilterButton = (
         `${req.LL.filters.title()} ${getFilterMarker(filter)}`,
         { type: 'thirdFilterMenu', ownerId }
     );
+};
+
+const buildGiftedButton = (
+    req: BotRequest,
+    ownerId: number,
+    giftedTotal: number
+) => {
+    if (giftedTotal === 0) {
+        return null;
+    }
+
+    return callbackButton(
+        req.LL.findList.gifted.entry({ count: giftedTotal }),
+        { type: 'thirdGifted', ownerId, offset: 0 }
+    );
+};
+
+const getAppliedFilterLine = (req: BotRequest, filter: WishFilter | null) => {
+    if (filter === null) {
+        return '';
+    }
+
+    return req.LL.filters.applied(
+        escapeHtml(
+            getFilterTitle(req.LL, req.locale, req.displayCurrency, filter)
+        )
+    );
+};
+
+const getCountsLine = (
+    req: BotRequest,
+    activeTotal: number,
+    giftedTotal: number
+) => {
+    if (giftedTotal === 0) {
+        return '';
+    }
+
+    return `\n\n${req.LL.findList.gifted.counts({
+        active: activeTotal,
+        gifted: giftedTotal
+    })}`;
 };
 
 const renderContactHtml = (req: BotRequest, contact: OwnerContactDto) => {
@@ -198,7 +249,12 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
         find: { targetUserId: owner.id, query, filter }
     });
 
-    if (page.total === 0) {
+    const giftedTotal = await createGiftedService(req.repos).countVisibleOf(
+        owner,
+        priceBounds
+    );
+
+    if (page.total === 0 && giftedTotal === 0) {
         if (filter === null) {
             await req.send.text(LL.findList.empty());
             await findListScreen.render(req, undefined);
@@ -217,25 +273,11 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
         return;
     }
 
-    const window = getPageWindow(offset, page.items.length, page.total);
-
-    if (window.isFirstPage) {
-        const appliedFilter =
-            filter === null
-                ? ''
-                : LL.filters.applied(
-                      escapeHtml(
-                          getFilterTitle(
-                              LL,
-                              req.locale,
-                              req.displayCurrency,
-                              filter
-                          )
-                      )
-                  );
-
+    const sendOwnerHeader = async () => {
         await req.send.text(
-            LL.findList.filled.before(escapeHtml(query)) + appliedFilter,
+            LL.findList.filled.before(escapeHtml(query)) +
+                getAppliedFilterLine(req, filter) +
+                getCountsLine(req, page.total, giftedTotal),
             removeReplyKeyboard()
         );
 
@@ -259,6 +301,29 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
                 { disableLinkPreview: true }
             );
         }
+    };
+
+    if (page.total === 0) {
+        await sendOwnerHeader();
+        await req.send.text(
+            filter === null
+                ? LL.findList.gifted.noActive()
+                : LL.findList.filtered(),
+            singleColumnKeyboard([
+                buildGiftedButton(req, owner.id, giftedTotal),
+                buildFilterButton(req, owner.id, filter),
+                navigationButton(LL.actions.back(), 'findList'),
+                homeButton(LL)
+            ])
+        );
+
+        return;
+    }
+
+    const window = getPageWindow(offset, page.items.length, page.total);
+
+    if (window.isFirstPage) {
+        await sendOwnerHeader();
     }
 
     const giversByWish = await gives.giversOf(
@@ -301,6 +366,7 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
                   ownerId: owner.id,
                   offset: window.nextOffset
               }),
+        buildGiftedButton(req, owner.id, giftedTotal),
         buildFilterButton(req, owner.id, filter),
         navigationButton(LL.actions.back(), 'findList'),
         homeButton(LL)
@@ -309,6 +375,93 @@ const render = async (req: BotRequest, params: ThirdWishlistParams) => {
     await req.send.text(
         LL.findList.filled.after() + rangeLine,
         singleColumnKeyboard(footerButtons)
+    );
+};
+
+const renderGifted = async (
+    req: BotRequest,
+    ownerId: number,
+    requestedOffset: number
+) => {
+    const { LL } = req;
+    const owner = await loadOwner(req, ownerId);
+
+    if (owner === null) {
+        await renderUnavailableOwner(req);
+
+        return;
+    }
+
+    const service = createGiftedService(req.repos);
+    const priceBounds = getPriceBoundsByCurrency(
+        req,
+        getOwnerFilter(req, owner.id)
+    );
+    const total = await service.countVisibleOf(owner, priceBounds);
+
+    if (total === 0) {
+        await render(req, { ownerId: owner.id });
+
+        return;
+    }
+
+    const offset = normalizeOffset(requestedOffset, total);
+    const items = await service.listVisibleOf(owner, priceBounds, {
+        offset,
+        limit: WISHES_PAGE_SIZE
+    });
+    const window = getPageWindow(offset, items.length, total);
+    const formatters = createWishFormatters(req);
+
+    updateSession(req, { pendingInput: null });
+
+    if (window.isFirstPage) {
+        await req.send.text(
+            LL.findList.gifted.title(
+                escapeHtml(resolveQueryLabel(req, owner, undefined))
+            ),
+            removeReplyKeyboard()
+        );
+    }
+
+    for (const wish of items) {
+        await req.send.wish(
+            toWishMessage(
+                renderWishHtml(LL, withoutPriority(wish), formatters, {
+                    detail: 'full',
+                    showHidden: false
+                }),
+                wish
+            ),
+            singleColumnKeyboard(openLinkButton(req, wish.link))
+        );
+    }
+
+    const rangeLine = window.isPaginated
+        ? `\n\n${LL.pagination.range(
+              String(window.firstPosition),
+              String(window.lastPosition),
+              String(window.total)
+          )}`
+        : '';
+
+    await req.send.text(
+        LL.findList.gifted.after() + rangeLine,
+        singleColumnKeyboard([
+            window.nextOffset === null
+                ? null
+                : callbackButton(`➡️ ${LL.actions.more()}`, {
+                      type: 'thirdGifted',
+                      ownerId: owner.id,
+                      offset: window.nextOffset
+                  }),
+            callbackButton(LL.actions.back(), {
+                type: 'thirdPage',
+                ownerId: owner.id,
+                offset: 0
+            }),
+            homeButton(LL)
+        ])
     );
 };
 
@@ -355,6 +508,17 @@ export const callbacks: CallbackTable = {
             ownerId: action.ownerId,
             offset: action.offset
         });
+    },
+    thirdGifted: async (req, action) => {
+        requireUser(req);
+
+        if (!isSearchedOwner(req, action.ownerId)) {
+            await rejectOutdatedButton(req);
+
+            return;
+        }
+
+        await renderGifted(req, action.ownerId, action.offset);
     },
     thirdFilterMenu: async (req, action) => {
         requireUser(req);

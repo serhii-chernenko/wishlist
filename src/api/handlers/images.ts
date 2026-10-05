@@ -24,7 +24,8 @@ import {
 import { isLinkImportEnabled } from '../../worker/env';
 import {
     appPhotoUploadedEvent,
-    type AppPhotoUploadResult
+    type AppPhotoUploadResult,
+    type WishImageChangeResult
 } from '../../worker/telemetry';
 import {
     emitApiTelemetry,
@@ -104,6 +105,10 @@ const respondWithWish = async (c: ApiContext, wish: WishRecord) => {
     const body: OwnWishDto = toOwnWishDto(wish, images);
 
     return c.json(body);
+};
+
+const emitImagesChanged = (c: ApiContext, result: WishImageChangeResult) => {
+    emitAppAction(c, 'wish_updated', { field: 'images', result });
 };
 
 const reloadOwnedWish = async (c: ApiContext, wishId: number) => {
@@ -237,6 +242,10 @@ const ingestPhotoBytes = async (
         case 'duplicate':
         case 'appended':
             emitApiTelemetry(c, appPhotoUploadedEvent(appended.outcome));
+
+            if (appended.outcome === 'appended') {
+                emitImagesChanged(c, 'added');
+            }
 
             return respondWithWish(c, await reloadOwnedWish(c, wishId));
     }
@@ -410,6 +419,7 @@ export const removeWishImage: ApiHandler = async c => {
     }
 
     await releaseImagesInBackground(c, [fileId]);
+    emitImagesChanged(c, 'removed');
 
     return respondWithWish(c, updated);
 };
@@ -423,6 +433,7 @@ export const clearWishImages: ApiHandler = async c => {
     }
 
     await releaseImagesInBackground(c, parseWishImages(wish.images));
+    emitImagesChanged(c, 'cleared');
 
     return respondWithWish(c, await reloadOwnedWish(c, wishId));
 };

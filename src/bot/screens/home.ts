@@ -1,6 +1,7 @@
 import type { TranslationFunctions } from '../../i18n/i18n-types';
 import {
     appEntryButton,
+    callbackButton,
     navigationButton,
     singleColumnKeyboard
 } from '../content/keyboards';
@@ -24,6 +25,7 @@ const guestKeyboard = (req: BotRequest) => {
         navigationButton(LL.privacy.title(), 'privacy'),
         navigationButton(LL.feedback.title(), 'feedback'),
         navigationButton(LL.stats.action(), 'stats'),
+        navigationButton(LL.releases.title(), 'releases'),
         navigationButton(LL.donate.title(), 'donate'),
         navigationButton(getLanguageButtonLabel(LL), 'language')
     ]);
@@ -37,6 +39,7 @@ const userKeyboard = (req: BotRequest, user: UserRecord) => {
         navigationButton(LL.wishlist.title(), 'wishlist'),
         navigationButton(LL.giveList.title(), 'giveList'),
         navigationButton(LL.findList.title(), 'findList'),
+        callbackButton(LL.actions.share(), { type: 'wishlistShare' }),
         navigationButton(LL.settings.title(), 'settings'),
         navigationButton(LL.auth.title.user(), 'auth'),
         navigationButton(
@@ -48,6 +51,7 @@ const userKeyboard = (req: BotRequest, user: UserRecord) => {
         navigationButton(LL.privacy.title(), 'privacy'),
         navigationButton(LL.feedback.title(), 'feedback'),
         navigationButton(LL.stats.action(), 'stats'),
+        navigationButton(LL.releases.title(), 'releases'),
         navigationButton(LL.donate.title(), 'donate'),
         navigationButton(getLanguageButtonLabel(LL), 'language')
     ]);

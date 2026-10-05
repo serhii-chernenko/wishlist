@@ -69,6 +69,7 @@ const LIST_IMPORT_VISIBILITY_CODES = {
 } as const satisfies Record<ListImportVisibility, string>;
 
 const CONFIRM_SUFFIX = 'y';
+const KEEP_SUFFIX = 'n';
 
 const LANGUAGE_CHOICES: readonly LanguageChoice[] = ['uk', 'en', 'pl', 'auto'];
 
@@ -199,6 +200,14 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return 'wl:f';
         case 'wishlistFilter':
             return `wl:f:${encodeFilter(action.filter)}`;
+        case 'giftedPage':
+            return `wl:g:${action.offset}`;
+        case 'giftedRestore':
+            return `w:gr:${action.wishId}`;
+        case 'giftedHide':
+            return `w:gh:${action.wishId}`;
+        case 'giftedHideConfirm':
+            return `w:gh:${CONFIRM_SUFFIX}:${action.wishId}`;
         case 'wishEdit':
             return `w:e:${action.wishId}`;
         case 'wishRemove':
@@ -215,6 +224,10 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `w:io:${action.wishId}`;
         case 'wishImageFirst':
             return `w:if:${action.wishId}:${action.index}:${action.hash8}`;
+        case 'wishImageRemove':
+            return `w:ir:${action.wishId}:${action.index}:${action.hash8}`;
+        case 'wishImagesClearConfirm':
+            return `w:ic:${action.wishId}`;
         case 'wishToggleVisibility':
             return `w:v:${action.wishId}`;
         case 'wishFieldPrompt':
@@ -237,10 +250,16 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `t:f:${action.ownerId}`;
         case 'thirdFilter':
             return `t:f:${action.ownerId}:${encodeFilter(action.filter)}`;
+        case 'thirdGifted':
+            return `t:gl:${action.ownerId}:${action.offset}`;
         case 'giveListPage':
             return `g:p:${action.offset}`;
         case 'giveRemove':
             return `g:r:${action.wishId}`;
+        case 'giveRemoveConfirm':
+            return `g:r:${CONFIRM_SUFFIX}:${action.wishId}`;
+        case 'giveRemoveKeep':
+            return `g:r:${KEEP_SUFFIX}:${action.wishId}`;
         case 'giveListClean':
             return 'g:clean';
         case 'giveListCleanConfirm':
@@ -249,6 +268,8 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `a:${AUTH_TYPE_CODES[action.authType]}`;
         case 'paymentsRemove':
             return 'p:rm';
+        case 'paymentsRemoveConfirm':
+            return `p:rm:${CONFIRM_SUFFIX}`;
         case 'currencySet':
             return `cur:${action.currency}`;
         case 'disclosureToggle':
@@ -257,6 +278,10 @@ const encodeAction = (action: EncodableCallbackAction): string => {
             return `dsc:${DISCLOSURE_FIELD_CODES[action.field]}:${CONFIRM_SUFFIX}`;
         case 'deliveryRemove':
             return 'dlv:rm';
+        case 'deliveryRemoveConfirm':
+            return `dlv:rm:${CONFIRM_SUFFIX}`;
+        case 'releasesPage':
+            return `rel:p:${action.offset}`;
         case 'language':
             return `l:${action.choice}`;
         case 'listImportSource':
@@ -346,6 +371,12 @@ const decodeWishlist = (parts: readonly string[]): CallbackAction => {
     if (command === 'p') {
         return withOffset(argument, offset => {
             return { type: 'wishlistPage', offset };
+        });
+    }
+
+    if (command === 'g') {
+        return withOffset(argument, offset => {
+            return { type: 'giftedPage', offset };
         });
     }
 
@@ -457,6 +488,51 @@ const decodeWishImageFirst = (parts: readonly string[]): CallbackAction => {
     });
 };
 
+const decodeWishImageRemove = (parts: readonly string[]): CallbackAction => {
+    const [, , wishIdPart, indexPart, hash8, ...rest] = parts;
+
+    if (
+        indexPart === undefined ||
+        !IMAGE_INDEX_PATTERN.test(indexPart) ||
+        hash8 === undefined ||
+        !IMAGE_HASH_PREFIX_PATTERN.test(hash8) ||
+        rest.length > 0
+    ) {
+        return OUTDATED;
+    }
+
+    return withWishId(wishIdPart, wishId => {
+        return {
+            type: 'wishImageRemove',
+            wishId,
+            index: Number(indexPart),
+            hash8
+        };
+    });
+};
+
+const decodeGiftedHide = (parts: readonly string[]): CallbackAction => {
+    const [, , first, second, ...rest] = parts;
+
+    if (rest.length > 0) {
+        return OUTDATED;
+    }
+
+    if (second === undefined) {
+        return withWishId(first, wishId => {
+            return { type: 'giftedHide', wishId };
+        });
+    }
+
+    if (first !== CONFIRM_SUFFIX) {
+        return OUTDATED;
+    }
+
+    return withWishId(second, wishId => {
+        return { type: 'giftedHideConfirm', wishId };
+    });
+};
+
 const decodeWishAdd = (
     variant: string | undefined,
     argument: string | undefined,
@@ -485,7 +561,9 @@ const WISH_DECODERS_BY_COMMAND: Readonly<
     r: decodeWishRemove,
     pl: decodeWishPrioritySet,
     cu: decodeWishCurrencySet,
-    if: decodeWishImageFirst
+    if: decodeWishImageFirst,
+    ir: decodeWishImageRemove,
+    gh: decodeGiftedHide
 };
 
 const decodeWish = (parts: readonly string[]): CallbackAction => {
@@ -532,6 +610,14 @@ const decodeWish = (parts: readonly string[]): CallbackAction => {
             return withWishId(first, wishId => {
                 return { type: 'wishImagesOrder', wishId };
             });
+        case 'ic':
+            return withWishId(first, wishId => {
+                return { type: 'wishImagesClearConfirm', wishId };
+            });
+        case 'gr':
+            return withWishId(first, wishId => {
+                return { type: 'giftedRestore', wishId };
+            });
         case 'v':
             return withWishId(first, wishId => {
                 return { type: 'wishToggleVisibility', wishId };
@@ -561,6 +647,18 @@ const decodeThird = (parts: readonly string[]): CallbackAction => {
 
         return withOffset(second, offset => {
             return { type: 'thirdPage', ownerId, offset };
+        });
+    }
+
+    if (command === 'gl') {
+        const ownerId = parseEntityId(first);
+
+        if (ownerId === null) {
+            return OUTDATED;
+        }
+
+        return withOffset(second, offset => {
+            return { type: 'thirdGifted', ownerId, offset };
         });
     }
 
@@ -601,10 +699,39 @@ const decodeThird = (parts: readonly string[]): CallbackAction => {
     return OUTDATED;
 };
 
-const decodeGiveList = (parts: readonly string[]): CallbackAction => {
-    const [, command, argument, ...rest] = parts;
+const GIVE_REMOVE_TYPES_BY_SUFFIX = {
+    [CONFIRM_SUFFIX]: 'giveRemoveConfirm',
+    [KEEP_SUFFIX]: 'giveRemoveKeep'
+} as const;
 
-    if (rest.length > 0) {
+const decodeGiveRemove = (
+    first: string | undefined,
+    second: string | undefined
+): CallbackAction => {
+    if (second === undefined) {
+        return withWishId(first, wishId => {
+            return { type: 'giveRemove', wishId };
+        });
+    }
+
+    const type =
+        first === CONFIRM_SUFFIX || first === KEEP_SUFFIX
+            ? GIVE_REMOVE_TYPES_BY_SUFFIX[first]
+            : undefined;
+
+    if (type === undefined) {
+        return OUTDATED;
+    }
+
+    return withWishId(second, wishId => {
+        return { type, wishId };
+    });
+};
+
+const decodeGiveList = (parts: readonly string[]): CallbackAction => {
+    const [, command, argument, second, ...rest] = parts;
+
+    if (rest.length > 0 || (second !== undefined && command !== 'r')) {
         return OUTDATED;
     }
 
@@ -615,9 +742,7 @@ const decodeGiveList = (parts: readonly string[]): CallbackAction => {
     }
 
     if (command === 'r') {
-        return withWishId(argument, wishId => {
-            return { type: 'giveRemove', wishId };
-        });
+        return decodeGiveRemove(argument, second);
     }
 
     if (command === 'clean') {
@@ -656,10 +781,30 @@ const decodeLanguage = (parts: readonly string[]): CallbackAction => {
     return { type: 'language', choice };
 };
 
+const decodeRemoval = (
+    parts: readonly string[],
+    removal: CallbackAction,
+    confirmation: CallbackAction
+): CallbackAction => {
+    const [, command, suffix, ...rest] = parts;
+
+    if (command !== 'rm' || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    if (suffix === undefined) {
+        return removal;
+    }
+
+    return suffix === CONFIRM_SUFFIX ? confirmation : OUTDATED;
+};
+
 const decodePayments = (parts: readonly string[]): CallbackAction => {
-    return parts.length === 2 && parts[1] === 'rm'
-        ? { type: 'paymentsRemove' }
-        : OUTDATED;
+    return decodeRemoval(
+        parts,
+        { type: 'paymentsRemove' },
+        { type: 'paymentsRemoveConfirm' }
+    );
 };
 
 const decodeCurrency = (parts: readonly string[]): CallbackAction => {
@@ -698,9 +843,23 @@ const decodeDisclosure = (parts: readonly string[]): CallbackAction => {
 };
 
 const decodeDelivery = (parts: readonly string[]): CallbackAction => {
-    return parts.length === 2 && parts[1] === 'rm'
-        ? { type: 'deliveryRemove' }
-        : OUTDATED;
+    return decodeRemoval(
+        parts,
+        { type: 'deliveryRemove' },
+        { type: 'deliveryRemoveConfirm' }
+    );
+};
+
+const decodeReleases = (parts: readonly string[]): CallbackAction => {
+    const [, command, argument, ...rest] = parts;
+
+    if (command !== 'p' || rest.length > 0) {
+        return OUTDATED;
+    }
+
+    return withOffset(argument, offset => {
+        return { type: 'releasesPage', offset };
+    });
 };
 
 const decodeListImport = (parts: readonly string[]): CallbackAction => {
@@ -772,6 +931,7 @@ const DECODERS_BY_PREFIX: Readonly<
     cur: decodeCurrency,
     dsc: decodeDisclosure,
     dlv: decodeDelivery,
+    rel: decodeReleases,
     imp: decodeListImport
 };
 
@@ -834,6 +994,10 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishlistShareGifted: 'wishlist:shareGifted',
     wishlistFilterMenu: 'wishlist:filterMenu',
     wishlistFilter: 'wishlist:filter',
+    giftedPage: 'gifted:page',
+    giftedRestore: 'gifted:restore',
+    giftedHide: 'gifted:hide',
+    giftedHideConfirm: 'gifted:hideConfirm',
     wishEdit: 'wish:edit',
     wishRemove: 'wish:remove',
     wishRemoveConfirm: 'wish:removeConfirm',
@@ -842,6 +1006,8 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     wishCurrencySet: 'wish:currency',
     wishImagesOrder: 'wish:imagesOrder',
     wishImageFirst: 'wish:imageFirst',
+    wishImageRemove: 'wish:imageRemove',
+    wishImagesClearConfirm: 'wish:imagesClear',
     wishToggleVisibility: 'wish:visibility',
     wishFieldPrompt: 'wish:field',
     wishBack: 'wish:back',
@@ -853,16 +1019,22 @@ const CALLBACK_CATEGORY_BY_TYPE = {
     thirdTake: 'third:take',
     thirdFilterMenu: 'third:filterMenu',
     thirdFilter: 'third:filter',
+    thirdGifted: 'third:gifted',
     giveListPage: 'giveList:page',
     giveRemove: 'giveList:remove',
+    giveRemoveConfirm: 'giveList:removeConfirm',
+    giveRemoveKeep: 'giveList:removeKeep',
     giveListClean: 'giveList:clean',
     giveListCleanConfirm: 'giveList:cleanConfirm',
     authType: 'auth:type',
     paymentsRemove: 'payments:remove',
+    paymentsRemoveConfirm: 'payments:removeConfirm',
     currencySet: 'currency',
     disclosureToggle: 'disclosure:toggle',
     disclosureConfirm: 'disclosure:confirm',
     deliveryRemove: 'delivery:remove',
+    deliveryRemoveConfirm: 'delivery:removeConfirm',
+    releasesPage: 'releases:page',
     language: 'language',
     listImportSource: 'import:source',
     listImportVisibility: 'import:visibility',

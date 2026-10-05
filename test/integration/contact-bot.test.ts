@@ -229,6 +229,10 @@ describe('contact and disclosure in the bot', () => {
         });
     };
 
+    const firstKeyboardData = (events: SentEvent[]) => {
+        return lastKeyboardData(events.slice(0, 1));
+    };
+
     const textMessage = (text: string) => {
         return {
             message_id: 1,
@@ -445,6 +449,16 @@ describe('contact and disclosure in the bot', () => {
                 textsOf(missing.events)[0],
                 LL.disclosure.phoneMissing()
             );
+            assert.deepEqual(firstKeyboardData(missing.events), ['n:auth']);
+
+            const bare = createRequest(noNumber);
+
+            await press(bare.request, {
+                type: 'disclosureToggle',
+                field: 'address'
+            });
+
+            assert.equal(textsOf(bare.events)[0], LL.disclosure.phoneMissing());
 
             const noAddress = await createUser({
                 phone: '+48123456789',
@@ -461,6 +475,7 @@ describe('contact and disclosure in the bot', () => {
                 textsOf(addressless.events)[0],
                 LL.disclosure.needsAddress()
             );
+            assert.deepEqual(firstKeyboardData(addressless.events), ['n:dlv']);
         });
 
         it('turns the address off with the phone and payments off directly', async () => {
@@ -606,8 +621,21 @@ describe('contact and disclosure in the bot', () => {
                 showAddress: true
             });
 
+            const asked = createRequest(owner);
+
+            await press(asked.request, { type: 'deliveryRemove' });
+
+            assert.deepEqual(textsOf(asked.events), [
+                LL.delivery.removeConfirm()
+            ]);
+            assert.deepEqual(lastKeyboardData(asked.events), [
+                'dlv:rm:y',
+                'n:dlv'
+            ]);
+            assert.equal((await reload(owner)).deliveryAddress, RAW_ADDRESS);
+
             await press(createRequest(owner).request, {
-                type: 'deliveryRemove'
+                type: 'deliveryRemoveConfirm'
             });
 
             const cleared = await reload(owner);

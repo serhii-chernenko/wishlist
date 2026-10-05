@@ -162,7 +162,7 @@ test('hidden wishes are flagged only when hidden markers are requested', () => {
     );
 });
 
-test('summary markup shows title, price and one date line only', () => {
+test('summary markup shows title, priority marker, price and one date line only', () => {
     const summary = renderWishHtml(
         LL,
         createWish({
@@ -178,11 +178,27 @@ test('summary markup shows title, price and one date line only', () => {
     assert.equal(
         summary,
         [
-            '❤️ <b>Кавоварка</b>',
+            '❤️ <b>Кавоварка</b> 🔴',
             '\n\n💸 Орієнтовна вартість: <b>100 ₴</b>',
             '\n\n🗓 <i>Оновлено: 2026-02-03</i>'
         ].join('')
     );
+});
+
+test('summary markup marks each priority level and leaves no marker without priority', () => {
+    const summaryTitle = (priorityLevel: number) => {
+        return renderWishHtml(LL, createWish({ priorityLevel }), formatters, {
+            detail: 'summary',
+            showHidden: true
+        }).split('\n')[0];
+    };
+
+    assert.deepEqual([0, 1, 2, 3].map(summaryTitle), [
+        '❤️ <b>Кавоварка</b>',
+        '❤️ <b>Кавоварка</b> 🟢',
+        '❤️ <b>Кавоварка</b> 🟡',
+        '❤️ <b>Кавоварка</b> 🔴'
+    ]);
 });
 
 test('long titles and descriptions are cut before escaping', () => {

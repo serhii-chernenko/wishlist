@@ -50,13 +50,15 @@ export const REGISTERED_ONLY_SCREENS: ReadonlySet<ScreenId> = new Set([
     'disclosure',
     'wishPriority',
     'wishImages',
-    'listImport'
+    'listImport',
+    'giftedList'
 ]);
 
 const GUEST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([
     'navigate',
     'authType',
     'language',
+    'releasesPage',
     'noop',
     'outdated'
 ]);
@@ -72,6 +74,8 @@ export const KEYBOARD_PRESERVING_CALLBACK_TYPES: ReadonlySet<CallbackActionType>
         'thirdGive',
         'thirdTake',
         'giveRemove',
+        'giveRemoveConfirm',
+        'giveRemoveKeep',
         'listImportVisibility',
         'noop'
     ]);
@@ -80,6 +84,7 @@ export const TOAST_CALLBACK_TYPES: ReadonlySet<CallbackActionType> = new Set([
     'thirdGive',
     'thirdTake',
     'giveRemove',
+    'giveRemoveConfirm',
     'outdated'
 ]);
 

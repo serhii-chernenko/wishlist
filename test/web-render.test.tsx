@@ -180,7 +180,7 @@ test('priority badge, price chip and dates follow the page language', () => {
     assert.match(html, /<li class="wish"><article class="wish-tag">/);
     assert.match(
         html,
-        /<p class="priority-badge" data-level="high">Дуже хоче<\/p>/
+        /<p class="priority-badge" data-level="high">Високий<\/p>/
     );
     assert.match(
         html,

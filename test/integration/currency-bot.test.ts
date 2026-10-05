@@ -104,6 +104,7 @@ describe('Currency flows in the bot', () => {
                 'cur:USD',
                 'cur:EUR',
                 'cur:PLN',
+                'n:set',
                 'n:home'
             ]);
             assert.equal(

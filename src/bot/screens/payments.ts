@@ -4,6 +4,7 @@ import type { Message } from 'telegraf/types';
 import {
     callbackButton,
     homeButton,
+    navigationButton,
     removeReplyKeyboard,
     singleColumnKeyboard
 } from '../content/keyboards';
@@ -93,6 +94,24 @@ export const screen: ScreenModule = {
 
 export const callbacks: CallbackTable = {
     async paymentsRemove(req) {
+        const { LL, user } = req;
+
+        if (!user?.payments) {
+            await render(req);
+            return;
+        }
+
+        await req.send.text(
+            LL.payments.remove.confirm(),
+            singleColumnKeyboard([
+                callbackButton(LL.actions.yes(), {
+                    type: 'paymentsRemoveConfirm'
+                }),
+                navigationButton(LL.actions.no(), 'payments')
+            ])
+        );
+    },
+    async paymentsRemoveConfirm(req) {
         const { LL, user } = req;
 
         if (!user) {

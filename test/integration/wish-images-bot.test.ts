@@ -128,6 +128,9 @@ describe('Bot photo order', () => {
         const expectedCodes = [
             `w:if:${wish.id}:1:${await hash8('photo-b')}`,
             `w:if:${wish.id}:2:${await hash8('photo-c')}`,
+            `w:ir:${wish.id}:0:${await hash8('photo-a')}`,
+            `w:ir:${wish.id}:1:${await hash8('photo-b')}`,
+            `w:ir:${wish.id}:2:${await hash8('photo-c')}`,
             `w:e:${wish.id}`
         ];
 
@@ -136,9 +139,12 @@ describe('Bot photo order', () => {
             callbackDataOf(picker).filter(code => code.startsWith('w:')),
             expectedCodes
         );
-        assert.deepEqual(buttonTextsOf(picker).slice(0, 2), [
+        assert.deepEqual(buttonTextsOf(picker).slice(0, 5), [
             LL.wishlist.edit.images.order.makeFirst({ n: 2 }),
-            LL.wishlist.edit.images.order.makeFirst({ n: 3 })
+            LL.wishlist.edit.images.order.makeFirst({ n: 3 }),
+            LL.wishlist.edit.images.order.remove({ n: 1 }),
+            LL.wishlist.edit.images.order.remove({ n: 2 }),
+            LL.wishlist.edit.images.order.remove({ n: 3 })
         ]);
         assert.ok(
             (picker.reply_markup?.inline_keyboard ?? []).every(row => {

@@ -108,14 +108,38 @@ const describeRejection = (req: BotRequest, reason: DisclosureRejection) => {
         : disclosure.phoneMissing();
 };
 
+const buildRejectionKeyboard = (
+    req: BotRequest,
+    reason: DisclosureRejection
+) => {
+    const { LL } = req;
+
+    return singleColumnKeyboard([
+        reason === 'addressRequired'
+            ? navigationButton(LL.delivery.title.add(), 'delivery')
+            : navigationButton(LL.auth.title.user(), 'auth')
+    ]);
+};
+
+const renderRejection = async (
+    req: BotRequest,
+    user: UserRecord,
+    reason: DisclosureRejection
+) => {
+    await req.send.text(
+        describeRejection(req, reason),
+        buildRejectionKeyboard(req, reason)
+    );
+    await renderFor(req, user);
+};
+
 const finishChange = async (
     req: BotRequest,
     user: UserRecord,
     outcome: DisclosureOutcome
 ) => {
     if (!outcome.ok) {
-        await req.send.text(describeRejection(req, outcome.reason));
-        await renderFor(req, user);
+        await renderRejection(req, user, outcome.reason);
         return;
     }
 
@@ -161,15 +185,15 @@ const precheckEnabling = (
     user: UserRecord,
     field: ConfirmableDisclosureField
 ): { reason: DisclosureRejection } | null => {
-    if (field === 'phone') {
-        return user.phone === null ? { reason: 'phoneRequired' } : null;
+    if (user.phone === null) {
+        return { reason: 'phoneRequired' };
     }
 
-    if (!user.deliveryAddress) {
+    if (field === 'address' && !user.deliveryAddress) {
         return { reason: 'addressRequired' };
     }
 
-    return user.phone === null ? { reason: 'phoneRequired' } : null;
+    return null;
 };
 
 export const screen: ScreenModule = {
@@ -201,8 +225,7 @@ export const callbacks: CallbackTable = {
         const rejection = precheckEnabling(user, action.field);
 
         if (rejection !== null) {
-            await req.send.text(describeRejection(req, rejection.reason));
-            await renderFor(req, user);
+            await renderRejection(req, user, rejection.reason);
             return;
         }
 

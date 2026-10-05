@@ -66,7 +66,8 @@ export type ScreenId =
     | 'disclosure'
     | 'wishPriority'
     | 'wishImages'
-    | 'listImport';
+    | 'listImport'
+    | 'giftedList';
 
 export type NavigationScreenId = Extract<
     ScreenId,
@@ -164,6 +165,10 @@ export type CallbackAction =
     | { type: 'wishlistShareGifted' }
     | { type: 'wishlistFilterMenu' }
     | { type: 'wishlistFilter'; filter: WishFilter | null }
+    | { type: 'giftedPage'; offset: number }
+    | { type: 'giftedRestore'; wishId: number }
+    | { type: 'giftedHide'; wishId: number }
+    | { type: 'giftedHideConfirm'; wishId: number }
     | { type: 'wishEdit'; wishId: number }
     | { type: 'wishRemove'; wishId: number }
     | { type: 'wishRemoveConfirm'; wishId: number; done: boolean }
@@ -177,6 +182,13 @@ export type CallbackAction =
           index: number;
           hash8: string;
       }
+    | {
+          type: 'wishImageRemove';
+          wishId: number;
+          index: number;
+          hash8: string;
+      }
+    | { type: 'wishImagesClearConfirm'; wishId: number }
     | { type: 'wishToggleVisibility'; wishId: number }
     | { type: 'wishFieldPrompt'; wishId: number; field: WishField }
     | { type: 'wishBack'; wishId: number }
@@ -188,16 +200,22 @@ export type CallbackAction =
     | { type: 'thirdTake'; wishId: number }
     | { type: 'thirdFilterMenu'; ownerId: number }
     | { type: 'thirdFilter'; ownerId: number; filter: WishFilter | null }
+    | { type: 'thirdGifted'; ownerId: number; offset: number }
     | { type: 'giveListPage'; offset: number }
     | { type: 'giveRemove'; wishId: number }
+    | { type: 'giveRemoveConfirm'; wishId: number }
+    | { type: 'giveRemoveKeep'; wishId: number }
     | { type: 'giveListClean' }
     | { type: 'giveListCleanConfirm' }
     | { type: 'authType'; authType: AuthType }
     | { type: 'paymentsRemove' }
+    | { type: 'paymentsRemoveConfirm' }
     | { type: 'currencySet'; currency: Currency }
     | { type: 'disclosureToggle'; field: ContactDisclosureField }
     | { type: 'disclosureConfirm'; field: ConfirmableDisclosureField }
     | { type: 'deliveryRemove' }
+    | { type: 'deliveryRemoveConfirm' }
+    | { type: 'releasesPage'; offset: number }
     | { type: 'language'; choice: LanguageChoice }
     | { type: 'listImportSource'; source: ListImportSource }
     | {
@@ -284,6 +302,8 @@ export type BotActionName =
     | 'contact_disclosure_changed'
     | 'delivery_address_updated'
     | 'delivery_address_removed'
+    | 'wish_restored'
+    | 'gifted_hidden'
     | 'show_gifted_changed';
 
 export type InternalFailureEvent =

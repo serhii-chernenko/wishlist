@@ -217,6 +217,7 @@ describe('Telegram webhook through the Worker on D1', () => {
                 'n:priv',
                 'n:fb',
                 'n:stats',
+                'n:rel',
                 'n:don',
                 'n:lang'
             ]);

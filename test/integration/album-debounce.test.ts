@@ -5,6 +5,7 @@ import { getMessages } from '../../src/bot/content/messages';
 import { ALBUM_DEBOUNCE_MS } from '../../src/bot/screens/wish-edit';
 import { createTestUser } from '../fixtures/telegram';
 import {
+    callbackDataOf,
     createTelegramApiError,
     createWebhookHarness,
     type WebhookHarness
@@ -301,7 +302,7 @@ describe('Album debounce through waitUntil and the D1 marker', () => {
         assert.equal((await readSession()).pendingInput, null);
     });
 
-    it('clears all images with the remove label and deletes the user message', async () => {
+    it('asks before clearing all images with the remove label and deletes the user message', async () => {
         const { wish } = await startImagePrompt();
 
         await sendAlbum('album-clear', ['p1', 'p2']);
@@ -315,18 +316,49 @@ describe('Album debounce through waitUntil and the D1 marker', () => {
 
         await webhook.send(removal);
 
-        assert.deepEqual(await readImages(wish.id), []);
+        assert.deepEqual(await readImages(wish.id), ['p1', 'p2']);
         assert.deepEqual(
             webhook.callsOf('deleteMessage').map(call => {
                 return call.payload.message_id;
             }),
             [removal.update_id]
         );
+        assert.equal(
+            webhook.lastMessage().text,
+            LL.wishlist.edit.images.clearConfirm()
+        );
+        assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+            `w:ic:${wish.id}`,
+            `w:e:${wish.id}`
+        ]);
+
+        webhook.clearApiCalls();
+        await webhook.send(webhook.builders.callback(alice, `w:ic:${wish.id}`));
+
+        assert.deepEqual(await readImages(wish.id), []);
         assert.ok(
             webhook
                 .messageTexts()
                 .includes(LL.wishlist.edit.success.removeImages())
         );
+        assert.equal(editMenuCount(), 1);
+    });
+
+    it('keeps the images when the clear confirmation is declined', async () => {
+        const { wish } = await startImagePrompt();
+
+        await sendAlbum('album-keep', ['p1', 'p2']);
+        await webhook.settle();
+        await webhook.send(
+            webhook.builders.callback(alice, `w:f:i:${wish.id}`)
+        );
+        await webhook.send(
+            webhook.builders.message(alice, LL.actions.remove())
+        );
+        webhook.clearApiCalls();
+        await webhook.send(webhook.builders.callback(alice, `w:e:${wish.id}`));
+
+        assert.deepEqual(await readImages(wish.id), ['p1', 'p2']);
         assert.equal(editMenuCount(), 1);
     });
 

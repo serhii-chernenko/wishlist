@@ -47,6 +47,11 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'wishlistFilter', filter: 0 }, 'wl:f:0'],
     [{ type: 'wishlistFilter', filter: 4 }, 'wl:f:4'],
     [{ type: 'wishlistFilter', filter: null }, 'wl:f:x'],
+    [{ type: 'giftedPage', offset: 0 }, 'wl:g:0'],
+    [{ type: 'giftedPage', offset: 10 }, 'wl:g:10'],
+    [{ type: 'giftedRestore', wishId: 12 }, 'w:gr:12'],
+    [{ type: 'giftedHide', wishId: 12 }, 'w:gh:12'],
+    [{ type: 'giftedHideConfirm', wishId: 12 }, 'w:gh:y:12'],
     [{ type: 'wishEdit', wishId: 12 }, 'w:e:12'],
     [{ type: 'wishRemove', wishId: 12 }, 'w:r:12'],
     [{ type: 'wishRemoveConfirm', wishId: 12, done: true }, 'w:r:y:12'],
@@ -60,6 +65,11 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
         { type: 'wishImageFirst', wishId: 7, index: 8, hash8: 'a1b2c3d4' },
         'w:if:7:8:a1b2c3d4'
     ],
+    [
+        { type: 'wishImageRemove', wishId: 7, index: 0, hash8: 'a1b2c3d4' },
+        'w:ir:7:0:a1b2c3d4'
+    ],
+    [{ type: 'wishImagesClearConfirm', wishId: 7 }, 'w:ic:7'],
     [{ type: 'wishToggleVisibility', wishId: 7 }, 'w:v:7'],
     [{ type: 'wishFieldPrompt', wishId: 3, field: 'title' }, 'w:f:t:3'],
     [{ type: 'wishFieldPrompt', wishId: 3, field: 'description' }, 'w:f:d:3'],
@@ -79,14 +89,19 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'thirdFilterMenu', ownerId: 5 }, 't:f:5'],
     [{ type: 'thirdFilter', ownerId: 5, filter: 2 }, 't:f:5:2'],
     [{ type: 'thirdFilter', ownerId: 5, filter: null }, 't:f:5:x'],
+    [{ type: 'thirdGifted', ownerId: 5, offset: 0 }, 't:gl:5:0'],
+    [{ type: 'thirdGifted', ownerId: 5, offset: 20 }, 't:gl:5:20'],
     [{ type: 'giveListPage', offset: 30 }, 'g:p:30'],
     [{ type: 'giveRemove', wishId: 9 }, 'g:r:9'],
+    [{ type: 'giveRemoveConfirm', wishId: 9 }, 'g:r:y:9'],
+    [{ type: 'giveRemoveKeep', wishId: 9 }, 'g:r:n:9'],
     [{ type: 'giveListClean' }, 'g:clean'],
     [{ type: 'giveListCleanConfirm' }, 'g:clean:y'],
     [{ type: 'authType', authType: 'username' }, 'a:u'],
     [{ type: 'authType', authType: 'phone' }, 'a:p'],
     [{ type: 'authType', authType: 'both' }, 'a:b'],
     [{ type: 'paymentsRemove' }, 'p:rm'],
+    [{ type: 'paymentsRemoveConfirm' }, 'p:rm:y'],
     [{ type: 'currencySet', currency: 'PLN' }, 'cur:PLN'],
     [{ type: 'disclosureToggle', field: 'payments' }, 'dsc:p'],
     [{ type: 'disclosureToggle', field: 'phone' }, 'dsc:h'],
@@ -94,6 +109,8 @@ const ALL_VARIANTS: readonly [EncodableCallbackAction, string][] = [
     [{ type: 'disclosureConfirm', field: 'phone' }, 'dsc:h:y'],
     [{ type: 'disclosureConfirm', field: 'address' }, 'dsc:a:y'],
     [{ type: 'deliveryRemove' }, 'dlv:rm'],
+    [{ type: 'deliveryRemoveConfirm' }, 'dlv:rm:y'],
+    [{ type: 'releasesPage', offset: 3 }, 'rel:p:3'],
     [{ type: 'language', choice: 'uk' }, 'l:uk'],
     [{ type: 'language', choice: 'en' }, 'l:en'],
     [{ type: 'language', choice: 'pl' }, 'l:pl'],
@@ -122,6 +139,18 @@ const WORST_CASE_VARIANTS: readonly EncodableCallbackAction[] = [
     { type: 'linkOfferAccept', createdAt: MAX_ID },
     { type: 'wishlistPage', offset: MAX_OFFSET },
     { type: 'giveListPage', offset: MAX_OFFSET },
+    { type: 'giftedPage', offset: MAX_OFFSET },
+    { type: 'giftedHideConfirm', wishId: MAX_ID },
+    { type: 'thirdGifted', ownerId: MAX_ID, offset: MAX_OFFSET },
+    { type: 'giveRemoveConfirm', wishId: MAX_ID },
+    { type: 'giveRemoveKeep', wishId: MAX_ID },
+    { type: 'releasesPage', offset: MAX_OFFSET },
+    {
+        type: 'wishImageRemove',
+        wishId: MAX_ID,
+        index: 8,
+        hash8: 'ffffffff'
+    },
     { type: 'listImportVisibility', jobId: MAX_ID, visibility: 'public' },
     { type: 'listImportCommit', jobId: MAX_ID },
     { type: 'listImportCancel', jobId: MAX_ID },
@@ -266,6 +295,29 @@ test('malformed new-style data decodes as outdated', () => {
         'imp:x:abc',
         'imp:r:-1',
         'imp:q:5',
+        'wl:g',
+        'wl:g:-1',
+        'wl:g:1:2',
+        'w:gr',
+        'w:gr:0',
+        'w:gh:n:5',
+        'w:gh:y',
+        'w:gh:y:5:6',
+        'w:ir:7:9:a1b2c3d4',
+        'w:ir:7:0:xyz',
+        'w:ic:0',
+        't:gl:5',
+        't:gl:0:0',
+        'g:r:x:5',
+        'g:r:y',
+        'g:p:1:2',
+        'p:rm:n',
+        'p:rm:y:1',
+        'dlv:rm:n',
+        'rel',
+        'rel:p',
+        'rel:p:-1',
+        'rel:x:1',
         'zz:1'
     ];
 
@@ -298,6 +350,12 @@ test('callback categories are closed and never contain ids', () => {
         'wish:linkOffer'
     );
     assert.equal(getCallbackCategory('wl:share:y'), 'wishlist:sharePublish');
+    assert.equal(getCallbackCategory('wl:g:10'), 'gifted:page');
+    assert.equal(getCallbackCategory('w:gh:y:12345'), 'gifted:hideConfirm');
+    assert.equal(getCallbackCategory('t:gl:12345:0'), 'third:gifted');
+    assert.equal(getCallbackCategory('g:r:y:12345'), 'giveList:removeConfirm');
+    assert.equal(getCallbackCategory('w:ir:7:0:a1b2c3d4'), 'wish:imageRemove');
+    assert.equal(getCallbackCategory('rel:p:3'), 'releases:page');
     assert.equal(
         getCallbackCategory('wl:share:stop:y'),
         'wishlist:shareStopConfirm'

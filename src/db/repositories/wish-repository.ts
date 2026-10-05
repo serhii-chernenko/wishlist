@@ -75,6 +75,7 @@ export interface OwnWishPage extends WishPage {
 export interface GiftedListOptions {
     filter: PriceBoundsByCurrency | null;
     limit: number;
+    offset?: number;
 }
 
 export interface ImportedWishRow {
@@ -606,6 +607,54 @@ export const createWishRepository = (db: AppDb) => {
                 };
             });
         },
+        listOwnedGifted(userId: number, options: WishListOptions) {
+            return tryDb(async (): Promise<WishPage> => {
+                const condition = and(
+                    eq(wishes.userId, userId),
+                    isShownGifted(),
+                    buildPriceFilterCondition(options.filter)
+                );
+                const [items, totals] = await db.batch([
+                    db
+                        .select()
+                        .from(wishes)
+                        .where(condition)
+                        .orderBy(...GIFTED_LIST_ORDER)
+                        .limit(options.limit)
+                        .offset(options.offset),
+                    db.select({ total: count() }).from(wishes).where(condition)
+                ]);
+
+                return { items, total: totals[0]?.total ?? 0 };
+            });
+        },
+        countOwnedGifted(userId: number, filter: PriceBoundsByCurrency | null) {
+            return tryDb(async () => {
+                const [row] = await db
+                    .select({ total: count() })
+                    .from(wishes)
+                    .where(
+                        and(
+                            eq(wishes.userId, userId),
+                            isShownGifted(),
+                            buildPriceFilterCondition(filter)
+                        )
+                    );
+
+                return row?.total ?? 0;
+            });
+        },
+        findOwnedGifted(wishId: number, userId: number) {
+            return tryDb(async () => {
+                const [wish] = await db
+                    .select()
+                    .from(wishes)
+                    .where(ownedAndShownGifted(wishId, userId))
+                    .limit(1);
+
+                return wish ?? null;
+            });
+        },
         listGiftedVisibleOf(ownerId: number, options: GiftedListOptions) {
             return tryDb(async () => {
                 const rows = await db
@@ -614,7 +663,8 @@ export const createWishRepository = (db: AppDb) => {
                     .innerJoin(users, eq(users.id, wishes.userId))
                     .where(buildGiftedVisibleCondition(ownerId, options.filter))
                     .orderBy(...GIFTED_LIST_ORDER)
-                    .limit(options.limit);
+                    .limit(options.limit)
+                    .offset(options.offset ?? 0);
 
                 return rows.map(row => {
                     return row.wish;

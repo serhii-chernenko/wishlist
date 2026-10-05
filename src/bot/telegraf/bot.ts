@@ -63,6 +63,7 @@ import * as disclosureScreen from '../screens/disclosure';
 import * as donateScreen from '../screens/donate';
 import * as feedbackScreen from '../screens/feedback';
 import * as findListScreen from '../screens/find-list';
+import * as giftedListScreen from '../screens/gifted-list';
 import * as giveListScreen from '../screens/give-list';
 import * as homeScreen from '../screens/home';
 import { applyLanguageChoice } from '../screens/language';
@@ -128,7 +129,8 @@ const SCREEN_MODULES: readonly ScreenExports[] = [
     disclosureScreen,
     wishPriorityScreen,
     wishImagesScreen,
-    listImportScreen
+    listImportScreen,
+    giftedListScreen
 ];
 
 const noopTelemetry: WishlistBotTelemetry = {

@@ -68,7 +68,11 @@ const applyPriorityLevel = async (
 ) => {
     const user = requireUser(req);
     const { wishes } = createWishScreenServices(req);
-    const updated = await wishes.setPriority(wishId, user.id, level);
+    const wish = await wishes.findOwned(wishId, user.id);
+    const changed = wish !== null && wish.priorityLevel !== level;
+    const updated =
+        wish !== null &&
+        (!changed || (await wishes.setPriority(wishId, user.id, level)));
 
     if (!updated) {
         await renderStaleWish(req);
@@ -78,10 +82,12 @@ const applyPriorityLevel = async (
 
     const priority = toWishPriority(level);
 
-    req.telemetry.botActionCompleted({
-        action: 'wish_priority_set',
-        result: priority
-    });
+    if (changed) {
+        req.telemetry.botActionCompleted({
+            action: 'wish_priority_set',
+            result: priority
+        });
+    }
     await req.send.text(
         req.LL.priority.success({ level: req.LL.priority.levels[priority]() })
     );

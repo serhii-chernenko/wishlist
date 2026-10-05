@@ -6,6 +6,7 @@ import {
 import {
     callbackButton,
     homeButton,
+    navigationButton,
     singleColumnKeyboard
 } from '../content/keyboards';
 import { deriveRequest } from '../runtime/context';
@@ -44,6 +45,7 @@ const render = async (req: BotRequest) => {
                     { type: 'currencySet', currency }
                 );
             }),
+            navigationButton(LL.actions.back(), 'settings'),
             homeButton(LL)
         ])
     );

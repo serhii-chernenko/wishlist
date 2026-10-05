@@ -10,6 +10,7 @@ import type {
     Message
 } from 'telegraf/types';
 
+import { getRuntimeCrypto, sha256Hex } from '../../src/api/auth/crypto';
 import { decodeCallbackData } from '../../src/bot/callback-data';
 import type {
     BotRequest,
@@ -26,6 +27,7 @@ import {
     callbacks as findListCallbacks,
     screen as findListScreen
 } from '../../src/bot/screens/find-list';
+import { callbacks as giftedListCallbacks } from '../../src/bot/screens/gifted-list';
 import {
     callbacks as giveListCallbacks,
     screen as giveListScreen
@@ -42,6 +44,7 @@ import {
     callbacks as wishEditCallbacks,
     screen as wishEditScreen
 } from '../../src/bot/screens/wish-edit';
+import { callbacks as wishImagesCallbacks } from '../../src/bot/screens/wish-images';
 import { callbacks as wishPriorityCallbacks } from '../../src/bot/screens/wish-priority';
 import { callbacks as wishRemoveCallbacks } from '../../src/bot/screens/wish-remove';
 import {
@@ -78,7 +81,9 @@ const allCallbacks: CallbackTable[] = [
     wishRemoveCallbacks,
     findListCallbacks,
     thirdCallbacks,
-    giveListCallbacks
+    giveListCallbacks,
+    giftedListCallbacks,
+    wishImagesCallbacks
 ];
 
 describe('wishlist screens on D1', () => {
@@ -1506,12 +1511,28 @@ describe('wishlist screens on D1', () => {
                 pending,
                 textMessage('❌ Видалити')
             );
-            assert.equal((await readWish(wish.id))?.['images'], '[]');
+            assert.equal(
+                JSON.parse(String((await readWish(wish.id))?.['images']))
+                    .length,
+                9
+            );
             assert.ok(
                 clear.events.some(event => {
                     return event.kind === 'deleteIncoming';
                 })
             );
+            assert.deepEqual(callbackDataOf(lastText(clear.events).keyboard), [
+                `w:ic:${wish.id}`,
+                `w:e:${wish.id}`
+            ]);
+
+            const confirmed = createRequest(owner);
+
+            await dispatch(confirmed.request, `w:ic:${wish.id}`);
+            assert.equal((await readWish(wish.id))?.['images'], '[]');
+            assert.deepEqual(confirmed.telemetry, [
+                { action: 'wish_updated', field: 'images', result: 'cleared' }
+            ]);
         });
 
         it('removes a wish as done or dropped with confirmation', async () => {
@@ -1532,7 +1553,8 @@ describe('wishlist screens on D1', () => {
             await dispatch(ask.request, `w:r:${wish.id}`);
             assert.deepEqual(callbackDataOf(lastText(ask.events).keyboard), [
                 `w:r:y:${wish.id}`,
-                `w:r:n:${wish.id}`
+                `w:r:n:${wish.id}`,
+                'n:wl'
             ]);
 
             const confirm = createRequest(owner);
@@ -1540,6 +1562,137 @@ describe('wishlist screens on D1', () => {
             await dispatch(confirm.request, `w:r:y:${wish.id}`);
             assert.equal((await readWish(wish.id))?.['removed'], 1);
             assert.equal((await readWish(wish.id))?.['done'], 1);
+        });
+    });
+
+    describe('telemetry parity with the app', () => {
+        const createWishFor = async (owner: UserRecord, title = 'wish') => {
+            const wish = await run(
+                harness.repositories.wishes.create(
+                    owner.id,
+                    title,
+                    'UAH',
+                    new Date()
+                )
+            );
+
+            assert.ok(wish);
+
+            return wish;
+        };
+
+        const giftWish = async (owner: UserRecord) => {
+            const wish = await createWishFor(owner, 'gifted');
+
+            await run(
+                harness.repositories.wishes.softRemove(
+                    wish.id,
+                    owner.id,
+                    true,
+                    new Date()
+                )
+            );
+
+            return wish;
+        };
+
+        const setImages = async (wishId: number, fileIds: string[]) => {
+            await harness.env.DB.prepare(
+                'UPDATE wishes SET images = ? WHERE id = ?'
+            )
+                .bind(JSON.stringify(fileIds), wishId)
+                .run();
+        };
+
+        const hash8 = async (fileId: string) => {
+            return (await sha256Hex(getRuntimeCrypto(), fileId)).slice(0, 8);
+        };
+
+        it('records wish_restored and gifted_hidden from the gifted list', async () => {
+            const owner = await createUser();
+            const restored = await giftWish(owner);
+            const hidden = await giftWish(owner);
+            const restore = createRequest(owner);
+
+            await dispatch(restore.request, `w:gr:${restored.id}`);
+            assert.deepEqual(restore.telemetry, [{ action: 'wish_restored' }]);
+
+            const hide = createRequest(owner);
+
+            await dispatch(hide.request, `w:gh:y:${hidden.id}`);
+            assert.deepEqual(hide.telemetry, [
+                { action: 'gifted_hidden', result: 'on' }
+            ]);
+        });
+
+        it('records wish_priority_set only when the level changes', async () => {
+            const LL = getMessages('uk');
+            const owner = await createUser();
+            const wish = await createWishFor(owner);
+            const unchanged = createRequest(owner);
+
+            await dispatch(unchanged.request, `w:pl:${wish.id}:0`);
+            assert.deepEqual(unchanged.telemetry, []);
+            assert.ok(
+                unchanged.events.some(event => {
+                    return (
+                        event.kind === 'text' &&
+                        event.html ===
+                            LL.priority.success({
+                                level: LL.priority.levels.none()
+                            })
+                    );
+                })
+            );
+
+            const changed = createRequest(owner);
+
+            await dispatch(changed.request, `w:pl:${wish.id}:2`);
+            assert.deepEqual(changed.telemetry, [
+                { action: 'wish_priority_set', result: 'medium' }
+            ]);
+        });
+
+        it('labels photo changes with added, removed and the app reorder source', async () => {
+            const owner = await createUser();
+            const wish = await createWishFor(owner);
+            const added = createRequest(owner);
+
+            await wishEditScreen.onInput?.(
+                added.request,
+                { kind: 'wishField', wishId: wish.id, field: 'images' },
+                photoMessage('photo-a')
+            );
+            assert.deepEqual(added.telemetry, [
+                { action: 'wish_updated', field: 'images', result: 'added' }
+            ]);
+
+            await setImages(wish.id, ['photo-a', 'photo-b', 'photo-c']);
+
+            const reordered = createRequest(owner);
+
+            await dispatch(
+                reordered.request,
+                `w:if:${wish.id}:2:${await hash8('photo-c')}`
+            );
+            assert.deepEqual(reordered.telemetry, [
+                { action: 'wish_images_reordered', result: 'button' }
+            ]);
+
+            const removed = createRequest(owner);
+
+            await dispatch(
+                removed.request,
+                `w:ir:${wish.id}:0:${await hash8('photo-c')}`
+            );
+            assert.deepEqual(removed.telemetry, [
+                { action: 'wish_updated', field: 'images', result: 'removed' }
+            ]);
+            assert.deepEqual(
+                JSON.parse(String((await readWish(wish.id))?.['images'])),
+                ['photo-a', 'photo-b']
+            );
+            assert.equal(removed.deferred.length, 1);
         });
     });
 
@@ -1715,11 +1868,7 @@ describe('wishlist screens on D1', () => {
             const wish = await seedWishWithImages(owner.id, ['x', 'y']);
             const clear = withImages(createRequest(owner));
 
-            await wishEditScreen.onInput?.(
-                clear.request,
-                { kind: 'wishField', wishId: wish.id, field: 'images' },
-                textMessage('❌ Видалити')
-            );
+            await dispatch(clear.request, `w:ic:${wish.id}`);
             await flushDeferred(clear);
             assert.equal(await hasObject('x'), false);
             assert.equal(await hasObject('y'), false);
@@ -2139,9 +2288,24 @@ describe('wishlist screens on D1', () => {
                 `g:r:${first.id}`
             ]);
 
+            const ask = createRequest(viewer);
+
+            await dispatch(ask.request, `g:r:${first.id}`);
+            assert.deepEqual(
+                ask.events.map(event => event.kind),
+                ['toast', 'replaceKeyboard']
+            );
+            assert.deepEqual(
+                callbackDataOf(
+                    (ask.events[1] as { keyboard: InlineKeyboardMarkup })
+                        .keyboard
+                ),
+                [`g:r:y:${first.id}`, `g:r:n:${first.id}`]
+            );
+
             const remove = createRequest(viewer);
 
-            await dispatch(remove.request, `g:r:${first.id}`);
+            await dispatch(remove.request, `g:r:y:${first.id}`);
             assert.deepEqual(
                 remove.events.map(event => event.kind),
                 ['toast', 'replaceKeyboard']

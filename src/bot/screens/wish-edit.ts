@@ -1,6 +1,7 @@
 import type { Message } from 'telegraf/types';
 
 import type { WishRecord } from '../../db/repositories';
+import type { WishImageChangeResult } from '../../worker/telemetry';
 import {
     CURRENCIES,
     getCurrencySymbol,
@@ -283,13 +284,30 @@ export const sendFieldPrompt = async (
     }
 };
 
+export const reportImagesChanged = (
+    req: BotRequest,
+    result: WishImageChangeResult
+) => {
+    req.telemetry.botActionCompleted({
+        action: 'wish_updated',
+        field: 'images',
+        result
+    });
+};
+
 const finishFieldUpdate = async (
     req: BotRequest,
     wishId: number,
     field: WishField,
-    successText: string
+    successText: string,
+    imageChange?: WishImageChangeResult
 ) => {
-    req.telemetry.botActionCompleted({ action: 'wish_updated', field });
+    if (imageChange === undefined) {
+        req.telemetry.botActionCompleted({ action: 'wish_updated', field });
+    } else {
+        reportImagesChanged(req, imageChange);
+    }
+
     updateSession(req, { pendingInput: null });
     await req.send.text(successText, removeReplyKeyboard());
     await renderEdit(req, { wishId });
@@ -497,10 +515,7 @@ const scheduleAlbumCompletion = (
                 return;
             }
 
-            req.telemetry.botActionCompleted({
-                action: 'wish_updated',
-                field: 'images'
-            });
+            reportImagesChanged(req, 'added');
 
             await runRepository(
                 req.repos.sessions.saveState(
@@ -527,9 +542,8 @@ const scheduleAlbumCompletion = (
     }, ALBUM_DEBOUNCE_MS);
 };
 
-const handleClearImages = async (req: BotRequest, wish: WishRecord) => {
+const askToClearImages = async (req: BotRequest, wish: WishRecord) => {
     const { LL } = req;
-    const user = requireUser(req);
 
     if (parseWishImages(wish.images).length === 0) {
         await rejectFieldInput(
@@ -542,9 +556,42 @@ const handleClearImages = async (req: BotRequest, wish: WishRecord) => {
         return;
     }
 
-    const { wishes } = createWishScreenServices(req);
-
+    updateSession(req, { pendingInput: null });
     await req.send.deleteIncoming();
+    await req.send.text(
+        LL.wishlist.edit.images.clearConfirm(),
+        singleColumnKeyboard([
+            callbackButton(LL.actions.yes(), {
+                type: 'wishImagesClearConfirm',
+                wishId: wish.id
+            }),
+            callbackButton(LL.actions.no(), {
+                type: 'wishEdit',
+                wishId: wish.id
+            })
+        ])
+    );
+};
+
+const clearImages = async (req: BotRequest, wishId: number) => {
+    const { LL } = req;
+    const user = requireUser(req);
+    const { wishes } = createWishScreenServices(req);
+    const wish = await wishes.findOwned(wishId, user.id);
+
+    if (wish === null) {
+        await renderStaleWish(req);
+
+        return;
+    }
+
+    const fileIds = parseWishImages(wish.images);
+
+    if (fileIds.length === 0) {
+        await renderEdit(req, { wishId });
+
+        return;
+    }
 
     if (!(await wishes.clearImages(wish.id, user.id))) {
         await renderStaleWish(req);
@@ -552,13 +599,14 @@ const handleClearImages = async (req: BotRequest, wish: WishRecord) => {
         return;
     }
 
-    releaseRemovedImages(req, parseWishImages(wish.images));
+    releaseRemovedImages(req, fileIds);
 
     await finishFieldUpdate(
         req,
         wish.id,
         'images',
-        LL.wishlist.edit.success.removeImages()
+        LL.wishlist.edit.success.removeImages(),
+        'cleared'
     );
 };
 
@@ -571,7 +619,7 @@ const handleImages = async (
     const text = 'text' in message ? message.text : undefined;
 
     if (isRemoveCommand(text, getRemoveLabels())) {
-        await handleClearImages(req, wish);
+        await askToClearImages(req, wish);
 
         return;
     }
@@ -606,7 +654,8 @@ const handleImages = async (
             req,
             wish.id,
             'images',
-            buildImagesSavedText(req, capReached)
+            buildImagesSavedText(req, capReached),
+            'added'
         );
 
         return;
@@ -706,6 +755,9 @@ export const callbacks: CallbackTable = {
     },
     wishToggleVisibility: async (req, action) => {
         await toggleVisibility(req, action.wishId);
+    },
+    wishImagesClearConfirm: async (req, action) => {
+        await clearImages(req, action.wishId);
     },
     wishBack: async req => {
         await wishlistScreen.render(req, undefined);

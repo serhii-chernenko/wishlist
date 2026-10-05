@@ -77,9 +77,13 @@ export const getReleaseItemText = (item: ReleaseItem, locale: AppLocale) => {
 
 export const renderReleaseNotes = (
     limit = 0,
-    locale: AppLocale = getDefaultAppLocale()
+    locale: AppLocale = getDefaultAppLocale(),
+    offset = 0
 ) => {
-    const releaseEntries = limit <= 0 ? releases : releases.slice(0, limit);
+    const releaseEntries =
+        limit <= 0
+            ? releases.slice(offset)
+            : releases.slice(offset, offset + limit);
     const labels = getReleaseLabels(locale);
 
     if (releaseEntries.length === 0) {

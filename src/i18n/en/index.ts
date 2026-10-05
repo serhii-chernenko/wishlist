@@ -176,7 +176,7 @@ const en: Translation = {
                 addLink: '🔗 Add link',
                 updateLink: '🔗 Update link',
                 priority: '🎯 Priority: {level}',
-                imagesOrder: '🔀 Photo order',
+                imagesOrder: '🔀 Reorder or remove photos',
                 hide: '🫣 Hide from others',
                 show: '👀 Show to others',
                 addPrice: '💸 Add price',
@@ -195,7 +195,8 @@ const en: Translation = {
                 updateLink: '🔗 Send a new link or ❌ remove it',
                 addPrice: '💸 Send the price',
                 updatePrice: '💸 Send a new price or ❌ remove it',
-                priceCurrency: 'Numbers only, in {0}.'
+                priceCurrency:
+                    'Send a number; the price will be in {0}. To use another currency, add its symbol: ₴, $, € or zł, for example “100 $”.'
             },
             errors: {
                 title: {
@@ -229,19 +230,27 @@ const en: Translation = {
             },
             images: {
                 order: {
-                    prompt: '🔀 Pick the photo that should come first. The first photo is the wish’s cover.',
+                    prompt: '🔀 Pick the photo that should come first, or remove one you don’t need. The first photo is the wish’s cover.',
                     caption: 'Photo {n}',
                     makeFirst: '⬆️ Make photo {n} first',
                     success: '✅ The photo order was changed!',
                     changed:
-                        'ℹ️ The photos changed in the meantime, so the order wasn’t saved. Try again.'
-                }
+                        'ℹ️ The photos changed in the meantime, so the order wasn’t saved. Try again.',
+                    remove: '🗑 Remove photo {n}',
+                    removed: '✅ Photo removed!',
+                    removeChanged:
+                        'ℹ️ The photos changed in the meantime, so nothing was removed. Please try again.'
+                },
+                clearConfirm:
+                    '❓ Remove all photos from this wish? This can’t be undone.'
             }
         },
         remove: {
             confirm:
-                '❓Did your wish come true?\n(Just for stats. It’ll be removed either way.)',
-            success: '✅ Wish removed!'
+                '❓ Did this wish come true?\n\n✅ <b>Yes</b>: it moves to “🎁 Gifted”. You can bring it back from there, and friends will see it if you show gifted wishes.\n❌ <b>No</b>: the wish is simply removed.',
+            success: '✅ Wish removed!',
+            gifted: '🎁 Wish moved to “Gifted”!',
+            cancel: '↩️ Cancel'
         },
         clean: {
             error: '❌ The wish list is already empty!',
@@ -251,7 +260,7 @@ const en: Translation = {
         },
         share: {
             success: '✅ Here’s the link to your wish list:\n{url}',
-            empty: '❌ Nothing to share yet: your wish list is empty.\nAdd at least one wish first.',
+            empty: '❌ Nothing to share yet: your list has no wishes that others can see.\nAdd a wish or make at least one hidden wish visible.',
             consent:
                 '🌐 Before you share\n\nThe bot will create a public page for your wish list on {host}. It will show:\n• your Telegram name: {name}\n• your @username, only if you turn it on\n• all your wishes except hidden ones, with their photos\n• gifted wishes at the end of the list, unless you turn them off\n• your payment info, if you’ve added it and it’s turned on\n\nAnyone with the link can open the page, and it may show up in search results. Your phone number, delivery address, and “Gifts to give” list are never shown there. If you turn on your phone number and address, only people in Telegram see them.\n\nYou can stop sharing anytime.',
             ready: '✅ Your wish list is live!\n\n📲 Open in Telegram:\n{appUrl}\n\n🌐 Open in browser:\n{pageUrl}\n\nThe page updates automatically whenever you change your list.',
@@ -283,6 +292,18 @@ const en: Translation = {
                 shown: '🎁 Friends will now see the gifts you’ve already received at the end of your list.',
                 hidden: '🙈 Friends no longer see your gifted wishes.'
             }
+        },
+        gifted: {
+            entry: '🎁 Gifted ({count})',
+            title: '🎁 <b>Gifted</b>\n\nWishes you’ve already received. Friends see them at the end of your list if you show gifted wishes.',
+            after: '❓<b>What would you like to do?</b>\n\n↩️ Put a wish back on your list.\n🙈 Hide it forever for everyone.',
+            empty: 'Nothing in “Gifted” yet.',
+            restore: '↩️ Back to my wishes',
+            hide: '🙈 Hide forever for everyone',
+            hideConfirm:
+                '❓ Hide “{title}” forever for everyone?\n\nNeither you nor your friends will see it. It stays in the stats.',
+            restored: '✅ The wish is back on your list!',
+            hidden: '🙈 The wish is hidden forever.'
         }
     },
     giveList: {
@@ -301,6 +322,11 @@ const en: Translation = {
         clean: {
             confirm:
                 '❓<b>Clear your Gifts to give list?</b>\n\nAll your reservations will be canceled, and the wishes will disappear from this list.'
+        },
+        remove: {
+            confirm: '❓ Cancel your reservation for this wish?',
+            yes: '✅ Yes, cancel reservation',
+            no: '↩️ No, keep it'
         }
     },
     findList: {
@@ -315,7 +341,7 @@ const en: Translation = {
                 'Can’t get a specific gift? They’ve shared how to send them money so they can buy it themselves:\n\n{0}',
             after: '❓<b>What would you like to do?</b>\n\n🎁 Reserve a wish\n❌ Cancel a reservation',
             contact: {
-                title: '📇 <b>Contact and delivery</b>',
+                title: '📇 <b>Contact details</b>',
                 phone: '📱 Phone: {phone}',
                 address: '📦 Delivery address:\n{address}'
             }
@@ -345,6 +371,14 @@ const en: Translation = {
         success: {
             give: '✅ Reserved! The wish was added to your <b>Gifts to give</b> list.',
             take: '✅ Reservation canceled. The wish was removed from your <b>Gifts to give</b> list.'
+        },
+        gifted: {
+            counts: 'Active: {active}, gifted: {gifted}',
+            noActive:
+                'No active wishes right now. To see what’s already been gifted, open “🎁 Gifted.”',
+            entry: '🎁 Gifted ({count})',
+            title: '🎁 Already gifted from the list of <b>{0}</b>:',
+            after: 'These wishes have already been gifted, so there’s no need to reserve them.'
         }
     },
     donate: {
@@ -412,7 +446,9 @@ const en: Translation = {
         },
         remove: {
             success:
-                '✅ Payment info removed! You can come back here anytime to add it again.'
+                '✅ Payment info removed! You can come back here anytime to add it again.',
+            confirm:
+                '❓ Remove your payment info?\n\nOthers will no longer see how to send you money.'
         }
     },
     settings: {
@@ -526,7 +562,9 @@ const en: Translation = {
         success: {
             update: '✅ Delivery address saved!',
             remove: '✅ Delivery address removed! You can come back here anytime to add it again.'
-        }
+        },
+        removeConfirm:
+            '❓ Remove your delivery address?\n\nOthers will no longer see it in Telegram.'
     },
     disclosure: {
         title: '👀 What others see',
@@ -591,7 +629,9 @@ const en: Translation = {
             title: 'The bot is now on version {version} 🎉',
             footer: 'All changes and previous versions: /releases'
         },
-        empty: 'No release notes yet.'
+        empty: 'No release notes yet.',
+        title: '✨ What’s new',
+        previous: '📜 Earlier versions'
     },
     web: {
         header: {
@@ -609,9 +649,9 @@ const en: Translation = {
         },
         wish: {
             priority: {
-                low: 'Kind of wants this',
-                medium: 'Wants this',
-                high: 'Really wants this'
+                low: 'Low',
+                medium: 'Medium',
+                high: 'High'
             },
             price: 'Estimated price:',
             approx: '≈ {amount}',
@@ -785,12 +825,6 @@ const en: Translation = {
             newBadge: 'New'
         },
         a11y: {
-            priority: {
-                low: 'Kind of want this',
-                medium: 'Want this',
-                high: 'Really want this'
-            },
-            priorityThird: 'Really wants this',
             hidden: 'Hidden wish, only you can see it',
             photo: 'Photo {index} of {total}: {title}',
             photos: 'Photos, {count}',
@@ -1150,7 +1184,7 @@ const en: Translation = {
             remove: {
                 action: 'Remove wish',
                 title: 'Did your wish come true?',
-                text: 'This is just for stats: the wish will be removed either way.',
+                text: 'If yes, it moves to “Gifted”: you can bring it back from there, and friends will see it if you show gifted wishes. If not, the wish is simply removed.',
                 done: 'Yes, it did',
                 notDone: 'Just remove it',
                 success: 'Wish removed'
@@ -1354,7 +1388,6 @@ const en: Translation = {
             noActive:
                 'No active wishes right now. Below are the ones already gifted.',
             filteredEmpty: 'No wishes match this filter.',
-            priority: 'Really wants this',
             openLink: 'Open on {host}',
             givers: {
                 you: 'Reserved by you',

@@ -9,6 +9,7 @@ import {
 } from '../content/keyboards';
 import { getPageWindow, normalizeOffset } from '../content/pagination';
 import { renderWishHtml, toWishMessage } from '../content/wish-markup';
+import type { WishRecord } from '../../db/repositories';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
     createWishFormatters,
@@ -23,6 +24,36 @@ import { escapeHtml } from '../utils/strings';
 export interface GiveListParams {
     offset?: number;
 }
+
+const buildGiveKeyboard = (
+    req: BotRequest,
+    wish: Pick<WishRecord, 'id' | 'link'>
+) => {
+    return singleColumnKeyboard([
+        ...openLinkButton(req, wish.link),
+        callbackButton(req.LL.findList.actions.take(), {
+            type: 'giveRemove',
+            wishId: wish.id
+        })
+    ]);
+};
+
+const buildRemoveConfirmationKeyboard = (req: BotRequest, wishId: number) => {
+    const { remove } = req.LL.giveList;
+
+    return singleColumnKeyboard([
+        callbackButton(remove.yes(), { type: 'giveRemoveConfirm', wishId }),
+        callbackButton(remove.no(), { type: 'giveRemoveKeep', wishId })
+    ]);
+};
+
+const hasOwnGive = async (req: BotRequest, wishId: number) => {
+    const user = requireUser(req);
+    const { gives } = createWishScreenServices(req);
+    const giversByWish = await gives.giversOf([wishId]);
+
+    return (giversByWish.get(wishId) ?? []).includes(user.id);
+};
 
 const render = async (req: BotRequest, params: GiveListParams | undefined) => {
     const { LL } = req;
@@ -75,13 +106,7 @@ const render = async (req: BotRequest, params: GiveListParams | undefined) => {
 
         await req.send.wish(
             toWishMessage(html, wish),
-            singleColumnKeyboard([
-                ...openLinkButton(req, wish.link),
-                callbackButton(LL.findList.actions.take(), {
-                    type: 'giveRemove',
-                    wishId: wish.id
-                })
-            ])
+            buildGiveKeyboard(req, wish)
         );
     }
 
@@ -119,6 +144,29 @@ export const callbacks: CallbackTable = {
         await render(req, { offset: action.offset });
     },
     giveRemove: async (req, action) => {
+        if (!(await hasOwnGive(req, action.wishId))) {
+            await req.send.toast(req.LL.findList.errors.take());
+            await req.send.replaceKeyboard({ inline_keyboard: [] });
+
+            return;
+        }
+
+        await req.send.toast(req.LL.giveList.remove.confirm());
+        await req.send.replaceKeyboard(
+            buildRemoveConfirmationKeyboard(req, action.wishId)
+        );
+    },
+    giveRemoveKeep: async (req, action) => {
+        requireUser(req);
+
+        const { wishes } = createWishScreenServices(req);
+        const wish = await wishes.findVisible(action.wishId);
+
+        await req.send.replaceKeyboard(
+            buildGiveKeyboard(req, wish ?? { id: action.wishId, link: null })
+        );
+    },
+    giveRemoveConfirm: async (req, action) => {
         const user = requireUser(req);
         const { gives } = createWishScreenServices(req);
         const removed = await gives.take(user.id, action.wishId);

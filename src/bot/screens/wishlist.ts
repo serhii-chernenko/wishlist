@@ -57,6 +57,7 @@ const buildMenu = (
         hasWishes: boolean;
         canShare: boolean;
         nextOffset: number | null;
+        giftedCount: number;
     }
 ) => {
     const { LL } = req;
@@ -77,6 +78,12 @@ const buildMenu = (
             : null,
         options.canShare
             ? callbackButton(LL.actions.share(), { type: 'wishlistShare' })
+            : null,
+        options.giftedCount > 0
+            ? callbackButton(
+                  LL.wishlist.gifted.entry({ count: options.giftedCount }),
+                  { type: 'giftedPage', offset: 0 }
+              )
             : null,
         appEntryButton(req, 'wishes'),
         homeButton(LL)
@@ -110,6 +117,11 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
 
     updateSession(req, { pendingInput: null });
 
+    const giftedCount = await createGiftedService(req.repos).countOwned(
+        user.id,
+        priceBounds
+    );
+
     if (page.total === 0) {
         await req.send.text(
             filter === null ? LL.wishlist.empty() : LL.wishlist.filtered(),
@@ -117,7 +129,8 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
                 filter,
                 hasWishes: false,
                 canShare: (await share.getShare(user.id)) !== null,
-                nextOffset: null
+                nextOffset: null,
+                giftedCount
             })
         );
 
@@ -184,7 +197,8 @@ const render = async (req: BotRequest, params: WishlistParams | undefined) => {
             filter,
             hasWishes: true,
             canShare: true,
-            nextOffset: window.nextOffset
+            nextOffset: window.nextOffset,
+            giftedCount
         })
     );
 };

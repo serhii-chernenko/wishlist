@@ -178,7 +178,7 @@ const pl: Translation = {
                 addLink: '🔗 Dodaj link',
                 updateLink: '🔗 Zaktualizuj link',
                 priority: '🎯 Priorytet: {level}',
-                imagesOrder: '🔀 Kolejność zdjęć',
+                imagesOrder: '🔀 Kolejność i usuwanie zdjęć',
                 hide: '🫣 Ukryj przed innymi',
                 show: '👀 Pokaż innym',
                 addPrice: '💸 Dodaj cenę',
@@ -197,7 +197,8 @@ const pl: Translation = {
                 updateLink: '🔗 Zmień link albo ❌ usuń go',
                 addPrice: '💸 Dodaj cenę',
                 updatePrice: '💸 Zaktualizuj cenę albo ❌ usuń ją',
-                priceCurrency: 'Tylko liczba, w {0}.'
+                priceCurrency:
+                    'Wyślij liczbę – kwota będzie w {0}. Aby podać inną walutę, dodaj jej symbol: ₴, $, € lub zł, na przykład „100 $”.'
             },
             errors: {
                 title: {
@@ -231,19 +232,27 @@ const pl: Translation = {
             },
             images: {
                 order: {
-                    prompt: '🔀 Wybierz zdjęcie, które ma zostać zdjęciem głównym.',
+                    prompt: '🔀 Wybierz zdjęcie, które ma zostać zdjęciem głównym, albo usuń zbędne.',
                     caption: 'Zdjęcie {n}',
                     makeFirst: '⬆️ Ustaw zdjęcie {n} jako główne',
                     success: '✅ Kolejność zdjęć została zmieniona!',
                     changed:
-                        'ℹ️ Zdjęcia w międzyczasie się zmieniły, więc kolejność nie została zapisana. Spróbuj jeszcze raz.'
-                }
+                        'ℹ️ Zdjęcia w międzyczasie się zmieniły, więc kolejność nie została zapisana. Spróbuj jeszcze raz.',
+                    remove: '🗑 Usuń zdjęcie {n}',
+                    removed: '✅ Zdjęcie zostało usunięte!',
+                    removeChanged:
+                        'ℹ️ Zdjęcia w międzyczasie się zmieniły, więc nic nie zostało usunięte. Spróbuj jeszcze raz.'
+                },
+                clearConfirm:
+                    '❓ Usunąć wszystkie zdjęcia z tego życzenia? Tego nie da się cofnąć.'
             }
         },
         remove: {
             confirm:
-                '❓Czy twoje życzenie się spełniło?\n(Tylko do statystyk – życzenie i tak zostanie usunięte.)',
-            success: '✅ Życzenie zostało usunięte!'
+                '❓ Czy to życzenie się spełniło?\n\n✅ <b>Tak</b>: trafi do „🎁 Podarowane”. Można je stamtąd przywrócić, a znajomi zobaczą je, jeśli pokazujesz podarowane.\n❌ <b>Nie</b>: życzenie zostanie po prostu usunięte.',
+            success: '✅ Życzenie zostało usunięte!',
+            gifted: '🎁 Życzenie trafiło do „Podarowane”!',
+            cancel: '↩️ Anuluj'
         },
         clean: {
             error: '❌ Lista życzeń jest już pusta!',
@@ -253,7 +262,7 @@ const pl: Translation = {
         },
         share: {
             success: '✅ Oto link do twojej listy życzeń:\n{url}',
-            empty: '❌ Na razie nie ma czego udostępnić: lista życzeń jest pusta.\nNajpierw dodaj przynajmniej jedno życzenie.',
+            empty: '❌ Na razie nie ma czego udostępnić: na liście nie ma życzeń widocznych dla innych.\nDodaj życzenie albo pokaż przynajmniej jedno z ukrytych.',
             consent:
                 '🌐 Zanim udostępnisz\n\nBot utworzy publiczną stronę twojej listy życzeń na {host}. Będą na niej:\n• imię z twojego profilu w Telegramie: {name}\n• twój @username, tylko jeśli go włączysz\n• wszystkie życzenia oprócz ukrytych, wraz z ich zdjęciami\n• podarowane życzenia na końcu listy, jeśli ich nie wyłączysz\n• twoje dane płatnicze, jeśli są dodane i włączone\n\nStronę może otworzyć każdy, kto ma link, i może ona pojawić się w wynikach wyszukiwarek. Numer telefonu, adres dostawy i lista „Chcę podarować” nigdy nie są tam pokazywane; numer i adres, jeśli je włączysz, zobaczą tylko osoby w Telegramie.\n\nUdostępnianie możesz wyłączyć w każdej chwili.',
             ready: '✅ Twoja lista życzeń jest gotowa!\n\n📲 Otwórz w Telegramie:\n{appUrl}\n\n🌐 Strona w przeglądarce:\n{pageUrl}\n\nStrona aktualizuje się sama po każdej zmianie na liście.',
@@ -285,6 +294,18 @@ const pl: Translation = {
                 shown: '🎁 Na końcu listy znajomi zobaczą, co już zostało ci podarowane.',
                 hidden: '🙈 Znajomi nie widzą już podarowanych życzeń.'
             }
+        },
+        gifted: {
+            entry: '🎁 Podarowane ({count})',
+            title: '🎁 <b>Podarowane</b>\n\nŻyczenia, które już ci podarowano. Znajomi widzą je na końcu twojej listy, jeśli pokazujesz podarowane.',
+            after: '❓<b>Co chcesz zrobić?</b>\n\n↩️ Przywrócić życzenie na listę.\n🙈 Ukryć je na zawsze dla wszystkich.',
+            empty: 'W „Podarowanych” na razie nic nie ma.',
+            restore: '↩️ Przywróć do moich życzeń',
+            hide: '🙈 Ukryj na zawsze dla wszystkich',
+            hideConfirm:
+                '❓ Ukryć „{title}” na zawsze dla wszystkich?\n\nNie zobaczysz go ani ty, ani znajomi. W statystykach zostanie.',
+            restored: '✅ Życzenie wróciło na listę!',
+            hidden: '🙈 Życzenie zostało ukryte na zawsze.'
         }
     },
     giveList: {
@@ -303,6 +324,11 @@ const pl: Translation = {
         clean: {
             confirm:
                 '❓<b>Na pewno wyczyścić listę „Chcę podarować”?</b>\n\nWszystkie twoje rezerwacje zostaną anulowane, a życzenia znikną z tej listy.'
+        },
+        remove: {
+            confirm: '❓ Anulować rezerwację tego życzenia?',
+            yes: '✅ Tak, anuluj rezerwację',
+            no: '↩️ Nie, zostaw'
         }
     },
     findList: {
@@ -318,7 +344,7 @@ const pl: Translation = {
                 'Jeśli nie możesz kupić konkretnego prezentu, możesz przelać pieniądze na podane dane, a ta osoba kupi go sama:\n\n{0}',
             after: '❓<b>Co chcesz zrobić?</b>\n\n🎁 Zarezerwować życzenie\n❌ Anulować rezerwację życzenia',
             contact: {
-                title: '📇 <b>Kontakt i dostawa</b>',
+                title: '📇 <b>Dane kontaktowe</b>',
                 phone: '📱 Telefon: {phone}',
                 address: '📦 Adres dostawy:\n{address}'
             }
@@ -348,6 +374,14 @@ const pl: Translation = {
         success: {
             give: '✅ Zarezerwowano! Życzenie trafiło na listę <b>Chcę podarować</b>.',
             take: '✅ Rezerwacja anulowana, życzenie usunięto z listy <b>Chcę podarować</b>.'
+        },
+        gifted: {
+            counts: 'Aktywne: {active}, podarowane: {gifted}',
+            noActive:
+                'Obecnie nie ma aktywnych życzeń. To, co już podarowano, znajdziesz w „🎁 Podarowane”.',
+            entry: '🎁 Podarowane ({count})',
+            title: '🎁 Podarowane z listy <b>{0}</b>:',
+            after: 'Te życzenia zostały już podarowane, więc nie trzeba ich rezerwować.'
         }
     },
     donate: {
@@ -415,7 +449,9 @@ const pl: Translation = {
         },
         remove: {
             success:
-                '✅ Dane płatnicze zostały usunięte! Zawsze możesz tu wrócić, żeby dodać je ponownie!'
+                '✅ Dane płatnicze zostały usunięte! Zawsze możesz tu wrócić, żeby dodać je ponownie!',
+            confirm:
+                '❓ Usunąć twoje dane płatnicze?\n\nInni nie zobaczą już, jak przesłać ci pieniądze.'
         }
     },
     settings: {
@@ -533,7 +569,9 @@ const pl: Translation = {
         success: {
             update: '✅ Adres dostawy został zapisany!',
             remove: '✅ Adres dostawy został usunięty! Zawsze możesz tu wrócić, żeby dodać go ponownie!'
-        }
+        },
+        removeConfirm:
+            '❓ Usunąć adres dostawy?\n\nInni nie zobaczą go już w Telegramie.'
     },
     disclosure: {
         title: '👀 Co widzą inni',
@@ -598,7 +636,9 @@ const pl: Translation = {
             title: 'Bot został zaktualizowany do wersji {version} 🎉',
             footer: 'Wszystkie zmiany i poprzednie wersje: /releases'
         },
-        empty: 'Na razie nie ma wpisów o aktualizacjach.'
+        empty: 'Na razie nie ma wpisów o aktualizacjach.',
+        title: '✨ Co nowego',
+        previous: '📜 Wcześniejsze wersje'
     },
     web: {
         header: {
@@ -617,9 +657,9 @@ const pl: Translation = {
         },
         wish: {
             priority: {
-                low: 'Trochę tego chce',
-                medium: 'Chce tego',
-                high: 'Bardzo tego chce'
+                low: 'Niski',
+                medium: 'Średni',
+                high: 'Wysoki'
             },
             price: 'Orientacyjna cena:',
             approx: '≈ {amount}',
@@ -795,12 +835,6 @@ const pl: Translation = {
             newBadge: 'Nowość'
         },
         a11y: {
-            priority: {
-                low: 'Trochę tego chcę',
-                medium: 'Chcę tego',
-                high: 'Bardzo tego chcę'
-            },
-            priorityThird: 'Bardzo tego chce',
             hidden: 'Ukryte życzenie, widzisz je tylko ty',
             photo: 'Zdjęcie {index} z {total}: {title}',
             photos: 'Zdjęcia, {count}',
@@ -1162,7 +1196,7 @@ const pl: Translation = {
             remove: {
                 action: 'Usuń życzenie',
                 title: 'Czy życzenie się spełniło?',
-                text: 'To tylko do statystyk: życzenie i tak zostanie usunięte.',
+                text: 'Jeśli tak, trafi do „Podarowane”: można je stamtąd przywrócić, a znajomi zobaczą je, jeśli pokazujesz podarowane. Jeśli nie, życzenie zostanie po prostu usunięte.',
                 done: 'Tak, spełniło się',
                 notDone: 'Po prostu usuń',
                 success: 'Usunięto życzenie'
@@ -1371,7 +1405,6 @@ const pl: Translation = {
             noActive:
                 'Obecnie nie ma aktywnych życzeń, poniżej te, które już podarowano.',
             filteredEmpty: 'Żadne życzenie nie pasuje do tego filtra.',
-            priority: 'Bardzo tego chce',
             openLink: 'Otwórz na {host}',
             givers: {
                 you: 'Zarezerwowane przez ciebie',

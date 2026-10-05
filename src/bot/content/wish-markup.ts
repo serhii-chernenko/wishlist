@@ -31,6 +31,18 @@ export type WishMarkupSource = Pick<
     | 'updatedAt'
 >;
 
+const PRIORITY_MARKERS = {
+    low: '🟢',
+    medium: '🟡',
+    high: '🔴'
+} as const;
+
+const getPriorityMarker = (level: number) => {
+    const priority = toWishPriority(level);
+
+    return priority === 'none' ? '' : ` ${PRIORITY_MARKERS[priority]}`;
+};
+
 const getPriorityBlock = (LL: TranslationFunctions, level: number) => {
     const priority = toWishPriority(level);
 
@@ -69,7 +81,13 @@ export const renderWishHtml = (
     if (options.detail === 'summary') {
         const dateLines = updatedLine ? `\n${updatedLine}` : createdLine;
 
-        return title + price + dateLines + hidden;
+        return (
+            title +
+            getPriorityMarker(wish.priorityLevel) +
+            price +
+            dateLines +
+            hidden
+        );
     }
 
     const priority = getPriorityBlock(LL, wish.priorityLevel);
@@ -86,6 +104,12 @@ export const renderWishHtml = (
         updatedLine +
         hidden
     );
+};
+
+export const withoutPriority = <Wish extends WishMarkupSource>(
+    wish: Wish
+): Wish => {
+    return { ...wish, priorityLevel: 0 };
 };
 
 export const toWishMessage = (

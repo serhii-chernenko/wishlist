@@ -1,4 +1,8 @@
-import { callbackButton, singleColumnKeyboard } from '../content/keyboards';
+import {
+    callbackButton,
+    navigationButton,
+    singleColumnKeyboard
+} from '../content/keyboards';
 import { parseWishImages } from '../input/wish-images';
 import type { BotRequest, CallbackTable, ScreenModule } from '../runtime/types';
 import {
@@ -43,7 +47,8 @@ const render = async (req: BotRequest, params: WishRemoveParams) => {
                 type: 'wishRemoveConfirm',
                 wishId: wish.id,
                 done: false
-            })
+            }),
+            navigationButton(LL.wishlist.remove.cancel(), 'wishlist')
         ])
     );
 };
@@ -77,7 +82,11 @@ export const callbacks: CallbackTable = {
             action: 'wish_removed',
             result: action.done ? 'done' : 'dropped'
         });
-        await req.send.text(req.LL.wishlist.remove.success());
+        await req.send.text(
+            action.done
+                ? req.LL.wishlist.remove.gifted()
+                : req.LL.wishlist.remove.success()
+        );
         await wishlistScreen.render(req, undefined);
     }
 };

@@ -440,7 +440,7 @@ describe('Legacy and malformed callbacks through the Worker on D1', () => {
             assert.equal(row?.removed, 1);
             assert.equal(row?.done, 1);
             assert.ok(
-                webhook.messageTexts().includes(LL.wishlist.remove.success())
+                webhook.messageTexts().includes(LL.wishlist.remove.gifted())
             );
         });
 

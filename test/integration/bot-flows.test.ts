@@ -224,10 +224,11 @@ describe('Bot flows through the Worker on D1', () => {
                 LL.auth.success.guest() + LL.auth.success.username('alice')
             );
             assert.equal(texts.at(-1), LL.greeting.user());
-            assert.deepEqual(lastInlineData().slice(0, 5), [
+            assert.deepEqual(lastInlineData().slice(0, 6), [
                 'n:wl',
                 'n:gl',
                 'n:find',
+                'wl:share',
                 'n:set',
                 'n:auth'
             ]);
@@ -612,7 +613,8 @@ describe('Bot flows through the Worker on D1', () => {
             );
             assert.deepEqual(lastInlineData(), [
                 `w:r:y:${done.id}`,
-                `w:r:n:${done.id}`
+                `w:r:n:${done.id}`,
+                'n:wl'
             ]);
             assert.equal((await readWishes(owner.id))[0]?.removed, 0);
 
@@ -629,6 +631,9 @@ describe('Bot flows through the Worker on D1', () => {
                     [1, 1],
                     [1, 0]
                 ]
+            );
+            assert.ok(
+                webhook.messageTexts().includes(LL.wishlist.remove.gifted())
             );
             assert.ok(
                 webhook.messageTexts().includes(LL.wishlist.remove.success())
@@ -1307,6 +1312,12 @@ describe('Bot flows through the Worker on D1', () => {
             webhook.clearApiCalls();
             await tap(bob, `g:r:${wish.id}`);
 
+            assert.equal(await countWhere('gives'), 2);
+            assert.deepEqual(webhook.callsOf('sendMessage'), []);
+
+            webhook.clearApiCalls();
+            await tap(bob, `g:r:y:${wish.id}`);
+
             assert.equal(await countWhere('gives'), 1);
             assert.equal(
                 await countWhere('gives', `user_id = ${carolUser.id}`),
@@ -1389,6 +1400,21 @@ describe('Bot flows through the Worker on D1', () => {
             );
 
             await tap(alice, 'p:rm');
+
+            assert.equal(
+                webhook.lastMessage().text,
+                LL.payments.remove.confirm()
+            );
+            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
+                'p:rm:y',
+                'n:pay'
+            ]);
+            assert.equal(
+                (await readUser(alice.id))?.payments,
+                'IBAN UA00 1234 5678'
+            );
+
+            await tap(alice, 'p:rm:y');
 
             assert.equal((await readUser(alice.id))?.payments, null);
             assert.ok(
@@ -1508,7 +1534,7 @@ describe('Bot flows through the Worker on D1', () => {
             const message: SentMessage = webhook.lastMessage();
 
             assert.equal(message.text, renderReleaseNotes(3, 'uk'));
-            assert.deepEqual(callbackDataOf(message), ['n:home']);
+            assert.deepEqual(callbackDataOf(message), ['rel:p:3', 'n:home']);
         });
     });
 

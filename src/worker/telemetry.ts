@@ -127,6 +127,8 @@ export type AppAuthRejectionReason =
 
 export type AppRateLimiterGap = 'missing' | 'error';
 
+export type WishImageChangeResult = 'added' | 'removed' | 'cleared';
+
 export type AppPhotoUploadResult =
     | 'appended'
     | 'duplicate'
