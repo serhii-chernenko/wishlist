@@ -33,12 +33,8 @@
     --color-warning-content: #ffffff;
     --color-error: #8f0b21;
     --color-error-content: #ffffff;
-    --radius-selector: var(--radius-pill);
-    --radius-field: var(--radius-control);
-    --radius-box: var(--radius-card);
     --size-selector: 0.25rem;
     --size-field: 0.275rem;
-    --border: var(--border-regular);
     --depth: 0;
     --noise: 0;
 }
@@ -66,12 +62,8 @@
     --color-warning-content: #000000;
     --color-error: #ff8f9e;
     --color-error-content: #000000;
-    --radius-selector: var(--radius-pill);
-    --radius-field: var(--radius-control);
-    --radius-box: var(--radius-card);
     --size-selector: 0.25rem;
     --size-field: 0.275rem;
-    --border: var(--border-regular);
     --depth: 0;
     --noise: 0;
 }
