@@ -6,6 +6,10 @@ const APP_SOURCE = readFileSync(
     new URL('../src/app/styles/app.css', import.meta.url),
     'utf8'
 );
+const FORMS_SOURCE = readFileSync(
+    new URL('../src/app/styles/daisy-forms.css', import.meta.url),
+    'utf8'
+);
 const APP_DIRECTORY = new URL('../src/app/', import.meta.url);
 const STYLE_ATTRIBUTE = /\bstyle\s*=|setAttribute\(\s*['"]style['"]/;
 
@@ -64,9 +68,9 @@ test('the pairs grid falls back to one column and never wraps labels', () => {
 });
 
 test('textareas cap at the field row limit with native sizing when supported', () => {
-    assert.match(APP_SOURCE, /@supports \(field-sizing: content\)/);
+    assert.match(FORMS_SOURCE, /@supports \(field-sizing: content\)/);
     assert.match(
-        APP_SOURCE,
+        FORMS_SOURCE,
         /max-block-size: calc\(var\(--field-max-rows\) \* 1lh/
     );
 });
