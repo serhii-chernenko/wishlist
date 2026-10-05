@@ -84,7 +84,6 @@ describe('Mini App API account, share, feedback and info', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             ADMIN_ID: String(ADMIN_TELEGRAM_ID),
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,

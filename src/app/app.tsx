@@ -71,8 +71,7 @@ export const createAppServices = ({
             stored: readStoredNav(),
             initData: launch.initData,
             startParam: launch.startParam,
-            registered: bootstrap.me.registered,
-            linkImportEnabled: bootstrap.config.linkImportEnabled
+            registered: bootstrap.me.registered
         }),
         session
     );

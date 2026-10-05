@@ -43,12 +43,6 @@ const API_SECURITY_HEADERS = {
 const AUTHORIZATION_PREFIX = `${APP_AUTH_SCHEME} `;
 const MILLISECONDS_PER_SECOND = 1000;
 
-export const isMiniAppEnabled = (
-    env: Pick<WorkerBindings, 'MINI_APP_ENABLED'>
-) => {
-    return env.MINI_APP_ENABLED === 'true';
-};
-
 export const isPreviewAccessDenied = (
     env: Pick<WorkerBindings, 'BOT_ENVIRONMENT' | 'ADMIN_ID'>,
     telegramUserId: number
@@ -105,9 +99,9 @@ const applySecurityHeaders = (response: Response) => {
 };
 
 /**
- * Outermost `/api/app/*` middleware: injects deps, applies the kill switch,
- * sets the API security headers on every response and emits
- * `app_api_completed` with the matched route template.
+ * Outermost `/api/app/*` middleware: injects deps, sets the API security
+ * headers on every response and emits `app_api_completed` with the matched
+ * route template.
  */
 export const createApiEnvelopeMiddleware = (
     deps: ApiDeps
@@ -117,11 +111,7 @@ export const createApiEnvelopeMiddleware = (
 
         c.set('deps', deps);
 
-        if (isMiniAppEnabled(c.env)) {
-            await next();
-        } else {
-            c.res = apiErrorResponse('disabled');
-        }
+        await next();
 
         const response = applySecurityHeaders(c.res);
         const route = c.get('route') as ApiRoute | undefined;

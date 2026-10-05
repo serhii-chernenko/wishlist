@@ -60,7 +60,6 @@ interface ImportScenario {
     onRun?: () => Promise<void>;
     gate?: Promise<void>;
     limiterAllows?: boolean;
-    enabled?: boolean;
     throws?: boolean;
 }
 
@@ -230,9 +229,7 @@ describe('Bot link import', () => {
         const env = {
             ...createWorkerEnv(webhook.d1, {
                 BOT_TOKEN,
-                BOT_ENVIRONMENT: 'local',
-                LINK_IMPORT_ENABLED:
-                    scenario.enabled === false ? 'false' : 'true'
+                BOT_ENVIRONMENT: 'local'
             }),
             APP_IMPORT_LIMITER: {
                 async limit() {
@@ -381,36 +378,6 @@ describe('Bot link import', () => {
             assert.equal(runCalls.length, 0);
             assert.equal((await readWishes())[0]?.title, 'Книга про Rust');
             assert.equal((await readWishes())[0]?.link, null);
-        });
-    });
-
-    describe('with the kill switch off', () => {
-        it('keeps the plain title behaviour', async () => {
-            scenario.enabled = false;
-            await sendCallback('n:add');
-
-            assert.equal(lastText(), LL.wishlist.add.description('200'));
-            assert.deepEqual(callbackDataOf(webhook.lastMessage()), [
-                'n:wl',
-                'n:home'
-            ]);
-
-            await sendText(PRODUCT_URL);
-
-            assert.equal(runCalls.length, 0);
-            assert.equal(lastText(), LL.wishlist.add.description('200'));
-            assert.equal((await readWishes()).length, 0);
-        });
-
-        it('does not offer a link sent outside a dialog', async () => {
-            scenario.enabled = false;
-            await sendText(PRODUCT_URL);
-
-            assert.equal(
-                webhook.messageTexts().includes(IMPORT.offer.text()),
-                false
-            );
-            assert.equal(await readLinkOffer(), undefined);
         });
     });
 

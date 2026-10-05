@@ -44,7 +44,6 @@ describe('signed import image proxy', () => {
         options: {
             withLoader?: boolean;
             viaServices?: boolean;
-            enabled?: boolean;
         } = {}
     ) => {
         const loadStagedImage: LoadStagedImage = async (_deps, input) => {
@@ -80,7 +79,6 @@ describe('signed import image proxy', () => {
         const env = {
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            LINK_IMPORT_ENABLED: options.enabled === false ? 'false' : 'true',
             IMAGES: memory.bucket
         } as unknown as WorkerBindings;
 
@@ -194,18 +192,6 @@ describe('signed import image proxy', () => {
         assert.equal(response.status, 200);
         assert.equal(response.headers.get('Content-Type'), 'image/jpeg');
         assert.deepEqual(loaderCalls, [{ urlHash: URL_HASH, index: 3 }]);
-    });
-
-    it('answers 404 without touching R2 while the kill switch is off', async () => {
-        memory.seed(importImageKey(URL_HASH, 0), JPEG_BYTES, {
-            contentType: 'image/jpeg'
-        });
-
-        const response = await request(await signedUrl(0), { enabled: false });
-
-        assert.equal(response.status, 404);
-        assert.deepEqual(loaderCalls, []);
-        assert.deepEqual(servedEvents(), ['import:notFound:404']);
     });
 
     it('rejects forged, expired and malformed URLs before touching R2', async () => {

@@ -40,14 +40,9 @@ const SETTINGS_MENU: readonly MenuEntry[] = [
     { screen: 'payments', icon: Wallet },
     { screen: 'currency', icon: Coins },
     { screen: 'delivery', icon: Truck },
-    { screen: 'language', icon: Languages }
+    { screen: 'language', icon: Languages },
+    { screen: 'listImport', icon: Download, label: LL => LL.nav.listImport() }
 ];
-
-const LIST_IMPORT_ENTRY: MenuEntry = {
-    screen: 'listImport',
-    icon: Download,
-    label: LL => LL.nav.listImport()
-};
 
 const ABOUT_MENU: readonly MenuEntry[] = [
     { screen: 'stats', icon: ChartColumn, label: LL => LL.home.pairs.stats() },
@@ -68,12 +63,12 @@ const ABOUT_MENU: readonly MenuEntry[] = [
 const UserHome = () => {
     const LL = useLL();
     const nav = useNav();
-    const { counts, me, config } = useSession();
+    const { counts, me } = useSession();
 
     useBottomButton({
         text: LL.home.addWish(),
         onClick: () => {
-            nav.push(newWishRoute(config.linkImportEnabled));
+            nav.push(newWishRoute());
         }
     });
     useSettingsButton(() => {
@@ -101,11 +96,7 @@ const UserHome = () => {
             <MenuSection
                 id='home-settings'
                 title={LL.home.groups.settings()}
-                entries={
-                    config.listImportEnabled
-                        ? [...SETTINGS_MENU, LIST_IMPORT_ENTRY]
-                        : SETTINGS_MENU
-                }
+                entries={SETTINGS_MENU}
             />
             <MenuSection
                 id='home-about'

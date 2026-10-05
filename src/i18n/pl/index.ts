@@ -875,7 +875,6 @@ const pl: Translation = {
                 'Za dużo działań w krótkim czasie. Spróbuj ponownie za {seconds} {{seconds:|sekundę||sekundy|sekund|sekundy}}.',
             upstream: 'Telegram teraz nie odpowiada. Spróbuj za chwilę.',
             notDelivered: 'Nie udało się wysłać opinii. Spróbuj za chwilę.',
-            disabled: 'Aplikacja jest chwilowo niedostępna.',
             internal: 'Wystąpił błąd po naszej stronie. Spróbuj ponownie.',
             notImplemented: 'Ta funkcja jest jeszcze w przygotowaniu.'
         },
@@ -1255,9 +1254,7 @@ const pl: Translation = {
                 timeout:
                     'Strona odpowiada zbyt wolno. Uzupełnij życzenie ręcznie.',
                 rateLimited:
-                    'Zbyt wiele zapytań do tego sklepu. Uzupełnij życzenie ręcznie lub spróbuj później.',
-                disabled:
-                    'Uzupełnianie z linku jest teraz niedostępne. Uzupełnij życzenie ręcznie.'
+                    'Zbyt wiele zapytań do tego sklepu. Uzupełnij życzenie ręcznie lub spróbuj później.'
             }
         },
         listImport: {

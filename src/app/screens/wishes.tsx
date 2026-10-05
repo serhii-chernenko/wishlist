@@ -694,7 +694,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     const services = useApp();
     const { api, nav, toast } = services;
     const LL = useLL();
-    const { counts, config } = useSession();
+    const { counts } = useSession();
     const filterOptions = useFilterOptions();
     const [gate] = useState(createLatestGate);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -727,7 +727,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
     useBottomButton({
         text: LL.wishes.add(),
         onClick: () => {
-            nav.push(newWishRoute(config.linkImportEnabled));
+            nav.push(newWishRoute());
         }
     });
 
@@ -917,9 +917,7 @@ export const WishesScreen = (_props: ScreenProps<'wishes'>) => {
                             action={{
                                 label: LL.wishes.empty.cta(),
                                 onClick: () => {
-                                    nav.push(
-                                        newWishRoute(config.linkImportEnabled)
-                                    );
+                                    nav.push(newWishRoute());
                                 }
                             }}
                         />

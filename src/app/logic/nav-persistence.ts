@@ -38,7 +38,6 @@ export interface InitialRoutesInput {
     initData: string;
     startParam: string | null;
     registered: boolean;
-    linkImportEnabled: boolean;
 }
 
 const PARAMETERLESS_SCREENS: ReadonlySet<string> = new Set(
@@ -232,16 +231,13 @@ export const resolveInitialRoutes = ({
     stored,
     initData,
     startParam,
-    registered,
-    linkImportEnabled
+    registered
 }: InitialRoutesInput): Route[] => {
     const launch = getLaunchIdentity(initData);
     const snapshot = parseSnapshot(stored);
 
     if (launch === null || snapshot === null || snapshot.launch !== launch) {
-        return resolveStartRoutes(startParam, registered, {
-            linkImportEnabled
-        });
+        return resolveStartRoutes(startParam, registered);
     }
 
     return restoreRoutes(snapshot.routes, registered);

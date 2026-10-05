@@ -210,15 +210,11 @@ export const OnboardingView = ({ id }: { id: 'home' | 'onboarding' }) => {
 export const OnboardingScreen = (_props: ScreenProps<'onboarding'>) => {
     const nav = useNav();
     const { launch } = useApp();
-    const { me, config } = useSession();
+    const { me } = useSession();
 
     useEffect(() => {
         if (me.registered) {
-            nav.reset(
-                routesAfterRegistration(launch.startParam, {
-                    linkImportEnabled: config.linkImportEnabled
-                })
-            );
+            nav.reset(routesAfterRegistration(launch.startParam));
         }
     }, [me.registered]);
 

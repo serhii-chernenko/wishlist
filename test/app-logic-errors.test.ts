@@ -88,7 +88,7 @@ test('bodies without an envelope fall back to a code for the status', () => {
         [500, 'internal'],
         [501, 'notImplemented'],
         [502, 'upstream'],
-        [503, 'disabled'],
+        [503, 'internal'],
         [504, 'internal']
     ];
 
@@ -103,7 +103,7 @@ test('bodies without an envelope fall back to a code for the status', () => {
     );
 });
 
-test('auth, preview and kill switch failures map to system screens', () => {
+test('auth and preview failures map to system screens', () => {
     const unauthorized = (reason?: string) => {
         return toApiFailure(401, {
             error: { code: 'unauthorized', ...(reason && { reason }) }
@@ -120,10 +120,6 @@ test('auth, preview and kill switch failures map to system screens', () => {
             toApiFailure(403, { error: { code: 'previewAccessDenied' } })
         ),
         'previewOnly'
-    );
-    assert.equal(
-        toSystemScreen(toApiFailure(503, { error: { code: 'disabled' } })),
-        'unavailable'
     );
 
     for (const code of [

@@ -275,16 +275,9 @@ const dispatchCommand = async (
             await router.renderScreen(req, 'releases');
             return;
         case 'app': {
-            const appButton = appEntryButton(req);
-
-            if (appButton === null) {
-                await router.renderScreen(req, 'home');
-                return;
-            }
-
             await req.send.text(
                 req.LL.appEntry.text(),
-                singleColumnKeyboard([appButton])
+                singleColumnKeyboard([appEntryButton(req)])
             );
             return;
         }

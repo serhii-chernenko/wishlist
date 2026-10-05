@@ -75,14 +75,12 @@ describe('pending imported photos on list loads', () => {
         return Effect.runPromise(effect);
     };
 
-    const env = (importEnabled = true): WorkerBindings => {
+    const env = (): WorkerBindings => {
         return {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             ADMIN_ID: '1',
-            WISHLIST_IMPORT_ENABLED: String(importEnabled),
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
             APP_UPLOAD_LIMITER: undefined
@@ -93,8 +91,7 @@ describe('pending imported photos on list loads', () => {
         as: InitDataUserFixture,
         method: string,
         path: string,
-        body?: unknown,
-        importEnabled = true
+        body?: unknown
     ) => {
         const deps = {
             now: () => NOW,
@@ -118,7 +115,7 @@ describe('pending imported photos on list loads', () => {
                 headers,
                 ...(body === undefined ? {} : { body: JSON.stringify(body) })
             },
-            env(importEnabled)
+            env()
         );
     };
 
@@ -264,20 +261,13 @@ describe('pending imported photos on list loads', () => {
         assert.equal(recorder.kicks[0]?.userId, owner.id);
     });
 
-    it('does not kick without pending photos, without a registered user or with the import off', async () => {
+    it('does not kick without pending photos or without a registered user', async () => {
         const owner = await registerUser(OWNER);
 
         await insertRows([importedRow(owner.id, 1)]);
         await call(OWNER, 'GET', '/wishes');
         await readJson<BootstrapDto>(await call(OWNER, 'GET', '/bootstrap'));
         await readJson<BootstrapDto>(await call(VIEWER, 'GET', '/bootstrap'));
-
-        assert.deepEqual(recorder.kicks, []);
-
-        await insertRows([
-            importedRow(owner.id, 2, { sourceImageUrl: PENDING_URL })
-        ]);
-        await call(OWNER, 'GET', '/wishes', undefined, false);
 
         assert.deepEqual(recorder.kicks, []);
     });

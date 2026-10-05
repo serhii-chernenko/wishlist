@@ -91,7 +91,6 @@ const buildStatus = (
 };
 
 interface Scenario {
-    enabled: boolean;
     limiterAllows: boolean;
     preview: ListImportPreviewDto;
     previewThrows: boolean;
@@ -125,7 +124,6 @@ describe('Bot list import', () => {
 
     const defaultScenario = (): Scenario => {
         return {
-            enabled: true,
             limiterAllows: true,
             preview: buildPreview(),
             previewThrows: false,
@@ -210,8 +208,7 @@ describe('Bot list import', () => {
         const env = {
             ...createWorkerEnv(webhook.d1, {
                 BOT_TOKEN,
-                BOT_ENVIRONMENT: 'local',
-                WISHLIST_IMPORT_ENABLED: scenario.enabled ? 'true' : 'false'
+                BOT_ENVIRONMENT: 'local'
             }),
             APP_IMPORT_LIMITER: {
                 async limit() {
@@ -392,41 +389,6 @@ describe('Bot list import', () => {
                 navigate('settings'),
                 navigate('home')
             ]);
-        });
-
-        it('hides the settings button with the kill switch off', async () => {
-            scenario.enabled = false;
-            await sendCallback(navigate('settings'));
-
-            assert.equal(
-                callbackDataOf(webhook.lastMessage()).includes(
-                    navigate('listImport')
-                ),
-                false
-            );
-        });
-
-        it('answers a stale source button with the outdated main menu', async () => {
-            scenario.enabled = false;
-            await sendCallback(
-                encode({ type: 'listImportSource', source: 'rewish' })
-            );
-
-            assert.ok(
-                webhook.messageTexts().includes(LL.errors.outdatedButton()) ||
-                    callsOf('answerCallbackQuery').some(payload => {
-                        return payload.text === LL.errors.outdatedButton();
-                    })
-            );
-            assert.equal(await readPendingInput(), undefined);
-            assert.equal(previewRequests.length, 0);
-        });
-
-        it('shows the disabled text on the source screen with the kill switch off', async () => {
-            scenario.enabled = false;
-            await sendCallback(navigate('listImport'));
-
-            assert.equal(webhook.lastMessage().text, LL.listImport.disabled());
         });
     });
 
@@ -1016,13 +978,6 @@ describe('Bot list import', () => {
                     );
                 })
             );
-        });
-
-        it('answers a stale commit button with the kill switch off', async () => {
-            scenario.enabled = false;
-            await sendCallbackFrom(commitCallback, previewKeyboard('hidden'));
-
-            assert.equal(startRequests.length, 0);
         });
     });
 

@@ -48,7 +48,6 @@ describe('Mini App currency', () => {
             ...harness.env,
             BOT_TOKEN: TEST_BOT_TOKEN,
             BOT_ENVIRONMENT: 'production',
-            MINI_APP_ENABLED: 'true',
             APP_API_LIMITER: undefined,
             APP_SENSITIVE_LIMITER: undefined,
             APP_UPLOAD_LIMITER: undefined

@@ -327,7 +327,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
     const nav = useNav();
     const services = useApp();
     const { api, toast } = services;
-    const { me, config } = useSession();
+    const { me } = useSession();
     const [pending, setPending] = useState<ShareAction | null>(null);
     const share = useAppResource('share', signal => {
         return api.request('getShare', { signal });
@@ -529,11 +529,7 @@ export const ShareScreen = (_props: ScreenProps<'share'>) => {
                                 action={{
                                     label: LL.share.empty.cta(),
                                     onClick: () => {
-                                        nav.push(
-                                            newWishRoute(
-                                                config.linkImportEnabled
-                                            )
-                                        );
+                                        nav.push(newWishRoute());
                                     }
                                 }}
                             />

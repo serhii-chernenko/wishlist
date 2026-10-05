@@ -103,17 +103,8 @@ const SIMPLE_START_ROUTES = {
     about: [{ screen: 'about' }]
 } as const satisfies Record<Exclude<StartScreen, 'add'>, readonly Route[]>;
 
-export interface StartRouteOptions {
-    linkImportEnabled: boolean;
-}
-
-const WITHOUT_LINK_IMPORT: StartRouteOptions = { linkImportEnabled: false };
-
-/** Where "add a wish" leads: the link step while link import is on, otherwise straight to an empty editor. */
-export const newWishRoute = (linkImportEnabled: boolean): Route => {
-    return linkImportEnabled
-        ? { screen: 'linkImport' }
-        : { screen: 'wishEditor', wishId: null };
+export const newWishRoute = (): Route => {
+    return { screen: 'linkImport' };
 };
 
 export const rootRoute = (registered: boolean): Route => {
@@ -128,10 +119,7 @@ export const requiresRegistration = (route: Route) => {
     return REGISTERED_ONLY_SCREENS.has(route.screen);
 };
 
-const routesForStart = (
-    startParam: string | null,
-    options: StartRouteOptions
-): readonly Route[] => {
+const routesForStart = (startParam: string | null): readonly Route[] => {
     const target = parseStartParam(startParam);
 
     if (target === null) {
@@ -142,7 +130,7 @@ const routesForStart = (
         const { screen } = target;
 
         return screen === 'add'
-            ? [{ screen: 'wishes' }, newWishRoute(options.linkImportEnabled)]
+            ? [{ screen: 'wishes' }, newWishRoute()]
             : SIMPLE_START_ROUTES[screen];
     }
 
@@ -163,10 +151,9 @@ const routesForStart = (
 
 export const resolveStartRoutes = (
     startParam: string | null,
-    registered: boolean,
-    options: StartRouteOptions = WITHOUT_LINK_IMPORT
+    registered: boolean
 ): Route[] => {
-    const targets = routesForStart(startParam, options);
+    const targets = routesForStart(startParam);
     const blocked = !registered && targets.some(requiresRegistration);
 
     return [
@@ -176,11 +163,8 @@ export const resolveStartRoutes = (
 };
 
 /** The stack a guest lands on right after registering: the deep link they opened the app with, never the Visibility screen they just finished. */
-export const routesAfterRegistration = (
-    startParam: string | null,
-    options: StartRouteOptions = WITHOUT_LINK_IMPORT
-): Route[] => {
-    return resolveStartRoutes(startParam, true, options).filter(route => {
+export const routesAfterRegistration = (startParam: string | null): Route[] => {
+    return resolveStartRoutes(startParam, true).filter(route => {
         return route.screen !== 'visibility';
     });
 };
