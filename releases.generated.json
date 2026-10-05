@@ -55,9 +55,9 @@
                     "pl": "Lista życzeń ma teraz aplikację wewnątrz Telegrama: otwórz ją przyciskiem „Otwórz aplikację” w bocie, z profilu bota lub poleceniem /app. Aplikacja potrafi to samo co czat: dodawać i edytować życzenia ze zdjęciami, udostępniać listę, szukać list znajomych i rezerwować życzenia. Bot w czacie działa jak dotąd, a dane są wspólne."
                 },
                 {
-                    "uk": "Фото бажань тепер видно й на публічній сторінці листа бажань і їх можна гортати свайпом, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.",
-                    "en": "Wish photos now appear on the public wish list page too, and you can swipe through them. From the page you can also open the list in Telegram right away and reserve a wish.",
-                    "pl": "Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń i można je przewijać palcem, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie."
+                    "uk": "Фото бажань тепер видно й на публічній сторінці листа бажань, їх можна гортати свайпом і відкривати на весь екран, а зі сторінки можна одразу відкрити лист у Телеграмі й забронювати бажання.",
+                    "en": "Wish photos now appear on the public wish list page too: swipe through them or open them fullscreen. From the page you can also open the list in Telegram right away and reserve a wish.",
+                    "pl": "Zdjęcia życzeń są teraz widoczne także na publicznej stronie listy życzeń, można je przewijać palcem i otwierać na pełnym ekranie, a ze strony od razu otworzysz listę w Telegramie i zarezerwujesz życzenie."
                 },
                 {
                     "uk": "Команда /releases показує історію змін бота, а про нові версії бот тепер повідомляє сам.",

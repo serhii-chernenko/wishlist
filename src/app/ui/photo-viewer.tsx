@@ -87,9 +87,7 @@ export const PhotoViewer = ({
                 onClick={() => {
                     close.current();
                 }}
-            >
-                <span aria-hidden='true'>×</span>
-            </button>
+            />
             <div
                 ref={stripRef}
                 class='carousel photo-viewer-track'

@@ -126,9 +126,7 @@ const WishStage = ({
                 popovertarget={stageId}
                 popovertargetaction='hide'
                 aria-label={closeLabel}
-            >
-                ×
-            </button>
+            />
             {children}
         </div>
     );
