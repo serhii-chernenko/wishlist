@@ -108,7 +108,7 @@ test('every wrangler block declares the link import limiters and flags and no im
 
     assert.equal(wranglerBlocks.local.vars?.LINK_IMPORT_ENABLED, 'true');
     assert.equal(wranglerBlocks.previews.vars?.LINK_IMPORT_ENABLED, 'true');
-    assert.equal(wranglerBlocks.production.vars?.LINK_IMPORT_ENABLED, 'false');
+    assert.equal(wranglerBlocks.production.vars?.LINK_IMPORT_ENABLED, 'true');
 });
 
 test('shops resolve by registrable name and everything else is other', () => {

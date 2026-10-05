@@ -91,7 +91,7 @@ test('the list import screen is a registered-only app screen without parameters'
     assert.equal(REGISTERED_ONLY_SCREENS.has('listImport'), true);
 });
 
-test('the kill switch is read as an exact string and differs per environment', () => {
+test('the kill switch is read as an exact string and is on in every environment', () => {
     assert.equal(
         isListImportEnabled({ WISHLIST_IMPORT_ENABLED: 'true' }),
         true
@@ -103,7 +103,7 @@ test('the kill switch is read as an exact string and differs per environment', (
     assert.equal(wrangler.vars?.WISHLIST_IMPORT_ENABLED, 'true', 'local block');
     assert.equal(
         wrangler.env.production.vars?.WISHLIST_IMPORT_ENABLED,
-        'false',
+        'true',
         'production block'
     );
     assert.equal(
