@@ -65,12 +65,12 @@ test('share urls use the request origin and an optional page language', () => {
     assert.equal(buildSharePath(publicId), `/w/${publicId}`);
     assert.equal(buildSharePath(publicId, 'pl'), `/pl/w/${publicId}`);
     assert.equal(
-        buildShareUrl('https://wishlist.chernenko.dev', publicId),
-        `https://wishlist.chernenko.dev/w/${publicId}`
+        buildShareUrl('https://wishlist.serhiichernenko.com', publicId),
+        `https://wishlist.serhiichernenko.com/w/${publicId}`
     );
     assert.equal(
-        buildShareUrl('https://wishlist.chernenko.dev/', publicId, 'uk'),
-        `https://wishlist.chernenko.dev/ua/w/${publicId}`
+        buildShareUrl('https://wishlist.serhiichernenko.com/', publicId, 'uk'),
+        `https://wishlist.serhiichernenko.com/ua/w/${publicId}`
     );
     assert.equal(
         buildShareUrl(
@@ -99,12 +99,12 @@ test('ukrainian uses the ua url segment while the language stays uk', () => {
     assert.equal(buildHomePath('uk'), '/ua');
     assert.equal(buildHomePath('pl'), '/pl');
     assert.equal(
-        buildHomeUrl('https://wishlist.chernenko.dev', 'uk'),
-        'https://wishlist.chernenko.dev/ua'
+        buildHomeUrl('https://wishlist.serhiichernenko.com', 'uk'),
+        'https://wishlist.serhiichernenko.com/ua'
     );
     assert.equal(
-        buildHomeUrl('https://wishlist.chernenko.dev'),
-        'https://wishlist.chernenko.dev/'
+        buildHomeUrl('https://wishlist.serhiichernenko.com'),
+        'https://wishlist.serhiichernenko.com/'
     );
 });
 

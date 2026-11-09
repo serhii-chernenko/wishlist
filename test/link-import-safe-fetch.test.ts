@@ -122,7 +122,9 @@ describe('safe fetch: URL rules', () => {
         ['https://printer.local/', 'blockedHost'],
         ['https://metadata.google.internal/', 'blockedHost'],
         ['https://intranet/', 'blockedHost'],
+        ['https://wishlist.serhiichernenko.com/app', 'blockedHost'],
         ['https://wishlist.chernenko.dev/app', 'blockedHost'],
+        ['https://preview.wishlist.chernenko.dev/app', 'blockedHost'],
         ['https://wishlist.inevix.workers.dev/', 'blockedHost'],
         ['ftp://shop.example.com/', 'blockedHost'],
         ['not a url', 'invalidUrl']

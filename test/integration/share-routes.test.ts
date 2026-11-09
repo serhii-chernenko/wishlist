@@ -12,7 +12,7 @@ import type { D1Harness } from './d1-harness';
 
 const baseTime = Date.parse('2026-10-01T12:00:00.000Z');
 const ownerTelegramId = 9_001;
-const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
+const CANONICAL_ORIGIN = 'https://wishlist.serhiichernenko.com';
 const WORKERS_DEV_ORIGIN = 'https://preview-wishlist.chernenko.workers.dev';
 const EXPECTED_CSP =
     "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
@@ -885,7 +885,7 @@ describe('share page routes', () => {
         );
         assert.equal(
             await production.text(),
-            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\nDisallow: /theme\nDisallow: /currency\n\nSitemap: https://wishlist.chernenko.dev/sitemap.xml\n'
+            'User-agent: *\nAllow: /\nDisallow: /__share-cache/\nDisallow: /app\nDisallow: /api/\nDisallow: /img/\nDisallow: /theme\nDisallow: /currency\n\nSitemap: https://wishlist.serhiichernenko.com/sitemap.xml\n'
         );
 
         for (const environment of ['preview', 'local']) {
@@ -1225,7 +1225,7 @@ describe('share page routes', () => {
         assert.match(body, /<meta name="robots" content="index, follow"\/>/);
         assert.match(
             body,
-            /<link rel="canonical" href="https:\/\/wishlist\.chernenko\.dev\/ua"\/>/
+            /<link rel="canonical" href="https:\/\/wishlist\.serhiichernenko\.com\/ua"\/>/
         );
 
         for (const [language, segment] of [

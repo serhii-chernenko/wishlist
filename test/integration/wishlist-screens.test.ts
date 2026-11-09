@@ -564,7 +564,9 @@ describe('wishlist screens on D1', () => {
 
             await dispatch(request, 'wl:share');
 
-            assert.ok(lastText(events).html.includes('wishlist.chernenko.dev'));
+            assert.ok(
+                lastText(events).html.includes('wishlist.serhiichernenko.com')
+            );
 
             await dispatch(request, 'wl:share:y');
 
@@ -572,7 +574,7 @@ describe('wishlist screens on D1', () => {
 
             assert.ok(
                 lastText(events).html.includes(
-                    `https://wishlist.chernenko.dev/w/${row?.public_id}`
+                    `https://wishlist.serhiichernenko.com/w/${row?.public_id}`
                 )
             );
         });
@@ -1118,7 +1120,9 @@ describe('wishlist screens on D1', () => {
 
             await dispatch(request, 'wl:share');
 
-            assert.ok(lastText(events).html.includes('wishlist.chernenko.dev'));
+            assert.ok(
+                lastText(events).html.includes('wishlist.serhiichernenko.com')
+            );
             assert.equal(lastText(events).html.includes(ORIGIN), false);
 
             await dispatch(request, 'wl:share:y');
@@ -1127,7 +1131,7 @@ describe('wishlist screens on D1', () => {
 
             assert.ok(
                 lastText(events).html.includes(
-                    `https://wishlist.chernenko.dev/w/${row?.public_id}`
+                    `https://wishlist.serhiichernenko.com/w/${row?.public_id}`
                 )
             );
         });

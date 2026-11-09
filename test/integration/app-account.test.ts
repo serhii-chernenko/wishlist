@@ -39,7 +39,7 @@ const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
 const ADMIN_TELEGRAM_ID = 777_000_111;
 const OWNER_TELEGRAM_ID = 555_000_222;
 const GUEST_TELEGRAM_ID = 555_000_333;
-const CANONICAL_ORIGIN = 'https://wishlist.chernenko.dev';
+const CANONICAL_ORIGIN = 'https://wishlist.serhiichernenko.com';
 
 const OWNER: InitDataUserFixture = {
     id: OWNER_TELEGRAM_ID,
@@ -693,7 +693,10 @@ describe('Mini App API account, share, feedback and info', () => {
                 showUsername: false,
                 canShowUsername: true,
                 allowIndexing: true,
-                consent: { name: 'Olena Koval', host: 'wishlist.chernenko.dev' }
+                consent: {
+                    name: 'Olena Koval',
+                    host: 'wishlist.serhiichernenko.com'
+                }
             });
 
             const refused = await api('POST', '/share/publish', { as: OWNER });

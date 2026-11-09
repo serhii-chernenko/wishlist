@@ -1241,7 +1241,7 @@
         },
         {
             "name": "Share pages",
-            "description": "Public share pages on wishlist.chernenko.dev in the production Wishlist service. Share page ids never appear in telemetry.",
+            "description": "Public share pages on wishlist.serhiichernenko.com in the production Wishlist service. Share page ids never appear in telemetry.",
             "widgets": [
                 {
                     "title": "Page views (30d)",

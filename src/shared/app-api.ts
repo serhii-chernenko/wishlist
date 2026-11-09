@@ -104,7 +104,7 @@ export const LINK_IMPORT_TOKEN_TTL_SECONDS = 2 * 60 * 60;
 export const LINK_IMPORT_CACHE_TTL_SECONDS = 24 * 60 * 60;
 export const LINK_IMPORT_NEGATIVE_CACHE_TTL_SECONDS = 60 * 60;
 export const LINK_IMPORT_USER_AGENT =
-    'WishlistBot/2.0 (+https://wishlist.chernenko.dev)';
+    'WishlistBot/2.0 (+https://wishlist.serhiichernenko.com)';
 
 export const LINK_IMPORT_OUTCOMES = [
     'ok',
