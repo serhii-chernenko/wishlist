@@ -59,6 +59,7 @@ describe('normalizeImportUrl', () => {
         'https://[fe80::1]/',
         'https://localhost:3000/',
         'https://nas.local/',
+        'https://wishlist.serhiichernenko.com/w/abc',
         'https://wishlist.chernenko.dev/w/abc',
         'https://my-worker.workers.dev/',
         `https://shop.example.com/${'a'.repeat(2048)}`
@@ -100,6 +101,8 @@ describe('isBlockedImportHost', () => {
             '10.0.0.1',
             '[::1]',
             'svc.internal',
+            'wishlist.serhiichernenko.com',
+            'preview.wishlist.serhiichernenko.com',
             'wishlist.chernenko.dev',
             'preview.wishlist.chernenko.dev',
             'workers.dev'

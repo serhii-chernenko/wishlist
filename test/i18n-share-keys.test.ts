@@ -225,10 +225,10 @@ test('the consent copy names the host and the public, indexable nature of the pa
     for (const locale of ['uk', 'en', 'pl'] as const) {
         const consent = getTranslator(locale).wishlist.share.consent({
             name: 'Alice',
-            host: 'wishlist.chernenko.dev'
+            host: 'wishlist.serhiichernenko.com'
         });
 
-        assert.ok(consent.includes('wishlist.chernenko.dev'), locale);
+        assert.ok(consent.includes('wishlist.serhiichernenko.com'), locale);
         assert.ok(consent.includes('Alice'), locale);
         assert.ok(consent.includes('• '), locale);
         assert.ok(consent.includes('@username'), locale);

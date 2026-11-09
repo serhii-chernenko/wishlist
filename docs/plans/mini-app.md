@@ -509,7 +509,7 @@ S2 also checks whether the event's `response` string can be checked with the ini
     - /mybots, Bot Settings, Configure Mini App, Enable Mini App. URL: `https://preview-wishlist.chernenko.workers.dev/app`.
     - Configure Splash Screen: icon from `public/apple-touch-icon.png`, light `#F1E3FB`, dark `#130C19`.
     - Do not set a Menu Button.
-- **Production `@wishlist_ua_bot`** (runbook R6): the same steps with `https://wishlist.chernenko.dev/app`, the same splash, and media previews in uk, en and pl taken from `app:smoke` screenshots. No `/setdomain` and no `/newapp`.
+- **Production `@wishlist_ua_bot`** (runbook R6): the same steps with `https://wishlist.serhiichernenko.com/app`, the same splash, and media previews in uk, en and pl taken from `app:smoke` screenshots. No `/setdomain` and no `/newapp`.
 - **Bot API 10.2 origin protection:** the whole app stays on one origin, and external links use `WebApp.openLink`. Check that inline `web_app` buttons pointing at a branch preview origin (different from the configured Main App domain) still work [unverified]. If they don't, test branches through the long-lived `preview` (`pnpm worker:preview --name preview`).
 
 ---
@@ -831,12 +831,12 @@ No D1 migration. Production already runs this branch, so this follows the share-
     Device matrix: iOS, Android, Telegram Desktop on Windows and Linux, Telegram macOS, web K and A. Run `pnpm app:smoke` and keep the screenshots for media previews.
 
 5. **R4.** Check that `MINI_APP_ENABLED` is `"true"` in production, then run `pnpm worker:deploy:prod` from the branch.
-    - `curl -sI https://wishlist.chernenko.dev/app` returns 200 with the exact CSP.
+    - `curl -sI https://wishlist.serhiichernenko.com/app` returns 200 with the exact CSP.
     - `/api/app/bootstrap` without auth returns 401.
     - `/app/app.js` is immutable.
     - A share page with photos serves `/img/s/...` with 200, and the second view hits the cache.
     - Run `pnpm telegram:commands:set:prod` to add `/app`.
-6. **R5.** BotFather production: Enable Mini App with `https://wishlist.chernenko.dev/app`, splash, and media previews in uk, en and pl. Leave the Menu Button at its default.
+6. **R5.** BotFather production: Enable Mini App with `https://wishlist.serhiichernenko.com/app`, splash, and media previews in uk, en and pl. Leave the Menu Button at its default.
 7. **R6.** Admin smoke from the profile "Open app", from `/app` and from the home inline button: create a wish with 2 photos and check it in the chat and on the share page; search a known user, give and take; switch language to Auto; send feedback.
 8. **R7.** Watch the New Relic "Mini App" page for 60 minutes: 5xx, auth rejections, rate limits, upload results, proxy errors.
 9. **R8.** Finish 2.0.0 as in MIGRATION_STATUS "To finish after the announcement text is approved". The paused broadcast picks up the new bullets from the manifest.

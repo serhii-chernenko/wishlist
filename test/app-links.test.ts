@@ -102,8 +102,8 @@ test('the start param is capped at 64 characters', () => {
 
 test('buildAppUrl points at /app on the given origin', () => {
     assert.equal(
-        buildAppUrl('https://wishlist.chernenko.dev'),
-        'https://wishlist.chernenko.dev/app'
+        buildAppUrl('https://wishlist.serhiichernenko.com'),
+        'https://wishlist.serhiichernenko.com/app'
     );
     assert.equal(
         buildAppUrl('https://preview-wishlist.chernenko.workers.dev/', 'w_7'),

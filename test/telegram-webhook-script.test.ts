@@ -390,7 +390,7 @@ test('preview base URL validation rejects non-workers.dev, non-https and decorat
     for (const invalid of [
         'not a url',
         'http://a.b.workers.dev',
-        'https://wishlist.chernenko.dev',
+        'https://wishlist.serhiichernenko.com',
         'https://workers.dev',
         'https://evilworkers.dev',
         'https://a.b.workers.dev.evil.com',
@@ -936,7 +936,7 @@ test('raw production menu uses WORKER_BASE_URL and skips getMe', async () => {
         const fake = createTelegramFake('anyone');
         const loadedTargets: string[] = [];
 
-        process.env.WORKER_BASE_URL = 'https://wishlist.chernenko.dev';
+        process.env.WORKER_BASE_URL = 'https://wishlist.serhiichernenko.com';
 
         await runWebhookCommand(
             'menu',
@@ -965,7 +965,7 @@ test('raw production menu uses WORKER_BASE_URL and skips getMe', async () => {
         assert.deepEqual(JSON.parse(body.get('menu_button') ?? ''), {
             type: 'web_app',
             text: 'App',
-            web_app: { url: 'https://wishlist.chernenko.dev/app' }
+            web_app: { url: 'https://wishlist.serhiichernenko.com/app' }
         });
     });
 });

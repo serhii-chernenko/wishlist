@@ -24,17 +24,20 @@ const SECOND_LEVEL_SUFFIXES: ReadonlySet<string> = new Set([
     'net',
     'org'
 ]);
+const LEGACY_SHARE_HOST = 'wishlist.chernenko.dev';
 const BLOCKED_HOST_NAMES: ReadonlySet<string> = new Set([
     'localhost',
     'workers.dev',
-    CANONICAL_SHARE_HOST
+    CANONICAL_SHARE_HOST,
+    LEGACY_SHARE_HOST
 ]);
 const BLOCKED_HOST_SUFFIXES: readonly string[] = [
     '.localhost',
     '.local',
     '.internal',
     '.workers.dev',
-    `.${CANONICAL_SHARE_HOST}`
+    `.${CANONICAL_SHARE_HOST}`,
+    `.${LEGACY_SHARE_HOST}`
 ];
 const IPV4_LITERAL_PATTERN = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 const IPV6_LITERAL_PREFIX = '[';

@@ -13,14 +13,14 @@ test('plain text stays one text segment', () => {
 test('a URL in a sentence becomes a link and its full stop stays text', () => {
     assert.deepEqual(
         splitTextLinks(
-            'Pages now live on https://wishlist.chernenko.dev. Old ones stay.'
+            'Pages now live on https://wishlist.serhiichernenko.com. Old ones stay.'
         ),
         [
             { kind: 'text', text: 'Pages now live on ' },
             {
                 kind: 'link',
-                text: 'https://wishlist.chernenko.dev',
-                href: 'https://wishlist.chernenko.dev'
+                text: 'https://wishlist.serhiichernenko.com',
+                href: 'https://wishlist.serhiichernenko.com'
             },
             { kind: 'text', text: '. Old ones stay.' }
         ]

@@ -59,7 +59,7 @@ describe('contact disclosure security', () => {
         const app = createApp({}, {}, { cache, now: () => new Date() });
 
         return app.request(
-            `https://wishlist.chernenko.dev${path}`,
+            `https://wishlist.serhiichernenko.com${path}`,
             init,
             webEnv()
         );

@@ -32,7 +32,7 @@ The bot answers only in private chats.
 - **Delivery address.** Add an address (up to 6 lines) for the people who want to send you a gift.
 - **What others see.** Switch on or off whether your payment info, your phone number and your delivery address are shown to people who open your list. The phone and the address are shown only in Telegram, only to registered users, and never on the web page; turning the address on turns the phone on too, after one confirmation that names both. Each switch on asks for a confirmation.
 - **Settings.** The currency, the delivery address and the other preferences in one place.
-- **Share.** Publish your wish list as a public page on `wishlist.chernenko.dev` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results; a switch lets you ask search engines not to index the page. Visitors can switch the price currency on the page, and you can choose to show your gifted wishes there.
+- **Share.** Publish your wish list as a public page on `wishlist.serhiichernenko.com` (`/ua/w/<id>`, `/en/w/<id>`, `/pl/w/<id>`) in Ukrainian, English or Polish and send the link. The link never changes, the page updates itself after every change, and you can stop sharing at any time or get a new link. The first time, the bot asks for your consent, because the page is public and can appear in search results; a switch lets you ask search engines not to index the page. Visitors can switch the price currency on the page, and you can choose to show your gifted wishes there.
 - **Stats.** Active users, wishes created and wishes fulfilled all time.
 - **Donate.** Ways to support the project: Monobank, Ko-fi, PayPal and Revolut.
 - **Feedback.** Send a message to the author.
@@ -91,7 +91,7 @@ Everything the chat does is also available in a Telegram Mini App with the same 
     BOT_TOKEN="123456:telegram-bot-token"
     TELEGRAM_WEBHOOK_SECRET="replace-with-a-secret-token"
     TELEGRAM_WEBHOOK_PATH="/telegram/wishlist-dev"
-    WORKER_BASE_URL="https://wishlist-dev.chernenko.dev"
+    WORKER_BASE_URL="https://wishlist-dev.serhiichernenko.com"
     ```
 
 3. Apply the local D1 migrations:

@@ -1016,7 +1016,7 @@ describe('Bot flows through the Worker on D1', () => {
             assert.equal(await countWhere('wishlist_shares'), 0);
             assert.equal(
                 webhook.messageTexts().some(text => {
-                    return text.includes('wishlist.chernenko.dev');
+                    return text.includes('wishlist.serhiichernenko.com');
                 }),
                 false
             );

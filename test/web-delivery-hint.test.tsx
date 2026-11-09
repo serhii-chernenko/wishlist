@@ -23,7 +23,7 @@ const buildModel = (
     return {
         language,
         publicId: PUBLIC_ID,
-        origin: 'https://wishlist.chernenko.dev',
+        origin: 'https://wishlist.serhiichernenko.com',
         assetVersion: 'deploy-1',
         displayName: 'Alice',
         username: null,

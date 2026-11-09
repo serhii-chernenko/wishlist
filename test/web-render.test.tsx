@@ -48,7 +48,7 @@ const buildModel = (
     return {
         language,
         publicId: PUBLIC_ID,
-        origin: 'https://wishlist.chernenko.dev',
+        origin: 'https://wishlist.serhiichernenko.com',
         assetVersion: 'deploy-1',
         displayName: 'Alice',
         username: null,
@@ -725,7 +725,7 @@ test('payments are shown once and cut to the payments cap', () => {
 
 test('hreflang, canonical, open graph and twitter tags describe the page', () => {
     const html = renderSharePage(buildModel({ language: 'pl' }));
-    const base = `https://wishlist.chernenko.dev`;
+    const base = `https://wishlist.serhiichernenko.com`;
 
     assert.match(html, /<html lang="pl">/);
     assert.match(

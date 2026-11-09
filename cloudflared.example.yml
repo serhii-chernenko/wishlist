@@ -4,7 +4,7 @@
 # 2. Run 'cloudflared tunnel create wishlist-dev'
 # 3. Replace UUID and paths below with your generated details
 # 4. Route the DNS hostname:
-#    cloudflared tunnel route dns wishlist-dev wishlist-dev.chernenko.dev
+#    cloudflared tunnel route dns wishlist-dev wishlist-dev.serhiichernenko.com
 # -------------------------------------------------------------------------
 
 tunnel: 'INSERT-YOUR-UUID-HERE'
@@ -18,6 +18,6 @@ credentials-file: '/Users/YOUR_USER/.cloudflared/INSERT-YOUR-UUID-HERE.json'
 # protocol: http2
 
 ingress:
-    - hostname: wishlist-dev.chernenko.dev
+    - hostname: wishlist-dev.serhiichernenko.com
       service: http://localhost:8787
     - service: http_status:404

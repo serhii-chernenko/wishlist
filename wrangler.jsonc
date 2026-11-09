@@ -163,7 +163,7 @@
             },
             "routes": [
                 {
-                    "pattern": "wishlist.chernenko.dev",
+                    "pattern": "wishlist.serhiichernenko.com",
                     "custom_domain": true
                 }
             ],
